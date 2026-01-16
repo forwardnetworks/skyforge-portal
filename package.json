@@ -1,0 +1,38 @@
+{
+  "name": "skyforge-portal-tanstack",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "packageManager": "pnpm@10.13.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "gen:openapi": "openapi-typescript ../charts/skyforge/files/swagger-openapi.json -o src/lib/openapi.gen.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.90.18",
+    "@tanstack/react-router": "1.150.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.19.0",
+    "@tanstack/router-vite-plugin": "1.150.0",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.2",
+    "autoprefixer": "10.4.20",
+    "eslint": "9.19.0",
+    "openapi-typescript": "^7.10.1",
+    "postcss": "8.4.49",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.8.3",
+    "vite": "7.1.2"
+  }
+}
