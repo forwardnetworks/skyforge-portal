@@ -71,10 +71,17 @@ function RootLayout() {
   const isAdmin = !!session.data?.isAdmin;
 
     return (
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <div className="min-h-full">
-          <GlobalSpinner />
-          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4">
+          <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+            <div className="min-h-full">
+              <GlobalSpinner />
+                      <header 
+                        className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+                        style={{
+                          backgroundImage: "linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.3)), url('/header-background.png')",
+                          backgroundSize: "cover",
+                          backgroundPosition: "center 25%"
+                        }}
+                      >                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
