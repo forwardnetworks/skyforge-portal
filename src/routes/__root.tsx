@@ -1,8 +1,9 @@
 import { createRootRouteWithContext, Link, Outlet, useRouterState, type ErrorComponentProps } from "@tanstack/react-router";
-import { useQuery, type QueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { buildLoginUrl, getSession, logout } from "../lib/skyforge-api";
+import { loginWithPopup } from "../lib/auth-popup";
 import { SideNav } from "../components/side-nav";
 import { CommandMenu } from "../components/command-menu";
 import { ChevronLeft, ChevronRight, Search, Menu } from "lucide-react";
@@ -36,7 +37,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootLayout() {
   const location = useRouterState({ select: (s) => s.location });
+  const queryClient = useQueryClient();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [loggingIn, setLoggingIn] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -74,14 +77,16 @@ function RootLayout() {
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <div className="min-h-full">
               <GlobalSpinner />
-                      <header 
-                        className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-                        style={{
-                          backgroundImage: "linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.3)), url('/header-background.png')",
-                          backgroundSize: "cover",
-                          backgroundPosition: "center 25%"
-                        }}
-                      >                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4">
+                              <header 
+                                className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+                                style={{
+                                  backgroundImage: "linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.4)), url('/header-background.png')",
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "left 35%",
+                                  height: "120px"
+                                }}
+                              >
+                                <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -166,8 +171,25 @@ function RootLayout() {
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" size="sm" asChild>
-                <a href={loginHref}>Login</a>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={loggingIn}
+                onClick={async () => {
+                  try {
+                    setLoggingIn(true);
+                    const ok = await loginWithPopup({ loginHref });
+                    if (!ok) {
+                      window.location.href = loginHref;
+                      return;
+                    }
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.session() });
+                  } finally {
+                    setLoggingIn(false);
+                  }
+                }}
+              >
+                {loggingIn ? "…" : "Login"}
               </Button>
             )}
           </nav>

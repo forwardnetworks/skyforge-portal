@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { JSONMap } from "../../../lib/skyforge-api";
 import { buildLoginUrl, type DashboardSnapshot } from "../../../lib/skyforge-api";
+import { loginWithPopup } from "../../../lib/auth-popup";
 import { useRunEvents, type RunLogState, type TaskLogEntry } from "../../../lib/run-events";
 import { queryKeys } from "../../../lib/query-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
@@ -67,7 +68,21 @@ function RunDetailPage() {
              Waiting for dashboard stream…
              <div className="mt-2 text-xs">
                 If you are logged out,{" "}
-                <a className="text-primary underline hover:no-underline" href={loginHref}>
+                <a
+                  className="text-primary underline hover:no-underline"
+                  href={loginHref}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void (async () => {
+                      const ok = await loginWithPopup({ loginHref });
+                      if (!ok) {
+                        window.location.href = loginHref;
+                        return;
+                      }
+                      await queryClient.invalidateQueries({ queryKey: queryKeys.session() });
+                    })();
+                  }}
+                >
                   login
                 </a>
                 .

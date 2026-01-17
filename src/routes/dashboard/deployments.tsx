@@ -16,6 +16,7 @@ import {
   type SkyforgeWorkspace,
   type WorkspaceDeployment
 } from "../../lib/skyforge-api";
+import { loginWithPopup } from "../../lib/auth-popup";
 import { queryKeys } from "../../lib/query-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button, buttonVariants } from "../../components/ui/button";
@@ -67,6 +68,7 @@ export const Route = createFileRoute("/dashboard/deployments")({
 function DeploymentsPage() {
   useDashboardEvents(true);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { workspace } = Route.useSearch();
 
   const snap = useQuery<DashboardSnapshot | null>({
@@ -219,7 +221,21 @@ function DeploymentsPage() {
                 Waiting for dashboard stream…
                 <div className="mt-2 text-xs">
                   If you are logged out,{" "}
-                  <a className="text-primary underline hover:no-underline" href={loginHref}>
+                  <a
+                    className="text-primary underline hover:no-underline"
+                    href={loginHref}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      void (async () => {
+                        const ok = await loginWithPopup({ loginHref });
+                        if (!ok) {
+                          window.location.href = loginHref;
+                          return;
+                        }
+                        await queryClient.invalidateQueries({ queryKey: queryKeys.session() });
+                      })();
+                    }}
+                  >
                     login
                   </a>
                   .
