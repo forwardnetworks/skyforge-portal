@@ -117,7 +117,8 @@
         <ul>
           <li><code>/</code> (Skyforge landing)</li>
           <li><code>/file-drop.html</code> + <code>/files/…</code> (anonymous upload/download)</li>
-          <li><code>/data/platform-health.json</code> (status feed)</li>
+          <li><code>/status/summary</code> (status feed, recommended)</li>
+          <li><code>/data/platform-health.json</code> (legacy)</li>
           <li><code>/docs/…</code> (these docs)</li>
         </ul>
       </section>
@@ -125,8 +126,8 @@
       <section class="card">
         <h2>What’s gated behind Skyforge login</h2>
         <ul>
-          <li><code>/netbox/</code>, <code>/nautobot/</code>, <code>/git/</code>, <code>/minio-console/</code>, <code>/workspaces</code></li>
-          <li>When not logged in you’ll be redirected to <code>/?next=…</code>.</li>
+          <li><code>/dashboard/deployments</code>, <code>/netbox/</code>, <code>/nautobot/</code>, <code>/git/</code>, <code>/minio-console/</code></li>
+          <li>When not logged in you’ll be redirected to <code>/api/skyforge/api/oidc/login?next=…</code>.</li>
         </ul>
       </section>
 

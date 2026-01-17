@@ -107,7 +107,7 @@
       <p>Common issues and the fastest checks.</p>
       <div class="nav">
         <a class="pill" href="/docs/">Docs home</a>
-        <a class="pill" href="/data/platform-health.json">Platform health</a>
+        <a class="pill" href="/status/summary">Platform status</a>
         <a class="pill" href="/">Skyforge home</a>
       </div>
     </header>
@@ -123,9 +123,9 @@
       <section class="card">
         <h2>Health is red / “down”</h2>
         <ul>
-          <li>Check the live report: <a href="/data/platform-health.json">/data/platform-health.json</a></li>
+          <li>Check the live report: <a href="/status/summary">/status/summary</a></li>
           <li>Check pod status: <code>kubectl -n skyforge get pods</code></li>
-          <li>Quick check: <code>kubectl -n skyforge get pods</code> and <code>curl -k https://&lt;hostname&gt;/data/platform-health.json</code></li>
+          <li>Quick check: <code>kubectl -n skyforge get pods</code> and <code>curl -k https://&lt;hostname&gt;/status/summary</code></li>
         </ul>
         <p>If you configured alerting, health changes can also be pushed to a webhook via <code>SKYFORGE_ALERT_WEBHOOK_URL</code>.</p>
       </section>

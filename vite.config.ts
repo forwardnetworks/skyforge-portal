@@ -7,7 +7,21 @@ export default defineConfig({
   build: {
     // Avoid clobbering Coder's `/assets/*` paths routed by Traefik.
     // The Helm chart routes `/assets/skyforge/*` to `skyforge-portal`.
-    assetsDir: "assets/skyforge"
+    assetsDir: "assets/skyforge",
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("@tanstack")) return "tanstack";
+          if (id.includes("react")) return "react";
+          if (id.includes("framer-motion") || id.includes("motion")) return "motion";
+          if (id.includes("lucide-react")) return "icons";
+          if (id.includes("class-variance-authority") || id.includes("clsx") || id.includes("tailwind-merge"))
+            return "ui-utils";
+          return "vendor";
+        }
+      }
+    }
   },
   plugins: [TanStackRouterVite(), react()],
   resolve: {

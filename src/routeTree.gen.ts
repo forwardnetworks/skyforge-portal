@@ -10,11 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WebhooksRouteImport } from './routes/webhooks'
+import { Route as SyslogRouteImport } from './routes/syslog'
 import { Route as StatusRouteImport } from './routes/status'
+import { Route as SnmpRouteImport } from './routes/snmp'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as DesignRouteImport } from './routes/design'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as DashboardWorkspacesRouteImport } from './routes/dashboard/workspaces'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
 import { Route as DashboardPkiRouteImport } from './routes/dashboard/pki'
 import { Route as DashboardDeploymentsRouteImport } from './routes/dashboard/deployments'
@@ -22,15 +25,36 @@ import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
 import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/$runId'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
+import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
 
 const WebhooksRoute = WebhooksRouteImport.update({
   id: '/webhooks',
   path: '/webhooks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SyslogRoute = SyslogRouteImport.update({
+  id: '/syslog',
+  path: '/syslog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StatusRoute = StatusRouteImport.update({
   id: '/status',
   path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SnmpRoute = SnmpRouteImport.update({
+  id: '/snmp',
+  path: '/snmp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignRoute = DesignRouteImport.update({
+  id: '/design',
+  path: '/design',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -46,11 +70,6 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardWorkspacesRoute = DashboardWorkspacesRouteImport.update({
-  id: '/dashboard/workspaces',
-  path: '/dashboard/workspaces',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardS3Route = DashboardS3RouteImport.update({
@@ -88,111 +107,144 @@ const DashboardDeploymentsNewRoute = DashboardDeploymentsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => DashboardDeploymentsRoute,
 } as any)
+const DashboardDeploymentsDeploymentIdIndexRoute =
+  DashboardDeploymentsDeploymentIdIndexRouteImport.update({
+    id: '/$deploymentId/',
+    path: '/$deploymentId/',
+    getParentRoute: () => DashboardDeploymentsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/design': typeof DesignRoute
+  '/notifications': typeof NotificationsRoute
+  '/snmp': typeof SnmpRoute
   '/status': typeof StatusRoute
+  '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/deployments': typeof DashboardDeploymentsRouteWithChildren
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
-  '/dashboard/workspaces': typeof DashboardWorkspacesRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/design': typeof DesignRoute
+  '/notifications': typeof NotificationsRoute
+  '/snmp': typeof SnmpRoute
   '/status': typeof StatusRoute
+  '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/deployments': typeof DashboardDeploymentsRouteWithChildren
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
-  '/dashboard/workspaces': typeof DashboardWorkspacesRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/design': typeof DesignRoute
+  '/notifications': typeof NotificationsRoute
+  '/snmp': typeof SnmpRoute
   '/status': typeof StatusRoute
+  '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/deployments': typeof DashboardDeploymentsRouteWithChildren
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
-  '/dashboard/workspaces': typeof DashboardWorkspacesRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/design'
+    | '/notifications'
+    | '/snmp'
     | '/status'
+    | '/syslog'
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/deployments'
     | '/dashboard/pki'
     | '/dashboard/s3'
-    | '/dashboard/workspaces'
     | '/admin'
     | '/dashboard'
     | '/dashboard/deployments/new'
     | '/dashboard/runs/$runId'
+    | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/design'
+    | '/notifications'
+    | '/snmp'
     | '/status'
+    | '/syslog'
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/deployments'
     | '/dashboard/pki'
     | '/dashboard/s3'
-    | '/dashboard/workspaces'
     | '/admin'
     | '/dashboard'
     | '/dashboard/deployments/new'
     | '/dashboard/runs/$runId'
+    | '/dashboard/deployments/$deploymentId'
   id:
     | '__root__'
     | '/'
+    | '/design'
+    | '/notifications'
+    | '/snmp'
     | '/status'
+    | '/syslog'
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/deployments'
     | '/dashboard/pki'
     | '/dashboard/s3'
-    | '/dashboard/workspaces'
     | '/admin/'
     | '/dashboard/'
     | '/dashboard/deployments/new'
     | '/dashboard/runs/$runId'
+    | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DesignRoute: typeof DesignRoute
+  NotificationsRoute: typeof NotificationsRoute
+  SnmpRoute: typeof SnmpRoute
   StatusRoute: typeof StatusRoute
+  SyslogRoute: typeof SyslogRoute
   WebhooksRoute: typeof WebhooksRoute
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardDeploymentsRoute: typeof DashboardDeploymentsRouteWithChildren
   DashboardPkiRoute: typeof DashboardPkiRoute
   DashboardS3Route: typeof DashboardS3Route
-  DashboardWorkspacesRoute: typeof DashboardWorkspacesRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardRunsRunIdRoute: typeof DashboardRunsRunIdRoute
@@ -207,11 +259,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WebhooksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/syslog': {
+      id: '/syslog'
+      path: '/syslog'
+      fullPath: '/syslog'
+      preLoaderRoute: typeof SyslogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/status': {
       id: '/status'
       path: '/status'
       fullPath: '/status'
       preLoaderRoute: typeof StatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/snmp': {
+      id: '/snmp'
+      path: '/snmp'
+      fullPath: '/snmp'
+      preLoaderRoute: typeof SnmpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design': {
+      id: '/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof DesignRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -233,13 +313,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/workspaces': {
-      id: '/dashboard/workspaces'
-      path: '/dashboard/workspaces'
-      fullPath: '/dashboard/workspaces'
-      preLoaderRoute: typeof DashboardWorkspacesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/s3': {
@@ -291,15 +364,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsNewRouteImport
       parentRoute: typeof DashboardDeploymentsRoute
     }
+    '/dashboard/deployments/$deploymentId/': {
+      id: '/dashboard/deployments/$deploymentId/'
+      path: '/$deploymentId'
+      fullPath: '/dashboard/deployments/$deploymentId'
+      preLoaderRoute: typeof DashboardDeploymentsDeploymentIdIndexRouteImport
+      parentRoute: typeof DashboardDeploymentsRoute
+    }
   }
 }
 
 interface DashboardDeploymentsRouteChildren {
   DashboardDeploymentsNewRoute: typeof DashboardDeploymentsNewRoute
+  DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 
 const DashboardDeploymentsRouteChildren: DashboardDeploymentsRouteChildren = {
   DashboardDeploymentsNewRoute: DashboardDeploymentsNewRoute,
+  DashboardDeploymentsDeploymentIdIndexRoute:
+    DashboardDeploymentsDeploymentIdIndexRoute,
 }
 
 const DashboardDeploymentsRouteWithChildren =
@@ -307,14 +390,17 @@ const DashboardDeploymentsRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DesignRoute: DesignRoute,
+  NotificationsRoute: NotificationsRoute,
+  SnmpRoute: SnmpRoute,
   StatusRoute: StatusRoute,
+  SyslogRoute: SyslogRoute,
   WebhooksRoute: WebhooksRoute,
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   DashboardDeploymentsRoute: DashboardDeploymentsRouteWithChildren,
   DashboardPkiRoute: DashboardPkiRoute,
   DashboardS3Route: DashboardS3Route,
-  DashboardWorkspacesRoute: DashboardWorkspacesRoute,
   AdminIndexRoute: AdminIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardRunsRunIdRoute: DashboardRunsRunIdRoute,

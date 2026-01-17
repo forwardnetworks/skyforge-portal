@@ -1,10 +1,28 @@
-import { createRootRouteWithContext, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createRootRouteWithContext, Link, Outlet, useRouterState, type ErrorComponentProps } from "@tanstack/react-router";
 import { useQuery, type QueryClient } from "@tanstack/react-query";
+import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { buildLoginUrl, getSession, logout } from "../lib/skyforge-api";
 import { SideNav } from "../components/side-nav";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CommandMenu } from "../components/command-menu";
+import { ChevronLeft, ChevronRight, Search, Menu } from "lucide-react";
 import { cn } from "../lib/utils";
+import { queryKeys } from "../lib/query-keys";
+import { Toaster } from "../components/ui/sonner";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { ThemeProvider } from "../components/theme-provider";
+import { ModeToggle } from "../components/mode-toggle";
+import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "../components/ui/breadcrumb";
+import { GlobalSpinner } from "../components/global-spinner";
 
 export type RouterContext = {
   queryClient: QueryClient;
@@ -12,6 +30,7 @@ export type RouterContext = {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
+  errorComponent: RootError,
   notFoundComponent: NotFound
 });
 
@@ -19,9 +38,10 @@ function RootLayout() {
   const location = useRouterState({ select: (s) => s.location });
   const [loggingOut, setLoggingOut] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const session = useQuery({
-    queryKey: ["session"],
+    queryKey: queryKeys.session(),
     queryFn: getSession,
     retry: false,
     staleTime: 30_000
@@ -35,33 +55,76 @@ function RootLayout() {
   const loginHref = useMemo(() => buildLoginUrl(next), [next]);
 
   useEffect(() => {
-    const protectedPrefixes = ["/dashboard", "/admin", "/webhooks"];
+    const protectedPrefixes = ["/dashboard", "/admin", "/webhooks", "/syslog", "/snmp", "/notifications"];
     if (!protectedPrefixes.some((p) => location.pathname.startsWith(p))) return;
     if (session.isLoading) return;
     if (session.data?.authenticated) return;
     window.location.href = loginHref;
   }, [location.pathname, loginHref, session.data?.authenticated, session.isLoading]);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   const who = session.data?.displayName || session.data?.username || "";
   const isAdmin = !!session.data?.isAdmin;
 
-  return (
-    <div className="min-h-full">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Skyforge Automation Platform</div>
-            <div className="text-lg font-semibold">Skyforge</div>
+    return (
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <div className="min-h-full">
+          <GlobalSpinner />
+          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="lg:hidden">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[240px] p-0">
+                  <div className="px-2 py-6">
+                    <SideNav collapsed={false} isAdmin={isAdmin} />
+                  </div>
+                </SheetContent>
+              </Sheet>
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">Skyforge Platform</div>
+                <div className="text-lg font-bold tracking-tight">Skyforge</div>
+              </div>
+            </div>
+            
+            <Button
+              variant="outline"
+              className="hidden md:flex h-9 w-64 items-center justify-start px-3 text-sm text-muted-foreground font-normal"
+              onClick={() => {
+                const event = new KeyboardEvent("keydown", {
+                  key: "k",
+                  metaKey: true,
+                  bubbles: true
+                });
+                document.dispatchEvent(event);
+              }}
+            >
+              <Search className="mr-2 h-4 w-4" />
+              <span>Search...</span>
+              <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </Button>
           </div>
-          <nav className="flex flex-wrap items-center gap-3 text-sm">
-            <Link to="/dashboard/deployments" className="text-zinc-200 hover:text-white">
+
+          <nav className="flex items-center gap-4 text-sm">
+            <Link to="/dashboard/deployments" className="hidden sm:inline-block text-muted-foreground hover:text-foreground transition-colors">
               Dashboard
             </Link>
-            <Link to="/status" className="text-zinc-200 hover:text-white">
+            <Link to="/status" className="hidden sm:inline-block text-muted-foreground hover:text-foreground transition-colors">
               Status
             </Link>
             <a
-              className="text-zinc-200 hover:text-white"
+              className="hidden sm:inline-block text-muted-foreground hover:text-foreground transition-colors"
               href="/git/skyforge/skyforge/issues/new"
               target="_blank"
               rel="noreferrer"
@@ -69,12 +132,16 @@ function RootLayout() {
               File an issue
             </a>
             <div className="mx-2 hidden h-4 w-px bg-border sm:block" />
+            <ModeToggle />
             {session.data?.authenticated ? (
-              <>
-                <span className="text-xs text-muted-foreground">Signed in as</span>
-                <span className="text-xs text-foreground">{who}</span>
-                <button
-                  className="rounded-md border bg-background px-2 py-1 text-xs text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              <div className="flex items-center gap-3">
+                <div className="hidden md:flex flex-col items-end">
+                  <span className="text-[10px] text-muted-foreground uppercase leading-none">Signed in as</span>
+                  <span className="text-xs font-medium leading-none mt-1">{who}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
                   disabled={loggingOut}
                   onClick={async () => {
                     try {
@@ -87,12 +154,12 @@ function RootLayout() {
                   }}
                 >
                   {loggingOut ? "…" : "Logout"}
-                </button>
-              </>
+                </Button>
+              </div>
             ) : (
-              <a className="rounded-md border bg-background px-2 py-1 text-xs text-foreground hover:bg-accent" href={loginHref}>
-                Login
-              </a>
+              <Button variant="outline" size="sm" asChild>
+                <a href={loginHref}>Login</a>
+              </Button>
             )}
           </nav>
         </div>
@@ -111,8 +178,8 @@ function RootLayout() {
             </div>
             <button
               className={cn(
-                "absolute -right-3 top-4 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground",
-                "hover:bg-accent"
+                "absolute -right-3 top-4 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-sm",
+                "hover:bg-accent hover:text-accent-foreground transition-colors"
               )}
               onClick={() => setNavCollapsed((v) => !v)}
               aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
@@ -121,37 +188,104 @@ function RootLayout() {
             </button>
           </div>
         </aside>
-        <main className="flex-1 px-4 py-6">
+        <main className="flex-1 px-4 py-6 w-full overflow-hidden">
+          <div className="mb-6">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                </BreadcrumbItem>
+                {location.pathname.split("/").filter(Boolean).map((segment, index, array) => {
+                  const path = `/${array.slice(0, index + 1).join("/")}`;
+                  const isLast = index === array.length - 1;
+                  return (
+                    <React.Fragment key={path}>
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        {isLast ? (
+                          <BreadcrumbPage className="capitalize">{segment}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink href={path} className="capitalize">
+                            {segment}
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                    </React.Fragment>
+                  );
+                })}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
           <Outlet />
         </main>
       </div>
-    </div>
+      <CommandMenu />
+      <Toaster />
+      </div>
+    </ThemeProvider>
   );
 }
 
 function NotFound() {
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="text-lg font-semibold">Page not found</div>
-        <div className="mt-1 text-sm text-zinc-400">
-          This route hasn’t been migrated yet (or the URL is incorrect).
-        </div>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            to="/dashboard/deployments"
-            className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500 hover:text-white"
+    <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4 text-center">
+      <Card variant="glass" className="max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl">Page not found</CardTitle>
+          <CardDescription>
+            This route hasn’t been migrated yet (or the URL is incorrect).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap justify-center gap-3">
+          <Button variant="default" asChild>
+            <Link to="/dashboard/deployments">Go to dashboard</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/status">Platform status</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function RootError(props: ErrorComponentProps) {
+  const message =
+    props.error instanceof Error ? props.error.message : typeof props.error === "string" ? props.error : "Unknown error";
+
+  return (
+    <div className="space-y-6">
+      <Card variant="danger">
+        <CardHeader>
+          <CardTitle>Application error</CardTitle>
+          <CardDescription className="text-red-200/80">{message}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          <Button 
+            variant="outline" 
+            className="border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-100"
+            onClick={() => props.reset()}
           >
-            Go to dashboard
-          </Link>
-          <Link
-            to="/status"
-            className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 hover:border-zinc-600 hover:text-white"
-          >
-            Platform status
-          </Link>
-        </div>
-      </div>
+            Try again
+          </Button>
+          <Button variant="secondary" asChild>
+            <Link to="/dashboard/deployments">Go to dashboard</Link>
+          </Button>
+        </CardContent>
+      </Card>
+      
+      {props.error instanceof Error && props.error.stack && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Error Stack Trace</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="overflow-auto whitespace-pre-wrap text-xs text-muted-foreground p-4 rounded-md bg-muted">
+              {props.error.stack}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

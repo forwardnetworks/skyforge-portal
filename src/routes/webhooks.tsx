@@ -1,66 +1,79 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Inbox } from "lucide-react";
 import { listWebhookEvents } from "../lib/skyforge-api";
 import { queryKeys } from "../lib/query-keys";
+import { useWebhookEvents } from "../lib/webhook-events";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Skeleton } from "../components/ui/skeleton";
+import { EmptyState } from "../components/ui/empty-state";
 
 export const Route = createFileRoute("/webhooks")({
   component: WebhooksPage
 });
 
 function WebhooksPage() {
+  useWebhookEvents(true, "200");
   const events = useQuery({
     queryKey: queryKeys.webhookEvents("200"),
     queryFn: () => listWebhookEvents({ limit: "200" }),
-    staleTime: 5_000
+    staleTime: Infinity
   });
 
   const list = events.data?.events ?? [];
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="text-lg font-semibold">Webhook inbox</div>
-        <div className="mt-1 text-sm text-zinc-400">Recent webhook events routed to your user.</div>
-      </div>
+    <div className="space-y-6 p-6">
+      <Card variant="glass">
+        <CardHeader>
+          <CardTitle>Webhook inbox</CardTitle>
+          <CardDescription>Recent webhook events routed to your user.</CardDescription>
+        </CardHeader>
+      </Card>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        {events.isLoading ? <div className="text-sm text-zinc-300">Loading…</div> : null}
-        {events.isError ? <div className="text-sm text-red-300">Failed to load webhook events.</div> : null}
-
-        {!events.isLoading && !events.isError ? (
-          <div className="overflow-x-auto rounded-lg border border-zinc-800">
-            <table className="min-w-full divide-y divide-zinc-800 text-sm">
-              <thead className="bg-zinc-950/70">
-                <tr>
-                  <th className="px-3 py-2 text-left font-medium text-zinc-300">Time</th>
-                  <th className="px-3 py-2 text-left font-medium text-zinc-300">Source</th>
-                  <th className="px-3 py-2 text-left font-medium text-zinc-300">Event</th>
-                  <th className="px-3 py-2 text-left font-medium text-zinc-300">ID</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800">
+      <Card>
+        <CardContent className="p-0">
+          {events.isLoading ? (
+            <div className="p-6 space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : events.isError ? (
+            <div className="p-8 text-center text-destructive">Failed to load webhook events.</div>
+          ) : list.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title="No webhook events"
+              description="No webhook events have been received yet."
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[180px]">Time</TableHead>
+                  <TableHead className="w-[140px]">Source</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead className="w-[100px] text-right">ID</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {list.map((e) => (
-                  <tr key={String(e.id)}>
-                    <td className="px-3 py-2 text-zinc-300">{e.receivedAt ?? ""}</td>
-                    <td className="px-3 py-2 text-zinc-300">{e.sourceIp ?? ""}</td>
-                    <td className="px-3 py-2 text-zinc-100">
+                  <TableRow key={String(e.id)}>
+                    <TableCell className="text-muted-foreground whitespace-nowrap text-xs">{e.receivedAt ?? ""}</TableCell>
+                    <TableCell>{e.sourceIp ?? ""}</TableCell>
+                    <TableCell className="font-medium text-sm">
                       {e.method} {e.path}
-                    </td>
-                    <td className="px-3 py-2 font-mono text-xs text-zinc-400">{String(e.id)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground text-right">{String(e.id)}</TableCell>
+                  </TableRow>
                 ))}
-                {list.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-3 text-sm text-zinc-400" colSpan={4}>
-                      No webhook events.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-      </div>
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

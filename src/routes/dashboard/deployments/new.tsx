@@ -1,6 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Info } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { toast } from "sonner";
 import {
   createWorkspaceDeployment,
   getWorkspaces,
@@ -15,18 +20,48 @@ import {
   type WorkspaceTemplatesResponse
 } from "../../../lib/skyforge-api";
 import { queryKeys } from "../../../lib/query-keys";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
+import { Input } from "../../../components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../../../components/ui/form";
+
+const deploymentsSearchSchema = z.object({
+  workspace: z.string().optional().catch(""),
+});
 
 export const Route = createFileRoute("/dashboard/deployments/new")({
+  validateSearch: (search) => deploymentsSearchSchema.parse(search),
   component: CreateDeploymentPage
 });
 
 type DeploymentKind = "netlab" | "labpp" | "containerlab" | "clabernetes" | "terraform";
-
 type TemplateSource = "workspace" | "blueprints" | "external";
+
+const formSchema = z.object({
+  workspaceId: z.string().min(1, "Workspace is required"),
+  name: z.string().min(1, "Deployment name is required").max(100),
+  kind: z.enum(["netlab", "labpp", "containerlab", "clabernetes", "terraform"]),
+  source: z.enum(["workspace", "blueprints", "external"]),
+  templateRepoId: z.string().optional(),
+  template: z.string().min(1, "Template is required"),
+  eveServer: z.string().optional(),
+  netlabServer: z.string().optional(),
+});
 
 function CreateDeploymentPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { workspace } = Route.useSearch();
 
   const workspacesQ = useQuery({
     queryKey: queryKeys.workspaces(),
@@ -35,21 +70,50 @@ function CreateDeploymentPage() {
   });
   const workspaces = (workspacesQ.data?.workspaces ?? []) as SkyforgeWorkspace[];
 
-  const [workspaceId, setWorkspaceId] = useState<string>("");
-  const selectedWorkspaceId = useMemo(() => {
-    if (workspaceId && workspaces.some((w) => w.id === workspaceId)) return workspaceId;
-    return workspaces[0]?.id ?? "";
-  }, [workspaceId, workspaces]);
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      workspaceId: workspace || "",
+      name: "",
+      kind: "netlab",
+      source: "blueprints",
+      templateRepoId: "",
+      template: "",
+      eveServer: "",
+      netlabServer: "",
+    },
+  });
+
+  const { watch, setValue } = form;
+  const watchWorkspaceId = watch("workspaceId");
+  const watchKind = watch("kind");
+  const watchSource = watch("source");
+  const watchTemplateRepoId = watch("templateRepoId");
+  const watchTemplate = watch("template");
+
+  // Sync workspaceId when workspaces load if not already set or passed via URL
+  useEffect(() => {
+    if (!watchWorkspaceId && workspaces.length > 0) {
+      setValue("workspaceId", workspaces[0].id);
+    }
+  }, [watchWorkspaceId, workspaces, setValue]);
+
+  // Auto-generate name when template or kind changes
+  useEffect(() => {
+    const base = (watchTemplate || watchKind).split("/").pop() || watchKind;
+    const ts = new Date()
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\..+/, "")
+      .slice(0, 15);
+    const generated = `${base}-${ts}`;
+    setValue("name", generated);
+  }, [watchTemplate, watchKind, setValue]);
 
   const selectedWorkspace = useMemo(
-    () => workspaces.find((w) => w.id === selectedWorkspaceId) ?? null,
-    [selectedWorkspaceId, workspaces]
+    () => workspaces.find((w) => w.id === watchWorkspaceId) ?? null,
+    [watchWorkspaceId, workspaces]
   );
-
-  const [kind, setKind] = useState<DeploymentKind>("netlab");
-  const [source, setSource] = useState<TemplateSource>("blueprints");
-  const [templateRepoId, setTemplateRepoId] = useState<string>("");
-  const [template, setTemplate] = useState<string>("");
 
   const eveServersQ = useQuery({
     queryKey: queryKeys.eveServers(),
@@ -62,39 +126,36 @@ function CreateDeploymentPage() {
     staleTime: 30_000
   });
 
-  const [eveServer, setEveServer] = useState<string>("");
-  const [netlabServer, setNetlabServer] = useState<string>("");
-
   const effectiveSource: TemplateSource = useMemo(() => {
-    if (kind === "netlab") return source === "workspace" ? "workspace" : "blueprints";
-    if (kind === "labpp") return source === "workspace" ? "workspace" : "blueprints";
-    if (kind === "containerlab" || kind === "clabernetes") return source;
+    if (watchKind === "netlab") return watchSource === "workspace" ? "workspace" : "blueprints";
+    if (watchKind === "labpp") return watchSource === "workspace" ? "workspace" : "blueprints";
+    if (watchKind === "containerlab" || watchKind === "clabernetes") return watchSource;
     return "workspace";
-  }, [kind, source]);
+  }, [watchKind, watchSource]);
 
   const templatesQ = useQuery<WorkspaceTemplatesResponse>({
     queryKey: queryKeys.workspaceTemplates(
-      selectedWorkspaceId,
-      kind,
+      watchWorkspaceId,
+      watchKind,
       effectiveSource,
-      templateRepoId || undefined,
+      watchTemplateRepoId || undefined,
       undefined
     ),
-    enabled: !!selectedWorkspaceId,
+    enabled: !!watchWorkspaceId,
     queryFn: async () => {
       const query: { source?: string; repo?: string } = { source: effectiveSource };
-      if (effectiveSource === "external" && templateRepoId) query.repo = templateRepoId;
+      if (effectiveSource === "external" && watchTemplateRepoId) query.repo = watchTemplateRepoId;
 
-      switch (kind) {
+      switch (watchKind) {
         case "netlab":
-          return getWorkspaceNetlabTemplates(selectedWorkspaceId, query);
+          return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
         case "labpp":
-          return getWorkspaceLabppTemplates(selectedWorkspaceId, query);
+          return getWorkspaceLabppTemplates(watchWorkspaceId, query);
         case "containerlab":
         case "clabernetes":
-          return getWorkspaceContainerlabTemplates(selectedWorkspaceId, query);
+          return getWorkspaceContainerlabTemplates(watchWorkspaceId, query);
         default:
-          return getWorkspaceNetlabTemplates(selectedWorkspaceId, query);
+          return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
       }
     },
     staleTime: 10_000
@@ -102,246 +163,365 @@ function CreateDeploymentPage() {
 
   const templates = templatesQ.data?.templates ?? [];
 
-  const deploymentName = useMemo(() => {
-    const base = (template || kind).split("/").pop() || kind;
-    const ts = new Date()
-      .toISOString()
-      .replace(/[-:]/g, "")
-      .replace(/\..+/, "")
-      .slice(0, 15);
-    return `${base}-${ts}`;
-  }, [template, kind]);
-
   const externalRepos = ((selectedWorkspace?.externalTemplateRepos ?? []) as ExternalTemplateRepo[]).filter(
     (r) => !!r && typeof r.id === "string" && typeof r.repo === "string"
   );
   const externalAllowed = !!selectedWorkspace?.allowExternalTemplateRepos && externalRepos.length > 0;
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedWorkspaceId) throw new Error("workspace is required");
-      if (!template) throw new Error("template is required");
-
+    mutationFn: async (values: z.infer<typeof formSchema>) => {
       const config: Record<string, unknown> = {
-        template
+        template: values.template
       };
 
-      if (kind === "netlab" || kind === "containerlab") {
-        const v = (netlabServer || selectedWorkspace?.netlabServer || "").trim();
+      if (values.kind === "netlab" || values.kind === "containerlab") {
+        const v = (values.netlabServer || selectedWorkspace?.netlabServer || "").trim();
         if (!v) throw new Error("netlab server is required");
         config.netlabServer = v;
         config.templateSource = effectiveSource;
-        if (effectiveSource === "external" && templateRepoId) config.templateRepo = templateRepoId;
+        if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
         if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
       }
 
-      if (kind === "labpp") {
-        const v = (eveServer || selectedWorkspace?.eveServer || "").trim();
+      if (values.kind === "labpp") {
+        const v = (values.eveServer || selectedWorkspace?.eveServer || "").trim();
         if (!v) throw new Error("EVE server is required");
         config.eveServer = v;
       }
 
-      if (kind === "clabernetes") {
+      if (values.kind === "clabernetes") {
         config.templateSource = effectiveSource;
-        if (effectiveSource === "external" && templateRepoId) config.templateRepo = templateRepoId;
+        if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
         if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
       }
 
       const body: CreateWorkspaceDeploymentRequest = {
-        name: deploymentName,
-        type: kind,
+        name: values.name,
+        type: values.kind,
         config: config as any
       };
-      return createWorkspaceDeployment(selectedWorkspaceId, body);
+      return createWorkspaceDeployment(values.workspaceId, body);
     },
-    onSuccess: async () => {
+    onSuccess: async (_, variables) => {
+      toast.success("Deployment created successfully", {
+        description: `${variables.name} is now queued for provisioning.`
+      });
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
-      await navigate({ to: "/dashboard/deployments" });
+      await navigate({ to: "/dashboard/deployments", search: { workspace: variables.workspaceId } });
+    },
+    onError: (error) => {
+      toast.error("Failed to create deployment", {
+        description: (error as Error).message
+      });
     }
   });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    mutation.mutate(values);
+  }
 
   const eveOptions = eveServersQ.data?.servers ?? [];
   const netlabOptions = netlabServersQ.data?.servers ?? [];
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-lg font-semibold">Create deployment</div>
-            <div className="mt-1 text-sm text-zinc-400">Dropdown-only create flow (TanStack portal).</div>
+    <div className="space-y-6 p-6">
+      <Card variant="glass">
+        <CardHeader>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Create deployment</CardTitle>
+              <CardDescription>Configure and launch a new infrastructure deployment.</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => navigate({ to: "/dashboard/deployments", search: { workspace: watchWorkspaceId } })}
+            >
+              Cancel
+            </Button>
           </div>
-          <button
-            className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 hover:border-zinc-600 hover:text-white"
-            onClick={() => navigate({ to: "/dashboard/deployments" })}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
+        </CardHeader>
+      </Card>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Workspace">
-            <select
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2 py-2 text-sm text-zinc-100"
-              value={selectedWorkspaceId}
-              onChange={(e) => setWorkspaceId(e.target.value)}
-              disabled={workspaces.length === 0}
-            >
-              {workspaces.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} ({w.slug})
-                </option>
-              ))}
-            </select>
-          </Field>
+      <Card>
+        <CardContent className="pt-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <div className="grid gap-6 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="workspaceId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Workspace</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select workspace" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {workspaces.map((w) => (
+                            <SelectItem key={w.id} value={w.id}>
+                              {w.name} ({w.slug})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <Field label="Provider">
-            <select
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2 py-2 text-sm text-zinc-100"
-              value={kind}
-              onChange={(e) => {
-                setKind(e.target.value as DeploymentKind);
-                setTemplate("");
-              }}
-            >
-              <option value="netlab">Netlab</option>
-              <option value="labpp">LabPP</option>
-              <option value="containerlab">Containerlab</option>
-              <option value="clabernetes">Clabernetes</option>
-            </select>
-          </Field>
+                <FormField
+                  control={form.control}
+                  name="kind"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Provider</FormLabel>
+                      <Select 
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          form.setValue("template", "");
+                        }} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select provider" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="netlab">Netlab</SelectItem>
+                          <SelectItem value="labpp">LabPP</SelectItem>
+                          <SelectItem value="containerlab">Containerlab</SelectItem>
+                          <SelectItem value="clabernetes">Clabernetes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <Field label="Template source">
-            <select
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2 py-2 text-sm text-zinc-100"
-              value={effectiveSource}
-              onChange={(e) => {
-                setSource(e.target.value as TemplateSource);
-                setTemplateRepoId("");
-                setTemplate("");
-              }}
-            >
-              <option value="workspace">Workspace repo</option>
-              <option value="blueprints">Blueprints</option>
-              <option value="external" disabled={!externalAllowed || (kind !== "containerlab" && kind !== "clabernetes")}>
-                External repo
-              </option>
-            </select>
-            {!externalAllowed && (kind === "containerlab" || kind === "clabernetes") ? (
-              <div className="mt-1 text-xs text-zinc-500">External repos disabled or not configured for this workspace.</div>
-            ) : null}
-          </Field>
+                <FormField
+                  control={form.control}
+                  name="source"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        Template source
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Git repository or URL containing deployment templates</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </FormLabel>
+                      <Select 
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          form.setValue("templateRepoId", "");
+                          form.setValue("template", "");
+                        }} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select source" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="workspace">Workspace repo</SelectItem>
+                          <SelectItem value="blueprints">Blueprints</SelectItem>
+                          <SelectItem 
+                            value="external" 
+                            disabled={!externalAllowed || (watchKind !== "containerlab" && watchKind !== "clabernetes")}
+                          >
+                            External repo
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {!externalAllowed && (watchKind === "containerlab" || watchKind === "clabernetes") && (
+                        <FormDescription>External repos disabled or not configured for this workspace.</FormDescription>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <Field label="External repo" hidden={effectiveSource !== "external"}>
-            <select
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2 py-2 text-sm text-zinc-100"
-              value={templateRepoId}
-              onChange={(e) => {
-                setTemplateRepoId(e.target.value);
-                setTemplate("");
-              }}
-            >
-              <option value="">Select repo…</option>
-              {externalRepos.map((r: ExternalTemplateRepo) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} ({r.repo})
-                </option>
-              ))}
-            </select>
-          </Field>
+                {effectiveSource === "external" && (
+                  <FormField
+                    control={form.control}
+                    name="templateRepoId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>External repo</FormLabel>
+                        <Select 
+                          onValueChange={(val) => {
+                            field.onChange(val);
+                            form.setValue("template", "");
+                          }} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select repo…" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {externalRepos.map((r: ExternalTemplateRepo) => (
+                              <SelectItem key={r.id} value={r.id}>
+                                {r.name} ({r.repo})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
-          <Field label="Netlab server" hidden={kind !== "netlab" && kind !== "containerlab"}>
-            <select
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2 py-2 text-sm text-zinc-100"
-              value={netlabServer || selectedWorkspace?.netlabServer || ""}
-              onChange={(e) => setNetlabServer(e.target.value)}
-            >
-              <option value="">Select server…</option>
-              {netlabOptions.map((s) => (
-                <option key={s.name} value={s.name}>
-                  {s.name} ({s.sshHost})
-                </option>
-              ))}
-            </select>
-            {netlabServersQ.isLoading ? <div className="mt-1 text-xs text-zinc-500">Loading servers…</div> : null}
-          </Field>
+                {(watchKind === "netlab" || watchKind === "containerlab") && (
+                  <FormField
+                    control={form.control}
+                    name="netlabServer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Netlab server</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value || selectedWorkspace?.netlabServer || ""}
+                          value={field.value || selectedWorkspace?.netlabServer || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select server…" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {netlabOptions.map((s) => (
+                              <SelectItem key={s.name} value={s.name}>
+                                {s.name} ({s.sshHost})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {netlabServersQ.isLoading && <FormDescription>Loading servers…</FormDescription>}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
-          <Field label="EVE server" hidden={kind !== "labpp"}>
-            <select
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2 py-2 text-sm text-zinc-100"
-              value={eveServer || selectedWorkspace?.eveServer || ""}
-              onChange={(e) => setEveServer(e.target.value)}
-            >
-              <option value="">Select server…</option>
-              {eveOptions.map((s) => (
-                <option key={s.name} value={s.name}>
-                  {s.name} ({s.apiUrl})
-                </option>
-              ))}
-            </select>
-            {eveServersQ.isLoading ? <div className="mt-1 text-xs text-zinc-500">Loading servers…</div> : null}
-          </Field>
+                {watchKind === "labpp" && (
+                  <FormField
+                    control={form.control}
+                    name="eveServer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>EVE server</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value || selectedWorkspace?.eveServer || ""}
+                          value={field.value || selectedWorkspace?.eveServer || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select server…" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {eveOptions.map((s) => (
+                              <SelectItem key={s.name} value={s.name}>
+                                {s.name} ({s.apiUrl})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {eveServersQ.isLoading && <FormDescription>Loading servers…</FormDescription>}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
-          <Field label="Template">
-            <select
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2 py-2 text-sm text-zinc-100"
-              value={template}
-              onChange={(e) => setTemplate(e.target.value)}
-              disabled={templatesQ.isLoading || templates.length === 0}
-            >
-              <option value="">{templatesQ.isLoading ? "Loading…" : templates.length ? "Select template…" : "No templates"}</option>
-              {templates.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            {templatesQ.isError ? <div className="mt-1 text-xs text-red-300">Failed to load templates.</div> : null}
-          </Field>
+                <FormField
+                  control={form.control}
+                  name="template"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Template</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                        disabled={templatesQ.isLoading || templates.length === 0}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={templatesQ.isLoading ? "Loading…" : templates.length ? "Select template…" : "No templates"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {templates.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {templatesQ.isError && <div className="text-xs text-destructive">Failed to load templates.</div>}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <Field label="Deployment name">
-            <select className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2 py-2 text-sm text-zinc-100" value={deploymentName} disabled>
-              <option value={deploymentName}>{deploymentName}</option>
-            </select>
-            <div className="mt-1 text-xs text-zinc-500">Auto-generated from the selected template.</div>
-          </Field>
-        </div>
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Deployment name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="My Deployment"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>Custom name for this specific deployment instance.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-        {mutation.isError ? (
-          <div className="mt-4 rounded-lg border border-red-900/40 bg-red-950/30 p-3 text-sm text-red-200">
-            {(mutation.error as Error)?.message || "Create failed."}
-          </div>
-        ) : null}
+              {mutation.isError && (
+                <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive border border-destructive/20">
+                  {(mutation.error as Error)?.message || "Create failed."}
+                </div>
+              )}
 
-        <div className="mt-5 flex gap-3">
-          <button
-            className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={mutation.isPending || !selectedWorkspaceId || !template}
-            onClick={() => mutation.mutate()}
-          >
-            {mutation.isPending ? "Creating…" : "Create"}
-          </button>
-          <button
-            className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 hover:border-zinc-600 hover:text-white"
-            onClick={() => navigate({ to: "/dashboard/deployments" })}
-            disabled={mutation.isPending}
-          >
-            Back
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Field(props: { label: string; hidden?: boolean; children: React.ReactNode }) {
-  if (props.hidden) return null;
-  return (
-    <div>
-      <div className="mb-1 text-xs font-medium text-zinc-400">{props.label}</div>
-      {props.children}
+              <div className="flex gap-3">
+                <Button type="submit" disabled={mutation.isPending}>
+                  {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {mutation.isPending ? "Creating…" : "Create Deployment"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => navigate({ to: "/dashboard/deployments", search: { workspace: watchWorkspaceId } })}
+                  disabled={mutation.isPending}
+                >
+                  Back
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -709,23 +709,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/internal/workspaces-export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ExportWorkspaces returns workspace and user state for internal tooling. */
-        get: operations["GET:skyforge.ExportWorkspaces"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/labs/running": {
         parameters: {
             query?: never;
@@ -1339,6 +1322,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/snmp/traps/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SnmpTrapEventsStream streams SNMP trap inbox events as Server-Sent Events (SSE).
+         * @description Query params: - limit=1..1000 (default 200)
+         */
+        get: operations["GET:skyforge.SnmpTrapEventsStream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/snmp/traps/token": {
         parameters: {
             query?: never;
@@ -1388,6 +1391,26 @@ export interface paths {
          * @description By default it returns only events mapped to the current user via \`sf\_syslog\_routes\`. Admins can request unassigned events to help claim sources.
          */
         get: operations["GET:skyforge.ListSyslogEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/syslog/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SyslogEventsStream streams syslog inbox events as Server-Sent Events (SSE).
+         * @description Query params: - limit=1..1000 (default 200)
+         */
+        get: operations["GET:skyforge.SyslogEventsStream"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1500,6 +1523,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/webhooks/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * WebhookEventsStream streams the webhook inbox as Server-Sent Events (SSE).
+         * @description It emits "snapshot" events (JSON payload) whenever new webhook events are ingested for the authenticated user.
+         *
+         *     Query params: - limit=1..1000 (default 200)
+         */
+        get: operations["GET:skyforge.WebhookEventsStream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/webhooks/token": {
         parameters: {
             query?: never;
@@ -1549,6 +1594,26 @@ export interface paths {
         put?: never;
         /** CreateWorkspace provisions a new Skyforge workspace. */
         post: operations["POST:skyforge.CreateWorkspace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * WorkspacesEvents streams the workspace list as Server-Sent Events (SSE).
+         * @description Query params: - all=true (admin only; default false)
+         */
+        get: operations["GET:skyforge.WorkspacesEvents"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1847,7 +1912,7 @@ export interface paths {
         /**
          * DownloadLabppDataSourcesCSV returns the generated LabPP `data_sources.csv` for a
          *     deployment.
-         * @description The CSV is created by the LabPP runner and stored on the platform-data volume; Skyforge serves it back to the user as a base64 payload for easy browser download.
+         * @description The CSV is created by the LabPP runner and stored in Skyforge object storage; Skyforge serves it back to the user as a base64 payload for easy browser download (legacy file-backed paths are still supported).
          */
         get: operations["GET:skyforge.DownloadLabppDataSourcesCSV"];
         put?: never;
@@ -2660,7 +2725,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["POST:skyforge.CronCloudCredentialChecks"];
+        post: operations["POST:worker.CronCloudCredentialChecks"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2692,14 +2757,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["POST:skyforge.CronWorkspaceSync"];
+        post: operations["POST:worker.CronWorkspaceSync"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/internal/tasks/reconcile": {
+    "/internal/maintenance/run": {
         parameters: {
             query?: never;
             header?: never;
@@ -2709,17 +2774,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ReconcileQueuedTasks republishes queue events for tasks stuck in the "queued"
-         *     state.
+         * InternalRunMaintenance executes a maintenance job by kind.
+         * @description This is intended for in-cluster use by the \`worker\` service.
          */
-        post: operations["POST:skyforge.ReconcileQueuedTasks"];
+        post: operations["POST:skyforge.InternalRunMaintenance"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/internal/tasks/reconcile-running": {
+    "/internal/tasks/dispatch": {
         parameters: {
             query?: never;
             header?: never;
@@ -2729,10 +2794,33 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ReconcileRunningTasks finds long-running tasks that appear stuck and marks them
-         *     failed.
+         * InternalDispatchTask executes the task logic for an already-started task.
+         * @description The worker is responsible for queue ordering, status transitions, and enqueueing subsequent tasks. This endpoint only performs the task-specific side effects and appends logs/events.
          */
-        post: operations["POST:skyforge.ReconcileRunningTasks"];
+        post: operations["POST:skyforge.InternalDispatchTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/tasks/notify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * InternalNotifyTaskStatus performs best-effort side effects for a task status
+         *     transition:
+         * @description \- create user notifications - update deployment status fields - trigger pg\_notify updates so SSE streams refresh quickly
+         *
+         *     Task status updates in sf\_tasks are handled by the worker.
+         */
+        post: operations["POST:skyforge.InternalNotifyTaskStatus"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2753,6 +2841,46 @@ export interface paths {
          * @description This is used to detect whether any worker pods are alive when tasks are queued.
          */
         post: operations["POST:worker.CronWorkerHeartbeat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/worker/tasks/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CronReconcileQueuedTasks republishes queue events for tasks stuck in the
+         *     "queued" state.
+         */
+        post: operations["POST:worker.CronReconcileQueuedTasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/worker/tasks/reconcile-running": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CronReconcileRunningTasks finds long-running tasks that appear stuck and marks
+         *     them failed.
+         */
+        post: operations["POST:worker.CronReconcileRunningTasks"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2890,6 +3018,27 @@ export interface paths {
          * @description This is designed for an unauthenticated landing page and must not leak user/workspace identifiers.
          */
         get: operations["GET:skyforge.StatusSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/status/summary/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * StatusSummaryEvents streams the platform status summary as Server-Sent Events
+         *     (SSE).
+         * @description This endpoint is public and intended to remove portal-side polling on the status page.
+         */
+        get: operations["GET:skyforge.StatusSummaryEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3427,6 +3576,11 @@ export interface components {
             /** Format: int64 */
             resourceCount: number;
         };
+        /**
+         * SkyforgeWorkspace is the user-facing workspace object stored in Postgres and
+         *     returned by the API.
+         * @description NOTE: This type must live in the service package (not a type alias to an internal package) to satisfy Encore's API schema rules.
+         */
         "skyforge.SkyforgeWorkspace": {
             allowCustomEveServers: boolean;
             allowCustomNetlabServers: boolean;
@@ -4715,34 +4869,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.ExportWorkspaces": {
-        parameters: {
-            query?: never;
-            header: {
-                "x-skyforge-internal-token": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        stateStore: string;
-                        timestamp: string;
-                        users: string[];
-                        workspaces: components["schemas"]["skyforge.SkyforgeWorkspace"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "GET:skyforge.GetLabsRunning": {
         parameters: {
             query?: {
@@ -5743,6 +5869,25 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.SnmpTrapEventsStream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetSnmpTrapToken": {
         parameters: {
             query?: never;
@@ -5821,6 +5966,25 @@ export interface operations {
                         events: components["schemas"]["skyforge.SyslogEvent"][];
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.SyslogEventsStream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -6046,6 +6210,25 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.WebhookEventsStream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetWebhookToken": {
         parameters: {
             query?: never;
@@ -6205,6 +6388,25 @@ export interface operations {
                         viewers: string[];
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.WorkspacesEvents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -8810,7 +9012,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.CronCloudCredentialChecks": {
+    "POST:worker.CronCloudCredentialChecks": {
         parameters: {
             query?: never;
             header?: never;
@@ -8848,7 +9050,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.CronWorkspaceSync": {
+    "POST:worker.CronWorkspaceSync": {
         parameters: {
             query?: never;
             header?: never;
@@ -8867,14 +9069,20 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.ReconcileQueuedTasks": {
+    "POST:skyforge.InternalRunMaintenance": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    kind: string;
+                };
+            };
+        };
         responses: {
             /** @description Success response */
             200: {
@@ -8886,14 +9094,49 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.ReconcileRunningTasks": {
+    "POST:skyforge.InternalDispatchTask": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    taskId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.InternalNotifyTaskStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    error: string;
+                    status: string;
+                    /** Format: int64 */
+                    taskId: number;
+                };
+            };
+        };
         responses: {
             /** @description Success response */
             200: {
@@ -8906,6 +9149,44 @@ export interface operations {
         };
     };
     "POST:worker.CronWorkerHeartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:worker.CronReconcileQueuedTasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:worker.CronReconcileRunningTasks": {
         parameters: {
             query?: never;
             header?: never;
@@ -9131,6 +9412,25 @@ export interface operations {
                         workspacesTotal: number;
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.StatusSummaryEvents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };

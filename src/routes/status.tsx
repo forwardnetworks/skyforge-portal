@@ -1,48 +1,392 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getPlatformHealth } from "../lib/skyforge-api";
+import { getStatusSummary } from "../lib/skyforge-api";
+import { queryKeys } from "../lib/query-keys";
+import { useStatusSummaryEvents } from "../lib/status-events";
+import {
+  BentoGrid,
+  BentoItem,
+  BentoStatCard,
+  BentoWelcomeCard,
+} from "../components/ui/bento-grid";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Skeleton } from "../components/ui/skeleton";
+import {
+  Activity,
+  CheckCircle2,
+  Cloud,
+  Database,
+  FileCode2,
+  GitBranch,
+  Network,
+  Shield,
+  Sparkles,
+  Workflow,
+  Zap,
+} from "lucide-react";
+import { cn } from "../lib/utils";
 
 export const Route = createFileRoute("/status")({
-  component: StatusPage
+  component: StatusPage,
 });
 
 function StatusPage() {
-  const health = useQuery({
-    queryKey: ["platformHealth"],
-    queryFn: getPlatformHealth,
-    refetchInterval: 15_000
+  useStatusSummaryEvents(true);
+
+  const summary = useQuery({
+    queryKey: queryKeys.statusSummary(),
+    queryFn: getStatusSummary,
+    staleTime: Infinity,
   });
 
+  const statusData = summary.data;
+  const checks = statusData?.checks ?? [];
+  const downChecks = checks.filter((c) => c.status !== "up" && c.status !== "ok");
+
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="text-lg font-semibold">Platform status</div>
-        <div className="mt-1 text-sm text-zinc-400">Backed by `/data/platform-health.json`</div>
+    <div className="space-y-8 p-6">
+      {/* Premium Bento Grid Dashboard */}
+      <BentoGrid className="gap-4">
+        {/* Welcome Card */}
+        <BentoWelcomeCard
+          subtitle="Here's what's happening with your infrastructure today."
+        />
+
+        {/* Status Stats */}
+        {summary.isLoading ? (
+          <>
+            <BentoItem className="h-32"><Skeleton className="h-full w-full" /></BentoItem>
+            <BentoItem className="h-32"><Skeleton className="h-full w-full" /></BentoItem>
+            <BentoItem className="h-32"><Skeleton className="h-full w-full" /></BentoItem>
+          </>
+        ) : (
+          <>
+            <BentoStatCard
+              title="Services Up"
+              value={statusData?.up ?? 0}
+              gradient="green"
+              icon={<CheckCircle2 className="w-5 h-5" />}
+              trend={statusData ? { value: 100, direction: "up" } : undefined}
+            />
+
+            <BentoStatCard
+              title="Services Down"
+              value={statusData?.down ?? 0}
+              gradient={statusData?.down ? "orange" : "blue"}
+              icon={<Activity className="w-5 h-5" />}
+            />
+
+            {/* Live Activity Indicator */}
+            <BentoItem gradient="purple" className="relative overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Platform Status
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  <span className="text-xs text-muted-foreground">Live</span>
+                </div>
+              </div>
+              <div className="flex items-end gap-4">
+                <div>
+                  <span
+                    className={cn(
+                      "text-3xl font-bold",
+                      statusData?.status === "ok"
+                        ? "text-emerald-500"
+                        : statusData?.status === "degraded"
+                          ? "text-amber-500"
+                          : "text-muted-foreground"
+                    )}
+                  >
+                    {(statusData?.status ?? "checking").toUpperCase()}
+                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {statusData?.timestamp
+                      ? `Updated ${new Date(statusData.timestamp).toLocaleString()}`
+                      : "Checking..."}
+                  </p>
+                </div>
+              </div>
+            </BentoItem>
+          </>
+        )}
+      </BentoGrid>
+
+      {/* Info Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card variant="glass">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-orange-500" />
+              Skyforge at a Glance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-3">
+            <p>
+              Skyforge coordinates lab + cloud tooling into repeatable,
+              auditable workflows for platform teams.
+            </p>
+            <ul className="list-disc pl-4 space-y-1">
+              <li>
+                Teams can still run tools manually; Skyforge standardizes the
+                "happy path".
+              </li>
+              <li>
+                Enables consistent lab delivery across on-prem and cloud
+                environments.
+              </li>
+              <li>
+                Creates shared context for collaboration, troubleshooting, and
+                handoffs.
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card variant="glass">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileCode2 className="w-4 h-4 text-blue-500" />
+              What You Can Do Here
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p className="text-primary hover:underline cursor-pointer">
+              → Open the dashboard
+            </p>
+            <p className="text-primary hover:underline cursor-pointer">
+              → Manage workspaces
+            </p>
+            <p className="text-primary hover:underline cursor-pointer">
+              → Browse blueprints & labs
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">
+              Status is refreshed automatically via Server-Sent Events.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card variant="glass">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Workflow className="w-4 h-4 text-purple-500" />
+              How Workflows Run
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>
+              Skyforge connects source control, automation, and lab capacity
+              into one delivery loop.
+            </p>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>Choose a blueprint (Git).</li>
+              <li>Run deployments (native task engine).</li>
+              <li>Validate on lab servers (BYOS + In-Cluster).</li>
+              <li>Store artifacts + state (Skyforge storage).</li>
+            </ol>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        {health.isLoading ? (
-          <div className="text-sm text-zinc-300">Loading…</div>
-        ) : health.isError || !health.data ? (
-          <div className="text-sm text-red-300">{(health.error as Error).message}</div>
-        ) : (
-          <div className="space-y-3">
-            <div className="text-sm text-zinc-300">
-              Generated: <span className="text-zinc-200">{health.data.generatedAt ?? "unknown"}</span>
-            </div>
-            <div className="divide-y divide-zinc-800 rounded-lg border border-zinc-800">
-              {(health.data.checks ?? []).map((c, idx) => (
-                <div key={c.id ?? `${idx}`} className="flex items-start justify-between gap-4 p-3">
-                  <div>
-                    <div className="text-sm font-medium text-zinc-100">{c.name ?? c.id ?? "check"}</div>
-                    {c.message ? <div className="text-xs text-zinc-400">{c.message}</div> : null}
+      {/* Platform Health */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary" />
+            Platform Health
+          </h2>
+          {statusData?.timestamp && (
+            <Badge variant="secondary" className="text-xs">
+              {new Date(statusData.timestamp).toLocaleTimeString()}
+            </Badge>
+          )}
+        </div>
+
+        <BentoGrid className="gap-4">
+          {summary.isLoading ? (
+            <>
+              <BentoItem gradient="blue" className="md:col-span-2"><Skeleton className="h-24 w-full" /></BentoItem>
+              <BentoItem gradient="green"><Skeleton className="h-24 w-full" /></BentoItem>
+              <BentoItem gradient="purple"><Skeleton className="h-24 w-full" /></BentoItem>
+            </>
+          ) : summary.isError ? (
+            <BentoItem gradient="red" className="md:col-span-4">
+              <div className="text-destructive">
+                Error loading status: {(summary.error as Error).message}
+              </div>
+            </BentoItem>
+          ) : (
+            <>
+              {/* Main Status Card */}
+              <BentoItem
+                gradient="blue"
+                className="md:col-span-2 relative overflow-hidden"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    <h3 className="text-base font-semibold">
+                      Platform Status
+                    </h3>
                   </div>
-                  <div className="text-xs text-zinc-300">{c.status ?? "unknown"}</div>
+                  {statusData?.status === "ok" && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                  )}
                 </div>
-              ))}
+                <div
+                  className={cn(
+                    "text-4xl font-bold mb-2",
+                    statusData?.status === "ok"
+                      ? "text-emerald-500"
+                      : statusData?.status === "degraded"
+                        ? "text-amber-500"
+                        : "text-muted-foreground"
+                  )}
+                >
+                  {(statusData?.status ?? "unknown").toUpperCase()}
+                </div>
+                <div className="text-sm text-muted-foreground/80">
+                  {statusData?.up ?? 0} of {checks.length} services operational
+                </div>
+                {downChecks.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {downChecks.slice(0, 5).map((check) => (
+                      <Badge
+                        key={check.name}
+                        variant="outline"
+                        className="text-xs border-red-500/50"
+                      >
+                        {check.name}
+                      </Badge>
+                    ))}
+                    {downChecks.length > 5 && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs border-red-500/50"
+                      >
+                        +{downChecks.length - 5} more
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </BentoItem>
+
+              {/* Workspaces */}
+              <BentoStatCard
+                title="Active Workspaces"
+                value={statusData?.workspacesTotal ?? 0}
+                gradient="green"
+                icon={<Cloud className="w-5 h-5" />}
+                subtitle="BYOS + In-Cluster"
+              />
+
+              {/* Services */}
+              <BentoStatCard
+                title="Platform Services"
+                value={statusData?.up ?? 0}
+                gradient="purple"
+                icon={<Database className="w-5 h-5" />}
+                subtitle="Running smoothly"
+              />
+            </>
+          )}
+        </BentoGrid>
+      </div>
+
+      {/* Key Capabilities */}
+      <div className="space-y-4 pb-12">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          What Skyforge Delivers
+        </h2>
+
+        <BentoGrid className="gap-4">
+          {/* Infrastructure as Code */}
+          <BentoItem gradient="blue" className="hover-lift">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <FileCode2 className="w-5 h-5 text-blue-500" />
+              </div>
+              <h3 className="font-semibold">Infrastructure as Code</h3>
             </div>
-          </div>
-        )}
+            <p className="text-sm text-muted-foreground/80">
+              Bring your own servers or deploy in-cluster. Define topology in
+              Git, deploy with one command, tear down cleanly.
+            </p>
+          </BentoItem>
+
+          {/* Lab Automation */}
+          <BentoItem gradient="green" className="hover-lift">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <Workflow className="w-5 h-5 text-emerald-500" />
+              </div>
+              <h3 className="font-semibold">Lab Automation</h3>
+            </div>
+            <p className="text-sm text-muted-foreground/80">
+              Repeatable network validation and demos. No manual clicking
+              through tools—just push to Git and let workflows run.
+            </p>
+          </BentoItem>
+
+          {/* Collaboration */}
+          <BentoItem gradient="purple" className="hover-lift">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <Network className="w-5 h-5 text-purple-500" />
+              </div>
+              <h3 className="font-semibold">Team Collaboration</h3>
+            </div>
+            <p className="text-sm text-muted-foreground/80">
+              Shared blueprints, consistent environments, audit trails. Onboard
+              new team members in hours, not weeks.
+            </p>
+          </BentoItem>
+
+          {/* Integrated Toolchain */}
+          <BentoItem gradient="orange" className="hover-lift md:col-span-2">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <Zap className="w-5 h-5 text-orange-500" />
+              </div>
+              <h3 className="font-semibold">Integrated Toolchain</h3>
+            </div>
+            <p className="text-sm text-muted-foreground/80 mb-3">
+              Source control, automation database, API workspace, and browser
+              IDE—all connected. No more context switching between disconnected
+              tools.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="text-xs">
+                Git
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                NetBox
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Nautobot
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Coder
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                API Testing
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Webhooks
+              </Badge>
+            </div>
+          </BentoItem>
+        </BentoGrid>
       </div>
     </div>
   );

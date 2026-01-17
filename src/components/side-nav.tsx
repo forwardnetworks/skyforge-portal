@@ -1,15 +1,18 @@
 import {
   BookOpen,
+  Bell,
   Cloud,
   FolderKanban,
   GitBranch,
+  Inbox,
   KeyRound,
   LayoutDashboard,
   Network,
   PanelTop,
   Server,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  Webhook
 } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "../lib/utils";
@@ -26,9 +29,12 @@ type NavItem = {
 const items: NavItem[] = [
   { label: "Home", href: "/", icon: LayoutDashboard },
   { label: "Dashboard", href: "/dashboard/deployments", icon: FolderKanban },
-  { label: "Workspaces", href: "/dashboard/workspaces", icon: Settings },
   { label: "S3", href: "/dashboard/s3", icon: Server },
   { label: "PKI", href: "/dashboard/pki", icon: KeyRound },
+  { label: "Notifications", href: "/notifications", icon: Bell },
+  { label: "Webhooks", href: "/webhooks", icon: Webhook },
+  { label: "Syslog", href: "/syslog", icon: Inbox },
+  { label: "SNMP", href: "/snmp", icon: ShieldCheck },
   { label: "Git", href: "/git/", icon: GitBranch, external: true },
   { label: "DNS", href: `${SKYFORGE_API}/dns/sso?next=/dns/`, icon: Network, external: true },
   { label: "Coder", href: "/coder", icon: Cloud, external: true },

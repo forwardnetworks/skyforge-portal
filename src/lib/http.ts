@@ -23,14 +23,23 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   if (resp.status === 401 || resp.status === 403) {
-    const next = window.location.pathname + (window.location.search ?? "");
-    window.location.href = buildLoginUrl(next);
+    // Only redirect if we are in a browser environment
+    if (typeof window !== "undefined") {
+      const currentPath = window.location.pathname + (window.location.search ?? "");
+      // Prevent redirect loops if already on a login-related page (though unlikely with this logic)
+      window.location.href = buildLoginUrl(currentPath);
+    }
     throw new ApiError("unauthorized", resp.status);
   }
 
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
     throw new ApiError(`request failed (${resp.status})`, resp.status, text);
+  }
+
+  // Handle 204 No Content
+  if (resp.status === 204) {
+    return {} as T;
   }
 
   return (await resp.json()) as T;

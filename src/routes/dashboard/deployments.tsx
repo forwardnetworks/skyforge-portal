@@ -1,10 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Plus, Trash2, StopCircle, Play, Inbox, MoreHorizontal } from "lucide-react";
+import { z } from "zod";
 import { useDashboardEvents } from "../../lib/dashboard-events";
+import { toast } from "sonner";
 import {
   buildLoginUrl,
   destroyDeployment,
+  getWorkspaces,
   startDeployment,
   stopDeployment,
   type DashboardSnapshot,
@@ -13,13 +17,57 @@ import {
   type WorkspaceDeployment
 } from "../../lib/skyforge-api";
 import { queryKeys } from "../../lib/query-keys";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button, buttonVariants } from "../../components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import { TableWrapper } from "../../components/ui/table-wrapper";
+import { Badge } from "../../components/ui/badge";
+import { Skeleton } from "../../components/ui/skeleton";
+import { EmptyState } from "../../components/ui/empty-state";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "../../components/ui/dropdown-menu";
+
+// Search Schema
+const deploymentsSearchSchema = z.object({
+  workspace: z.string().optional().catch(""),
+});
 
 export const Route = createFileRoute("/dashboard/deployments")({
+  validateSearch: (search) => deploymentsSearchSchema.parse(search),
+  loaderDeps: ({ search: { workspace } }) => ({ workspace }),
+  loader: async ({ context: { queryClient } }) => {
+    // Prefetch workspaces to ensure selector is ready
+    await queryClient.ensureQueryData({
+      queryKey: queryKeys.workspaces(),
+      queryFn: getWorkspaces,
+      staleTime: 30_000,
+    });
+    // We don't prefetch dashboard snapshot here because it's SSE-driven and might be heavy/ephemeral,
+    // but ensuring workspaces improves the initial paint.
+  },
   component: DeploymentsPage
 });
 
 function DeploymentsPage() {
   useDashboardEvents(true);
+  const navigate = useNavigate();
+  const { workspace } = Route.useSearch();
 
   const snap = useQuery<DashboardSnapshot | null>({
     queryKey: queryKeys.dashboardSnapshot(),
@@ -29,13 +77,24 @@ function DeploymentsPage() {
     staleTime: Infinity
   });
 
-  const [workspaceId, setWorkspaceId] = useState<string>("");
+  const [destroyTarget, setDestroyTarget] = useState<WorkspaceDeployment | null>(null);
+  const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 
   const workspaces = snap.data?.workspaces ?? [];
+  
+  // Use URL param if available, otherwise fallback to first workspace
   const selectedWorkspaceId = useMemo(() => {
-    if (workspaceId && workspaces.some((w: SkyforgeWorkspace) => w.id === workspaceId)) return workspaceId;
+    if (workspace && workspaces.some((w: SkyforgeWorkspace) => w.id === workspace)) return workspace;
     return workspaces[0]?.id ?? "";
-  }, [workspaceId, workspaces]);
+  }, [workspace, workspaces]);
+
+  // Sync internal state selection to URL
+  const handleWorkspaceChange = (newId: string) => {
+    navigate({
+      search: { workspace: newId } as any,
+      replace: true,
+    });
+  };
 
   const deployments = useMemo(() => {
     const all = (snap.data?.deployments ?? []) as WorkspaceDeployment[];
@@ -50,173 +109,287 @@ function DeploymentsPage() {
 
   const loginHref = buildLoginUrl(window.location.pathname + window.location.search);
 
+  const handleStart = async (d: WorkspaceDeployment) => {
+    try {
+      await startDeployment(d.workspaceId, d.id);
+      toast.success("Deployment starting", {
+        description: `${d.name} is queued to start.`
+      });
+    } catch (e) {
+      toast.error("Failed to start deployment", {
+        description: (e as Error).message
+      });
+    }
+  };
+
+  const handleStop = async (d: WorkspaceDeployment) => {
+    try {
+      await stopDeployment(d.workspaceId, d.id);
+      toast.success("Deployment stopping", {
+        description: `${d.name} is queued to stop.`
+      });
+    } catch (e) {
+      toast.error("Failed to stop deployment", {
+        description: (e as Error).message
+      });
+    }
+  };
+
+  const handleDestroy = async () => {
+    if (!destroyTarget) return;
+    try {
+      await destroyDeployment(destroyTarget.workspaceId, destroyTarget.id);
+      toast.success("Deployment destroyed", {
+        description: `${destroyTarget.name} has been deleted.`
+      });
+      setDestroyDialogOpen(false);
+      setDestroyTarget(null);
+    } catch (e) {
+      toast.error("Failed to destroy deployment", {
+        description: (e as Error).message
+      });
+    }
+  };
+
+  const formatDeploymentType = (typ: string) => {
+    switch (typ) {
+      case "netlab":
+        return "Netlab (BYOS)";
+      case "netlab-c9s":
+        return "Netlab";
+      case "containerlab":
+        return "Containerlab (BYOS)";
+      case "clabernetes":
+        return "Containerlab";
+      case "labpp":
+        return "LabPP";
+      default:
+        return typ;
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-lg font-semibold">Dashboard</div>
-            <div className="mt-1 text-sm text-zinc-400">Live updates via SSE (`/api/dashboard/events`).</div>
+    <div className="space-y-6 p-6">
+      <Card variant="glass">
+        <CardHeader>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Dashboard</CardTitle>
+              <CardDescription>Live updates via SSE (`/api/dashboard/events`).</CardDescription>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                to="/dashboard/deployments/new"
+                search={{ workspace: selectedWorkspaceId }}
+                className={buttonVariants({ variant: "default", size: "sm" })}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create deployment
+              </Link>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Workspace:</span>
+                <Select
+                  value={selectedWorkspaceId}
+                  onValueChange={handleWorkspaceChange}
+                  disabled={workspaces.length === 0}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select workspace" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workspaces.map((w: SkyforgeWorkspace) => (
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.name} ({w.slug})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
+        </CardHeader>
+      </Card>
 
-          <div className="flex items-center gap-2">
-            <Link
-              className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500 hover:text-white"
-              to="/dashboard/deployments/new"
+      {!snap.data && (
+        <Card className="border-dashed">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center space-y-4 py-8">
+              <Skeleton className="h-4 w-64" />
+              <div className="text-center text-muted-foreground">
+                Waiting for dashboard stream…
+                <div className="mt-2 text-xs">
+                  If you are logged out,{" "}
+                  <a className="text-primary underline hover:no-underline" href={loginHref}>
+                    login
+                  </a>
+                  .
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Deployments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!snap.data ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : deployments.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title="No deployments"
+              description="You haven't created any deployments in this workspace yet."
+              action={{
+                label: "Create deployment",
+                onClick: () => navigate({ to: "/dashboard/deployments/new", search: { workspace: selectedWorkspaceId } })
+              }}
+            />
+          ) : (
+            <TableWrapper className="border-none">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Queue</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {deployments.map((d: WorkspaceDeployment) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium text-foreground">{d.name}</TableCell>
+                      <TableCell>{formatDeploymentType(d.type)}</TableCell>
+                      <TableCell>
+                         <StatusBadge status={d.activeTaskStatus ?? d.lastStatus ?? "unknown"} />
+                      </TableCell>
+                      <TableCell>{d.queueDepth ?? 0}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleStart(d)} disabled={!!d.activeTaskId}>
+                              <Play className="mr-2 h-4 w-4" />
+                              Start
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStop(d)} disabled={!d.activeTaskId}>
+                              <StopCircle className="mr-2 h-4 w-4" />
+                              Stop
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setDestroyTarget(d);
+                                setDestroyDialogOpen(true);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                              disabled={!!d.activeTaskId}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Destroy
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableWrapper>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent runs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!snap.data ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : runs.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">No runs found.</div>
+          ) : (
+            <TableWrapper className="border-none">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {runs.slice(0, 30).map((r) => (
+                    <TableRow key={String(r.id ?? Math.random())}>
+                      <TableCell>
+                        <Link
+                          className="text-primary underline hover:no-underline font-mono text-xs"
+                          to="/dashboard/runs/$runId"
+                          params={{ runId: String(r.id ?? "") }}
+                        >
+                          {String(r.id ?? "")}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{String(r.type ?? "")}</TableCell>
+                      <TableCell>
+                         <StatusBadge status={String(r.status ?? "")} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{String(r.createdAt ?? "")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableWrapper>
+          )}
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={destroyDialogOpen} onOpenChange={setDestroyDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the deployment "{destroyTarget?.name}" and remove all associated infrastructure. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDestroy}
+              className={buttonVariants({ variant: "destructive" })}
             >
-              Create deployment
-            </Link>
-            <label className="text-xs text-zinc-400">Workspace</label>
-            <select
-              className="rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100"
-              value={selectedWorkspaceId}
-              onChange={(e) => setWorkspaceId(e.target.value)}
-              disabled={workspaces.length === 0}
-            >
-              {workspaces.map((w: SkyforgeWorkspace) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} ({w.slug})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {!snap.data ? (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-          <div className="text-sm text-zinc-300">Waiting for dashboard stream…</div>
-          <div className="mt-3 text-xs text-zinc-400">
-            If you are logged out,{" "}
-            <a className="text-sky-300 underline" href={loginHref}>
-              login
-            </a>
-            .
-          </div>
-        </div>
-      ) : null}
-
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="text-base font-semibold">Deployments</div>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-zinc-800">
-          <table className="min-w-full divide-y divide-zinc-800 text-sm">
-            <thead className="bg-zinc-950/70">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">Name</th>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">Type</th>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">Status</th>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">Queue</th>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {deployments.map((d: WorkspaceDeployment) => (
-                <tr key={d.id}>
-                  <td className="px-3 py-2 text-zinc-100">{d.name}</td>
-                  <td className="px-3 py-2 text-zinc-300">{d.type}</td>
-                  <td className="px-3 py-2 text-zinc-300">
-                    {d.activeTaskStatus ?? d.lastStatus ?? "unknown"}
-                  </td>
-                  <td className="px-3 py-2 text-zinc-300">{d.queueDepth ?? 0}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-2">
-                      <ActionButton
-                        label="Start"
-                        onClick={() => startDeployment(d.workspaceId, d.id)}
-                        disabled={!!d.activeTaskId}
-                      />
-                      <ActionButton
-                        label="Stop"
-                        onClick={() => stopDeployment(d.workspaceId, d.id)}
-                        disabled={!d.activeTaskId}
-                      />
-                      <ActionButton
-                        label="Destroy"
-                        onClick={() => destroyDeployment(d.workspaceId, d.id)}
-                        disabled={!!d.activeTaskId}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {deployments.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-3 text-sm text-zinc-400" colSpan={5}>
-                    No deployments found.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="text-base font-semibold">Recent runs</div>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-zinc-800">
-          <table className="min-w-full divide-y divide-zinc-800 text-sm">
-            <thead className="bg-zinc-950/70">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">ID</th>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">Type</th>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">Status</th>
-                <th className="px-3 py-2 text-left font-medium text-zinc-300">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {runs.slice(0, 30).map((r) => (
-                <tr key={String(r.id ?? Math.random())}>
-                  <td className="px-3 py-2 text-zinc-100">
-                    <Link
-                      className="text-sky-300 underline"
-                      to="/dashboard/runs/$runId"
-                      params={{ runId: String(r.id ?? "") }}
-                    >
-                      {String(r.id ?? "")}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2 text-zinc-300">{String(r.type ?? "")}</td>
-                  <td className="px-3 py-2 text-zinc-300">{String(r.status ?? "")}</td>
-                  <td className="px-3 py-2 text-zinc-400">{String(r.createdAt ?? "")}</td>
-                </tr>
-              ))}
-              {runs.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-3 text-sm text-zinc-400" colSpan={4}>
-                    No runs found.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              Destroy
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function ActionButton(props: { label: string; disabled?: boolean; onClick: () => Promise<unknown> }) {
-  const [busy, setBusy] = useState(false);
-  const disabled = props.disabled || busy;
-  return (
-    <button
-      className={[
-        "rounded-md border px-2 py-1 text-xs",
-        disabled
-          ? "cursor-not-allowed border-zinc-800 bg-zinc-950 text-zinc-600"
-          : "border-zinc-700 bg-zinc-950 text-zinc-200 hover:border-zinc-500 hover:text-white"
-      ].join(" ")}
-      disabled={disabled}
-      onClick={async () => {
-        try {
-          setBusy(true);
-          await props.onClick();
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      {busy ? "…" : props.label}
-    </button>
-  );
+function StatusBadge({ status }: { status: string }) {
+  let variant: "default" | "secondary" | "destructive" | "outline" = "secondary";
+  const s = status.toLowerCase();
+  if (["running", "active", "healthy", "succeeded", "success"].includes(s)) variant = "default";
+  if (["failed", "error", "stopped", "crashloopbackoff"].includes(s)) variant = "destructive";
+  
+  return <Badge variant={variant} className="capitalize">{status}</Badge>;
 }

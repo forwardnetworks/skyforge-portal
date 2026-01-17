@@ -109,7 +109,7 @@
       <div class="nav">
         <a class="pill" href="/docs/">Docs home</a>
         <a class="pill" href="/">Skyforge home</a>
-        <a class="pill" href="/data/platform-health.json">Platform health</a>
+        <a class="pill" href="/status/summary">Platform status</a>
       </div>
     </header>
     <main>
@@ -125,7 +125,7 @@
       <section class="card">
         <h2>2) Validate the stack</h2>
         <p>Check the live status JSON:</p>
-        <pre><code>curl -k https://localhost/data/platform-health.json | head</code></pre>
+        <pre><code>curl -k https://localhost/status/summary | head</code></pre>
         <p>And verify pods:</p>
         <pre><code>kubectl -n skyforge get pods</code></pre>
       </section>

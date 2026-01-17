@@ -9,6 +9,7 @@ export type JSONMap = Record<string, JSONValue>;
 
 export type ExternalTemplateRepo = components["schemas"]["skyforge.ExternalTemplateRepo"];
 export type SkyforgeWorkspace = components["schemas"]["skyforge.SkyforgeWorkspace"];
+export type NotificationRecord = components["schemas"]["skyforge.NotificationRecord"];
 
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
 // This type reflects the fields Skyforge currently emits in the dashboard snapshot and related APIs.
@@ -72,6 +73,34 @@ export type GetWorkspacesResponse =
 
 export async function getWorkspaces(): Promise<GetWorkspacesResponse> {
   return apiFetch<GetWorkspacesResponse>("/api/workspaces");
+}
+
+export type GetUserNotificationsResponse =
+  operations["GET:skyforge.GetUserNotifications"]["responses"][200]["content"]["application/json"];
+export async function getUserNotifications(userID: string, params?: { include_read?: string; limit?: string }): Promise<GetUserNotificationsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.include_read) qs.set("include_read", params.include_read);
+  if (params?.limit) qs.set("limit", params.limit);
+  const suffix = qs.toString();
+  return apiFetch<GetUserNotificationsResponse>(`/notifications/for-user/${encodeURIComponent(userID)}${suffix ? `?${suffix}` : ""}`);
+}
+
+export type MarkAllNotificationsAsReadResponse =
+  operations["PUT:skyforge.MarkAllNotificationsAsRead"]["responses"][200]["content"]["application/json"];
+export async function markAllNotificationsAsRead(userID: string): Promise<MarkAllNotificationsAsReadResponse> {
+  return apiFetch<MarkAllNotificationsAsReadResponse>(`/notifications/for-user/${encodeURIComponent(userID)}/read-all`, { method: "PUT" });
+}
+
+export type MarkNotificationAsReadResponse =
+  operations["PUT:skyforge.MarkNotificationAsRead"]["responses"][200]["content"]["application/json"];
+export async function markNotificationAsRead(id: string): Promise<MarkNotificationAsReadResponse> {
+  return apiFetch<MarkNotificationAsReadResponse>(`/notifications/single/${encodeURIComponent(id)}/read`, { method: "PUT" });
+}
+
+export type DeleteNotificationResponse =
+  operations["DELETE:skyforge.DeleteNotification"]["responses"][200]["content"]["application/json"];
+export async function deleteNotification(id: string): Promise<DeleteNotificationResponse> {
+  return apiFetch<DeleteNotificationResponse>(`/notifications/single/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export type ListEveServersResponse =
@@ -213,6 +242,33 @@ export async function listWebhookEvents(params?: { limit?: string; before_id?: s
   return apiFetch<ListWebhookEventsResponse>(`/api/webhooks/events${suffix ? `?${suffix}` : ""}`);
 }
 
+export type ListSyslogEventsResponse =
+  operations["GET:skyforge.ListSyslogEvents"]["responses"][200]["content"]["application/json"];
+export async function listSyslogEvents(params?: {
+  limit?: string;
+  before_id?: string;
+  source_ip?: string;
+  unassigned?: string;
+}): Promise<ListSyslogEventsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.limit) qs.set("limit", params.limit);
+  if (params?.before_id) qs.set("before_id", params.before_id);
+  if (params?.source_ip) qs.set("source_ip", params.source_ip);
+  if (params?.unassigned) qs.set("unassigned", params.unassigned);
+  const suffix = qs.toString();
+  return apiFetch<ListSyslogEventsResponse>(`/api/syslog/events${suffix ? `?${suffix}` : ""}`);
+}
+
+export type ListSnmpTrapEventsResponse =
+  operations["GET:skyforge.ListSnmpTrapEvents"]["responses"][200]["content"]["application/json"];
+export async function listSnmpTrapEvents(params?: { limit?: string; before_id?: string }): Promise<ListSnmpTrapEventsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.limit) qs.set("limit", params.limit);
+  if (params?.before_id) qs.set("before_id", params.before_id);
+  const suffix = qs.toString();
+  return apiFetch<ListSnmpTrapEventsResponse>(`/api/snmp/traps/events${suffix ? `?${suffix}` : ""}`);
+}
+
 export type NotificationSettingsResponse =
   operations["GET:skyforge.GetNotificationSettings"]["responses"][200]["content"]["application/json"];
 export async function getNotificationSettings(): Promise<NotificationSettingsResponse> {
@@ -300,22 +356,7 @@ export async function destroyDeployment(workspaceId: string, deploymentId: strin
   );
 }
 
-export type PlatformHealth = {
-  generatedAt?: ISO8601;
-  checks?: Array<{
-    id?: string;
-    name?: string;
-    status?: string;
-    message?: string;
-    details?: JSONMap;
-  }>;
-};
-
-export async function getPlatformHealth(): Promise<PlatformHealth> {
-  const resp = await fetch("/data/platform-health.json", { credentials: "include" });
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => "");
-    throw new Error(`health fetch failed (${resp.status}): ${text}`);
-  }
-  return (await resp.json()) as PlatformHealth;
+export type StatusSummaryResponse = operations["GET:skyforge.StatusSummary"]["responses"][200]["content"]["application/json"];
+export async function getStatusSummary(): Promise<StatusSummaryResponse> {
+  return apiFetch<StatusSummaryResponse>("/status/summary");
 }
