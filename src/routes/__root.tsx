@@ -91,9 +91,11 @@ function RootLayout() {
                 </SheetContent>
               </Sheet>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">Skyforge Platform</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">Technical Services</div>
                 <div className="text-lg font-bold tracking-tight">Skyforge</div>
               </div>
+              <div className="h-8 w-px bg-border hidden md:block" />
+              <img src="/FN-logo.svg" alt="Forward Networks" className="h-6 w-auto hidden sm:block" />
             </div>
             
             <Button
@@ -165,29 +167,31 @@ function RootLayout() {
         </div>
       </header>
       <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-7xl">
-        <aside
-          className={cn(
-            "hidden lg:block border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-            "transition-all duration-300 ease-in-out",
-            navCollapsed ? "w-[64px]" : "w-[220px]"
-          )}
-        >
-          <div className="relative h-full">
-            <div className={cn("h-full px-4 py-4", navCollapsed && "px-2")}>
-              <SideNav collapsed={navCollapsed} isAdmin={isAdmin} />
+        {session.data?.authenticated && (
+          <aside
+            className={cn(
+              "hidden lg:block border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+              "transition-all duration-300 ease-in-out",
+              navCollapsed ? "w-[64px]" : "w-[220px]"
+            )}
+          >
+            <div className="relative h-full">
+              <div className={cn("h-full px-4 py-4", navCollapsed && "px-2")}>
+                <SideNav collapsed={navCollapsed} isAdmin={isAdmin} />
+              </div>
+              <button
+                className={cn(
+                  "absolute -right-3 top-4 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-sm",
+                  "hover:bg-accent hover:text-accent-foreground transition-colors"
+                )}
+                onClick={() => setNavCollapsed((v) => !v)}
+                aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+              >
+                {navCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </button>
             </div>
-            <button
-              className={cn(
-                "absolute -right-3 top-4 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-sm",
-                "hover:bg-accent hover:text-accent-foreground transition-colors"
-              )}
-              onClick={() => setNavCollapsed((v) => !v)}
-              aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
-            >
-              {navCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </button>
-          </div>
-        </aside>
+          </aside>
+        )}
         <main className="flex-1 px-4 py-6 w-full overflow-hidden">
           <div className="mb-6">
             <Breadcrumb>
