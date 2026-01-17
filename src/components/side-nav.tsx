@@ -49,13 +49,6 @@ const items: NavItem[] = [
 export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const openExternal = (href: string) => {
-    const win = window.open(href, "_blank", "noreferrer");
-    if (!win) {
-      window.location.href = href;
-    }
-  };
-
   const isActiveHref = (href: string) => {
     if (href === "/") return pathname === "/";
     if (href.endsWith("/")) return pathname.startsWith(href);
@@ -92,12 +85,10 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
                   <a
                     key={item.href}
                     href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
                     className={baseClass}
                     title={props.collapsed ? item.label : undefined}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      openExternal(item.href);
-                    }}
                   >
                     <Icon className={iconClass} />
                     {!props.collapsed ? <span>{item.label}</span> : null}
