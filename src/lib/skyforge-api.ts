@@ -38,6 +38,7 @@ export type DashboardSnapshot = {
   workspaces: SkyforgeWorkspace[];
   deployments: WorkspaceDeployment[];
   runs: JSONMap[];
+  templatesIndexUpdatedAt?: ISO8601;
   awsSsoStatus?: {
     configured: boolean;
     connected: boolean;
@@ -129,6 +130,9 @@ export type WorkspaceTemplatesResponse = {
   branch: string;
   dir: string;
   templates: string[];
+  headSha?: string;
+  cached?: boolean;
+  updatedAt?: ISO8601;
 };
 
 export async function getWorkspaceNetlabTemplates(

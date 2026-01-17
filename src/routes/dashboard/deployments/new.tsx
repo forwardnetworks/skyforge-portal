@@ -20,6 +20,7 @@ import {
   type WorkspaceTemplatesResponse
 } from "../../../lib/skyforge-api";
 import { queryKeys } from "../../../lib/query-keys";
+import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
@@ -63,6 +64,15 @@ function CreateDeploymentPage() {
   const queryClient = useQueryClient();
   const { workspace } = Route.useSearch();
 
+  useDashboardEvents(true);
+  const dash = useQuery({
+    queryKey: queryKeys.dashboardSnapshot(),
+    queryFn: async () => null,
+    initialData: null,
+    retry: false,
+    staleTime: Infinity,
+  });
+
   const workspacesQ = useQuery({
     queryKey: queryKeys.workspaces(),
     queryFn: getWorkspaces,
@@ -90,6 +100,7 @@ function CreateDeploymentPage() {
   const watchSource = watch("source");
   const watchTemplateRepoId = watch("templateRepoId");
   const watchTemplate = watch("template");
+  const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 
   // Sync workspaceId when workspaces load if not already set or passed via URL
   useEffect(() => {
@@ -159,8 +170,14 @@ function CreateDeploymentPage() {
           return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
       }
     },
-    staleTime: 10_000
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (!templatesUpdatedAt) return;
+    void queryClient.invalidateQueries({ queryKey: ["workspaceTemplates"] });
+  }, [templatesUpdatedAt, queryClient]);
 
   const templates = templatesQ.data?.templates ?? [];
 
