@@ -44,13 +44,13 @@ export const Route = createFileRoute("/dashboard/deployments/new")({
   component: CreateDeploymentPage
 });
 
-type DeploymentKind = "netlab" | "labpp" | "containerlab" | "clabernetes" | "terraform";
+type DeploymentKind = "netlab-c9s" | "netlab" | "labpp" | "containerlab" | "clabernetes" | "terraform";
 type TemplateSource = "workspace" | "blueprints" | "external";
 
 const formSchema = z.object({
   workspaceId: z.string().min(1, "Workspace is required"),
   name: z.string().min(1, "Deployment name is required").max(100),
-  kind: z.enum(["netlab", "labpp", "containerlab", "clabernetes", "terraform"]),
+  kind: z.enum(["netlab-c9s", "netlab", "labpp", "containerlab", "clabernetes", "terraform"]),
   source: z.enum(["workspace", "blueprints", "external"]),
   templateRepoId: z.string().optional(),
   template: z.string().min(1, "Template is required"),
@@ -75,7 +75,7 @@ function CreateDeploymentPage() {
     defaultValues: {
       workspaceId: workspace || "",
       name: "",
-      kind: "netlab",
+      kind: "netlab-c9s",
       source: "blueprints",
       templateRepoId: "",
       template: "",
@@ -127,7 +127,7 @@ function CreateDeploymentPage() {
   });
 
   const effectiveSource: TemplateSource = useMemo(() => {
-    if (watchKind === "netlab") return watchSource === "workspace" ? "workspace" : "blueprints";
+    if (watchKind === "netlab" || watchKind === "netlab-c9s") return watchSource === "workspace" ? "workspace" : "blueprints";
     if (watchKind === "labpp") return watchSource === "workspace" ? "workspace" : "blueprints";
     if (watchKind === "containerlab" || watchKind === "clabernetes") return watchSource;
     return "workspace";
@@ -148,6 +148,7 @@ function CreateDeploymentPage() {
 
       switch (watchKind) {
         case "netlab":
+        case "netlab-c9s":
           return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
         case "labpp":
           return getWorkspaceLabppTemplates(watchWorkspaceId, query);
@@ -178,6 +179,12 @@ function CreateDeploymentPage() {
         const v = (values.netlabServer || selectedWorkspace?.netlabServer || "").trim();
         if (!v) throw new Error("netlab server is required");
         config.netlabServer = v;
+        config.templateSource = effectiveSource;
+        if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
+        if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
+      }
+
+      if (values.kind === "netlab-c9s") {
         config.templateSource = effectiveSource;
         if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
         if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
@@ -290,12 +297,13 @@ function CreateDeploymentPage() {
                             <SelectValue placeholder="Select provider" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="netlab">Netlab</SelectItem>
+                      <SelectContent>
+                          <SelectItem value="netlab-c9s">Netlab</SelectItem>
+                          <SelectItem value="netlab">Netlab (BYOS)</SelectItem>
                           <SelectItem value="labpp">LabPP</SelectItem>
                           <SelectItem value="containerlab">Containerlab</SelectItem>
                           <SelectItem value="clabernetes">Clabernetes</SelectItem>
-                        </SelectContent>
+                      </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>

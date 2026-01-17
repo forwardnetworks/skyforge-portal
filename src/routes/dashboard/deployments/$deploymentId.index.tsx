@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { 
   Play, 
   StopCircle, 
@@ -9,7 +9,6 @@ import {
   Terminal, 
   Network, 
   FileJson,
-  RefreshCw,
   Box
 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +17,7 @@ import {
   destroyDeployment,
   startDeployment,
   stopDeployment,
-  type DashboardSnapshot,
+  type DashboardSnapshot, type JSONMap,
   type WorkspaceDeployment
 } from "../../../lib/skyforge-api";
 import { queryKeys } from "../../../lib/query-keys";
@@ -29,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui
 import { Skeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/empty-state";
 import { TopologyViewer } from "../../../components/topology-viewer";
+import { useRunEvents, type RunLogState, type TaskLogEntry } from "../../../lib/run-events";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +62,16 @@ function DeploymentDetailPage() {
   const deployment = useMemo(() => {
     return (snap.data?.deployments ?? []).find((d: WorkspaceDeployment) => d.id === deploymentId);
   }, [snap.data?.deployments, deploymentId]);
+
+  const activeRunId = String(deployment?.activeTaskId ?? "");
+  useRunEvents(activeRunId, Boolean(activeRunId));
+  const activeLogs = useQuery({
+    queryKey: queryKeys.runLogs(activeRunId),
+    queryFn: async () => ({ cursor: 0, entries: [] }) as RunLogState,
+    retry: false,
+    staleTime: Infinity,
+    enabled: Boolean(activeRunId),
+  });
 
   if (!snap.data && !deployment) {
     return (
@@ -121,6 +131,16 @@ function DeploymentDetailPage() {
 
   const status = deployment.activeTaskStatus ?? deployment.lastStatus ?? "unknown";
   const isBusy = !!deployment.activeTaskId;
+
+  const runsForDeployment = useMemo(() => {
+    const all = (snap.data?.runs ?? []) as JSONMap[];
+    const filtered = all.filter((r) => String(r.workspaceId ?? "") === deployment.workspaceId);
+    const depRuns = filtered.filter((r) => String(r.deploymentId ?? "") === deployment.id);
+    if (depRuns.length > 0) return depRuns;
+
+    // Fallback for older snapshots that didn't include deploymentId on the run payload.
+    return filtered;
+  }, [deployment.id, deployment.workspaceId, snap.data?.runs]);
 
   return (
     <div className="space-y-6 p-6 pb-20">
@@ -183,11 +203,8 @@ function DeploymentDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Network Topology</CardTitle>
-                  <CardDescription>Live visualization of the deployment infrastructure.</CardDescription>
+                  <CardDescription>Topology viewer is a placeholder (live topology is provider-dependent).</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" className="h-8 gap-2">
-                  <RefreshCw className="h-3 w-3" /> Refresh
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -199,13 +216,66 @@ function DeploymentDetailPage() {
         <TabsContent value="logs" className="space-y-6 animate-in fade-in-50">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Audit log of tasks executed against this deployment.</CardDescription>
+              <CardTitle>Logs & Events</CardTitle>
+              <CardDescription>Live task output via SSE (`/api/runs/:id/events`).</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground border-2 border-dashed rounded-lg">
-                <Terminal className="h-10 w-10 mb-3 opacity-20" />
-                <p>Task logs and event history will appear here.</p>
+              {deployment.activeTaskId ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">Active run: {String(deployment.activeTaskId)}</div>
+                    <Link
+                      to="/dashboard/runs/$runId"
+                      params={{ runId: String(deployment.activeTaskId) }}
+                      className={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      Open run details
+                    </Link>
+                  </div>
+                  <div className="rounded-md border bg-zinc-950 p-4 font-mono text-xs text-zinc-100">
+                    <RunOutput entries={activeLogs.data?.entries ?? []} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                  <Terminal className="h-10 w-10 mb-3 opacity-20" />
+                  <p>No active run.</p>
+                  <p className="text-xs mt-1">Start/stop/destroy will queue runs that appear here.</p>
+                </div>
+              )}
+
+              <div className="mt-8 space-y-3">
+                <div className="text-sm font-medium">Recent runs</div>
+                <div className="space-y-2">
+                  {runsForDeployment.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">No runs yet.</div>
+                  ) : (
+                    runsForDeployment.slice(0, 10).map((r) => {
+                      const id = String(r.id ?? "");
+                      return (
+                        <div key={id} className="flex items-center justify-between gap-3 rounded-md border p-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs">{id}</span>
+                              <Badge variant="secondary" className="capitalize">{String(r.status ?? "")}</Badge>
+                              <span className="text-xs text-muted-foreground truncate">{String(r.tpl_alias ?? r.type ?? "")}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate mt-1">
+                              {String(r.status_text ?? r.message ?? "")}
+                            </div>
+                          </div>
+                          <Link
+                            to="/dashboard/runs/$runId"
+                            params={{ runId: id }}
+                            className={buttonVariants({ variant: "outline", size: "sm" })}
+                          >
+                            View
+                          </Link>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -254,4 +324,27 @@ function StatusBadge({ status }: { status: string }) {
   if (["failed", "error", "stopped", "crashloopbackoff"].includes(s)) variant = "destructive";
   
   return <Badge variant={variant} className="capitalize">{status}</Badge>;
+}
+
+function RunOutput(props: { entries: TaskLogEntry[] }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [props.entries.length]);
+
+  if (props.entries.length === 0) return <div className="text-zinc-500">Waiting for output…</div>;
+
+  return (
+    <div ref={containerRef} className="max-h-[65vh] overflow-auto whitespace-pre-wrap">
+      {props.entries.map((e, idx) => (
+        <div key={`${e.time}-${idx}`}>
+          <span className="text-zinc-500 select-none">{e.time ? `${e.time} ` : ""}</span>
+          <span>{e.output}</span>
+        </div>
+      ))}
+    </div>
+  );
 }

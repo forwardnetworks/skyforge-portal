@@ -30,6 +30,8 @@ const items: NavItem[] = [
   { label: "Home", href: "/", icon: LayoutDashboard },
   { label: "Dashboard", href: "/dashboard/deployments", icon: FolderKanban },
   { label: "S3", href: "/dashboard/s3", icon: Server },
+  { label: "NetBox", href: "/netbox/", icon: Network, external: true },
+  { label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
   { label: "PKI", href: "/dashboard/pki", icon: KeyRound },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Webhooks", href: "/webhooks", icon: Webhook },
@@ -49,7 +51,9 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
 
   const openExternal = (href: string) => {
     const win = window.open(href, "_blank", "noreferrer");
-    if (!win) return;
+    if (!win) {
+      window.location.href = href;
+    }
   };
 
   const isActiveHref = (href: string) => {

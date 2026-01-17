@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Plus, Trash2, StopCircle, Play, Inbox, MoreHorizontal } from "lucide-react";
 import { z } from "zod";
-import { useDashboardEvents } from "../../lib/dashboard-events";
+import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { toast } from "sonner";
 import {
   buildLoginUrl,
@@ -15,17 +15,17 @@ import {
   type JSONMap,
   type SkyforgeWorkspace,
   type WorkspaceDeployment
-} from "../../lib/skyforge-api";
-import { loginWithPopup } from "../../lib/auth-popup";
-import { queryKeys } from "../../lib/query-keys";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
-import { Button, buttonVariants } from "../../components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { TableWrapper } from "../../components/ui/table-wrapper";
-import { Badge } from "../../components/ui/badge";
-import { Skeleton } from "../../components/ui/skeleton";
-import { EmptyState } from "../../components/ui/empty-state";
+} from "../../../lib/skyforge-api";
+import { loginWithPopup } from "../../../lib/auth-popup";
+import { queryKeys } from "../../../lib/query-keys";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Button, buttonVariants } from "../../../components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { TableWrapper } from "../../../components/ui/table-wrapper";
+import { Badge } from "../../../components/ui/badge";
+import { Skeleton } from "../../../components/ui/skeleton";
+import { EmptyState } from "../../../components/ui/empty-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,21 +35,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../../components/ui/alert-dialog";
+} from "../../../components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "../../components/ui/dropdown-menu";
+} from "../../../components/ui/dropdown-menu";
 
 // Search Schema
 const deploymentsSearchSchema = z.object({
   workspace: z.string().optional().catch(""),
 });
 
-export const Route = createFileRoute("/dashboard/deployments")({
+export const Route = createFileRoute("/dashboard/deployments/")({
   validateSearch: (search) => deploymentsSearchSchema.parse(search),
   loaderDeps: ({ search: { workspace } }) => ({ workspace }),
   loader: async ({ context: { queryClient } }) => {

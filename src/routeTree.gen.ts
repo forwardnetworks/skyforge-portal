@@ -20,9 +20,9 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
 import { Route as DashboardPkiRouteImport } from './routes/dashboard/pki'
-import { Route as DashboardDeploymentsRouteImport } from './routes/dashboard/deployments'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
+import { Route as DashboardDeploymentsIndexRouteImport } from './routes/dashboard/deployments/index'
 import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/$runId'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
@@ -82,11 +82,6 @@ const DashboardPkiRoute = DashboardPkiRouteImport.update({
   path: '/dashboard/pki',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardDeploymentsRoute = DashboardDeploymentsRouteImport.update({
-  id: '/dashboard/deployments',
-  path: '/dashboard/deployments',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -97,21 +92,27 @@ const AdminGovernanceRoute = AdminGovernanceRouteImport.update({
   path: '/admin/governance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardDeploymentsIndexRoute =
+  DashboardDeploymentsIndexRouteImport.update({
+    id: '/dashboard/deployments/',
+    path: '/dashboard/deployments/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardRunsRunIdRoute = DashboardRunsRunIdRouteImport.update({
   id: '/dashboard/runs/$runId',
   path: '/dashboard/runs/$runId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardDeploymentsNewRoute = DashboardDeploymentsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => DashboardDeploymentsRoute,
+  id: '/dashboard/deployments/new',
+  path: '/dashboard/deployments/new',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardDeploymentsDeploymentIdIndexRoute =
   DashboardDeploymentsDeploymentIdIndexRouteImport.update({
-    id: '/$deploymentId/',
-    path: '/$deploymentId/',
-    getParentRoute: () => DashboardDeploymentsRoute,
+    id: '/dashboard/deployments/$deploymentId/',
+    path: '/dashboard/deployments/$deploymentId/',
+    getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -124,13 +125,13 @@ export interface FileRoutesByFullPath {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/deployments': typeof DashboardDeploymentsRouteWithChildren
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -143,13 +144,13 @@ export interface FileRoutesByTo {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/deployments': typeof DashboardDeploymentsRouteWithChildren
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesById {
@@ -163,13 +164,13 @@ export interface FileRoutesById {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/deployments': typeof DashboardDeploymentsRouteWithChildren
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/deployments/': typeof DashboardDeploymentsIndexRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -184,13 +185,13 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
-    | '/dashboard/deployments'
     | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin'
     | '/dashboard'
     | '/dashboard/deployments/new'
     | '/dashboard/runs/$runId'
+    | '/dashboard/deployments'
     | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -203,13 +204,13 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
-    | '/dashboard/deployments'
     | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin'
     | '/dashboard'
     | '/dashboard/deployments/new'
     | '/dashboard/runs/$runId'
+    | '/dashboard/deployments'
     | '/dashboard/deployments/$deploymentId'
   id:
     | '__root__'
@@ -222,13 +223,13 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
-    | '/dashboard/deployments'
     | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin/'
     | '/dashboard/'
     | '/dashboard/deployments/new'
     | '/dashboard/runs/$runId'
+    | '/dashboard/deployments/'
     | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
 }
@@ -242,12 +243,14 @@ export interface RootRouteChildren {
   WebhooksRoute: typeof WebhooksRoute
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
-  DashboardDeploymentsRoute: typeof DashboardDeploymentsRouteWithChildren
   DashboardPkiRoute: typeof DashboardPkiRoute
   DashboardS3Route: typeof DashboardS3Route
   AdminIndexRoute: typeof AdminIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardDeploymentsNewRoute: typeof DashboardDeploymentsNewRoute
   DashboardRunsRunIdRoute: typeof DashboardRunsRunIdRoute
+  DashboardDeploymentsIndexRoute: typeof DashboardDeploymentsIndexRoute
+  DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -329,13 +332,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPkiRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/deployments': {
-      id: '/dashboard/deployments'
-      path: '/dashboard/deployments'
-      fullPath: '/dashboard/deployments'
-      preLoaderRoute: typeof DashboardDeploymentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/admin/settings'
@@ -350,6 +346,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminGovernanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/deployments/': {
+      id: '/dashboard/deployments/'
+      path: '/dashboard/deployments'
+      fullPath: '/dashboard/deployments'
+      preLoaderRoute: typeof DashboardDeploymentsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/runs/$runId': {
       id: '/dashboard/runs/$runId'
       path: '/dashboard/runs/$runId'
@@ -359,34 +362,20 @@ declare module '@tanstack/react-router' {
     }
     '/dashboard/deployments/new': {
       id: '/dashboard/deployments/new'
-      path: '/new'
+      path: '/dashboard/deployments/new'
       fullPath: '/dashboard/deployments/new'
       preLoaderRoute: typeof DashboardDeploymentsNewRouteImport
-      parentRoute: typeof DashboardDeploymentsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/deployments/$deploymentId/': {
       id: '/dashboard/deployments/$deploymentId/'
-      path: '/$deploymentId'
+      path: '/dashboard/deployments/$deploymentId'
       fullPath: '/dashboard/deployments/$deploymentId'
       preLoaderRoute: typeof DashboardDeploymentsDeploymentIdIndexRouteImport
-      parentRoute: typeof DashboardDeploymentsRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface DashboardDeploymentsRouteChildren {
-  DashboardDeploymentsNewRoute: typeof DashboardDeploymentsNewRoute
-  DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
-}
-
-const DashboardDeploymentsRouteChildren: DashboardDeploymentsRouteChildren = {
-  DashboardDeploymentsNewRoute: DashboardDeploymentsNewRoute,
-  DashboardDeploymentsDeploymentIdIndexRoute:
-    DashboardDeploymentsDeploymentIdIndexRoute,
-}
-
-const DashboardDeploymentsRouteWithChildren =
-  DashboardDeploymentsRoute._addFileChildren(DashboardDeploymentsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -398,12 +387,15 @@ const rootRouteChildren: RootRouteChildren = {
   WebhooksRoute: WebhooksRoute,
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
-  DashboardDeploymentsRoute: DashboardDeploymentsRouteWithChildren,
   DashboardPkiRoute: DashboardPkiRoute,
   DashboardS3Route: DashboardS3Route,
   AdminIndexRoute: AdminIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardDeploymentsNewRoute: DashboardDeploymentsNewRoute,
   DashboardRunsRunIdRoute: DashboardRunsRunIdRoute,
+  DashboardDeploymentsIndexRoute: DashboardDeploymentsIndexRoute,
+  DashboardDeploymentsDeploymentIdIndexRoute:
+    DashboardDeploymentsDeploymentIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

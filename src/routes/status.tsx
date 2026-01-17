@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getStatusSummary } from "../lib/skyforge-api";
 import { queryKeys } from "../lib/query-keys";
@@ -157,15 +157,15 @@ function StatusPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p className="text-primary hover:underline cursor-pointer">
+            <Link className="text-primary hover:underline" to="/dashboard/deployments">
               → Open the dashboard
-            </p>
-            <p className="text-primary hover:underline cursor-pointer">
-              → Manage workspaces
-            </p>
-            <p className="text-primary hover:underline cursor-pointer">
-              → Browse blueprints & labs
-            </p>
+            </Link>
+            <Link className="text-primary hover:underline" to="/dashboard/deployments/new">
+              → Create a deployment
+            </Link>
+            <Link className="text-primary hover:underline" to="/dashboard/s3">
+              → Browse artifacts (S3)
+            </Link>
             <p className="text-xs text-muted-foreground mt-3">
               Status is refreshed automatically via Server-Sent Events.
             </p>
