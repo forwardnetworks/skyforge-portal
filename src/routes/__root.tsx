@@ -80,7 +80,7 @@ function RootLayout() {
                                 style={{
                                   backgroundImage: "linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.4)), url('/header-background.png')",
                                   backgroundSize: "cover",
-                                  backgroundPosition: "left 35%",
+                                  backgroundPosition: "left 50%",
                                   height: "120px"
                                 }}
                               >
