@@ -17,6 +17,7 @@ import {
   destroyDeployment,
   startDeployment,
   stopDeployment,
+  getDeploymentTopology,
   type DashboardSnapshot, type JSONMap,
   type WorkspaceDeployment
 } from "../../../lib/skyforge-api";
@@ -142,6 +143,14 @@ function DeploymentDetailPage() {
     return filtered;
   }, [deployment.id, deployment.workspaceId, snap.data?.runs]);
 
+  const topology = useQuery({
+    queryKey: queryKeys.deploymentTopology(deployment.workspaceId, deployment.id),
+    queryFn: async () => getDeploymentTopology(deployment.workspaceId, deployment.id),
+    enabled: deployment.type === "containerlab",
+    retry: false,
+    staleTime: 10_000
+  });
+
   return (
     <div className="space-y-6 p-6 pb-20">
       {/* Header */}
@@ -203,12 +212,16 @@ function DeploymentDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Network Topology</CardTitle>
-                  <CardDescription>Topology viewer is a placeholder (live topology is provider-dependent).</CardDescription>
+                  <CardDescription>
+                    {deployment.type === "containerlab"
+                      ? "Derived from containerlab after deploy (includes resolved mgmt IPs)."
+                      : "Topology is provider-dependent; not yet implemented for this deployment type."}
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <TopologyViewer />
+              <TopologyViewer topology={topology.data} />
             </CardContent>
           </Card>
         </TabsContent>

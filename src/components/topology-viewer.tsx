@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Server, Network, Laptop, Cloud, Download } from "lucide-react";
 import { useDownloadImage } from '@/hooks/use-download-image';
+import type { DeploymentTopology } from "@/lib/skyforge-api";
 
 // Custom Node Component
 const CustomNode = ({ data }: NodeProps) => {
@@ -55,29 +56,47 @@ const nodeTypes = {
   custom: CustomNode,
 };
 
-const initialNodes: Node[] = [
-  { id: '1', position: { x: 250, y: 0 }, data: { label: 'Internet', icon: 'cloud', status: 'running', ip: '0.0.0.0/0' }, type: 'custom' },
-  { id: '2', position: { x: 100, y: 150 }, data: { label: 'Leaf-01', icon: 'switch', status: 'running', ip: '192.168.1.11' }, type: 'custom' },
-  { id: '3', position: { x: 400, y: 150 }, data: { label: 'Leaf-02', icon: 'switch', status: 'running', ip: '192.168.1.12' }, type: 'custom' },
-  { id: '4', position: { x: 50, y: 300 }, data: { label: 'Server-A', icon: 'server', status: 'running', ip: '192.168.1.101' }, type: 'custom' },
-  { id: '5', position: { x: 200, y: 300 }, data: { label: 'Server-B', icon: 'server', status: 'stopped', ip: '192.168.1.102' }, type: 'custom' },
-  { id: '6', position: { x: 350, y: 300 }, data: { label: 'Client-1', icon: 'client', status: 'running', ip: '192.168.1.201' }, type: 'custom' },
-];
+export function TopologyViewer({ topology }: { topology?: DeploymentTopology | null }) {
+  const derived = useMemo(() => {
+    if (!topology || !Array.isArray(topology.nodes) || topology.nodes.length === 0) {
+      return { nodes: [] as Node[], edges: [] as Edge[] };
+    }
+    const gapX = 240;
+    const gapY = 160;
+    const cols = Math.max(1, Math.ceil(Math.sqrt(topology.nodes.length)));
+    const nodes: Node[] = topology.nodes.map((n, idx) => {
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const kind = String(n.kind ?? "");
+      const icon =
+        kind.includes("linux") ? "client" : kind.includes("ceos") || kind.includes("eos") ? "switch" : "server";
+      const status = String(n.status ?? "unknown");
+      return {
+        id: String(n.id),
+        position: { x: col * gapX, y: row * gapY },
+        data: { label: String(n.label ?? n.id), icon, status, ip: String(n.mgmtIp ?? "") },
+        type: "custom",
+      };
+    });
+    const edges: Edge[] = (topology.edges ?? []).map((e) => ({
+      id: String(e.id),
+      source: String(e.source),
+      target: String(e.target),
+      label: e.label ? String(e.label) : undefined,
+      animated: false,
+    }));
+    return { nodes, edges };
+  }, [topology]);
 
-const initialEdges: Edge[] = [
-  { id: 'e1-2', source: '1', target: '2', animated: true },
-  { id: 'e1-3', source: '1', target: '3', animated: true },
-  { id: 'e2-3', source: '2', target: '3', style: { strokeDasharray: '5,5' } },
-  { id: 'e2-4', source: '2', target: '4' },
-  { id: 'e2-5', source: '2', target: '5' },
-  { id: 'e3-6', source: '3', target: '6' },
-];
-
-export function TopologyViewer() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(derived.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(derived.edges);
   const ref = useRef<HTMLDivElement>(null);
   const { downloadImage } = useDownloadImage();
+
+  useEffect(() => {
+    setNodes(derived.nodes);
+    setEdges(derived.edges);
+  }, [derived.edges, derived.nodes, setEdges, setNodes]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),

@@ -32,6 +32,25 @@ export type WorkspaceDeployment = {
   queueDepth?: number;
 };
 
+export type DeploymentTopology = {
+  generatedAt: ISO8601;
+  source: string;
+  artifactKey?: string;
+  nodes: Array<{
+    id: string;
+    label: string;
+    kind?: string;
+    mgmtIp?: string;
+    status?: string;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    label?: string;
+  }>;
+};
+
 // Dashboard snapshot is delivered via SSE (`/api/dashboard/events`) and is not described in OpenAPI.
 export type DashboardSnapshot = {
   refreshedAt: ISO8601;
@@ -218,6 +237,12 @@ export async function updateWorkspaceMembers(workspaceId: string, body: UpdateWo
   return apiFetch<UpdateWorkspaceMembersResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/members`,
     { method: "PUT", body: JSON.stringify(body) }
+  );
+}
+
+export async function getDeploymentTopology(workspaceId: string, deploymentId: string): Promise<DeploymentTopology> {
+  return apiFetch<DeploymentTopology>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/topology`
   );
 }
 
