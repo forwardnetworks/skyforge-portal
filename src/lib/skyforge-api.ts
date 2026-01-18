@@ -223,8 +223,11 @@ export async function updateWorkspaceMembers(workspaceId: string, body: UpdateWo
 
 export type DeleteWorkspaceResponse =
   operations["DELETE:skyforge.DeleteWorkspace"]["responses"][200]["content"]["application/json"];
-export async function deleteWorkspace(workspaceId: string): Promise<DeleteWorkspaceResponse> {
-  return apiFetch<DeleteWorkspaceResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}`, { method: "DELETE" });
+export async function deleteWorkspace(workspaceId: string, params: { confirm: string; force?: boolean } ): Promise<DeleteWorkspaceResponse> {
+  const qs = new URLSearchParams();
+  qs.set("confirm", params.confirm);
+  if (params.force) qs.set("force", "true");
+  return apiFetch<DeleteWorkspaceResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}?${qs.toString()}`, { method: "DELETE" });
 }
 
 export type UserForwardCollectorResponse = {
@@ -240,12 +243,6 @@ export type PutUserForwardCollectorRequest = {
   baseUrl?: string;
   username?: string;
   password?: string;
-  deviceUsername?: string;
-  devicePassword?: string;
-  jumpHost?: string;
-  jumpUsername?: string;
-  jumpPrivateKey?: string;
-  jumpCert?: string;
 };
 
 export async function getUserForwardCollector(): Promise<UserForwardCollectorResponse> {

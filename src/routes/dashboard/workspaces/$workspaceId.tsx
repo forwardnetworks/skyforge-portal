@@ -46,9 +46,10 @@ function WorkspaceSettingsPage() {
   const [allowCustomEveServers, setAllowCustomEveServers] = useState(false);
   const [allowCustomNetlabServers, setAllowCustomNetlabServers] = useState(false);
   const [externalReposText, setExternalReposText] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const deleteMutation = useMutation({
-    mutationFn: async () => deleteWorkspace(workspaceId),
+    mutationFn: async () => deleteWorkspace(workspaceId, { confirm: deleteConfirm.trim() || (workspace?.slug ?? workspaceId) }),
     onSuccess: async () => {
       toast.success("Workspace deleted");
       await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
@@ -304,11 +305,20 @@ function WorkspaceSettingsPage() {
               <CardTitle>Delete workspace</CardTitle>
               <CardDescription>Deletes the workspace and backing resources. This cannot be undone.</CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center justify-between gap-4">
-              <div className="text-sm text-muted-foreground">Remove this workspace and all associated data.</div>
-              <Button variant="destructive" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate()}>
-                {deleteMutation.isPending ? "Deleting…" : "Delete workspace"}
-              </Button>
+            <CardContent className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                Type <span className="font-mono">{workspace.slug}</span> to confirm.
+              </div>
+              <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder={workspace.slug} />
+              <div className="flex justify-end">
+                <Button
+                  variant="destructive"
+                  disabled={deleteMutation.isPending || deleteConfirm.trim().toLowerCase() !== workspace.slug.toLowerCase()}
+                  onClick={() => deleteMutation.mutate()}
+                >
+                  {deleteMutation.isPending ? "Deleting…" : "Delete workspace"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

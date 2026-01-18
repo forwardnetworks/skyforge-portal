@@ -33,12 +33,6 @@ function ForwardCollectorPage() {
   const [baseUrl, setBaseUrl] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [deviceUsername, setDeviceUsername] = useState("");
-  const [devicePassword, setDevicePassword] = useState("");
-  const [jumpHost, setJumpHost] = useState("");
-  const [jumpUsername, setJumpUsername] = useState("");
-  const [jumpPrivateKey, setJumpPrivateKey] = useState("");
-  const [jumpCert, setJumpCert] = useState("");
 
   useEffect(() => {
     if (!cfg) return;
@@ -52,19 +46,12 @@ function ForwardCollectorPage() {
         baseUrl,
         username,
         password,
-        deviceUsername,
-        devicePassword,
-        jumpHost,
-        jumpUsername,
-        jumpPrivateKey,
-        jumpCert,
       };
       return putUserForwardCollector(body);
     },
     onSuccess: async () => {
-      toast.success("Forward collector configured");
+      toast.success("Collector configured");
       setPassword("");
-      setDevicePassword("");
       await queryClient.invalidateQueries({ queryKey: queryKeys.userForwardCollector() });
     },
     onError: (e) => toast.error("Failed to save Forward collector", { description: (e as Error).message }),
@@ -91,11 +78,14 @@ function ForwardCollectorPage() {
   });
 
   const authKey = (cfg?.authorizationKey ?? "").trim();
+  const tokenInstructions = authKey
+    ? `docker run --rm -e TOKEN='${authKey}' ghcr.io/forwardnetworks/skyforge-forward-collector:latest`
+    : "";
 
   return (
     <div className="space-y-6 p-6">
       <div className="border-b pb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Forward Collector</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Collector</h1>
         <p className="text-sm text-muted-foreground">
           Stores your Forward credentials and provisions a per-user collector named <span className="font-mono">skyforge-{"{user}"}</span>.
         </p>
@@ -117,6 +107,13 @@ function ForwardCollectorPage() {
               <pre className="bg-muted p-3 rounded-md overflow-auto font-mono text-xs">{authKey}</pre>
               <div className="text-xs text-muted-foreground">
                 Collector: <span className="font-mono">{cfg?.collectorUsername ?? ""}</span> ({cfg?.collectorId ?? ""})
+              </div>
+              <div className="pt-2">
+                <div className="text-xs text-muted-foreground">Run the collector (example)</div>
+                <pre className="bg-muted p-3 rounded-md overflow-auto font-mono text-xs">{tokenInstructions}</pre>
+                <div className="text-xs text-muted-foreground">
+                  The collector must be running somewhere to show <span className="font-mono">Connected</span> in Forward.
+                </div>
               </div>
             </div>
           ) : (
@@ -144,7 +141,7 @@ function ForwardCollectorPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Credentials</CardTitle>
+          <CardTitle>Forward credentials</CardTitle>
           <CardDescription>
             Used to create the collector via <span className="font-mono">POST /api/collectors</span> on your Forward instance.
           </CardDescription>
@@ -162,32 +159,6 @@ function ForwardCollectorPage() {
             <Label>Forward password</Label>
             <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" />
             <div className="text-xs text-muted-foreground">Leave blank to keep existing password.</div>
-          </div>
-
-          <div className="grid gap-2 pt-2">
-            <Label>Device CLI username (optional)</Label>
-            <Input value={deviceUsername} onChange={(e) => setDeviceUsername(e.target.value)} placeholder="admin" />
-          </div>
-          <div className="grid gap-2">
-            <Label>Device CLI password (optional)</Label>
-            <Input value={devicePassword} onChange={(e) => setDevicePassword(e.target.value)} type="password" placeholder="••••••••" />
-          </div>
-
-          <div className="grid gap-2 pt-2">
-            <Label>SSH jump host (optional)</Label>
-            <Input value={jumpHost} onChange={(e) => setJumpHost(e.target.value)} placeholder="jump.example.com:22" />
-          </div>
-          <div className="grid gap-2">
-            <Label>SSH jump username (optional)</Label>
-            <Input value={jumpUsername} onChange={(e) => setJumpUsername(e.target.value)} placeholder="ubuntu" />
-          </div>
-          <div className="grid gap-2">
-            <Label>SSH jump private key (optional)</Label>
-            <Textarea value={jumpPrivateKey} onChange={(e) => setJumpPrivateKey(e.target.value)} rows={6} placeholder="-----BEGIN OPENSSH PRIVATE KEY-----" />
-          </div>
-          <div className="grid gap-2">
-            <Label>SSH jump certificate (optional)</Label>
-            <Textarea value={jumpCert} onChange={(e) => setJumpCert(e.target.value)} rows={4} placeholder="ssh-ed25519-cert-v01@openssh.com AAAA..." />
           </div>
 
           <div className="flex justify-end">
