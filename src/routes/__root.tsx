@@ -58,7 +58,7 @@ function RootLayout() {
   const loginHref = useMemo(() => buildLoginUrl(next), [next]);
 
   const isProtectedRoute = useMemo(() => {
-    const protectedPrefixes = ["/dashboard", "/admin", "/webhooks", "/syslog", "/snmp", "/notifications"];
+    const protectedPrefixes = ["/dashboard", "/admin", "/webhooks", "/syslog", "/snmp"];
     return protectedPrefixes.some((p) => location.pathname.startsWith(p));
   }, [location.pathname]);
 
@@ -78,7 +78,8 @@ function RootLayout() {
                               <header 
                                 className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
                                 style={{
-                                  backgroundImage: "linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.4)), url('/header-background.png')",
+                                  backgroundImage:
+                                    "linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.4)), url('/assets/skyforge/header-background.png')",
                                   backgroundSize: "cover",
                                   backgroundPosition: "left 50%",
                                   height: "120px"
@@ -105,7 +106,7 @@ function RootLayout() {
                 <div className="text-lg font-bold tracking-tight">Skyforge</div>
               </div>
               <div className="h-8 w-px bg-border hidden md:block" />
-              <img src="/FN-logo.svg" alt="Forward Networks" className="h-6 w-auto hidden sm:block" />
+              <img src="/assets/skyforge/FN-logo.svg" alt="Forward Networks" className="h-6 w-auto hidden sm:block" />
             </div>
             
             <Button
@@ -130,7 +131,7 @@ function RootLayout() {
 
           <nav className="flex items-center gap-4 text-sm">
             <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-foreground">
-              <Link to="/notifications" aria-label="Notifications">
+              <Link to="/dashboard/notifications" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
               </Link>
             </Button>
