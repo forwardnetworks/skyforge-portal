@@ -352,7 +352,6 @@ function DeploymentsPage() {
                         <TableHead>Name</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Queue</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -372,7 +371,6 @@ function DeploymentsPage() {
                           <TableCell>
                              <StatusBadge status={d.activeTaskStatus ?? d.lastStatus ?? "unknown"} />
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{d.queueDepth ?? 0}</TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

@@ -45,7 +45,6 @@ function RunDetailPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Run {runId}</CardTitle>
-              <CardDescription>Live output via SSE (`/api/runs/:id/events`).</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Link className={buttonVariants({ variant: "outline", size: "sm" })} to="/dashboard/deployments">

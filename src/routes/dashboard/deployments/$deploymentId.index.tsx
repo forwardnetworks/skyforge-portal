@@ -217,7 +217,7 @@ function DeploymentDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Logs & Events</CardTitle>
-              <CardDescription>Live task output via SSE (`/api/runs/:id/events`).</CardDescription>
+              <CardDescription>Live task output.</CardDescription>
             </CardHeader>
             <CardContent>
               {deployment.activeTaskId ? (
