@@ -257,6 +257,7 @@ export async function deleteWorkspace(workspaceId: string, params: { confirm: st
 
 export type UserForwardCollectorResponse = {
   baseUrl?: string;
+  skipTlsVerify?: boolean;
   username?: string;
   collectorId?: string;
   collectorUsername?: string;
@@ -275,6 +276,7 @@ export type UserForwardCollectorResponse = {
 
 export type PutUserForwardCollectorRequest = {
   baseUrl?: string;
+  skipTlsVerify?: boolean;
   username?: string;
   password?: string;
 };

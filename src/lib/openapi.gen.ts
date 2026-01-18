@@ -5121,6 +5121,7 @@ export interface operations {
                         hasJumpPrivateKey: boolean;
                         hasPassword: boolean;
                         runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        skipTlsVerify: boolean;
                         updatedAt: string;
                         username: string;
                     };
@@ -5141,6 +5142,7 @@ export interface operations {
                 "application/json": {
                     baseUrl: string;
                     password: string;
+                    skipTlsVerify: boolean;
                     username: string;
                 };
             };
@@ -5162,6 +5164,7 @@ export interface operations {
                         hasJumpPrivateKey: boolean;
                         hasPassword: boolean;
                         runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        skipTlsVerify: boolean;
                         updatedAt: string;
                         username: string;
                     };
@@ -5195,6 +5198,7 @@ export interface operations {
                         hasJumpPrivateKey: boolean;
                         hasPassword: boolean;
                         runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        skipTlsVerify: boolean;
                         updatedAt: string;
                         username: string;
                     };
@@ -5228,6 +5232,7 @@ export interface operations {
                         hasJumpPrivateKey: boolean;
                         hasPassword: boolean;
                         runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        skipTlsVerify: boolean;
                         updatedAt: string;
                         username: string;
                     };

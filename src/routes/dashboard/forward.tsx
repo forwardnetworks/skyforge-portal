@@ -15,11 +15,13 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { Textarea } from "../../components/ui/textarea";
+import { Checkbox } from "../../components/ui/checkbox";
 
 export const Route = createFileRoute("/dashboard/forward")({
   component: ForwardCollectorPage,
 });
+
+type ForwardTarget = "cloud" | "onprem";
 
 function ForwardCollectorPage() {
   const queryClient = useQueryClient();
@@ -39,20 +41,33 @@ function ForwardCollectorPage() {
   const cfg = cfgQ.data;
   const runtime = (runtimeQ.data?.runtime ?? cfg?.runtime) as any;
 
-  const [baseUrl, setBaseUrl] = useState("");
+  const [target, setTarget] = useState<ForwardTarget>("cloud");
+  const [onPremHost, setOnPremHost] = useState("");
+  const [skipTlsVerify, setSkipTlsVerify] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (!cfg) return;
-    setBaseUrl(cfg.baseUrl ?? "https://fwd.app");
+    const configuredBase = (cfg.baseUrl ?? "https://fwd.app").trim();
+    if (configuredBase && configuredBase !== "https://fwd.app") {
+      setTarget("onprem");
+      setOnPremHost(configuredBase.replace(/^https?:\/\//, ""));
+      setSkipTlsVerify(cfg.skipTlsVerify ?? true);
+    } else {
+      setTarget("cloud");
+      setOnPremHost("");
+      setSkipTlsVerify(cfg.skipTlsVerify ?? false);
+    }
     setUsername(cfg.username ?? "");
   }, [cfg]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const baseUrl = target === "cloud" ? "https://fwd.app" : onPremHost.trim();
       const body: PutUserForwardCollectorRequest = {
         baseUrl,
+        skipTlsVerify: target === "onprem" ? skipTlsVerify : false,
         username,
         password,
       };
@@ -161,8 +176,54 @@ function ForwardCollectorPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label>Forward base URL</Label>
-            <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://fwd.app" />
+            <Label>Forward target</Label>
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2">
+                <input
+                  id="forward-cloud"
+                  type="radio"
+                  name="forward-target"
+                  className="h-4 w-4"
+                  checked={target === "cloud"}
+                  onChange={() => setTarget("cloud")}
+                />
+                <Label htmlFor="forward-cloud">Forward Cloud (https://fwd.app)</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="forward-onprem"
+                  type="radio"
+                  name="forward-target"
+                  className="h-4 w-4"
+                  checked={target === "onprem"}
+                  onChange={() => setTarget("onprem")}
+                />
+                <Label htmlFor="forward-onprem">On-prem (enter IP/DNS)</Label>
+              </div>
+            </div>
+            {target === "onprem" ? (
+              <div className="space-y-2 pt-2">
+                <div className="grid gap-2">
+                  <Label>On-prem host</Label>
+                  <Input
+                    value={onPremHost}
+                    onChange={(e) => setOnPremHost(e.target.value)}
+                    placeholder="10.0.0.10 or forward.example.com"
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Skyforge assumes <span className="font-mono">https://</span> unless you include a scheme.
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={skipTlsVerify}
+                    onCheckedChange={(v) => setSkipTlsVerify(Boolean(v))}
+                    id="forward-skip-tls"
+                  />
+                  <Label htmlFor="forward-skip-tls">Skip TLS verification (default)</Label>
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="grid gap-2">
             <Label>Forward username</Label>
