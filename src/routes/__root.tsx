@@ -84,7 +84,7 @@ function RootLayout() {
                                   height: "120px"
                                 }}
                               >
-                                <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-4">
+                                <div className="mx-auto flex h-full max-w-[1600px] items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -198,7 +198,7 @@ function RootLayout() {
           </nav>
         </div>
       </header>
-      <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-7xl">
+      <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[1600px]">
         {session.data?.authenticated && (
           <aside
             className={cn(
