@@ -11,6 +11,7 @@ import {
   PanelTop,
   Server,
   Settings,
+  Radio,
   ShieldCheck,
   Webhook,
   Database,
@@ -42,6 +43,7 @@ const items: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
   { label: "Workspaces", href: "/dashboard/workspaces", icon: FolderKanban },
+  { label: "Forward", href: "/dashboard/forward", icon: Radio },
   { label: "S3", href: "/dashboard/s3", icon: Server },
   {
     label: "SSOT",

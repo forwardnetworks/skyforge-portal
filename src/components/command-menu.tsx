@@ -86,7 +86,7 @@ export function CommandMenu() {
         <CommandSeparator />
         <CommandGroup heading="Events & Monitoring">
           <CommandItem
-            onSelect={() => runCommand(() => navigate({ to: "/dashboard/notifications" }))}
+            onSelect={() => runCommand(() => navigate({ to: "/notifications" }))}
           >
             <Bell className="mr-2 h-4 w-4" />
             <span>Notifications</span>

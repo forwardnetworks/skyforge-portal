@@ -37,7 +37,7 @@ const formSchema = z.object({
   awsAuthMethod: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormInputValues = z.input<typeof formSchema>;
 
 export const Route = createFileRoute("/dashboard/workspaces/new")({
   component: NewWorkspacePage,
@@ -47,7 +47,7 @@ function NewWorkspacePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormInputValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -67,7 +67,7 @@ function NewWorkspacePage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: FormValues) => {
+    mutationFn: (data: FormInputValues) => {
       // Create a complete request object. 
       // Most fields are optional in the schema but Typescript might want a partial match or full match depending on generated types.
       // Based on openapi.gen.ts we saw, fields are optional in the request body definition if they weren't marked required in OpenAPI.
@@ -112,7 +112,7 @@ function NewWorkspacePage() {
     },
   });
 
-  function onSubmit(values: FormValues) {
+  function onSubmit(values: FormInputValues) {
     createMutation.mutate(values);
   }
 

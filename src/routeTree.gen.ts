@@ -20,6 +20,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
 import { Route as DashboardPkiRouteImport } from './routes/dashboard/pki'
+import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
 import { Route as DashboardWorkspacesIndexRouteImport } from './routes/dashboard/workspaces/index'
@@ -85,6 +86,11 @@ const DashboardPkiRoute = DashboardPkiRouteImport.update({
   path: '/dashboard/pki',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardForwardRoute = DashboardForwardRouteImport.update({
+  id: '/dashboard/forward',
+  path: '/dashboard/forward',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin': typeof AdminIndexRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin': typeof AdminIndexRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin/': typeof AdminIndexRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
+    | '/dashboard/forward'
     | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
+    | '/dashboard/forward'
     | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
+    | '/dashboard/forward'
     | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin/'
@@ -281,6 +293,7 @@ export interface RootRouteChildren {
   WebhooksRoute: typeof WebhooksRoute
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  DashboardForwardRoute: typeof DashboardForwardRoute
   DashboardPkiRoute: typeof DashboardPkiRoute
   DashboardS3Route: typeof DashboardS3Route
   AdminIndexRoute: typeof AdminIndexRoute
@@ -373,6 +386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPkiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/forward': {
+      id: '/dashboard/forward'
+      path: '/dashboard/forward'
+      fullPath: '/dashboard/forward'
+      preLoaderRoute: typeof DashboardForwardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/admin/settings'
@@ -449,6 +469,7 @@ const rootRouteChildren: RootRouteChildren = {
   WebhooksRoute: WebhooksRoute,
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  DashboardForwardRoute: DashboardForwardRoute,
   DashboardPkiRoute: DashboardPkiRoute,
   DashboardS3Route: DashboardS3Route,
   AdminIndexRoute: AdminIndexRoute,

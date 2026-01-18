@@ -22,7 +22,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
   });
 
-  if (resp.status === 401 || resp.status === 403) {
+  // 401 means "not logged in" (OIDC session missing/expired) -> redirect to login.
+  // 403 means "logged in but forbidden" -> do NOT redirect to Dex; show an error instead.
+  if (resp.status === 401) {
     // Only redirect if we are in a browser environment
     if (typeof window !== "undefined") {
       const currentPath = window.location.pathname + (window.location.search ?? "");
@@ -30,6 +32,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       window.location.href = buildLoginUrl(currentPath);
     }
     throw new ApiError("unauthorized", resp.status);
+  }
+  if (resp.status === 403) {
+    const text = await resp.text().catch(() => "");
+    throw new ApiError("forbidden", resp.status, text);
   }
 
   if (!resp.ok) {

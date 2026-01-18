@@ -221,6 +221,49 @@ export async function updateWorkspaceMembers(workspaceId: string, body: UpdateWo
   );
 }
 
+export type DeleteWorkspaceResponse =
+  operations["DELETE:skyforge.DeleteWorkspace"]["responses"][200]["content"]["application/json"];
+export async function deleteWorkspace(workspaceId: string): Promise<DeleteWorkspaceResponse> {
+  return apiFetch<DeleteWorkspaceResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}`, { method: "DELETE" });
+}
+
+export type UserForwardCollectorResponse = {
+  baseUrl?: string;
+  username?: string;
+  collectorId?: string;
+  collectorUsername?: string;
+  authorizationKey?: string;
+  updatedAt?: ISO8601;
+};
+
+export type PutUserForwardCollectorRequest = {
+  baseUrl?: string;
+  username?: string;
+  password?: string;
+  deviceUsername?: string;
+  devicePassword?: string;
+  jumpHost?: string;
+  jumpUsername?: string;
+  jumpPrivateKey?: string;
+  jumpCert?: string;
+};
+
+export async function getUserForwardCollector(): Promise<UserForwardCollectorResponse> {
+  return apiFetch<UserForwardCollectorResponse>("/api/forward/collector");
+}
+
+export async function putUserForwardCollector(body: PutUserForwardCollectorRequest): Promise<UserForwardCollectorResponse> {
+  return apiFetch<UserForwardCollectorResponse>("/api/forward/collector", { method: "PUT", body: JSON.stringify(body) });
+}
+
+export async function resetUserForwardCollector(): Promise<UserForwardCollectorResponse> {
+  return apiFetch<UserForwardCollectorResponse>("/api/forward/collector/reset", { method: "POST", body: "{}" });
+}
+
+export async function clearUserForwardCollector(): Promise<void> {
+  await apiFetch<unknown>("/api/forward/collector", { method: "DELETE" });
+}
+
 export type UpdateWorkspaceSettingsRequest = NonNullable<
   operations["PUT:skyforge.UpdateWorkspaceSettings"]["requestBody"]
 >["content"]["application/json"];

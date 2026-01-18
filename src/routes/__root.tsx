@@ -131,7 +131,7 @@ function RootLayout() {
 
           <nav className="flex items-center gap-4 text-sm">
             <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-foreground">
-              <Link to="/dashboard/notifications" aria-label="Notifications">
+              <Link to="/notifications" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
               </Link>
             </Button>
