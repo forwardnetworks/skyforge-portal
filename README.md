@@ -1,6 +1,6 @@
 # Skyforge Portal (TanStack)
 
-This is the new portal scaffold intended to replace the existing `portal/` (Next.js) UI over time.
+This is the Skyforge portal (TanStack Router + Vite). The legacy Next.js portal has been retired.
 
 ## Local dev
 
@@ -20,7 +20,6 @@ pnpm install
 pnpm build
 ```
 
-## Docker image
+## Deployment
 
-The included `Dockerfile` builds static assets and serves them with Nginx on port `3000` to match the existing Helm service expectations.
-
+The portal is built with `pnpm build` and embedded into the `skyforge-server` image; there is no separate Nginx/portal container.

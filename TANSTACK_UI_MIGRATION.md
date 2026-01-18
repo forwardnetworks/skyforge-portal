@@ -1,7 +1,7 @@
-# TanStack Start UI Migration - Completed Changes
+# TanStack Router UI Migration - Completed Changes
 
 **Date:** 2026-01-17
-**Migration:** Next.js → TanStack Start
+**Migration:** Next.js → TanStack Router (Vite)
 **Status:** 100% COMPLETE - "2026 Architecture" Achieved 🚀
 **Last Updated:** 2026-01-17
 **Portal Maturity:** 10/10 - Production-ready, modern patterns
@@ -10,7 +10,7 @@
 
 ## Problem Summary
 
-The portal has been migrated to TanStack Start, but to reach "2026/A+" standards, it needed advanced architectural patterns beyond just UI components. This included server-side prefetching, URL-based state, and deep navigation context.
+The portal has been migrated to TanStack Router, but to reach "2026/A+" standards, it needed advanced architectural patterns beyond just UI components. This included client-side prefetching, URL-based state, and deep navigation context.
 
 ---
 
