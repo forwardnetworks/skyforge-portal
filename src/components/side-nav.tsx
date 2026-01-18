@@ -33,7 +33,6 @@ const items: NavItem[] = [
   { label: "NetBox", href: "/netbox/", icon: Network, external: true },
   { label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
   { label: "PKI", href: "/dashboard/pki", icon: KeyRound },
-  { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Webhooks", href: "/webhooks", icon: Webhook },
   { label: "Syslog", href: "/syslog", icon: Inbox },
   { label: "SNMP", href: "/snmp", icon: ShieldCheck },

@@ -6,7 +6,7 @@ import { buildLoginUrl, getSession, logout } from "../lib/skyforge-api";
 import { loginWithPopup } from "../lib/auth-popup";
 import { SideNav } from "../components/side-nav";
 import { CommandMenu } from "../components/command-menu";
-import { ChevronLeft, ChevronRight, Search, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Menu, Bell } from "lucide-react";
 import { cn } from "../lib/utils";
 import { queryKeys } from "../lib/query-keys";
 import { Toaster } from "../components/ui/sonner";
@@ -146,6 +146,11 @@ function RootLayout() {
               File an issue
             </a>
             <div className="mx-2 hidden h-4 w-px bg-border sm:block" />
+            <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-foreground">
+              <Link to="/notifications" aria-label="Notifications">
+                <Bell className="h-4 w-4" />
+              </Link>
+            </Button>
             <ModeToggle />
             {session.data?.authenticated ? (
               <div className="flex items-center gap-3">
