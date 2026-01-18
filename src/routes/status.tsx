@@ -227,200 +227,50 @@ function StatusPage() {
         </Card>
       </div>
 
-      {/* Platform Health */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            Platform Health
-          </h2>
-          {statusData?.timestamp && (
-            <Badge variant="secondary" className="text-xs">
-              {new Date(statusData.timestamp).toLocaleTimeString()}
-            </Badge>
-          )}
-        </div>
+      {/* System Status & Toolchain */}
+      <BentoGrid className="gap-4">
+        <BentoItem gradient="blue" className="md:col-span-3 hover-lift">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <Activity className="w-5 h-5 text-blue-500" />
+            </div>
+            <h3 className="font-semibold">System Status & Toolchain</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[
+              { id: 'gitea', name: 'Git', path: '/git/', icon: GitBranch },
+              { id: 'netbox', name: 'NetBox', path: '/netbox/', icon: Network },
+              { id: 'nautobot', name: 'Nautobot', path: '/nautobot/', icon: Network },
+              { id: 'coder', name: 'Coder', path: '/coder', icon: Cloud },
+              { id: 'yaade', name: 'API Testing', path: '/api-testing/', icon: Zap },
+              { id: 'webhooks', name: 'Webhooks', path: '/dashboard/webhooks', icon: Workflow },
+            ].map((tool) => {
+              // Find check status (simple fuzzy match)
+              const check = checks.find(c => c.name.toLowerCase().includes(tool.id));
+              const isUp = check ? (check.status === "up" || check.status === "ok") : true; // Default to up if no check found (e.g. webhooks internal)
+              const statusColor = isUp ? "bg-emerald-500" : "bg-red-500";
+              const Icon = tool.icon;
 
-        <BentoGrid className="gap-4">
-          {summary.isLoading ? (
-            <>
-              <BentoItem gradient="blue" className="md:col-span-2"><Skeleton className="h-24 w-full" /></BentoItem>
-              <BentoItem gradient="green"><Skeleton className="h-24 w-full" /></BentoItem>
-              <BentoItem gradient="purple"><Skeleton className="h-24 w-full" /></BentoItem>
-            </>
-          ) : summary.isError ? (
-            <BentoItem gradient="red" className="md:col-span-4">
-              <div className="text-destructive">
-                Error loading status: {(summary.error as Error).message}
-              </div>
-            </BentoItem>
-          ) : (
-            <>
-              {/* Main Status Card */}
-              <BentoItem
-                gradient="blue"
-                className="md:col-span-2 relative overflow-hidden"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    <h3 className="text-base font-semibold">
-                      Platform Status
-                    </h3>
-                  </div>
-                  {statusData?.status === "ok" && (
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                  )}
-                </div>
-                <div
-                  className={cn(
-                    "text-4xl font-bold mb-2",
-                    statusData?.status === "ok"
-                      ? "text-emerald-500"
-                      : statusData?.status === "degraded"
-                        ? "text-amber-500"
-                        : "text-muted-foreground"
-                  )}
+              return (
+                <a
+                  key={tool.id}
+                  href={tool.path}
+                  target={tool.path.startsWith("http") || tool.path.startsWith("/api") ? "_blank" : "_self"}
+                  className="flex flex-col items-center justify-center p-4 rounded-lg bg-background/50 border hover:bg-background/80 transition-colors group relative overflow-hidden"
                 >
-                  {(statusData?.status ?? "unknown").toUpperCase()}
-                </div>
-                <div className="text-sm text-muted-foreground/80">
-                  {statusData?.up ?? 0} of {checks.length} services operational
-                </div>
-                {downChecks.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {downChecks.slice(0, 5).map((check) => (
-                      <Badge
-                        key={check.name}
-                        variant="outline"
-                        className="text-xs border-red-500/50"
-                      >
-                        {check.name}
-                      </Badge>
-                    ))}
-                    {downChecks.length > 5 && (
-                      <Badge
-                        variant="outline"
-                        className="text-xs border-red-500/50"
-                      >
-                        +{downChecks.length - 5} more
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </BentoItem>
-
-              {/* Workspaces */}
-              <BentoStatCard
-                title="Active Workspaces"
-                value={statusData?.workspacesTotal ?? 0}
-                gradient="green"
-                icon={<Cloud className="w-5 h-5" />}
-                subtitle="BYOS + In-Cluster"
-              />
-
-              {/* Services */}
-              <BentoStatCard
-                title="Platform Services"
-                value={statusData?.up ?? 0}
-                gradient="purple"
-                icon={<Database className="w-5 h-5" />}
-                subtitle="Running smoothly"
-              />
-            </>
-          )}
-        </BentoGrid>
-      </div>
-
-      {/* Key Capabilities */}
-      <div className="space-y-4 pb-12">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
-          What Skyforge Delivers
-        </h2>
-
-        <BentoGrid className="gap-4">
-          {/* Infrastructure as Code */}
-          <BentoItem gradient="blue" className="hover-lift">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <FileCode2 className="w-5 h-5 text-blue-500" />
-              </div>
-              <h3 className="font-semibold">Infrastructure as Code</h3>
-            </div>
-            <p className="text-sm text-muted-foreground/80">
-              Bring your own servers or deploy in-cluster. Define topology in
-              Git, deploy with one command, tear down cleanly.
-            </p>
-          </BentoItem>
-
-          {/* Lab Automation */}
-          <BentoItem gradient="green" className="hover-lift">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <Workflow className="w-5 h-5 text-emerald-500" />
-              </div>
-              <h3 className="font-semibold">Lab Automation</h3>
-            </div>
-            <p className="text-sm text-muted-foreground/80">
-              Repeatable network validation and demos. No manual clicking
-              through tools—just push to Git and let workflows run.
-            </p>
-          </BentoItem>
-
-          {/* Collaboration */}
-          <BentoItem gradient="purple" className="hover-lift">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <Network className="w-5 h-5 text-purple-500" />
-              </div>
-              <h3 className="font-semibold">Team Collaboration</h3>
-            </div>
-            <p className="text-sm text-muted-foreground/80">
-              Shared blueprints, consistent environments, audit trails. Onboard
-              new team members in hours, not weeks.
-            </p>
-          </BentoItem>
-
-          {/* Integrated Toolchain */}
-          <BentoItem gradient="orange" className="hover-lift md:col-span-2">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-orange-500/10">
-                <Zap className="w-5 h-5 text-orange-500" />
-              </div>
-              <h3 className="font-semibold">Integrated Toolchain</h3>
-            </div>
-            <p className="text-sm text-muted-foreground/80 mb-3">
-              Source control, automation database, API workspace, and browser
-              IDE—all connected. No more context switching between disconnected
-              tools.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="text-xs">
-                Git
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                NetBox
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Nautobot
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Coder
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                API Testing
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Webhooks
-              </Badge>
-            </div>
-          </BentoItem>
-        </BentoGrid>
-      </div>
+                  <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${statusColor}`} />
+                  <Icon className="w-6 h-6 mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span className="text-sm font-medium">{tool.name}</span>
+                  <span className="text-[10px] text-muted-foreground mt-1 capitalize">
+                    {check?.status ?? "Operational"}
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </BentoItem>
+      </BentoGrid>
     </div>
   );
 }
