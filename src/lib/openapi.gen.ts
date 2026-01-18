@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/admin/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendAdmin serves the SPA for admin routes. */
+        get: operations["GET:skyforge.FrontendAdmin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/audit": {
         parameters: {
             query?: never;
@@ -616,6 +633,72 @@ export interface paths {
         };
         /** GetEveStats returns basic EVE-NG server stats for the status dashboard. */
         get: operations["GET:skyforge.GetEveStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserForwardCollector returns the authenticated user's Forward collector
+         *     settings.
+         */
+        get: operations["GET:skyforge.GetUserForwardCollector"];
+        /**
+         * PutUserForwardCollector stores Forward credentials and ensures a per-user
+         *     collector exists.
+         */
+        put: operations["PUT:skyforge.PutUserForwardCollector"];
+        post?: never;
+        /** ClearUserForwardCollector deletes the stored user Forward collector settings. */
+        delete: operations["DELETE:skyforge.ClearUserForwardCollector"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ResetUserForwardCollector rotates the user's Forward collector by creating a new
+         *     one and storing its authorization key.
+         * @description NOTE: This does not delete any existing collector in Forward; it only updates the Skyforge profile.
+         */
+        post: operations["POST:skyforge.ResetUserForwardCollector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserCollectorRuntime returns the in-cluster runtime status for the user's
+         *     collector.
+         */
+        get: operations["GET:skyforge.GetUserCollectorRuntime"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2001,6 +2084,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{id}/deployments/{deploymentID}/topology": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceDeploymentTopology returns a lightweight, provider-derived topology
+         *     view.
+         * @description For containerlab, the topology is sourced from the containerlab API after deploy so we can reflect the resolved management IPs.
+         */
+        get: operations["GET:skyforge.GetWorkspaceDeploymentTopology"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{id}/eve": {
         parameters: {
             query?: never;
@@ -2501,6 +2605,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assets/skyforge/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendAssets serves hashed frontend assets built by Vite. */
+        get: operations["GET:skyforge.FrontendAssets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -2581,6 +2702,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendDashboard serves the SPA for dashboard routes. */
+        get: operations["GET:skyforge.FrontendDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/data/platform-health.json": {
         parameters: {
             query?: never;
@@ -2590,6 +2728,40 @@ export interface paths {
         };
         /** PlatformHealth serves the platform health payload. */
         get: operations["GET:skyforge.PlatformHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/design": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendDesign serves the SPA design sandbox route. */
+        get: operations["GET:skyforge.FrontendDesign"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/docs/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendDocs serves embedded UI docs pages. */
+        get: operations["GET:skyforge.FrontendDocs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2648,6 +2820,23 @@ export interface paths {
          *     	POST https://<hostname>/hooks/<token>/github
          */
         post: operations["POST:skyforge.WebhookIngestAny"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/index.html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendIndex serves the SPA entrypoint. */
+        get: operations["GET:skyforge.FrontendIndex"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2784,49 +2973,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/internal/tasks/dispatch": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * InternalDispatchTask executes the task logic for an already-started task.
-         * @description The worker is responsible for queue ordering, status transitions, and enqueueing subsequent tasks. This endpoint only performs the task-specific side effects and appends logs/events.
-         */
-        post: operations["POST:skyforge.InternalDispatchTask"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/tasks/notify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * InternalNotifyTaskStatus performs best-effort side effects for a task status
-         *     transition:
-         * @description \- create user notifications - update deployment status fields - trigger pg\_notify updates so SSE streams refresh quickly
-         *
-         *     Task status updates in sf\_tasks are handled by the worker.
-         */
-        post: operations["POST:skyforge.InternalNotifyTaskStatus"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/internal/worker/heartbeat": {
         parameters: {
             query?: never;
@@ -2921,6 +3067,100 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * LogoutAll clears the Skyforge cookie and redirects to the landing page (used for
+         *     manual "reset").
+         */
+        get: operations["GET:skyforge.LogoutAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nautobot/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * NautobotLogout clears the Skyforge session cookie and redirects to the Skyforge
+         *     landing page.
+         */
+        get: operations["GET:skyforge.NautobotLogout"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nautobot/logout/{rest}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** NautobotLogoutAny handles `/nautobot/logout/*` (including a trailing slash). */
+        get: operations["GET:skyforge.NautobotLogoutAny"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/netbox/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * NetboxLogout clears the Skyforge session cookie and redirects to the Skyforge
+         *     landing page.
+         */
+        get: operations["GET:skyforge.NetboxLogout"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/netbox/logout/{rest}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** NetboxLogoutAny handles `/netbox/logout/*` (including a trailing slash). */
+        get: operations["GET:skyforge.NetboxLogoutAny"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications": {
         parameters: {
             query?: never;
@@ -2928,7 +3168,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** FrontendNotifications serves the SPA notifications page. */
+        get: operations["GET:skyforge.FrontendNotifications"];
         put?: never;
         /** CreateNotification creates a new notification. */
         post: operations["POST:skyforge.CreateNotification"];
@@ -2999,6 +3240,40 @@ export interface paths {
         get?: never;
         /** MarkNotificationAsRead marks a notification as read. */
         put: operations["PUT:skyforge.MarkNotificationAsRead"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/snmp/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendSNMP serves the SPA for SNMP routes. */
+        get: operations["GET:skyforge.FrontendSNMP"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendStatus serves the SPA status page. */
+        get: operations["GET:skyforge.FrontendStatus"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3184,6 +3459,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/syslog/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendSyslog serves the SPA for syslog routes. */
+        get: operations["GET:skyforge.FrontendSyslog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/system/settings/notifications": {
         parameters: {
             query?: never;
@@ -3268,6 +3560,23 @@ export interface paths {
         };
         /** Version reports the running server version info. */
         get: operations["GET:skyforge.Version"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendWebhooks serves the SPA for the webhook inbox UI route. */
+        get: operations["GET:skyforge.FrontendWebhooks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3686,6 +3995,19 @@ export interface components {
             /** "shared" or "personal" */
             mode: string;
         };
+        "skyforge.TopologyEdge": {
+            id: string;
+            label: string;
+            source: string;
+            target: string;
+        };
+        "skyforge.TopologyNode": {
+            id: string;
+            kind: string;
+            label: string;
+            mgmtIp: string;
+            status: string;
+        };
         "skyforge.UserProfile": {
             actorUsername: string;
             authenticated: boolean;
@@ -3752,6 +4074,15 @@ export interface components {
                 [key: string]: string;
             };
         };
+        "skyforge.collectorRuntimeStatus": {
+            deploymentName: string;
+            logsCommandHint: string;
+            namespace: string;
+            podName: string;
+            podPhase: string;
+            ready: boolean;
+            startTime: string;
+        };
         "skyforge.storageObjectSummary": {
             contentType: string;
             key: string;
@@ -3795,6 +4126,27 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "GET:skyforge.FrontendAdmin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetAdminAudit": {
         parameters: {
             query?: {
@@ -4738,6 +5090,169 @@ export interface operations {
                 content: {
                     "application/json": {
                         servers: components["schemas"]["skyforge.EveStatsServer"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserForwardCollector": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        authorizationKey: string;
+                        baseUrl: string;
+                        collectorId: string;
+                        collectorUsername: string;
+                        configured: boolean;
+                        hasJumpCert: boolean;
+                        hasJumpPrivateKey: boolean;
+                        hasPassword: boolean;
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutUserForwardCollector": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    baseUrl: string;
+                    password: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        authorizationKey: string;
+                        baseUrl: string;
+                        collectorId: string;
+                        collectorUsername: string;
+                        configured: boolean;
+                        hasJumpCert: boolean;
+                        hasJumpPrivateKey: boolean;
+                        hasPassword: boolean;
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.ClearUserForwardCollector": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        authorizationKey: string;
+                        baseUrl: string;
+                        collectorId: string;
+                        collectorUsername: string;
+                        configured: boolean;
+                        hasJumpCert: boolean;
+                        hasJumpPrivateKey: boolean;
+                        hasPassword: boolean;
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ResetUserForwardCollector": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        authorizationKey: string;
+                        baseUrl: string;
+                        collectorId: string;
+                        collectorUsername: string;
+                        configured: boolean;
+                        hasJumpCert: boolean;
+                        hasJumpPrivateKey: boolean;
+                        hasPassword: boolean;
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserCollectorRuntime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
                     };
                 };
             };
@@ -7321,6 +7836,36 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetWorkspaceDeploymentTopology": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        artifactKey: string;
+                        edges: components["schemas"]["skyforge.TopologyEdge"][];
+                        generatedAt: string;
+                        nodes: components["schemas"]["skyforge.TopologyNode"][];
+                        source: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetWorkspaceEve": {
         parameters: {
             query?: never;
@@ -8166,9 +8711,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         branch: string;
+                        cached: boolean;
                         dir: string;
+                        headSha: string;
                         repo: string;
                         templates: string[];
+                        updatedAt: string;
                         workspaceId: string;
                     };
                 };
@@ -8319,7 +8867,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    /** up, create, restart, collect, status, down, clab-tarball */
+                    /** up, create, restart, collect, status, down */
                     action: string;
                     clabCleanup: boolean;
                     clabConfigDir: string;
@@ -8342,6 +8890,10 @@ export interface operations {
                     templateSource: string;
                     /** repo-relative directory (default: blueprints/netlab) */
                     templatesDir: string;
+                    /** remote workdir-relative (or absolute) topology file */
+                    topologyPath: string;
+                    /** remote URL (only if netlab supports it) */
+                    topologyUrl: string;
                 };
             };
         };
@@ -8699,6 +9251,27 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.FrontendAssets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.AuthLogin": {
         parameters: {
             query?: never;
@@ -8824,11 +9397,72 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.FrontendDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.PlatformHealth": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendDesign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendDocs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                path: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -8896,6 +9530,25 @@ export interface operations {
             path: {
                 rest: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendIndex": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -9094,60 +9747,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.InternalDispatchTask": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** Format: int64 */
-                    taskId: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.InternalNotifyTaskStatus": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    error: string;
-                    status: string;
-                    /** Format: int64 */
-                    taskId: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "POST:worker.CronWorkerHeartbeat": {
         parameters: {
             query?: never;
@@ -9231,6 +9830,124 @@ export interface operations {
             path: {
                 rest: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.LogoutAll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.NautobotLogout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.NautobotLogoutAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.NetboxLogout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.NetboxLogoutAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendNotifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -9384,6 +10101,46 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.FrontendSNMP": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.StatusSummary": {
         parameters: {
             query?: never;
@@ -9401,6 +10158,10 @@ export interface operations {
                 content: {
                     "application/json": {
                         checks: components["schemas"]["skyforge.StatusCheckResponse"][];
+                        /** Format: int64 */
+                        deploymentsActive: number;
+                        /** Format: int64 */
+                        deploymentsTotal: number;
                         /** Format: int64 */
                         down: number;
                         /** ok|degraded|unknown */
@@ -9662,6 +10423,27 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.FrontendSyslog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetNotificationSettings": {
         parameters: {
             query?: never;
@@ -9813,6 +10595,25 @@ export interface operations {
                         version: string;
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendWebhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };
