@@ -236,9 +236,15 @@ function DeploymentsPage() {
             >
               <Plus className="h-4 w-4" />
             </Link>
-            <Button variant="ghost" size="icon" className="h-8 w-8" title="Workspace Settings (Coming Soon)">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-            </Button>
+            <Link
+              to="/dashboard/workspaces/$workspaceId"
+              params={{ workspaceId: selectedWorkspaceId }}
+              title="Workspace Settings"
+              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8" })}
+              disabled={!selectedWorkspaceId}
+            >
+              <Settings className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>
@@ -553,4 +559,3 @@ function StatusBadge({ status, size = "default" }: { status: string, size?: "def
   
   return <Badge variant={variant} className={`capitalize ${size === "xs" ? "px-1.5 py-0 text-[10px] h-5" : ""}`}>{status}</Badge>;
 }
-

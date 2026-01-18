@@ -19,11 +19,22 @@ import {
 } from "../../../components/ui/form";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
+import { Switch } from "../../../components/ui/switch";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   slug: z.string().min(2, "Slug must be at least 2 characters").regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and dashes"),
   description: z.string().optional(),
+  isPublic: z.boolean().default(false),
+  blueprint: z.string().optional(),
+  allowExternalTemplateRepos: z.boolean().default(false),
+  allowCustomEveServers: z.boolean().default(false),
+  allowCustomNetlabServers: z.boolean().default(false),
+  sharedUsers: z.string().optional(),
+  awsAccountId: z.string().optional(),
+  awsRoleName: z.string().optional(),
+  awsRegion: z.string().optional(),
+  awsAuthMethod: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -42,6 +53,16 @@ function NewWorkspacePage() {
       name: "",
       slug: "",
       description: "",
+      isPublic: false,
+      blueprint: "skyforge/blueprints",
+      allowExternalTemplateRepos: false,
+      allowCustomEveServers: false,
+      allowCustomNetlabServers: false,
+      sharedUsers: "",
+      awsAccountId: "",
+      awsRoleName: "",
+      awsRegion: "us-east-1",
+      awsAuthMethod: "sso",
     },
   });
 
@@ -59,20 +80,20 @@ function NewWorkspacePage() {
         name: data.name,
         slug: data.slug,
         description: data.description || "",
-        isPublic: false,
-        // Provide reasonable defaults for required fields if they exist
-        allowCustomEveServers: false,
-        allowCustomNetlabServers: false,
-        allowExternalTemplateRepos: false,
-        awsAccountId: "",
-        awsAuthMethod: "",
-        awsRegion: "",
-        awsRoleName: "",
-        blueprint: "",
-        eveServer: "",
+        isPublic: !!data.isPublic,
+        allowCustomEveServers: !!data.allowCustomEveServers,
+        allowCustomNetlabServers: !!data.allowCustomNetlabServers,
+        allowExternalTemplateRepos: !!data.allowExternalTemplateRepos,
+        awsAccountId: (data.awsAccountId || "").trim(),
+        awsAuthMethod: (data.awsAuthMethod || "").trim(),
+        awsRegion: (data.awsRegion || "").trim(),
+        awsRoleName: (data.awsRoleName || "").trim(),
+        blueprint: (data.blueprint || "").trim(),
         externalTemplateRepos: [],
-        netlabServer: "",
-        sharedUsers: [],
+        sharedUsers: (data.sharedUsers || "")
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean),
       };
       
       return createWorkspace(payload as CreateWorkspaceRequest);
@@ -181,6 +202,158 @@ function NewWorkspacePage() {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Public workspace</FormLabel>
+                      <FormDescription>
+                        Required for BYOS Netlab via <code className="font-mono">topologyUrl</code> when using workspace templates.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="blueprint"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Blueprint repo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="skyforge/blueprints" {...field} />
+                    </FormControl>
+                    <FormDescription>Default template catalog repo (format: owner/repo).</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="sharedUsers"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Shared users (viewers)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="alice,bob" {...field} />
+                    </FormControl>
+                    <FormDescription>Comma-separated usernames.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="awsAccountId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>AWS account ID (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123456789012" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="awsRoleName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>AWS role name (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="MyRole" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="awsRegion"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>AWS region</FormLabel>
+                      <FormControl>
+                        <Input placeholder="us-east-1" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="awsAuthMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>AWS auth method</FormLabel>
+                      <FormControl>
+                        <Input placeholder="sso" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="text-sm font-medium">Workspace options</div>
+                <FormField
+                  control={form.control}
+                  name="allowExternalTemplateRepos"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <FormLabel>Allow external template repos</FormLabel>
+                        <FormDescription>Enable additional template sources for deployments.</FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="allowCustomEveServers"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <FormLabel>Allow custom EVE servers (BYOS)</FormLabel>
+                        <FormDescription>Enable user-provided EVE servers for LabPP.</FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="allowCustomNetlabServers"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <FormLabel>Allow custom Netlab servers (BYOS)</FormLabel>
+                        <FormDescription>Enable user-provided Netlab API servers.</FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="flex justify-end gap-4">
                 <Button 

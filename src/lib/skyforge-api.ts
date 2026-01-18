@@ -209,6 +209,58 @@ export async function createWorkspace(
   );
 }
 
+export type UpdateWorkspaceMembersRequest = NonNullable<
+  operations["PUT:skyforge.UpdateWorkspaceMembers"]["requestBody"]
+>["content"]["application/json"];
+export type UpdateWorkspaceMembersResponse =
+  operations["PUT:skyforge.UpdateWorkspaceMembers"]["responses"][200]["content"]["application/json"];
+export async function updateWorkspaceMembers(workspaceId: string, body: UpdateWorkspaceMembersRequest): Promise<UpdateWorkspaceMembersResponse> {
+  return apiFetch<UpdateWorkspaceMembersResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/members`,
+    { method: "PUT", body: JSON.stringify(body) }
+  );
+}
+
+export type UpdateWorkspaceSettingsRequest = NonNullable<
+  operations["PUT:skyforge.UpdateWorkspaceSettings"]["requestBody"]
+>["content"]["application/json"];
+export type UpdateWorkspaceSettingsResponse =
+  operations["PUT:skyforge.UpdateWorkspaceSettings"]["responses"][200]["content"]["application/json"];
+export async function updateWorkspaceSettings(workspaceId: string, body: UpdateWorkspaceSettingsRequest): Promise<UpdateWorkspaceSettingsResponse> {
+  return apiFetch<UpdateWorkspaceSettingsResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/settings`,
+    { method: "PUT", body: JSON.stringify(body) }
+  );
+}
+
+export type GetWorkspaceForwardConfigResponse =
+  operations["GET:skyforge.GetWorkspaceForwardConfig"]["responses"][200]["content"]["application/json"];
+export async function getWorkspaceForwardConfig(workspaceId: string): Promise<GetWorkspaceForwardConfigResponse> {
+  return apiFetch<GetWorkspaceForwardConfigResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward`
+  );
+}
+
+export type PutWorkspaceForwardConfigRequest = NonNullable<
+  operations["PUT:skyforge.PutWorkspaceForwardConfig"]["requestBody"]
+>["content"]["application/json"];
+export type PutWorkspaceForwardConfigResponse =
+  operations["PUT:skyforge.PutWorkspaceForwardConfig"]["responses"][200]["content"]["application/json"];
+export async function putWorkspaceForwardConfig(workspaceId: string, body: PutWorkspaceForwardConfigRequest): Promise<PutWorkspaceForwardConfigResponse> {
+  return apiFetch<PutWorkspaceForwardConfigResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward`,
+    { method: "PUT", body: JSON.stringify(body) }
+  );
+}
+
+export type ListWorkspaceForwardCollectorsResponse =
+  operations["GET:skyforge.GetWorkspaceForwardCollectors"]["responses"][200]["content"]["application/json"];
+export async function listWorkspaceForwardCollectors(workspaceId: string): Promise<ListWorkspaceForwardCollectorsResponse> {
+  return apiFetch<ListWorkspaceForwardCollectorsResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward/collectors`
+  );
+}
+
 export type ListWorkspaceArtifactsResponse =
   operations["GET:skyforge.ListWorkspaceArtifacts"]["responses"][200]["content"]["application/json"];
 export async function listWorkspaceArtifacts(
