@@ -101,12 +101,12 @@ function RunDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Meta label="Type" value={String(run?.type ?? "")} />
+            <Meta label="Type" value={String(run?.tpl_alias ?? "")} />
             <Meta label="Status" value={String(run?.status ?? "")} />
             <Meta label="Workspace" value={String(run?.workspaceId ?? "")} />
-            <Meta label="Created" value={String(run?.createdAt ?? "")} />
-            <Meta label="Started" value={String(run?.startedAt ?? "")} />
-            <Meta label="Finished" value={String(run?.finishedAt ?? "")} />
+            <Meta label="Created" value={String(run?.created ?? "")} />
+            <Meta label="Started" value={String(run?.start ?? "")} />
+            <Meta label="Finished" value={String(run?.end ?? "")} />
           </div>
         </CardContent>
       </Card>

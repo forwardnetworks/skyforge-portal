@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Plus, Trash2, StopCircle, Play, Inbox, MoreHorizontal } from "lucide-react";
+import { Plus, Trash2, StopCircle, Play, Inbox, MoreHorizontal, Info } from "lucide-react";
 import { z } from "zod";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { toast } from "sonner";
@@ -206,6 +206,13 @@ function DeploymentsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Link
+                  to="/dashboard/workspaces/new"
+                  title="Create workspace"
+                  className={buttonVariants({ variant: "outline", size: "icon" })}
+                >
+                  <Plus className="h-4 w-4" />
+                </Link>
               </div>
             </div>
           </div>
@@ -275,14 +282,22 @@ function DeploymentsPage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Queue</TableHead>
+                    <TableHead>Queue Depth</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {deployments.map((d: WorkspaceDeployment) => (
                     <TableRow key={d.id}>
-                      <TableCell className="font-medium text-foreground">{d.name}</TableCell>
+                      <TableCell className="font-medium text-foreground">
+                        <Link
+                          to="/dashboard/deployments/$deploymentId"
+                          params={{ deploymentId: d.id }}
+                          className="hover:underline"
+                        >
+                          {d.name}
+                        </Link>
+                      </TableCell>
                       <TableCell>{formatDeploymentType(d.type)}</TableCell>
                       <TableCell>
                          <StatusBadge status={d.activeTaskStatus ?? d.lastStatus ?? "unknown"} />
@@ -297,6 +312,16 @@ function DeploymentsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => navigate({
+                                to: "/dashboard/deployments/$deploymentId",
+                                params: { deploymentId: d.id }
+                              })}
+                            >
+                              <Info className="mr-2 h-4 w-4" />
+                              Info
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleStart(d)} disabled={!!d.activeTaskId}>
                               <Play className="mr-2 h-4 w-4" />
                               Start
@@ -364,11 +389,11 @@ function DeploymentsPage() {
                           {String(r.id ?? "")}
                         </Link>
                       </TableCell>
-                      <TableCell>{String(r.type ?? "")}</TableCell>
+                      <TableCell>{String(r.tpl_alias ?? "")}</TableCell>
                       <TableCell>
                          <StatusBadge status={String(r.status ?? "")} />
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{String(r.createdAt ?? "")}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{String(r.created ?? "")}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

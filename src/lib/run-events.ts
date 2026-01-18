@@ -30,6 +30,7 @@ export function useRunEvents(runId: string, enabled: boolean) {
 
     const onOutput = (ev: MessageEvent<string>) => {
       try {
+        console.log("Run event:", ev.data);
         const payload = JSON.parse(ev.data) as RunOutputEvent;
         if (!payload || !Array.isArray(payload.entries)) return;
 

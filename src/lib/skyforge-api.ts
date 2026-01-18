@@ -193,6 +193,22 @@ export async function createWorkspaceDeployment(
   );
 }
 
+export type CreateWorkspaceRequest = NonNullable<
+  operations["POST:skyforge.CreateWorkspace"]["requestBody"]
+>["content"]["application/json"];
+
+export type CreateWorkspaceResponse =
+  operations["POST:skyforge.CreateWorkspace"]["responses"][200]["content"]["application/json"];
+
+export async function createWorkspace(
+  body: CreateWorkspaceRequest
+): Promise<CreateWorkspaceResponse> {
+  return apiFetch<CreateWorkspaceResponse>(
+    "/api/workspaces",
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
 export type StorageListResponse = operations["GET:storage.List"]["responses"][200]["content"]["application/json"];
 
 export async function listStorageFiles(): Promise<StorageListResponse> {
