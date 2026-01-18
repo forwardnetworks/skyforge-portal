@@ -70,26 +70,33 @@ function StatusPage() {
         ) : (
           <>
             <BentoStatCard
-              title="Services Up"
-              value={statusData?.up ?? 0}
+              title="Active Deployments"
+              value={statusData?.deploymentsActive ?? 0}
               gradient="green"
+              icon={<Cloud className="w-5 h-5" />}
+              subtitle={`${statusData?.deploymentsTotal ?? 0} total deployments`}
+            />
+
+            <BentoStatCard
+              title="Services Operational"
+              value={`${statusData?.up ?? 0} / ${checks.length}`}
+              gradient={statusData?.up === checks.length ? "green" : "orange"}
               icon={<CheckCircle2 className="w-5 h-5" />}
-              trend={statusData ? { value: 100, direction: "up" } : undefined}
             />
 
             <BentoStatCard
               title="Services Down"
               value={statusData?.down ?? 0}
-              gradient={statusData?.down ? "orange" : "blue"}
+              gradient={statusData?.down ? "red" : "blue"}
               icon={<Activity className="w-5 h-5" />}
             />
 
             {/* Live Activity Indicator */}
             <BentoItem gradient="purple" className="relative overflow-hidden">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold flex items-center gap-2">
+                <h3 className="font-semibold flex items-center gap-2 text-sm text-muted-foreground/80">
                   <Zap className="w-4 h-4" />
-                  Platform Status
+                  Platform Health
                 </h3>
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2 w-2">
@@ -115,7 +122,7 @@ function StatusPage() {
                   </span>
                   <p className="text-xs text-muted-foreground mt-1">
                     {statusData?.timestamp
-                      ? `Updated ${new Date(statusData.timestamp).toLocaleString()}`
+                      ? `Refreshed ${new Date(statusData.timestamp).toLocaleTimeString()}`
                       : "Checking..."}
                   </p>
                 </div>
@@ -229,12 +236,23 @@ function StatusPage() {
 
       {/* System Status & Toolchain */}
       <BentoGrid className="gap-4">
-        <BentoItem gradient="blue" className="md:col-span-3 hover-lift">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <Activity className="w-5 h-5 text-blue-500" />
+        <BentoItem gradient="blue" className="md:col-span-4 hover-lift">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Activity className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Integrated Toolchain & Status</h3>
+                <p className="text-xs text-muted-foreground">Live health checks for all platform services.</p>
+              </div>
             </div>
-            <h3 className="font-semibold">System Status & Toolchain</h3>
+            
+            {downChecks.length > 0 && (
+              <Badge variant="destructive" className="animate-pulse">
+                {downChecks.length} Service{downChecks.length > 1 ? 's' : ''} Reporting Issues
+              </Badge>
+            )}
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -248,7 +266,7 @@ function StatusPage() {
             ].map((tool) => {
               // Find check status (simple fuzzy match)
               const check = checks.find(c => c.name.toLowerCase().includes(tool.id));
-              const isUp = check ? (check.status === "up" || check.status === "ok") : true; // Default to up if no check found (e.g. webhooks internal)
+              const isUp = check ? (check.status === "up" || check.status === "ok") : true; 
               const statusColor = isUp ? "bg-emerald-500" : "bg-red-500";
               const Icon = tool.icon;
 
@@ -256,19 +274,35 @@ function StatusPage() {
                 <a
                   key={tool.id}
                   href={tool.path}
-                  target={tool.path.startsWith("http") || tool.path.startsWith("/api") ? "_blank" : "_self"}
+                  target={tool.path.startsWith("http") || tool.path.startsWith("/api") || tool.path.includes("/") ? "_blank" : "_self"}
                   className="flex flex-col items-center justify-center p-4 rounded-lg bg-background/50 border hover:bg-background/80 transition-colors group relative overflow-hidden"
                 >
-                  <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${statusColor}`} />
+                  <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${statusColor} ${!isUp ? 'animate-pulse' : ''}`} />
                   <Icon className="w-6 h-6 mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
                   <span className="text-sm font-medium">{tool.name}</span>
-                  <span className="text-[10px] text-muted-foreground mt-1 capitalize">
+                  <span className={cn(
+                    "text-[10px] mt-1 capitalize font-medium",
+                    isUp ? "text-emerald-500/80" : "text-red-500"
+                  )}>
                     {check?.status ?? "Operational"}
                   </span>
                 </a>
               );
             })}
           </div>
+
+          {downChecks.length > 0 && (
+            <div className="mt-6 pt-6 border-t">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Service Alerts</h4>
+              <div className="flex flex-wrap gap-2">
+                {downChecks.map(c => (
+                  <Badge key={c.name} variant="outline" className="text-[10px] border-red-500/30 text-red-400 bg-red-500/5">
+                    {c.name}: {c.status}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </BentoItem>
       </BentoGrid>
     </div>

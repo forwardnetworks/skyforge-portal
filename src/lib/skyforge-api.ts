@@ -408,7 +408,10 @@ export async function getUIConfig(): Promise<UIConfigResponse> {
   return apiFetch<UIConfigResponse>("/api/ui/config");
 }
 
-export type StatusSummaryResponse = operations["GET:skyforge.StatusSummary"]["responses"][200]["content"]["application/json"];
+export type StatusSummaryResponse = operations["GET:skyforge.StatusSummary"]["responses"][200]["content"]["application/json"] & {
+  deploymentsTotal?: number;
+  deploymentsActive?: number;
+};
 export async function getStatusSummary(): Promise<StatusSummaryResponse> {
   return apiFetch<StatusSummaryResponse>("/status/summary");
 }
