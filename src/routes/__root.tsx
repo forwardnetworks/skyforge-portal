@@ -129,21 +129,6 @@ function RootLayout() {
           </div>
 
           <nav className="flex items-center gap-4 text-sm">
-            <Link to="/dashboard/deployments" className="hidden sm:inline-block text-muted-foreground hover:text-foreground transition-colors">
-              Deployments
-            </Link>
-            <Link to="/status" className="hidden sm:inline-block text-muted-foreground hover:text-foreground transition-colors">
-              Status
-            </Link>
-            <a
-              className="hidden sm:inline-block text-muted-foreground hover:text-foreground transition-colors"
-              href="/git/skyforge/skyforge/issues/new"
-              target="_blank"
-              rel="noreferrer"
-            >
-              File an issue
-            </a>
-            <div className="mx-2 hidden h-4 w-px bg-border sm:block" />
             <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-foreground">
               <Link to="/notifications" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
@@ -224,7 +209,7 @@ function RootLayout() {
             </div>
           </aside>
         )}
-        <main className="flex-1 px-4 py-6 w-full overflow-hidden">
+        <main className="flex-1 px-4 py-6 w-full overflow-hidden flex flex-col">
           {showLoginGate ? (
             <div className="mx-auto max-w-xl">
               <Card>
@@ -287,6 +272,19 @@ function RootLayout() {
                 </Breadcrumb>
               </div>
               <Outlet />
+              <footer className="mt-auto pt-12 pb-6 flex items-center justify-between text-xs text-muted-foreground border-t">
+                <div className="flex gap-4">
+                  <span>Questions? Reach out at <span className="font-mono text-primary">#ask-skyforge</span></span>
+                </div>
+                <a
+                  className="hover:text-foreground transition-colors underline hover:no-underline"
+                  href="/git/skyforge/skyforge/issues/new"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  File an issue
+                </a>
+              </footer>
             </>
           )}
         </main>
