@@ -1,7 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { TanStackRouterVite } from "@tanstack/router-vite-plugin";
-import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   build: {
@@ -29,9 +28,7 @@ export default defineConfig({
   },
   plugins: [TanStackRouterVite(), react()],
   resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url))
-    }
+    tsconfigPaths: true
   },
   server: {
     port: 3000,
