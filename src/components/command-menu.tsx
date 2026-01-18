@@ -53,7 +53,7 @@ export function CommandMenu() {
             onSelect={() => runCommand(() => navigate({ to: "/" }))}
           >
             <LayoutDashboard className="mr-2 h-4 w-4" />
-            <span>Home</span>
+            <span>Dashboard</span>
           </CommandItem>
           <CommandItem
             onSelect={() => runCommand(() => navigate({ to: "/dashboard/deployments" }))}

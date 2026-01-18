@@ -264,11 +264,10 @@ function DesignSystemPage() {
         <h2 className="text-xl font-semibold">Breadcrumbs</h2>
         <div className="p-4 border rounded-lg">
           <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
+                          <BreadcrumbList>
+                            <BreadcrumbItem>
+                              <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+                            </BreadcrumbItem>              <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink href="/components">Components</BreadcrumbLink>
               </BreadcrumbItem>

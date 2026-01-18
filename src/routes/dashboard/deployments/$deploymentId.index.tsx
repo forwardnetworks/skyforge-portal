@@ -93,7 +93,7 @@ function DeploymentDetailPage() {
           title="Deployment not found"
           description="This deployment may have been deleted or you don't have access."
           action={{
-            label: "Back to Dashboard",
+            label: "Back to Deployments",
             onClick: () => navigate({ to: "/dashboard/deployments" })
           }}
         />

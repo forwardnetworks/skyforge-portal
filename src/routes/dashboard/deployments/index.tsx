@@ -200,7 +200,7 @@ function DeploymentsPage() {
       {/* Top Header / Workspace Context */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Deployments</h1>
           <p className="text-muted-foreground text-sm">Manage deployments and monitor workspace activity.</p>
         </div>
         
@@ -243,7 +243,7 @@ function DeploymentsPage() {
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
               <Skeleton className="h-4 w-64" />
               <div className="text-center text-muted-foreground">
-                Waiting for dashboard stream…
+                Waiting for platform stream…
                 <div className="mt-2 text-xs">
                   If you are logged out,{" "}
                   <a

@@ -66,7 +66,7 @@ function RunDetailPage() {
       {!snap.data && (
         <Card className="border-dashed">
           <CardContent className="pt-6 text-center text-muted-foreground">
-             Waiting for dashboard stream…
+             Waiting for platform stream…
              <div className="mt-2 text-xs">
                 If you are logged out,{" "}
                 <a

@@ -130,7 +130,7 @@ function RootLayout() {
 
           <nav className="flex items-center gap-4 text-sm">
             <Link to="/dashboard/deployments" className="hidden sm:inline-block text-muted-foreground hover:text-foreground transition-colors">
-              Dashboard
+              Deployments
             </Link>
             <Link to="/status" className="hidden sm:inline-block text-muted-foreground hover:text-foreground transition-colors">
               Status
@@ -260,13 +260,12 @@ function RootLayout() {
             </div>
           ) : (
             <>
-              <div className="mb-6">
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                    </BreadcrumbItem>
-                    {location.pathname.split("/").filter(Boolean).map((segment, index, array) => {
+                        <div className="mb-6">
+                          <Breadcrumb>
+                            <BreadcrumbList>
+                              <BreadcrumbItem>
+                                <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+                              </BreadcrumbItem>                    {location.pathname.split("/").filter(Boolean).map((segment, index, array) => {
                       const path = `/${array.slice(0, index + 1).join("/")}`;
                       const isLast = index === array.length - 1;
                       return (
@@ -311,7 +310,7 @@ function NotFound() {
         </CardHeader>
         <CardContent className="flex flex-wrap justify-center gap-3">
           <Button variant="default" asChild>
-            <Link to="/dashboard/deployments">Go to dashboard</Link>
+            <Link to="/dashboard/deployments">Go to deployments</Link>
           </Button>
           <Button variant="outline" asChild>
             <Link to="/status">Platform status</Link>
@@ -342,7 +341,7 @@ function RootError(props: ErrorComponentProps) {
             Try again
           </Button>
           <Button variant="secondary" asChild>
-            <Link to="/dashboard/deployments">Go to dashboard</Link>
+            <Link to="/dashboard/deployments">Go to deployments</Link>
           </Button>
         </CardContent>
       </Card>

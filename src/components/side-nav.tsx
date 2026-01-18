@@ -39,8 +39,8 @@ type NavItem = {
 };
 
 const items: NavItem[] = [
-  { label: "Home", href: "/", icon: LayoutDashboard },
-  { label: "Dashboard", href: "/dashboard/deployments", icon: FolderKanban },
+  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
   { label: "S3", href: "/dashboard/s3", icon: Server },
   {
     label: "SSOT",
