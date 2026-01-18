@@ -146,7 +146,7 @@ function DeploymentDetailPage() {
   const topology = useQuery({
     queryKey: queryKeys.deploymentTopology(deployment.workspaceId, deployment.id),
     queryFn: async () => getDeploymentTopology(deployment.workspaceId, deployment.id),
-    enabled: deployment.type === "containerlab",
+    enabled: ["containerlab", "netlab-c9s", "clabernetes"].includes(deployment.type),
     retry: false,
     staleTime: 10_000
   });
@@ -215,7 +215,11 @@ function DeploymentDetailPage() {
                   <CardDescription>
                     {deployment.type === "containerlab"
                       ? "Derived from containerlab after deploy (includes resolved mgmt IPs)."
-                      : "Topology is provider-dependent; not yet implemented for this deployment type."}
+                      : deployment.type === "netlab-c9s"
+                        ? "Derived from clabernetes after deploy (includes resolved mgmt IPs)."
+                        : deployment.type === "clabernetes"
+                          ? "Derived from clabernetes after deploy (includes resolved mgmt IPs)."
+                          : "Topology is provider-dependent; not yet implemented for this deployment type."}
                   </CardDescription>
                 </div>
               </div>
