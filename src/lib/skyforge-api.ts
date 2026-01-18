@@ -403,6 +403,11 @@ export async function destroyDeployment(workspaceId: string, deploymentId: strin
   );
 }
 
+export type UIConfigResponse = operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"];
+export async function getUIConfig(): Promise<UIConfigResponse> {
+  return apiFetch<UIConfigResponse>("/api/ui/config");
+}
+
 export type StatusSummaryResponse = operations["GET:skyforge.StatusSummary"]["responses"][200]["content"]["application/json"];
 export async function getStatusSummary(): Promise<StatusSummaryResponse> {
   return apiFetch<StatusSummaryResponse>("/status/summary");

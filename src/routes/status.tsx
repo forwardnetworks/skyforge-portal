@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getStatusSummary } from "../lib/skyforge-api";
+import { getStatusSummary, getUIConfig } from "../lib/skyforge-api";
 import { queryKeys } from "../lib/query-keys";
 import { useStatusSummaryEvents } from "../lib/status-events";
 import {
@@ -24,6 +24,7 @@ import {
   Sparkles,
   Workflow,
   Zap,
+  Globe,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -37,6 +38,12 @@ function StatusPage() {
   const summary = useQuery({
     queryKey: queryKeys.statusSummary(),
     queryFn: getStatusSummary,
+    staleTime: Infinity,
+  });
+
+  const uiConfig = useQuery({
+    queryKey: queryKeys.uiConfig(),
+    queryFn: getUIConfig,
     staleTime: Infinity,
   });
 
@@ -120,6 +127,32 @@ function StatusPage() {
 
       {/* Info Cards */}
       <div className="grid gap-4 md:grid-cols-3">
+        {uiConfig.data?.externalUrl && (
+          <Card variant="glass" className="border-green-500/20 bg-green-500/5">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2 text-green-500">
+                <Globe className="w-4 h-4" />
+                Public Access
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-3">
+              <p>
+                This environment is securely accessible via Cloudflare Tunnel.
+              </p>
+              <div className="rounded bg-background/50 p-2 border">
+                <a
+                  className="text-primary hover:underline break-all font-mono text-xs"
+                  href={uiConfig.data.externalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {uiConfig.data.externalUrl}
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card variant="glass">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
