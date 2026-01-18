@@ -1,6 +1,6 @@
+import { useState } from "react";
 import {
   BookOpen,
-  Bell,
   Cloud,
   FolderKanban,
   GitBranch,
@@ -12,11 +12,22 @@ import {
   Server,
   Settings,
   ShieldCheck,
-  Webhook
+  Webhook,
+  Database,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "../lib/utils";
 import { SKYFORGE_API } from "../lib/skyforge-api";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 type NavItem = {
   label: string;
@@ -24,14 +35,22 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   external?: boolean;
   adminOnly?: boolean;
+  children?: NavItem[];
 };
 
 const items: NavItem[] = [
   { label: "Home", href: "/", icon: LayoutDashboard },
   { label: "Dashboard", href: "/dashboard/deployments", icon: FolderKanban },
   { label: "S3", href: "/dashboard/s3", icon: Server },
-  { label: "NetBox", href: "/netbox/", icon: Network, external: true },
-  { label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
+  {
+    label: "SSOT",
+    href: "",
+    icon: Database,
+    children: [
+      { label: "NetBox", href: "/netbox/", icon: Network, external: true },
+      { label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
+    ]
+  },
   { label: "PKI", href: "/dashboard/pki", icon: KeyRound },
   { label: "Webhooks", href: "/webhooks", icon: Webhook },
   { label: "Syslog", href: "/syslog", icon: Inbox },
@@ -47,11 +66,17 @@ const items: NavItem[] = [
 
 export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ "SSOT": true });
 
   const isActiveHref = (href: string) => {
+    if (!href) return false;
     if (href === "/") return pathname === "/";
     if (href.endsWith("/")) return pathname.startsWith(href);
     return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  const toggleExpand = (label: string) => {
+    setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
   return (
@@ -64,9 +89,114 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
           {items
             .filter((item) => (item.adminOnly ? !!props.isAdmin : true))
             .map((item) => {
-              const active = isActiveHref(item.href);
               const Icon = item.icon;
+              
+              if (item.children) {
+                // Check if any child is active to highlight parent
+                const isChildActive = item.children.some(child => isActiveHref(child.href));
+                const isOpen = expanded[item.label];
 
+                // Collapsed Mode: Dropdown
+                if (props.collapsed) {
+                  return (
+                    <DropdownMenu key={item.label}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={cn(
+                            "group flex items-center justify-center rounded-md px-2 py-2 text-sm font-medium transition-colors w-full",
+                            "hover:bg-accent hover:text-accent-foreground",
+                            isChildActive ? "bg-accent text-accent-foreground" : "transparent"
+                          )}
+                          title={item.label}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="right" align="start" sideOffset={10}>
+                        <DropdownMenuLabel>{item.label}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {item.children.map((child) => (
+                          <DropdownMenuItem key={child.href} asChild>
+                            {child.external ? (
+                              <a href={child.href} target="_blank" rel="noreferrer" className="flex items-center gap-2 cursor-pointer w-full">
+                                <child.icon className="h-4 w-4 mr-2" />
+                                {child.label}
+                              </a>
+                            ) : (
+                              <Link to={child.href} className="flex items-center gap-2 cursor-pointer w-full">
+                                <child.icon className="h-4 w-4 mr-2" />
+                                {child.label}
+                              </Link>
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                }
+
+                // Expanded Mode: Accordion
+                return (
+                  <div key={item.label} className="space-y-1">
+                    <button
+                      onClick={() => toggleExpand(item.label)}
+                      className={cn(
+                        "group flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        isChildActive ? "text-foreground font-semibold" : "text-muted-foreground"
+                      )}
+                    >
+                      <div className="flex items-center">
+                        <Icon className="mr-2 h-4 w-4" />
+                        <span>{item.label}</span>
+                      </div>
+                      {isOpen ? (
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 opacity-50" />
+                      )}
+                    </button>
+                    {isOpen && (
+                      <div className="grid gap-1 pl-4 border-l ml-4 border-border/50">
+                        {item.children.map((child) => {
+                          const active = isActiveHref(child.href);
+                          const ChildIcon = child.icon;
+                          const childClass = cn(
+                            "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            "hover:bg-accent hover:text-accent-foreground",
+                            active ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                          );
+
+                          if (child.external) {
+                            return (
+                              <a
+                                key={child.href}
+                                href={child.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={childClass}
+                              >
+                                <ChildIcon className="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" />
+                                <span>{child.label}</span>
+                              </a>
+                            );
+                          }
+
+                          return (
+                            <Link key={child.href} to={child.href} className={childClass}>
+                              <ChildIcon className="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" />
+                              <span>{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Standard Item
+              const active = isActiveHref(item.href);
               const baseClass = cn(
                 "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 "hover:bg-accent hover:text-accent-foreground",
