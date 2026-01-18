@@ -9,6 +9,7 @@ import {
   getUserForwardCollector,
   putUserForwardCollector,
   resetUserForwardCollector,
+  restartUserCollector,
   type PutUserForwardCollectorRequest,
 } from "../../lib/skyforge-api";
 import { Button } from "../../components/ui/button";
@@ -101,6 +102,15 @@ function ForwardCollectorPage() {
     onError: (e) => toast.error("Failed to clear collector", { description: (e as Error).message }),
   });
 
+  const restartMutation = useMutation({
+    mutationFn: restartUserCollector,
+    onSuccess: async () => {
+      toast.success("Collector restarted", { description: "Pulling latest image (if available)..." });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.userCollectorRuntime() });
+    },
+    onError: (e) => toast.error("Failed to restart collector", { description: (e as Error).message }),
+  });
+
   const authKey = (cfg?.authorizationKey ?? "").trim();
   const isReady = !!runtime?.ready;
 
@@ -139,6 +149,20 @@ function ForwardCollectorPage() {
                   Pod: <span className="font-mono">{String(runtime.podName)}</span> ({String(runtime.podPhase ?? "")})
                 </div>
               ) : null}
+              {runtime?.image ? (
+                <div className="text-xs text-muted-foreground">
+                  Image: <span className="font-mono">{String(runtime.image)}</span>
+                </div>
+              ) : null}
+              {runtime?.updateStatus ? (
+                <div className="text-xs text-muted-foreground">
+                  Update check:{" "}
+                  <span className="font-mono">
+                    {String(runtime.updateStatus)}
+                    {runtime.updateAvailable ? " (update available)" : ""}
+                  </span>
+                </div>
+              ) : null}
               {runtime?.logsCommandHint ? (
                 <div className="pt-2">
                   <div className="text-xs text-muted-foreground">Logs</div>
@@ -151,6 +175,13 @@ function ForwardCollectorPage() {
           )}
 
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={!authKey || restartMutation.isPending}
+              onClick={() => restartMutation.mutate()}
+            >
+              {restartMutation.isPending ? "Restarting…" : "Restart (pull latest)"}
+            </Button>
             <Button
               variant="outline"
               disabled={!authKey || resetMutation.isPending}

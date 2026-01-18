@@ -687,6 +687,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forward/collector/restart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RestartUserCollector triggers a rolling restart of the user's in-cluster
+         *     collector Deployment.
+         * @description This is used to pull down a newer image when using \`:latest\`.
+         */
+        post: operations["POST:skyforge.RestartUserCollector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/forward/collector/runtime": {
         parameters: {
             query?: never;
@@ -4076,12 +4097,17 @@ export interface components {
         };
         "skyforge.collectorRuntimeStatus": {
             deploymentName: string;
+            image: string;
+            imageId: string;
             logsCommandHint: string;
             namespace: string;
             podName: string;
             podPhase: string;
             ready: boolean;
+            remoteDigest: string;
             startTime: string;
+            updateAvailable: boolean;
+            updateStatus: string;
         };
         "skyforge.storageObjectSummary": {
             contentType: string;
@@ -5235,6 +5261,29 @@ export interface operations {
                         skipTlsVerify: boolean;
                         updatedAt: string;
                         username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RestartUserCollector": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
                     };
                 };
             };

@@ -269,6 +269,11 @@ export type UserForwardCollectorResponse = {
     podPhase?: string;
     ready?: boolean;
     startTime?: ISO8601;
+    image?: string;
+    imageId?: string;
+    remoteDigest?: string;
+    updateAvailable?: boolean;
+    updateStatus?: string;
     logsCommandHint?: string;
   };
   updatedAt?: ISO8601;
@@ -305,12 +310,21 @@ export type UserCollectorRuntimeResponse = {
     podPhase?: string;
     ready?: boolean;
     startTime?: ISO8601;
+    image?: string;
+    imageId?: string;
+    remoteDigest?: string;
+    updateAvailable?: boolean;
+    updateStatus?: string;
     logsCommandHint?: string;
   };
 };
 
 export async function getUserCollectorRuntime(): Promise<UserCollectorRuntimeResponse> {
   return apiFetch<UserCollectorRuntimeResponse>("/api/forward/collector/runtime");
+}
+
+export async function restartUserCollector(): Promise<UserCollectorRuntimeResponse> {
+  return apiFetch<UserCollectorRuntimeResponse>("/api/forward/collector/restart", { method: "POST", body: "{}" });
 }
 
 export type UpdateWorkspaceSettingsRequest = NonNullable<
