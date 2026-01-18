@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { queryKeys } from "../../lib/query-keys";
 import {
   clearUserForwardCollector,
+  getUserCollectorRuntime,
   getUserForwardCollector,
   putUserForwardCollector,
   resetUserForwardCollector,
@@ -28,7 +29,15 @@ function ForwardCollectorPage() {
     queryFn: getUserForwardCollector,
   });
 
+  const runtimeQ = useQuery({
+    queryKey: queryKeys.userCollectorRuntime(),
+    queryFn: getUserCollectorRuntime,
+    enabled: !!cfgQ.data?.authorizationKey,
+    refetchInterval: 5000,
+  });
+
   const cfg = cfgQ.data;
+  const runtime = (runtimeQ.data?.runtime ?? cfg?.runtime) as any;
 
   const [baseUrl, setBaseUrl] = useState("");
   const [username, setUsername] = useState("");
@@ -78,9 +87,7 @@ function ForwardCollectorPage() {
   });
 
   const authKey = (cfg?.authorizationKey ?? "").trim();
-  const tokenInstructions = authKey
-    ? `docker run --rm -e TOKEN='${authKey}' ghcr.io/forwardnetworks/skyforge-forward-collector:latest`
-    : "";
+  const isReady = !!runtime?.ready;
 
   return (
     <div className="space-y-6 p-6">
@@ -94,7 +101,7 @@ function ForwardCollectorPage() {
       <Card>
         <CardHeader>
           <CardTitle>Collector status</CardTitle>
-          <CardDescription>Authorization key is used as the collector token.</CardDescription>
+          <CardDescription>Runs as a per-user Deployment inside the cluster.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {cfgQ.isLoading ? (
@@ -103,18 +110,26 @@ function ForwardCollectorPage() {
             <div className="text-sm text-destructive">Failed to load Forward collector settings.</div>
           ) : authKey ? (
             <div className="space-y-2">
-              <div className="text-xs text-muted-foreground">Authorization key</div>
-              <pre className="bg-muted p-3 rounded-md overflow-auto font-mono text-xs">{authKey}</pre>
               <div className="text-xs text-muted-foreground">
                 Collector: <span className="font-mono">{cfg?.collectorUsername ?? ""}</span> ({cfg?.collectorId ?? ""})
               </div>
-              <div className="pt-2">
-                <div className="text-xs text-muted-foreground">Run the collector (example)</div>
-                <pre className="bg-muted p-3 rounded-md overflow-auto font-mono text-xs">{tokenInstructions}</pre>
-                <div className="text-xs text-muted-foreground">
-                  The collector must be running somewhere to show <span className="font-mono">Connected</span> in Forward.
-                </div>
+              <div className="text-sm">
+                Status:{" "}
+                <span className={isReady ? "text-emerald-600" : "text-muted-foreground"}>
+                  {isReady ? "Running" : "Starting…"}
+                </span>
               </div>
+              {runtime?.podName ? (
+                <div className="text-xs text-muted-foreground">
+                  Pod: <span className="font-mono">{String(runtime.podName)}</span> ({String(runtime.podPhase ?? "")})
+                </div>
+              ) : null}
+              {runtime?.logsCommandHint ? (
+                <div className="pt-2">
+                  <div className="text-xs text-muted-foreground">Logs</div>
+                  <pre className="bg-muted p-3 rounded-md overflow-auto font-mono text-xs">{String(runtime.logsCommandHint)}</pre>
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">Not configured yet.</div>
@@ -142,9 +157,7 @@ function ForwardCollectorPage() {
       <Card>
         <CardHeader>
           <CardTitle>Forward credentials</CardTitle>
-          <CardDescription>
-            Used to create the collector via <span className="font-mono">POST /api/collectors</span> on your Forward instance.
-          </CardDescription>
+          <CardDescription>Used to create your per-user collector token in Forward.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">

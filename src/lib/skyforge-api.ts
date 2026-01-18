@@ -236,6 +236,15 @@ export type UserForwardCollectorResponse = {
   collectorId?: string;
   collectorUsername?: string;
   authorizationKey?: string;
+  runtime?: {
+    namespace?: string;
+    deploymentName?: string;
+    podName?: string;
+    podPhase?: string;
+    ready?: boolean;
+    startTime?: ISO8601;
+    logsCommandHint?: string;
+  };
   updatedAt?: ISO8601;
 };
 
@@ -259,6 +268,22 @@ export async function resetUserForwardCollector(): Promise<UserForwardCollectorR
 
 export async function clearUserForwardCollector(): Promise<void> {
   await apiFetch<unknown>("/api/forward/collector", { method: "DELETE" });
+}
+
+export type UserCollectorRuntimeResponse = {
+  runtime?: {
+    namespace?: string;
+    deploymentName?: string;
+    podName?: string;
+    podPhase?: string;
+    ready?: boolean;
+    startTime?: ISO8601;
+    logsCommandHint?: string;
+  };
+};
+
+export async function getUserCollectorRuntime(): Promise<UserCollectorRuntimeResponse> {
+  return apiFetch<UserCollectorRuntimeResponse>("/api/forward/collector/runtime");
 }
 
 export type UpdateWorkspaceSettingsRequest = NonNullable<
