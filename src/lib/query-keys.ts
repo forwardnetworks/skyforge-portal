@@ -5,6 +5,7 @@ export const queryKeys = {
   runLogs: (runId: string) => ["runLogs", runId] as const,
   workspaces: () => ["workspaces"] as const,
   storageFiles: () => ["storageFiles"] as const,
+  workspaceArtifacts: (workspaceId: string) => ["workspaceArtifacts", workspaceId] as const,
   eveServers: () => ["eveServers"] as const,
   netlabServers: () => ["netlabServers"] as const,
   notifications: (includeRead?: boolean, limit?: string) =>

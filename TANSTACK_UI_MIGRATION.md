@@ -342,3 +342,253 @@ The Skyforge Portal has achieved **2026 A+ architecture status** with a modern, 
 The remaining opportunities are **optional polish** - the portal is ready for production deployment.
 
 **Total Effort for All Future Enhancements:** ~20-25 hours (optional)
+
+---
+
+## 🔴 CRITICAL: Functional Issues Identified (2026-01-18)
+
+The following are **functional bugs and missing features** that need to be addressed for a complete portal experience.
+
+### Issue 1: Run Details Page Shows No Data
+
+**Location:** `/dashboard/runs/$runId.tsx`
+**Symptom:** Clicking a run shows blank metadata (Type, Created, Started, Finished all show "—") and "Waiting for output..."
+
+**Root Causes:**
+
+**A. Dashboard snapshot never populated (lines 22-28):**
+```typescript
+// PROBLEM: queryFn always returns null, so snap.data is always null
+const snap = useQuery<DashboardSnapshot | null>({
+  queryKey: queryKeys.dashboardSnapshot(),
+  queryFn: async () => null,  // ← ALWAYS NULL!
+  initialData: null,
+  retry: false,
+  staleTime: Infinity
+});
+```
+
+The run details page does NOT call `useDashboardEvents(true)`, so the dashboard snapshot is never populated. The `run` variable at line 30 is always `undefined`.
+
+**B. Wrong field names used (lines 104-109):**
+```typescript
+// PROBLEM: Frontend uses fields that don't exist in backend response
+<Meta label="Type" value={String(run?.type ?? "")} />      // Backend: tpl_alias
+<Meta label="Created" value={String(run?.createdAt ?? "")} />  // Backend: created
+<Meta label="Started" value={String(run?.startedAt ?? "")} />  // Backend: start
+<Meta label="Finished" value={String(run?.finishedAt ?? "")} /> // Backend: end
+```
+
+**Fix Required:**
+```typescript
+// Option 1: Add useDashboardEvents to populate snapshot
+function RunDetailPage() {
+  const { runId } = Route.useParams();
+  useRunEvents(runId, true);
+  useDashboardEvents(true);  // ← ADD THIS LINE
+
+  // ... rest of component
+
+  // Fix field names:
+  <Meta label="Type" value={String(run?.tpl_alias ?? "")} />
+  <Meta label="Created" value={String(run?.created ?? "")} />
+  <Meta label="Started" value={String(run?.start ?? "")} />
+  <Meta label="Finished" value={String(run?.end ?? "")} />
+}
+```
+
+**Estimated Effort:** 30 minutes
+
+---
+
+### Issue 2: Recent Runs Table Shows Blank Type & Created
+
+**Location:** `/dashboard/deployments/index.tsx` (lines 367, 371)
+**Symptom:** Type and Created columns are blank in the recent runs table
+
+**Root Cause:** Wrong field names used:
+```typescript
+// Line 367 - WRONG
+<TableCell>{String(r.type ?? "")}</TableCell>
+// Line 371 - WRONG
+<TableCell className="text-muted-foreground text-xs">{String(r.createdAt ?? "")}</TableCell>
+```
+
+**Fix Required:**
+```typescript
+// Backend returns tpl_alias, not type
+<TableCell>{String(r.tpl_alias ?? "")}</TableCell>
+// Backend returns created, not createdAt
+<TableCell className="text-muted-foreground text-xs">{String(r.created ?? "")}</TableCell>
+```
+
+**Estimated Effort:** 10 minutes
+
+---
+
+### Issue 3: Missing "View Details" / "Info" Action in Deployment Dropdown
+
+**Location:** `/dashboard/deployments/index.tsx` (lines 299-320)
+**Symptom:** Dropdown only has Start/Stop/Destroy, no way to view deployment details
+
+**Current State:**
+```typescript
+<DropdownMenuContent align="end">
+  <DropdownMenuItem onClick={() => handleStart(d)} ...>Start</DropdownMenuItem>
+  <DropdownMenuItem onClick={() => handleStop(d)} ...>Stop</DropdownMenuItem>
+  <DropdownMenuSeparator />
+  <DropdownMenuItem ... className="text-destructive">Destroy</DropdownMenuItem>
+</DropdownMenuContent>
+```
+
+**Fix Required:** Add "View Details" action at the top:
+```typescript
+<DropdownMenuContent align="end">
+  <DropdownMenuItem asChild>
+    <Link to="/dashboard/deployments/$deploymentId" params={{ deploymentId: d.id }}>
+      <Info className="mr-2 h-4 w-4" />
+      View Details
+    </Link>
+  </DropdownMenuItem>
+  <DropdownMenuSeparator />
+  <DropdownMenuItem onClick={() => handleStart(d)} ...>Start</DropdownMenuItem>
+  <DropdownMenuItem onClick={() => handleStop(d)} ...>Stop</DropdownMenuItem>
+  <DropdownMenuSeparator />
+  <DropdownMenuItem ... className="text-destructive">Destroy</DropdownMenuItem>
+</DropdownMenuContent>
+```
+
+**Estimated Effort:** 15 minutes
+
+---
+
+### Issue 4: Destroy Action Does Nothing
+
+**Location:** `/dashboard/deployments/index.tsx`
+**Symptom:** Clicking "Destroy" in the dropdown and confirming does nothing
+
+**Potential Causes:**
+1. **Deployment has `activeTaskId`** - Destroy is disabled while a task is running (line 315: `disabled={!!d.activeTaskId}`)
+2. **API error not surfaced** - Check if `destroyDeployment()` is throwing errors silently
+3. **Backend issue** - The destroy endpoint may not be working
+
+**Debugging Steps:**
+1. Check browser Network tab when clicking Destroy - is the API call made?
+2. Check if deployment has `activeTaskId` set (prevents destruction)
+3. Add error logging to the destroy mutation:
+
+```typescript
+const destroyMutation = useMutation({
+  mutationFn: async () => {
+    if (!destroyTarget) return;
+    console.log("Destroying deployment:", destroyTarget.workspaceId, destroyTarget.id);
+    return destroyDeployment(destroyTarget.workspaceId, destroyTarget.id);
+  },
+  onSuccess: () => {
+    toast.success("Deployment destroyed");
+    setDestroyDialogOpen(false);
+  },
+  onError: (error) => {
+    console.error("Destroy failed:", error);
+    toast.error("Failed to destroy deployment", {
+      description: (error as Error).message
+    });
+  }
+});
+```
+
+**Estimated Effort:** 30 minutes (debugging + fix)
+
+---
+
+### Issue 5: No Workspace Management UI
+
+**Location:** Missing entirely
+**Symptom:** No way to create, edit, or delete workspaces from the dashboard
+
+**Current State:**
+- `getWorkspaces()` API exists (read-only)
+- No `createWorkspace()`, `updateWorkspace()`, `deleteWorkspace()` APIs exposed in `skyforge-api.ts`
+- No `/dashboard/workspaces/new` or `/admin/workspaces` routes exist
+
+**Fix Required:**
+
+**A. Expose workspace CRUD APIs in `skyforge-api.ts`:**
+```typescript
+// Add these types and functions
+export type CreateWorkspaceRequest = {
+  name: string;
+  slug: string;
+  description?: string;
+};
+
+export async function createWorkspace(body: CreateWorkspaceRequest): Promise<SkyforgeWorkspace> {
+  return apiFetch<SkyforgeWorkspace>("/api/workspaces", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateWorkspace(
+  workspaceId: string,
+  body: Partial<CreateWorkspaceRequest>
+): Promise<SkyforgeWorkspace> {
+  return apiFetch<SkyforgeWorkspace>(`/api/workspaces/${workspaceId}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteWorkspace(workspaceId: string): Promise<void> {
+  return apiFetch<void>(`/api/workspaces/${workspaceId}`, {
+    method: "DELETE",
+  });
+}
+```
+
+**B. Create workspace management routes:**
+- `/dashboard/workspaces` - List workspaces with create button
+- `/dashboard/workspaces/new` - Create workspace form
+- `/dashboard/workspaces/$workspaceId` - Edit workspace details
+
+**C. Add workspace link to side navigation**
+
+**Estimated Effort:** 4-6 hours (full CRUD UI)
+
+---
+
+### Issue 6: "Queue 0" Not Useful in Deployments Table
+
+**Location:** `/dashboard/deployments/index.tsx` (line 290)
+**Symptom:** Always shows "0" which isn't informative
+
+**Current State:**
+```typescript
+<TableCell>{d.queueDepth ?? 0}</TableCell>
+```
+
+**Assessment:** This is working as designed - "0" means no pending tasks. However, it could be more informative.
+
+**Enhancement Options:**
+1. Hide column when all deployments have queue=0
+2. Show badge instead of number: `<Badge variant="secondary">Queue: 0</Badge>`
+3. Add tooltip explaining what queue depth means
+4. Only show when queueDepth > 0
+
+**Estimated Effort:** 15-30 minutes (enhancement)
+
+---
+
+## Summary: Functional Issues Priority
+
+| Issue | Severity | Effort | Impact |
+|-------|----------|--------|--------|
+| Run details page no data | 🔴 Critical | 30 min | Users can't see run information |
+| Runs table blank columns | 🔴 Critical | 10 min | Missing type/created data |
+| Missing "Info" action | 🟡 Medium | 15 min | Can't easily view deployment details |
+| Destroy does nothing | 🔴 Critical | 30 min | Blocking feature |
+| No workspace management | 🟡 Medium | 4-6 hrs | Missing admin functionality |
+| Queue 0 not useful | 🟢 Low | 15 min | UX polish |
+
+**Total Critical Fix Time:** ~1.5 hours
+**Total Including Workspace UI:** ~6-8 hours

@@ -15,6 +15,7 @@ import {
   listEveServers,
   listNetlabServers,
   type CreateWorkspaceDeploymentRequest,
+  type DashboardSnapshot,
   type ExternalTemplateRepo,
   type SkyforgeWorkspace,
   type WorkspaceTemplatesResponse
@@ -65,7 +66,7 @@ function CreateDeploymentPage() {
   const { workspace } = Route.useSearch();
 
   useDashboardEvents(true);
-  const dash = useQuery({
+  const dash = useQuery<DashboardSnapshot | null>({
     queryKey: queryKeys.dashboardSnapshot(),
     queryFn: async () => null,
     initialData: null,

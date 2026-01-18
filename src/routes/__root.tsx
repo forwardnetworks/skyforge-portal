@@ -57,13 +57,10 @@ function RootLayout() {
   ]);
   const loginHref = useMemo(() => buildLoginUrl(next), [next]);
 
-  useEffect(() => {
+  const isProtectedRoute = useMemo(() => {
     const protectedPrefixes = ["/dashboard", "/admin", "/webhooks", "/syslog", "/snmp", "/notifications"];
-    if (!protectedPrefixes.some((p) => location.pathname.startsWith(p))) return;
-    if (session.isLoading) return;
-    if (session.data?.authenticated) return;
-    window.location.href = loginHref;
-  }, [location.pathname, loginHref, session.data?.authenticated, session.isLoading]);
+    return protectedPrefixes.some((p) => location.pathname.startsWith(p));
+  }, [location.pathname]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -72,6 +69,7 @@ function RootLayout() {
 
   const who = session.data?.displayName || session.data?.username || "";
   const isAdmin = !!session.data?.isAdmin;
+  const showLoginGate = isProtectedRoute && !session.isLoading && !session.data?.authenticated;
 
     return (
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -227,34 +225,71 @@ function RootLayout() {
           </aside>
         )}
         <main className="flex-1 px-4 py-6 w-full overflow-hidden">
-          <div className="mb-6">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                </BreadcrumbItem>
-                {location.pathname.split("/").filter(Boolean).map((segment, index, array) => {
-                  const path = `/${array.slice(0, index + 1).join("/")}`;
-                  const isLast = index === array.length - 1;
-                  return (
-                    <React.Fragment key={path}>
-                      <BreadcrumbSeparator />
-                      <BreadcrumbItem>
-                        {isLast ? (
-                          <BreadcrumbPage className="capitalize">{segment}</BreadcrumbPage>
-                        ) : (
-                          <BreadcrumbLink href={path} className="capitalize">
-                            {segment}
-                          </BreadcrumbLink>
-                        )}
-                      </BreadcrumbItem>
-                    </React.Fragment>
-                  );
-                })}
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-          <Outlet />
+          {showLoginGate ? (
+            <div className="mx-auto max-w-xl">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Login Required</CardTitle>
+                  <CardDescription>Sign in to access this page.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  <Button
+                    variant="default"
+                    disabled={loggingIn}
+                    onClick={async () => {
+                      try {
+                        setLoggingIn(true);
+                        const ok = await loginWithPopup({ loginHref });
+                        if (!ok) {
+                          window.location.href = loginHref;
+                          return;
+                        }
+                        await queryClient.invalidateQueries({ queryKey: queryKeys.session() });
+                      } finally {
+                        setLoggingIn(false);
+                      }
+                    }}
+                  >
+                    {loggingIn ? "…" : "Login"}
+                  </Button>
+                  <a className="text-sm text-muted-foreground underline" href={loginHref}>
+                    Login with redirect instead
+                  </a>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <>
+              <div className="mb-6">
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    {location.pathname.split("/").filter(Boolean).map((segment, index, array) => {
+                      const path = `/${array.slice(0, index + 1).join("/")}`;
+                      const isLast = index === array.length - 1;
+                      return (
+                        <React.Fragment key={path}>
+                          <BreadcrumbSeparator />
+                          <BreadcrumbItem>
+                            {isLast ? (
+                              <BreadcrumbPage className="capitalize">{segment}</BreadcrumbPage>
+                            ) : (
+                              <BreadcrumbLink href={path} className="capitalize">
+                                {segment}
+                              </BreadcrumbLink>
+                            )}
+                          </BreadcrumbItem>
+                        </React.Fragment>
+                      );
+                    })}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+              <Outlet />
+            </>
+          )}
         </main>
       </div>
       <CommandMenu />

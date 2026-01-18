@@ -209,6 +209,33 @@ export async function createWorkspace(
   );
 }
 
+export type ListWorkspaceArtifactsResponse =
+  operations["GET:skyforge.ListWorkspaceArtifacts"]["responses"][200]["content"]["application/json"];
+export async function listWorkspaceArtifacts(
+  workspaceId: string,
+  params?: { prefix?: string; limit?: string }
+): Promise<ListWorkspaceArtifactsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.prefix) qs.set("prefix", params.prefix);
+  if (params?.limit) qs.set("limit", params.limit);
+  const suffix = qs.toString();
+  return apiFetch<ListWorkspaceArtifactsResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts${suffix ? `?${suffix}` : ""}`
+  );
+}
+
+export type DownloadWorkspaceArtifactResponse =
+  operations["GET:skyforge.DownloadWorkspaceArtifact"]["responses"][200]["content"]["application/json"];
+export async function downloadWorkspaceArtifact(
+  workspaceId: string,
+  key: string
+): Promise<DownloadWorkspaceArtifactResponse> {
+  const qs = new URLSearchParams({ key });
+  return apiFetch<DownloadWorkspaceArtifactResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts/download?${qs.toString()}`
+  );
+}
+
 export type StorageListResponse = operations["GET:storage.List"]["responses"][200]["content"]["application/json"];
 
 export async function listStorageFiles(): Promise<StorageListResponse> {

@@ -35,8 +35,6 @@ export async function loginWithPopup(options: LoginPopupOptions): Promise<boolea
   const top = Math.max(0, Math.floor((window.screen.height - height) / 2));
   const features = [
     "popup=yes",
-    "noopener=yes",
-    "noreferrer=yes",
     `width=${width}`,
     `height=${height}`,
     `left=${left}`,
@@ -45,6 +43,11 @@ export async function loginWithPopup(options: LoginPopupOptions): Promise<boolea
 
   const popup = window.open(options.loginHref, "skyforge_login", features);
   if (!popup) return false;
+  try {
+    popup.focus();
+  } catch {
+    // ignore
+  }
 
   return await new Promise<boolean>((resolve) => {
     const start = Date.now();
@@ -83,4 +86,3 @@ export async function loginWithPopup(options: LoginPopupOptions): Promise<boolea
     }, pollIntervalMs);
   });
 }
-

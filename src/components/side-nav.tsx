@@ -57,7 +57,7 @@ const items: NavItem[] = [
   { label: "SNMP", href: "/snmp", icon: ShieldCheck },
   { label: "Git", href: "/git/", icon: GitBranch, external: true },
   { label: "DNS", href: `${SKYFORGE_API}/dns/sso?next=/dns/`, icon: Network, external: true },
-  { label: "Coder", href: "/coder", icon: Cloud, external: true },
+  { label: "Coder", href: "/workspaces", icon: Cloud, external: true },
   { label: "API Testing", href: `${SKYFORGE_API}/yaade/sso`, icon: PanelTop, external: true },
   { label: "Docs", href: "/docs/", icon: BookOpen, external: true },
   { label: "Settings", href: "/admin/settings", icon: Settings, adminOnly: true },
@@ -67,6 +67,9 @@ const items: NavItem[] = [
 export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ "SSOT": true });
+
+  const targetForHref = (href: string) => (href.startsWith("http") ? "_blank" : undefined);
+  const relForHref = (href: string) => (href.startsWith("http") ? "noreferrer" : undefined);
 
   const isActiveHref = (href: string) => {
     if (!href) return false;
@@ -118,7 +121,12 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
                         {item.children.map((child) => (
                           <DropdownMenuItem key={child.href} asChild>
                             {child.external ? (
-                              <a href={child.href} target="_blank" rel="noreferrer" className="flex items-center gap-2 cursor-pointer w-full">
+                              <a
+                                href={child.href}
+                                target={targetForHref(child.href)}
+                                rel={relForHref(child.href)}
+                                className="flex items-center gap-2 cursor-pointer w-full"
+                              >
                                 <child.icon className="h-4 w-4 mr-2" />
                                 {child.label}
                               </a>
@@ -172,8 +180,8 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
                               <a
                                 key={child.href}
                                 href={child.href}
-                                target="_blank"
-                                rel="noreferrer"
+                                target={targetForHref(child.href)}
+                                rel={relForHref(child.href)}
                                 className={childClass}
                               >
                                 <ChildIcon className="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" />
@@ -214,8 +222,8 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
                   <a
                     key={item.href}
                     href={item.href}
-                    target="_blank"
-                    rel="noreferrer"
+                    target={targetForHref(item.href)}
+                    rel={relForHref(item.href)}
                     className={baseClass}
                     title={props.collapsed ? item.label : undefined}
                   >
