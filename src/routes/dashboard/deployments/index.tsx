@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import {
   buildLoginUrl,
   destroyDeployment,
+  deleteDeployment,
   getSession,
   getWorkspaces,
   startDeployment,
@@ -196,12 +197,14 @@ function DeploymentsPage() {
   const handleDestroy = async () => {
     if (!destroyTarget) return;
     try {
-      await destroyDeployment(destroyTarget.workspaceId, destroyTarget.id);
-      toast.success("Deployment destroyed", { description: `${destroyTarget.name} has been deleted.` });
+      // "Destroy" in the UI means remove the deployment definition (and trigger provider cleanup).
+      await deleteDeployment(destroyTarget.workspaceId, destroyTarget.id);
+      toast.success("Deployment deleted", { description: `${destroyTarget.name} has been removed.` });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
       setDestroyDialogOpen(false);
       setDestroyTarget(null);
     } catch (e) {
-      toast.error("Failed to destroy", { description: (e as Error).message });
+      toast.error("Failed to delete", { description: (e as Error).message });
     }
   };
 
@@ -434,7 +437,7 @@ function DeploymentsPage() {
                                   disabled={!!d.activeTaskId}
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Destroy
+                                  Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -544,9 +547,9 @@ function DeploymentsPage() {
       <AlertDialog open={destroyDialogOpen} onOpenChange={setDestroyDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete deployment?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the deployment "{destroyTarget?.name}" and remove all associated infrastructure. This action cannot be undone.
+              This will remove "{destroyTarget?.name}" from Skyforge and trigger provider cleanup. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -555,7 +558,7 @@ function DeploymentsPage() {
               onClick={handleDestroy}
               className={buttonVariants({ variant: "destructive" })}
             >
-              Destroy
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

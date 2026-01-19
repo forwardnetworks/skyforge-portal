@@ -630,6 +630,12 @@ export async function destroyDeployment(workspaceId: string, deploymentId: strin
   );
 }
 
+export async function deleteDeployment(workspaceId: string, deploymentId: string): Promise<JSONMap> {
+  return apiFetch<JSONMap>(`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}`, {
+    method: "DELETE",
+  });
+}
+
 export type UIConfigResponse = operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"];
 export async function getUIConfig(): Promise<UIConfigResponse> {
   return apiFetch<UIConfigResponse>("/api/ui/config");

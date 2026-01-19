@@ -14,7 +14,7 @@ import {
 import { toast } from "sonner";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
 import {
-  destroyDeployment,
+  deleteDeployment,
   startDeployment,
   stopDeployment,
   getDeploymentTopology,
@@ -138,11 +138,12 @@ function DeploymentDetailPage() {
 
   const handleDestroy = async () => {
     try {
-      await destroyDeployment(deployment.workspaceId, deployment.id);
-      toast.success("Deployment destroyed");
-      navigate({ to: "/dashboard/deployments" });
+      await deleteDeployment(deployment.workspaceId, deployment.id);
+      toast.success("Deployment deleted");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
+      navigate({ to: "/dashboard/deployments", search: { workspace: deployment.workspaceId } });
     } catch (e) {
-      toast.error("Failed to destroy", { description: (e as Error).message });
+      toast.error("Failed to delete", { description: (e as Error).message });
     }
   };
 
@@ -232,7 +233,7 @@ function DeploymentDetailPage() {
             onClick={() => setDestroyDialogOpen(true)} 
             disabled={isBusy}
           >
-            <Trash2 className="mr-2 h-4 w-4" /> Destroy
+            <Trash2 className="mr-2 h-4 w-4" /> Delete
           </Button>
         </div>
       </div>
@@ -434,16 +435,16 @@ function DeploymentDetailPage() {
       <AlertDialog open={destroyDialogOpen} onOpenChange={setDestroyDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Destroy deployment?</AlertDialogTitle>
+            <AlertDialogTitle>Delete deployment?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete <strong>{deployment.name}</strong> and all associated resources.
+              This will remove <strong>{deployment.name}</strong> from Skyforge and trigger provider cleanup.
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDestroy} className={buttonVariants({ variant: "destructive" })}>
-              Destroy Deployment
+              Delete Deployment
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
