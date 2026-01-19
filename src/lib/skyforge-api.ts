@@ -392,6 +392,18 @@ export async function getUserCollectorRuntime(): Promise<UserCollectorRuntimeRes
   return apiFetch<UserCollectorRuntimeResponse>("/api/forward/collector/runtime");
 }
 
+export type UserCollectorLogsResponse = {
+  podName?: string;
+  logs?: string;
+};
+
+export async function getUserCollectorLogs(tail?: number): Promise<UserCollectorLogsResponse> {
+  const qs = new URLSearchParams();
+  if (tail && tail > 0) qs.set("tail", String(tail));
+  const suffix = qs.toString();
+  return apiFetch<UserCollectorLogsResponse>(`/api/forward/collector/logs${suffix ? `?${suffix}` : ""}`);
+}
+
 export async function restartUserCollector(): Promise<UserCollectorRuntimeResponse> {
   return apiFetch<UserCollectorRuntimeResponse>("/api/forward/collector/restart", { method: "POST", body: "{}" });
 }

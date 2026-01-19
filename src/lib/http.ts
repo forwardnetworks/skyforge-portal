@@ -13,6 +13,7 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
   const resp = await fetch(`${SKYFORGE_PROXY_ROOT}${path}`, {
     credentials: "include",
     ...init,
@@ -25,13 +26,15 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   // 401 means "not logged in" (OIDC session missing/expired) -> redirect to login.
   // 403 means "logged in but forbidden" -> do NOT redirect to Dex; show an error instead.
   if (resp.status === 401) {
-    // Only redirect if we are in a browser environment
-    if (typeof window !== "undefined") {
+    const text = await resp.text().catch(() => "");
+    // Only auto-redirect for navigation-style GET requests.
+    // For mutations (PUT/POST/DELETE), bubble an error so the UI can show a toast
+    // and not kick the user out to Dex while they are editing a form.
+    if (method === "GET" && typeof window !== "undefined") {
       const currentPath = window.location.pathname + (window.location.search ?? "");
-      // Prevent redirect loops if already on a login-related page (though unlikely with this logic)
       window.location.href = buildLoginUrl(currentPath);
     }
-    throw new ApiError("unauthorized", resp.status);
+    throw new ApiError("unauthorized", resp.status, text);
   }
   if (resp.status === 403) {
     const text = await resp.text().catch(() => "");

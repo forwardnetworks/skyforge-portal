@@ -12,6 +12,7 @@ export const queryKeys = {
   forwardCollectors: () => ["forwardCollectors"] as const,
   userForwardCollector: () => ["userForwardCollector"] as const,
   userCollectorRuntime: () => ["userCollectorRuntime"] as const,
+  userCollectorLogs: () => ["userCollectorLogs"] as const,
   storageFiles: () => ["storageFiles"] as const,
   workspaceArtifacts: (workspaceId: string) => ["workspaceArtifacts", workspaceId] as const,
   workspaceEveServers: (workspaceId: string) => ["workspaceEveServers", workspaceId] as const,

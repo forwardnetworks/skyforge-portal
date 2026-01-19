@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { queryKeys } from "../../lib/query-keys";
 import {
   clearUserForwardCollector,
+  getUserCollectorLogs,
   getUserCollectorRuntime,
   getUserForwardCollector,
   putUserForwardCollector,
@@ -37,6 +38,14 @@ function ForwardCollectorPage() {
     queryFn: getUserCollectorRuntime,
     enabled: !!cfgQ.data?.authorizationKey,
     refetchInterval: 5000,
+  });
+
+  const [showLogs, setShowLogs] = useState(false);
+  const logsQ = useQuery({
+    queryKey: queryKeys.userCollectorLogs(),
+    queryFn: async () => getUserCollectorLogs(300),
+    enabled: showLogs && !!cfgQ.data?.authorizationKey,
+    refetchInterval: showLogs ? 3000 : false,
   });
 
   const cfg = cfgQ.data;
@@ -113,6 +122,7 @@ function ForwardCollectorPage() {
 
   const authKey = (cfg?.authorizationKey ?? "").trim();
   const isReady = !!runtime?.ready;
+  const logs = (logsQ.data?.logs ?? "").trim();
 
   return (
     <div className="space-y-6 p-6">
@@ -163,12 +173,19 @@ function ForwardCollectorPage() {
                   </span>
                 </div>
               ) : null}
-              {runtime?.logsCommandHint ? (
-                <div className="pt-2">
+              <div className="pt-2 space-y-2">
+                <div className="flex items-center justify-between">
                   <div className="text-xs text-muted-foreground">Logs</div>
-                  <pre className="bg-muted p-3 rounded-md overflow-auto font-mono text-xs">{String(runtime.logsCommandHint)}</pre>
+                  <Button variant="outline" size="sm" onClick={() => setShowLogs((v) => !v)}>
+                    {showLogs ? "Hide" : "Show"}
+                  </Button>
                 </div>
-              ) : null}
+                {showLogs ? (
+                  <pre className="bg-muted p-3 rounded-md overflow-auto font-mono text-xs whitespace-pre-wrap">
+                    {logsQ.isLoading ? "Loading…" : logs || "No logs yet."}
+                  </pre>
+                ) : null}
+              </div>
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">Not configured yet.</div>
@@ -192,9 +209,14 @@ function ForwardCollectorPage() {
             <Button
               variant="destructive"
               disabled={!authKey || clearMutation.isPending}
-              onClick={() => clearMutation.mutate()}
+              onClick={() => {
+                if (!window.confirm("Deprovision collector? This deletes your stored Forward credentials and removes the in-cluster collector deployment.")) {
+                  return;
+                }
+                clearMutation.mutate();
+              }}
             >
-              {clearMutation.isPending ? "Clearing…" : "Clear"}
+              {clearMutation.isPending ? "Deprovisioning…" : "Deprovision"}
             </Button>
           </div>
         </CardContent>
