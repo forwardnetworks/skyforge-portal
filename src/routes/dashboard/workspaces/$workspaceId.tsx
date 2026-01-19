@@ -25,6 +25,13 @@ export const Route = createFileRoute("/dashboard/workspaces/$workspaceId")({
   component: WorkspaceSettingsPage,
 });
 
+type ExternalRepoDraft = {
+  id: string;
+  name: string;
+  repo: string;
+  defaultBranch?: string;
+};
+
 function WorkspaceSettingsPage() {
   const { workspaceId } = Route.useParams();
   const navigate = useNavigate();
@@ -57,7 +64,7 @@ function WorkspaceSettingsPage() {
 
   const [allowExternalTemplateRepos, setAllowExternalTemplateRepos] = useState(false);
   const [allowCustomNetlabServers, setAllowCustomNetlabServers] = useState(false);
-  const [externalReposText, setExternalReposText] = useState("");
+  const [externalRepos, setExternalRepos] = useState<ExternalRepoDraft[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const deleteMutation = useMutation({
@@ -78,7 +85,17 @@ function WorkspaceSettingsPage() {
     setViewersCSV((workspace.viewers ?? []).join(","));
     setAllowExternalTemplateRepos(!!workspace.allowExternalTemplateRepos);
     setAllowCustomNetlabServers(!!workspace.allowCustomNetlabServers);
-    setExternalReposText(JSON.stringify(workspace.externalTemplateRepos ?? [], null, 2));
+    const next = (workspace.externalTemplateRepos ?? []) as ExternalRepoDraft[];
+    setExternalRepos(
+      next
+        .filter((r) => !!r && typeof r.id === "string" && typeof r.name === "string" && typeof r.repo === "string")
+        .map((r) => ({
+          id: String(r.id ?? "").trim(),
+          name: String(r.name ?? "").trim(),
+          repo: String(r.repo ?? "").trim(),
+          defaultBranch: String(r.defaultBranch ?? "").trim() || undefined,
+        }))
+    );
   }, [workspace]);
 
   const membersMutation = useMutation({
@@ -260,16 +277,112 @@ function WorkspaceSettingsPage() {
               </div>
 
               <div className="space-y-1">
-                <Label>External template repos (JSON)</Label>
-                <div className="text-xs text-muted-foreground">
-                  Array of {`{ id, name, repo, defaultBranch }`} objects. Saved only when external repos are enabled.
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>External template repos</Label>
+                    <div className="text-xs text-muted-foreground">
+                      Gitea repos in the form <span className="font-mono">owner/repo</span>. Used by the deployment UI when Template source is set to External repo.
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!allowEdit}
+                    onClick={() =>
+                      setExternalRepos((prev) => [
+                        ...prev,
+                        {
+                          id: `repo-${prev.length + 1}`,
+                          name: `Repo ${prev.length + 1}`,
+                          repo: "",
+                          defaultBranch: "",
+                        },
+                      ])
+                    }
+                  >
+                    Add repo
+                  </Button>
                 </div>
-                <textarea
-                  className="w-full min-h-[160px] rounded-md border bg-background p-3 font-mono text-xs"
-                  value={externalReposText}
-                  onChange={(e) => setExternalReposText(e.target.value)}
-                  disabled={!allowEdit}
-                />
+
+                <div className="space-y-3">
+                  {externalRepos.length === 0 ? (
+                    <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+                      No external repos configured.
+                    </div>
+                  ) : (
+                    externalRepos.map((r, idx) => (
+                      <div key={`${r.id}-${idx}`} className="rounded-md border p-3 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm font-medium">Repo {idx + 1}</div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={!allowEdit}
+                            onClick={() => setExternalRepos((prev) => prev.filter((_, i) => i !== idx))}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="space-y-1">
+                            <Label>ID</Label>
+                            <Input
+                              value={r.id}
+                              disabled={!allowEdit}
+                              onChange={(e) =>
+                                setExternalRepos((prev) =>
+                                  prev.map((p, i) => (i === idx ? { ...p, id: e.target.value } : p))
+                                )
+                              }
+                              placeholder="my-repo"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label>Name</Label>
+                            <Input
+                              value={r.name}
+                              disabled={!allowEdit}
+                              onChange={(e) =>
+                                setExternalRepos((prev) =>
+                                  prev.map((p, i) => (i === idx ? { ...p, name: e.target.value } : p))
+                                )
+                              }
+                              placeholder="My templates"
+                            />
+                          </div>
+                          <div className="space-y-1 md:col-span-2">
+                            <Label>Repo</Label>
+                            <Input
+                              value={r.repo}
+                              disabled={!allowEdit}
+                              onChange={(e) =>
+                                setExternalRepos((prev) =>
+                                  prev.map((p, i) => (i === idx ? { ...p, repo: e.target.value } : p))
+                                )
+                              }
+                              placeholder="owner/repo"
+                            />
+                          </div>
+                          <div className="space-y-1 md:col-span-2">
+                            <Label>Default branch</Label>
+                            <Input
+                              value={r.defaultBranch ?? ""}
+                              disabled={!allowEdit}
+                              onChange={(e) =>
+                                setExternalRepos((prev) =>
+                                  prev.map((p, i) => (i === idx ? { ...p, defaultBranch: e.target.value } : p))
+                                )
+                              }
+                              placeholder="main"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end">
@@ -277,17 +390,22 @@ function WorkspaceSettingsPage() {
                   variant="default"
                   disabled={!allowEdit || settingsMutation.isPending}
                   onClick={() => {
-                    let parsed: unknown = [];
-                    try {
-                      parsed = JSON.parse(externalReposText || "[]");
-                    } catch (e) {
-                      toast.error("External repos JSON is invalid");
+                    const trimmed = externalRepos
+                      .map((r) => ({
+                        id: String(r.id ?? "").trim(),
+                        name: String(r.name ?? "").trim(),
+                        repo: String(r.repo ?? "").trim(),
+                        defaultBranch: String(r.defaultBranch ?? "").trim() || undefined,
+                      }))
+                      .filter((r) => r.id && r.name && r.repo);
+                    if (allowExternalTemplateRepos && trimmed.some((r) => !r.id || !r.name || !r.repo)) {
+                      toast.error("External repos must include id, name, and repo");
                       return;
                     }
                     settingsMutation.mutate({
                       allowExternalTemplateRepos,
                       allowCustomNetlabServers,
-                      externalTemplateRepos: parsed,
+                      externalTemplateRepos: trimmed,
                     });
                   }}
                 >

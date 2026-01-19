@@ -163,6 +163,8 @@ export function TopologyViewer({
     packets: "2500",
     snaplen: "192",
   });
+  const [interfacesAutoRefresh, setInterfacesAutoRefresh] = useState(false);
+  const [hoverEdge, setHoverEdge] = useState<{ id: string; x: number; y: number } | null>(null);
   const [impair, setImpair] = useState<{
     delayMs: string;
     jitterMs: string;
@@ -370,6 +372,15 @@ export function TopologyViewer({
   }, [fetchInterfaces, interfacesNode?.id, interfacesOpen]);
 
   useEffect(() => {
+    if (!interfacesOpen || !interfacesAutoRefresh) return;
+    if (!interfacesNode?.id) return;
+    const t = window.setInterval(() => {
+      fetchInterfaces.mutate(interfacesNode.id);
+    }, 2000);
+    return () => window.clearInterval(t);
+  }, [fetchInterfaces, interfacesAutoRefresh, interfacesNode?.id, interfacesOpen]);
+
+  useEffect(() => {
     if (!runningConfigOpen) return;
     if (!runningConfigNode?.id) return;
     fetchRunningConfig.mutate(runningConfigNode.id);
@@ -537,6 +548,20 @@ export function TopologyViewer({
         onConnect={onConnect}
         onNodeContextMenu={onNodeContextMenu}
         onEdgeContextMenu={onEdgeContextMenu}
+        onEdgeMouseEnter={(event, edge) => {
+          const rect = ref.current?.getBoundingClientRect();
+          const x = rect ? event.clientX - rect.left : event.clientX;
+          const y = rect ? event.clientY - rect.top : event.clientY;
+          setHoverEdge({ id: String(edge.id), x, y });
+        }}
+        onEdgeMouseMove={(event) => {
+          if (!hoverEdge) return;
+          const rect = ref.current?.getBoundingClientRect();
+          const x = rect ? event.clientX - rect.left : event.clientX;
+          const y = rect ? event.clientY - rect.top : event.clientY;
+          setHoverEdge((p) => (p ? { ...p, x, y } : null));
+        }}
+        onEdgeMouseLeave={() => setHoverEdge(null)}
         onNodeDragStop={(_, n) => {
           if (!positionsKey) return;
           setPinnedPositions((prev) => {
@@ -553,91 +578,92 @@ export function TopologyViewer({
         fitView
         className="bg-muted/10"
       >
-        <Panel position="top-left">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 rounded-md border bg-background/80 px-2 py-1 shadow-sm backdrop-blur">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search nodes…"
-                className="h-7 w-56 border-0 bg-transparent p-0 text-sm focus-visible:ring-0"
-              />
-              {search.trim() ? (
-                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setSearch("")}>
-                  Clear
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </Panel>
         <Panel position="top-right">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={statsEnabled ? "default" : "outline"}
-              size="sm"
-              className="shadow-sm bg-background/80 backdrop-blur"
-              onClick={() => {
-                setStatsEnabled((v) => {
-                  const next = !v;
-                  if (!next) {
-                    setStatsError(null);
-                    setEdgeRates({});
-                    lastStatsRef.current = null;
-                  }
-                  return next;
-                });
-              }}
-              disabled={!workspaceId || !deploymentId}
-              title="Show live link utilization (SSE)"
-            >
-              <Activity className="mr-2 h-4 w-4" />
-              Live stats
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shadow-sm bg-background/80 backdrop-blur"
-              onClick={() => setLayoutMode((m) => (m === "grid" ? "circle" : "grid"))}
-              title="Toggle layout"
-            >
-              <LayoutGrid className="mr-2 h-4 w-4" />
-              {layoutMode === "grid" ? "Grid" : "Circle"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shadow-sm bg-background/80 backdrop-blur"
-              onClick={() => {
-                setPinnedPositions({});
-                if (positionsKey) {
-                  try { window.localStorage.removeItem(positionsKey); } catch { /* ignore */ }
-                }
-              }}
-              title="Reset pinned node positions"
-            >
-              Reset
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shadow-sm bg-background/80 backdrop-blur"
-              onClick={() => downloadInventory().catch((e) => toast.error("Failed to download inventory", { description: (e as Error).message }))}
-              disabled={!workspaceId || !deploymentId}
-              title="Download inventory CSV"
-            >
-              Inventory
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shadow-sm bg-background/80 backdrop-blur"
-              onClick={() => ref.current && downloadImage(ref.current, "topology.png")}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download PNG
-            </Button>
-          </div>
+          <Card className="shadow-sm border bg-background/85 backdrop-blur">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm">Tools</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-2">
+              <div className="flex items-center gap-2 rounded-md border bg-background/70 px-2 py-1">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search nodes…"
+                  className="h-7 w-56 border-0 bg-transparent p-0 text-sm focus-visible:ring-0"
+                />
+                {search.trim() ? (
+                  <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setSearch("")}>
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant={statsEnabled ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setStatsEnabled((v) => {
+                      const next = !v;
+                      if (!next) {
+                        setStatsError(null);
+                        setEdgeRates({});
+                        lastStatsRef.current = null;
+                      }
+                      return next;
+                    });
+                  }}
+                  disabled={!workspaceId || !deploymentId}
+                  title="Show live link utilization (SSE)"
+                >
+                  <Activity className="mr-2 h-4 w-4" />
+                  Live stats
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLayoutMode((m) => (m === "grid" ? "circle" : "grid"))}
+                  title="Toggle layout"
+                >
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  {layoutMode === "grid" ? "Grid" : "Circle"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPinnedPositions({});
+                    if (positionsKey) {
+                      try { window.localStorage.removeItem(positionsKey); } catch { /* ignore */ }
+                    }
+                  }}
+                  title="Reset pinned node positions"
+                >
+                  Reset
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadInventory().catch((e) => toast.error("Failed to download inventory", { description: (e as Error).message }))}
+                  disabled={!workspaceId || !deploymentId}
+                  title="Download inventory CSV"
+                >
+                  Inventory
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => ref.current && downloadImage(ref.current, "topology.png")}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  PNG
+                </Button>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Tip: Right-click a node or link for actions.
+              </div>
+            </CardContent>
+          </Card>
         </Panel>
         <Controls />
         <MiniMap zoomable pannable className="bg-background border rounded-lg" />
@@ -647,6 +673,19 @@ export function TopologyViewer({
       {statsEnabled && statsError ? (
         <div className="absolute bottom-2 left-2 z-40 rounded-md border bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm">
           Live stats: {statsError}
+        </div>
+      ) : null}
+
+      {hoverEdge && statsEnabled && edgeRates[hoverEdge.id] ? (
+        <div
+          className="absolute z-40 rounded-md border bg-background/90 px-3 py-2 text-xs shadow-sm"
+          style={{ left: hoverEdge.x + 12, top: hoverEdge.y + 12 }}
+        >
+          <div className="font-mono">{hoverEdge.id}</div>
+          <div className="text-muted-foreground">
+            {formatBps(edgeRates[hoverEdge.id].bps)} • {Math.round(edgeRates[hoverEdge.id].pps)} pps •{" "}
+            {edgeRates[hoverEdge.id].drops.toFixed(1)} drops/s
+          </div>
         </div>
       ) : null}
 
@@ -730,6 +769,8 @@ export function TopologyViewer({
             data={fetchInterfaces.data}
             loading={fetchInterfaces.isPending}
             error={fetchInterfaces.isError ? (fetchInterfaces.error as any)?.message ?? "failed" : ""}
+            autoRefresh={interfacesAutoRefresh}
+            onToggleAutoRefresh={() => setInterfacesAutoRefresh((v) => !v)}
           />
         </DialogContent>
       </Dialog>
@@ -942,6 +983,24 @@ export function TopologyViewer({
                 }}
               >
                 Copy node name
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  const ip = String((nodeMenu.node as any)?.data?.ip ?? "").trim();
+                  if (!ip) {
+                    toast.error("No management IP available");
+                    return;
+                  }
+                  const cmd = `ssh admin@${ip}`;
+                  void navigator.clipboard?.writeText(cmd);
+                  toast.success("Copied SSH command");
+                  setNodeMenu(null);
+                }}
+              >
+                Copy SSH command
               </Button>
               <Button size="sm" variant="ghost" className="w-full" onClick={() => setNodeMenu(null)}>
                 Close
@@ -1376,6 +1435,8 @@ function InterfacesBody(props: {
   data?: DeploymentNodeInterfacesResponse;
   loading: boolean;
   error: string;
+  autoRefresh: boolean;
+  onToggleAutoRefresh: () => void;
 }) {
   if (props.loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   if (props.error) return <div className="text-sm text-destructive">{props.error}</div>;
@@ -1384,7 +1445,12 @@ function InterfacesBody(props: {
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-muted-foreground font-mono truncate">{props.node}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-muted-foreground font-mono truncate">{props.node}</div>
+        <Button size="sm" variant={props.autoRefresh ? "default" : "outline"} onClick={props.onToggleAutoRefresh}>
+          {props.autoRefresh ? "Auto refresh: on" : "Auto refresh: off"}
+        </Button>
+      </div>
       <div className="rounded-md border overflow-auto max-h-[60vh]">
         <table className="w-full text-xs">
           <thead className="bg-muted/50 sticky top-0">

@@ -11,12 +11,10 @@ import {
   getWorkspaces,
   getWorkspaceContainerlabTemplates,
   getWorkspaceNetlabTemplates,
-  listForwardCollectors,
   listWorkspaceNetlabServers,
   type CreateWorkspaceDeploymentRequest,
   type DashboardSnapshot,
   type ExternalTemplateRepo,
-  type ForwardCollectorSummary,
   type SkyforgeWorkspace,
   type WorkspaceTemplatesResponse
 } from "../../../lib/skyforge-api";
@@ -24,7 +22,6 @@ import { queryKeys } from "../../../lib/query-keys";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
-import { Switch } from "../../../components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Input } from "../../../components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
@@ -59,17 +56,6 @@ const formSchema = z
     templateRepoId: z.string().optional(),
     template: z.string().min(1, "Template is required"),
     netlabServer: z.string().optional(),
-    forwardEnabled: z.boolean().default(false),
-    forwardCollectorUsername: z.string().optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.forwardEnabled && !String(value.forwardCollectorUsername ?? "").trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Collector selection is required when Forward is enabled",
-        path: ["forwardCollectorUsername"],
-      });
-    }
   });
 
 function CreateDeploymentPage() {
@@ -103,8 +89,6 @@ function CreateDeploymentPage() {
       templateRepoId: "",
       template: "",
       netlabServer: "",
-      forwardEnabled: false,
-      forwardCollectorUsername: "",
     },
   });
 
@@ -114,7 +98,6 @@ function CreateDeploymentPage() {
   const watchSource = watch("source");
   const watchTemplateRepoId = watch("templateRepoId");
   const watchTemplate = watch("template");
-  const watchForwardEnabled = watch("forwardEnabled");
   const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 
   // Sync workspaceId when workspaces load if not already set or passed via URL
@@ -194,15 +177,6 @@ function CreateDeploymentPage() {
   );
   const externalAllowed = !!selectedWorkspace?.allowExternalTemplateRepos && externalRepos.length > 0;
 
-  const forwardCollectorsQ = useQuery({
-    queryKey: queryKeys.forwardCollectors(),
-    queryFn: listForwardCollectors,
-    enabled: watchForwardEnabled,
-    staleTime: 30_000,
-    retry: false,
-  });
-  const forwardCollectors = (forwardCollectorsQ.data?.collectors ?? []) as ForwardCollectorSummary[];
-
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       const config: Record<string, unknown> = {
@@ -228,11 +202,6 @@ function CreateDeploymentPage() {
         config.templateSource = effectiveSource;
         if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
         if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
-      }
-
-      if (values.forwardEnabled) {
-        config.forwardEnabled = true;
-        config.forwardCollectorUsername = String(values.forwardCollectorUsername ?? "").trim();
       }
 
       const body: CreateWorkspaceDeploymentRequest = {
@@ -505,69 +474,6 @@ function CreateDeploymentPage() {
                   )}
                 />
               </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Forward Networks</CardTitle>
-                  <CardDescription>Optional: sync discovered device IPs into Forward for collection.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="forwardEnabled"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <FormLabel>Enable Forward collection</FormLabel>
-                          <FormDescription>Requires configuring your Collector in the left sidebar first.</FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  {watchForwardEnabled ? (
-                    <FormField
-                      control={form.control}
-                      name="forwardCollectorUsername"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Collector</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={String(field.value ?? "")}
-                            disabled={forwardCollectorsQ.isLoading || forwardCollectorsQ.isError}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={
-                                    forwardCollectorsQ.isLoading
-                                      ? "Loading…"
-                                      : forwardCollectorsQ.isError
-                                        ? "Configure Collector first"
-                                        : "Select collector…"
-                                  }
-                                />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {forwardCollectors.map((c) => (
-                                <SelectItem key={c.id || c.username} value={c.username}>
-                                  {c.name} ({c.username})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : null}
-                </CardContent>
-              </Card>
 
               {mutation.isError && (
                 <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive border border-destructive/20">
