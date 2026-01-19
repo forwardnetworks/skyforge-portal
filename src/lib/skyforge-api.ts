@@ -81,6 +81,91 @@ export type LinkImpairmentResponse = {
   }>;
 };
 
+export type LinkAdminRequest = {
+  edgeId: string;
+  action: "up" | "down";
+};
+
+export type LinkAdminResponse = {
+  appliedAt: ISO8601;
+  action: string;
+  edgeId: string;
+  results: Array<{
+    node: string;
+    namespace: string;
+    pod: string;
+    container: string;
+    ifName: string;
+    command: string;
+    stdout?: string;
+    stderr?: string;
+    error?: string;
+  }>;
+};
+
+export type LinkCaptureRequest = {
+  edgeId: string;
+  side?: "source" | "target";
+  durationSeconds?: number;
+  maxPackets?: number;
+  snaplen?: number;
+  maxBytes?: number;
+};
+
+export type LinkCaptureResponse = {
+  capturedAt: ISO8601;
+  edgeId: string;
+  side: string;
+  node: string;
+  ifName: string;
+  artifactKey: string;
+  sizeBytes: number;
+  stderr?: string;
+};
+
+export type DeploymentNodeInterfacesResponse = {
+  namespace?: string;
+  podName?: string;
+  node?: string;
+  generatedAt?: ISO8601;
+  interfaces: Array<{
+    ifName: string;
+    operState?: string;
+    rxBytes?: number;
+    txBytes?: number;
+    rxPackets?: number;
+    txPackets?: number;
+    rxDropped?: number;
+    txDropped?: number;
+    peerNode?: string;
+    peerIf?: string;
+    edgeId?: string;
+  }>;
+};
+
+export type DeploymentInventoryResponse = {
+  generatedAt: ISO8601;
+  workspaceId: string;
+  deploymentId: string;
+  format: string;
+  nodes?: Array<{ id: string; kind?: string; mgmtIp?: string; sshPort?: number }>;
+  csv?: string;
+};
+
+export type DeploymentUIEvent = {
+  id: number;
+  createdAt: ISO8601;
+  createdBy?: string;
+  eventType: string;
+  payload?: unknown;
+};
+
+export type DeploymentUIEventsResponse = {
+  workspaceId: string;
+  deploymentId: string;
+  events: DeploymentUIEvent[];
+};
+
 export type ForwardCollectorSummary = {
   id: string;
   name: string;
@@ -220,6 +305,85 @@ export async function setDeploymentLinkImpairment(
   return apiFetch<LinkImpairmentResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/impair`,
     { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export async function setDeploymentLinkAdmin(
+  workspaceId: string,
+  deploymentId: string,
+  body: LinkAdminRequest
+): Promise<LinkAdminResponse> {
+  return apiFetch<LinkAdminResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/admin`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export async function captureDeploymentLinkPcap(
+  workspaceId: string,
+  deploymentId: string,
+  body: LinkCaptureRequest
+): Promise<LinkCaptureResponse> {
+  return apiFetch<LinkCaptureResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/capture`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export async function getDeploymentNodeInterfaces(
+  workspaceId: string,
+  deploymentId: string,
+  nodeId: string
+): Promise<DeploymentNodeInterfacesResponse> {
+  return apiFetch<DeploymentNodeInterfacesResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/interfaces`
+  );
+}
+
+export type DeploymentNodeRunningConfigResponse = {
+  namespace?: string;
+  podName?: string;
+  container?: string;
+  node?: string;
+  stdout?: string;
+  stderr?: string;
+  skipped?: boolean;
+  message?: string;
+};
+
+export async function getDeploymentNodeRunningConfig(
+  workspaceId: string,
+  deploymentId: string,
+  nodeId: string
+): Promise<DeploymentNodeRunningConfigResponse> {
+  return apiFetch<DeploymentNodeRunningConfigResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/running-config`
+  );
+}
+
+export async function getDeploymentInventory(
+  workspaceId: string,
+  deploymentId: string,
+  format: "json" | "csv" = "json"
+): Promise<DeploymentInventoryResponse> {
+  const qs = new URLSearchParams();
+  qs.set("format", format);
+  return apiFetch<DeploymentInventoryResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/inventory?${qs.toString()}`
+  );
+}
+
+export async function listDeploymentUIEvents(
+  workspaceId: string,
+  deploymentId: string,
+  params?: { afterId?: number; limit?: number }
+): Promise<DeploymentUIEventsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.afterId) qs.set("after_id", String(params.afterId));
+  if (params?.limit) qs.set("limit", String(params.limit));
+  const suffix = qs.toString();
+  return apiFetch<DeploymentUIEventsResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/ui-events${suffix ? `?${suffix}` : ""}`
   );
 }
 

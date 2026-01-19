@@ -22,23 +22,40 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Server, Network, Laptop, Cloud, Download, Activity } from "lucide-react";
+import { Activity, Cloud, Download, LayoutGrid, Laptop, Network, Search, Server } from "lucide-react";
 import { useDownloadImage } from '@/hooks/use-download-image';
-import { getDeploymentLinkStats, setDeploymentLinkImpairment, type DeploymentTopology, type LinkStatsSnapshot } from "@/lib/skyforge-api";
+import {
+  captureDeploymentLinkPcap,
+  downloadWorkspaceArtifact,
+  getDeploymentInventory,
+  getDeploymentLinkStats,
+  getDeploymentNodeInterfaces,
+  getDeploymentNodeRunningConfig,
+  setDeploymentLinkAdmin,
+  setDeploymentLinkImpairment,
+  type DeploymentNodeInterfacesResponse,
+  type DeploymentNodeRunningConfigResponse,
+  type DeploymentTopology,
+  type LinkCaptureResponse,
+  type LinkStatsSnapshot,
+} from "@/lib/skyforge-api";
 import { TerminalModal } from "@/components/terminal-modal";
 import { NodeLogsModal } from "@/components/node-logs-modal";
 import { NodeDescribeModal } from "@/components/node-describe-modal";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { saveDeploymentNodeConfig } from "@/lib/skyforge-api";
+import { queryKeys } from "@/lib/query-keys";
+import { useDeploymentUIEvents, type DeploymentUIEventsState } from "@/lib/deployment-ui-events";
 
 // Custom Node Component
 const CustomNode = ({ data }: NodeProps) => {
   const Icon = data.icon === 'switch' ? Network : data.icon === 'cloud' ? Cloud : data.icon === 'client' ? Laptop : Server;
   const statusColor = data.status === 'running' ? 'default' : data.status === 'stopped' ? 'secondary' : 'destructive';
+  const highlight = Boolean((data as any)?.highlight);
 
   return (
-    <Card className="min-w-[180px] border-2 shadow-md">
+    <Card className={`min-w-[180px] border-2 shadow-md ${highlight ? "border-primary ring-2 ring-primary/30" : ""}`}>
       <CardHeader className="p-3 pb-2">
         <div className="flex items-center justify-between gap-2">
           <div className="p-1.5 bg-muted rounded-md">
@@ -125,6 +142,27 @@ export function TopologyViewer({
   const lastStatsRef = useRef<{ atMs: number; byEdge: Record<string, LinkStatsSnapshot["edges"][number]> } | null>(null);
   const baseEdgeLabelsRef = useRef<Record<string, string | undefined>>({});
   const deepLinkHandledRef = useRef(false);
+  const [search, setSearch] = useState("");
+  const [layoutMode, setLayoutMode] = useState<"grid" | "circle">("grid");
+  const positionsKey = useMemo(() => {
+    if (!workspaceId || !deploymentId) return "";
+    return `skyforge.topology.positions.${workspaceId}.${deploymentId}`;
+  }, [deploymentId, workspaceId]);
+  const [pinnedPositions, setPinnedPositions] = useState<Record<string, { x: number; y: number }>>(() => {
+    return {};
+  });
+  const [interfacesNode, setInterfacesNode] = useState<{ id: string; kind?: string; ip?: string } | null>(null);
+  const [interfacesOpen, setInterfacesOpen] = useState(false);
+  const [runningConfigNode, setRunningConfigNode] = useState<{ id: string } | null>(null);
+  const [runningConfigOpen, setRunningConfigOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
+  const [captureEdge, setCaptureEdge] = useState<{ id: string; label?: string } | null>(null);
+  const [capture, setCapture] = useState<{ side: "source" | "target"; duration: string; packets: string; snaplen: string }>({
+    side: "source",
+    duration: "10",
+    packets: "2500",
+    snaplen: "192",
+  });
   const [impair, setImpair] = useState<{
     delayMs: string;
     jitterMs: string;
@@ -144,17 +182,40 @@ export function TopologyViewer({
   });
 
   useEffect(() => {
-    setNodes(derived.nodes);
+    if (!positionsKey) return;
+    try {
+      const raw = window.localStorage.getItem(positionsKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, { x: number; y: number }>;
+      if (parsed && typeof parsed === "object") setPinnedPositions(parsed);
+    } catch {
+      // ignore
+    }
+  }, [positionsKey]);
+
+  const uiEventsEnabled = Boolean(workspaceId && deploymentId);
+  useDeploymentUIEvents(workspaceId ?? "", deploymentId ?? "", uiEventsEnabled);
+  const uiEvents = useQuery({
+    queryKey: workspaceId && deploymentId ? queryKeys.deploymentUIEvents(workspaceId, deploymentId) : ["deploymentUIEvents", "none"],
+    queryFn: async () => ({ cursor: 0, events: [] }) as DeploymentUIEventsState,
+    initialData: { cursor: 0, events: [] } as DeploymentUIEventsState,
+    staleTime: Infinity,
+    enabled: uiEventsEnabled,
+  });
+  const edgeFlags = useMemo(() => buildEdgeFlags(uiEvents.data?.events ?? []), [uiEvents.data?.events]);
+
+  useEffect(() => {
+    setNodes(applyLayoutAndHighlights(derived.nodes, layoutMode, pinnedPositions, search));
     baseEdgeLabelsRef.current = Object.fromEntries(
       derived.edges.map((e) => [String(e.id), typeof e.label === "string" ? e.label : undefined])
     );
-    setEdges(decorateEdges(derived.edges, edgeRates, statsEnabled, baseEdgeLabelsRef.current));
-  }, [derived.edges, derived.nodes, setEdges, setNodes]);
+    setEdges(decorateEdges(derived.edges, edgeRates, statsEnabled, baseEdgeLabelsRef.current, edgeFlags));
+  }, [derived.edges, derived.nodes, edgeFlags, edgeRates, layoutMode, pinnedPositions, search, setEdges, setNodes, statsEnabled]);
 
   useEffect(() => {
     // Update edge rendering when stats update.
-    setEdges((prev) => decorateEdges(prev, edgeRates, statsEnabled, baseEdgeLabelsRef.current));
-  }, [edgeRates, setEdges, statsEnabled]);
+    setEdges((prev) => decorateEdges(prev, edgeRates, statsEnabled, baseEdgeLabelsRef.current, edgeFlags));
+  }, [edgeFlags, edgeRates, setEdges, statsEnabled]);
 
   useEffect(() => {
     if (!workspaceId || !deploymentId) return;
@@ -169,6 +230,14 @@ export function TopologyViewer({
     if (action === "terminal") setTerminalNode({ id: node });
     if (action === "logs") setLogsNode({ id: node });
     if (action === "describe") setDescribeNode({ id: node });
+    if (action === "interfaces") {
+      setInterfacesNode({ id: node });
+      setInterfacesOpen(true);
+    }
+    if (action === "running-config") {
+      setRunningConfigNode({ id: node });
+      setRunningConfigOpen(true);
+    }
     deepLinkHandledRef.current = true;
     params.delete("node");
     params.delete("action");
@@ -208,6 +277,78 @@ export function TopologyViewer({
     },
   });
 
+  const linkAdmin = useMutation({
+    mutationFn: async (args: { edgeId: string; action: "up" | "down" }) => {
+      if (!workspaceId || !deploymentId) throw new Error("missing workspace/deployment");
+      return setDeploymentLinkAdmin(workspaceId, deploymentId, args);
+    },
+    onSuccess: (resp) => {
+      const failed = resp.results.filter((r) => r.error);
+      if (failed.length) {
+        toast.error("Link admin applied with errors", { description: failed.map((r) => `${r.node}: ${r.error}`).join("; ") });
+        return;
+      }
+      toast.success(`Link ${resp.action} applied`);
+    },
+    onError: (e: any) => toast.error("Link admin failed", { description: e?.message ?? String(e) }),
+  });
+
+  const captureLink = useMutation({
+    mutationFn: async (args: { edgeId: string; side: "source" | "target"; durationSeconds: number; maxPackets: number; snaplen: number }) => {
+      if (!workspaceId || !deploymentId) throw new Error("missing workspace/deployment");
+      return captureDeploymentLinkPcap(workspaceId, deploymentId, args);
+    },
+    onSuccess: (resp) => {
+      toast.success("Pcap captured", { description: `${resp.sizeBytes} bytes • ${resp.artifactKey}` });
+    },
+    onError: (e: any) => toast.error("Pcap capture failed", { description: e?.message ?? String(e) }),
+  });
+
+  const fetchInterfaces = useMutation({
+    mutationFn: async (nodeId: string) => {
+      if (!workspaceId || !deploymentId) throw new Error("missing workspace/deployment");
+      return getDeploymentNodeInterfaces(workspaceId, deploymentId, nodeId);
+    },
+    onError: (e: any) => toast.error("Failed to load interfaces", { description: e?.message ?? String(e) }),
+  });
+
+  const fetchRunningConfig = useMutation({
+    mutationFn: async (nodeId: string) => {
+      if (!workspaceId || !deploymentId) throw new Error("missing workspace/deployment");
+      return getDeploymentNodeRunningConfig(workspaceId, deploymentId, nodeId);
+    },
+    onError: (e: any) => toast.error("Failed to load running config", { description: e?.message ?? String(e) }),
+  });
+
+  const downloadPcap = useCallback(async (key: string) => {
+    if (!workspaceId) return;
+    const resp = await downloadWorkspaceArtifact(workspaceId, key);
+    const b64 = String((resp as any)?.fileData ?? "");
+    if (!b64) throw new Error("missing fileData");
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "application/vnd.tcpdump.pcap" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = key.split("/").pop() || "capture.pcap";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [workspaceId]);
+
+  const downloadInventory = useCallback(async () => {
+    if (!workspaceId || !deploymentId) return;
+    const resp = await getDeploymentInventory(workspaceId, deploymentId, "csv");
+    const csv = String(resp.csv ?? "");
+    if (!csv.trim()) throw new Error("empty inventory csv");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${deploymentId}-inventory.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [deploymentId, workspaceId]);
+
   useEffect(() => {
     if (!nodeMenu) return;
     const onClick = () => setNodeMenu(null);
@@ -221,6 +362,18 @@ export function TopologyViewer({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [nodeMenu]);
+
+  useEffect(() => {
+    if (!interfacesOpen) return;
+    if (!interfacesNode?.id) return;
+    fetchInterfaces.mutate(interfacesNode.id);
+  }, [fetchInterfaces, interfacesNode?.id, interfacesOpen]);
+
+  useEffect(() => {
+    if (!runningConfigOpen) return;
+    if (!runningConfigNode?.id) return;
+    fetchRunningConfig.mutate(runningConfigNode.id);
+  }, [fetchRunningConfig, runningConfigNode?.id, runningConfigOpen]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -384,10 +537,40 @@ export function TopologyViewer({
         onConnect={onConnect}
         onNodeContextMenu={onNodeContextMenu}
         onEdgeContextMenu={onEdgeContextMenu}
+        onNodeDragStop={(_, n) => {
+          if (!positionsKey) return;
+          setPinnedPositions((prev) => {
+            const next = { ...prev, [String(n.id)]: { x: n.position.x, y: n.position.y } };
+            try {
+              window.localStorage.setItem(positionsKey, JSON.stringify(next));
+            } catch {
+              // ignore
+            }
+            return next;
+          });
+        }}
         nodeTypes={nodeTypes}
         fitView
         className="bg-muted/10"
       >
+        <Panel position="top-left">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-md border bg-background/80 px-2 py-1 shadow-sm backdrop-blur">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search nodes…"
+                className="h-7 w-56 border-0 bg-transparent p-0 text-sm focus-visible:ring-0"
+              />
+              {search.trim() ? (
+                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setSearch("")}>
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </Panel>
         <Panel position="top-right">
           <div className="flex items-center gap-2">
             <Button
@@ -415,6 +598,40 @@ export function TopologyViewer({
               variant="outline"
               size="sm"
               className="shadow-sm bg-background/80 backdrop-blur"
+              onClick={() => setLayoutMode((m) => (m === "grid" ? "circle" : "grid"))}
+              title="Toggle layout"
+            >
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              {layoutMode === "grid" ? "Grid" : "Circle"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shadow-sm bg-background/80 backdrop-blur"
+              onClick={() => {
+                setPinnedPositions({});
+                if (positionsKey) {
+                  try { window.localStorage.removeItem(positionsKey); } catch { /* ignore */ }
+                }
+              }}
+              title="Reset pinned node positions"
+            >
+              Reset
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shadow-sm bg-background/80 backdrop-blur"
+              onClick={() => downloadInventory().catch((e) => toast.error("Failed to download inventory", { description: (e as Error).message }))}
+              disabled={!workspaceId || !deploymentId}
+              title="Download inventory CSV"
+            >
+              Inventory
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shadow-sm bg-background/80 backdrop-blur"
               onClick={() => ref.current && downloadImage(ref.current, "topology.png")}
             >
               <Download className="mr-2 h-4 w-4" />
@@ -430,6 +647,29 @@ export function TopologyViewer({
       {statsEnabled && statsError ? (
         <div className="absolute bottom-2 left-2 z-40 rounded-md border bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm">
           Live stats: {statsError}
+        </div>
+      ) : null}
+
+      {uiEventsEnabled && (uiEvents.data?.events?.length ?? 0) > 0 ? (
+        <div className="absolute bottom-2 right-2 z-40 w-[420px] max-w-[92vw]">
+          <Card className="shadow-sm border bg-background/90 backdrop-blur">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm">Recent activity</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-2">
+              {(uiEvents.data?.events ?? []).slice(-8).reverse().map((ev) => (
+                <div key={String(ev.id)} className="flex items-start justify-between gap-2 text-xs">
+                  <div className="min-w-0">
+                    <div className="font-mono truncate">{ev.eventType}</div>
+                    <div className="text-muted-foreground truncate">{ev.createdAt}</div>
+                  </div>
+                  <div className="text-muted-foreground font-mono truncate">
+                    {ev.createdBy ? ev.createdBy : ""}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       ) : null}
 
@@ -473,6 +713,46 @@ export function TopologyViewer({
           nodeIp={describeNode?.ip ?? ""}
         />
       ) : null}
+
+      <Dialog
+        open={interfacesOpen}
+        onOpenChange={(open) => {
+          setInterfacesOpen(open);
+          if (!open) setInterfacesNode(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Interfaces</DialogTitle>
+          </DialogHeader>
+          <InterfacesBody
+            node={interfacesNode?.id ?? ""}
+            data={fetchInterfaces.data}
+            loading={fetchInterfaces.isPending}
+            error={fetchInterfaces.isError ? (fetchInterfaces.error as any)?.message ?? "failed" : ""}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={runningConfigOpen}
+        onOpenChange={(open) => {
+          setRunningConfigOpen(open);
+          if (!open) setRunningConfigNode(null);
+        }}
+      >
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Running config</DialogTitle>
+          </DialogHeader>
+          <RunningConfigBody
+            node={runningConfigNode?.id ?? ""}
+            data={fetchRunningConfig.data}
+            loading={fetchRunningConfig.isPending}
+            error={fetchRunningConfig.isError ? (fetchRunningConfig.error as any)?.message ?? "failed" : ""}
+          />
+        </DialogContent>
+      </Dialog>
 
       {nodeMenu && workspaceId && deploymentId ? (
         <div
@@ -570,6 +850,34 @@ export function TopologyViewer({
                 size="sm"
                 variant="secondary"
                 className="w-full"
+                onClick={() => {
+                  const kind = String((nodeMenu.node as any)?.data?.kind ?? "");
+                  const ip = String((nodeMenu.node as any)?.data?.ip ?? "");
+                  const id = String(nodeMenu.node.id);
+                  setNodeMenu(null);
+                  setInterfacesNode({ id, kind, ip });
+                  setInterfacesOpen(true);
+                }}
+              >
+                Interfaces…
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const id = String(nodeMenu.node.id);
+                  const url = `${window.location.pathname}?node=${encodeURIComponent(id)}&action=interfaces`;
+                  window.open(url, "_blank", "noopener,noreferrer");
+                  setNodeMenu(null);
+                }}
+              >
+                Interfaces (new tab)
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
                 disabled={saveConfig.isPending}
                 onClick={() => {
                   const id = String(nodeMenu.node.id);
@@ -578,6 +886,32 @@ export function TopologyViewer({
                 }}
               >
                 {saveConfig.isPending ? "Saving…" : "Save config"}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  const id = String(nodeMenu.node.id);
+                  setNodeMenu(null);
+                  setRunningConfigNode({ id });
+                  setRunningConfigOpen(true);
+                }}
+              >
+                Running config…
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const id = String(nodeMenu.node.id);
+                  const url = `${window.location.pathname}?node=${encodeURIComponent(id)}&action=running-config`;
+                  window.open(url, "_blank", "noopener,noreferrer");
+                  setNodeMenu(null);
+                }}
+              >
+                Running config (new tab)
               </Button>
               <Button
                 size="sm"
@@ -633,6 +967,47 @@ export function TopologyViewer({
             <CardContent className="p-3 pt-0 space-y-2">
               <Button
                 size="sm"
+                variant={edgeFlags.edgeDown.has(String(edgeMenu.edge.id)) ? "secondary" : "destructive"}
+                className="w-full"
+                disabled={linkAdmin.isPending}
+                onClick={() => {
+                  const edgeId = String(edgeMenu.edge.id);
+                  const isDown = edgeFlags.edgeDown.has(edgeId);
+                  setEdgeMenu(null);
+                  linkAdmin.mutate({ edgeId, action: isDown ? "up" : "down" });
+                }}
+              >
+                {edgeFlags.edgeDown.has(String(edgeMenu.edge.id)) ? "Bring link up" : "Bring link down"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                disabled={captureLink.isPending}
+                onClick={() => {
+                  setCaptureEdge({ id: String(edgeMenu.edge.id), label: String(edgeMenu.edge.label ?? "") });
+                  setEdgeMenu(null);
+                  setCaptureOpen(true);
+                }}
+              >
+                Capture pcap…
+              </Button>
+              {edgeFlags.lastCaptureByEdge[String(edgeMenu.edge.id)] ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => {
+                    const key = edgeFlags.lastCaptureByEdge[String(edgeMenu.edge.id)];
+                    setEdgeMenu(null);
+                    downloadPcap(key).catch((e) => toast.error("Failed to download pcap", { description: (e as Error).message }));
+                  }}
+                >
+                  Download last pcap
+                </Button>
+              ) : null}
+              <Button
+                size="sm"
                 className="w-full"
                 onClick={() => {
                   setSelectedEdge({ id: String(edgeMenu.edge.id), label: String(edgeMenu.edge.label ?? "") });
@@ -662,6 +1037,93 @@ export function TopologyViewer({
           </Card>
         </div>
       ) : null}
+
+      <Dialog
+        open={captureOpen}
+        onOpenChange={(open) => {
+          setCaptureOpen(open);
+          if (!open) setCaptureEdge(null);
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Capture pcap</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {captureEdge?.label ? (
+              <div className="text-xs text-muted-foreground font-mono truncate">{captureEdge.label}</div>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="capSide">Side</Label>
+                <select
+                  id="capSide"
+                  className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                  value={capture.side}
+                  onChange={(e) => setCapture((p) => ({ ...p, side: e.target.value as any }))}
+                >
+                  <option value="source">Source</option>
+                  <option value="target">Target</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="capDuration">Duration (s)</Label>
+                <Input
+                  id="capDuration"
+                  inputMode="numeric"
+                  value={capture.duration}
+                  onChange={(e) => setCapture((p) => ({ ...p, duration: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="capPackets">Max packets</Label>
+                <Input
+                  id="capPackets"
+                  inputMode="numeric"
+                  value={capture.packets}
+                  onChange={(e) => setCapture((p) => ({ ...p, packets: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="capSnaplen">Snaplen</Label>
+                <Input
+                  id="capSnaplen"
+                  inputMode="numeric"
+                  value={capture.snaplen}
+                  onChange={(e) => setCapture((p) => ({ ...p, snaplen: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={() => setCaptureOpen(false)} disabled={captureLink.isPending}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const edgeId = String(captureEdge?.id ?? "");
+                  if (!edgeId) {
+                    toast.error("No link selected");
+                    return;
+                  }
+                  const durationSeconds = Number(capture.duration.trim() || "10");
+                  const maxPackets = Number(capture.packets.trim() || "2500");
+                  const snaplen = Number(capture.snaplen.trim() || "192");
+                  captureLink
+                    .mutateAsync({ edgeId, side: capture.side, durationSeconds, maxPackets, snaplen })
+                    .then((resp: LinkCaptureResponse) => {
+                      toast.success("Pcap ready", { description: resp.artifactKey });
+                      return downloadPcap(resp.artifactKey).catch(() => {});
+                    })
+                    .finally(() => setCaptureOpen(false));
+                }}
+                disabled={captureLink.isPending}
+              >
+                {captureLink.isPending ? "Capturing…" : "Capture"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={impairOpen}
@@ -787,33 +1249,210 @@ function formatBps(bps: number): string {
   return `${Math.round(bps)} bps`;
 }
 
+function formatBytes(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"] as const;
+  let v = n;
+  let idx = 0;
+  while (v >= 1024 && idx < units.length - 1) {
+    v /= 1024;
+    idx++;
+  }
+  const fixed = idx === 0 ? 0 : idx === 1 ? 0 : 1;
+  return `${v.toFixed(fixed)} ${units[idx]}`;
+}
+
+type EdgeFlags = {
+  edgeDown: Set<string>;
+  lastCaptureByEdge: Record<string, string>;
+};
+
+function buildEdgeFlags(events: any[]): EdgeFlags {
+  const edgeDown = new Set<string>();
+  const lastCaptureByEdge: Record<string, string> = {};
+  for (const ev of events ?? []) {
+    const typ = String(ev?.eventType ?? "");
+    const payload = (ev as any)?.payload ?? {};
+    const edgeId = String((payload as any)?.edgeId ?? "").trim();
+    if (edgeId) {
+      if (typ === "link.down") edgeDown.add(edgeId);
+      if (typ === "link.up") edgeDown.delete(edgeId);
+      if (typ === "link.capture") {
+        const key = String((payload as any)?.artifactKey ?? "").trim();
+        if (key) lastCaptureByEdge[edgeId] = key;
+      }
+    }
+  }
+  return { edgeDown, lastCaptureByEdge };
+}
+
 function decorateEdges(
   edges: Edge[],
   rates: Record<string, { bps: number; pps: number; drops: number }>,
   enabled: boolean,
   baseLabels: Record<string, string | undefined>,
+  flags: EdgeFlags,
 ): Edge[] {
   return edges.map((e) => {
     const edgeId = String(e.id);
     const base = baseLabels[edgeId] ?? (typeof e.label === "string" ? e.label : undefined);
+    const isDown = flags.edgeDown.has(edgeId);
     if (!enabled) {
-      return { ...e, label: base, animated: false, style: undefined };
+      return {
+        ...e,
+        label: isDown ? (base ? `${base} · DOWN` : "DOWN") : base,
+        animated: false,
+        style: isDown ? { stroke: "hsl(var(--destructive))", strokeWidth: 2, strokeDasharray: "6 6" } : undefined,
+      };
     }
     const r = rates[edgeId];
     if (!r) {
-      return { ...e, label: base, animated: false, style: undefined };
+      return {
+        ...e,
+        label: isDown ? (base ? `${base} · DOWN` : "DOWN") : base,
+        animated: false,
+        style: isDown ? { stroke: "hsl(var(--destructive))", strokeWidth: 2, strokeDasharray: "6 6" } : undefined,
+      };
     }
     const bps = r.bps ?? 0;
     const width = 1 + Math.min(9, Math.log10(Math.max(1, bps)) / 1.2);
-    const label = base ? `${base} · ${formatBps(bps)}` : formatBps(bps);
+    const labelBase = base ? `${base} · ${formatBps(bps)}` : formatBps(bps);
+    const label = isDown ? `${labelBase} · DOWN` : labelBase;
     return {
       ...e,
       label,
-      animated: bps > 0,
+      animated: !isDown && bps > 0,
       style: {
         ...(e.style ?? {}),
         strokeWidth: width,
+        ...(isDown ? { stroke: "hsl(var(--destructive))", strokeDasharray: "6 6" } : {}),
       },
     };
   });
+}
+
+function applyLayoutAndHighlights(
+  nodes: Node[],
+  mode: "grid" | "circle",
+  pinned: Record<string, { x: number; y: number }>,
+  search: string,
+): Node[] {
+  const term = search.trim().toLowerCase();
+  const matched = new Set<string>();
+  if (term) {
+    for (const n of nodes) {
+      const label = String((n as any)?.data?.label ?? n.id).toLowerCase();
+      const id = String(n.id).toLowerCase();
+      const ip = String((n as any)?.data?.ip ?? "").toLowerCase();
+      if (label.includes(term) || id.includes(term) || ip.includes(term)) {
+        matched.add(String(n.id));
+      }
+    }
+  }
+
+  const count = nodes.length || 1;
+  const radius = Math.max(260, count * 30);
+  return nodes.map((n, idx) => {
+    const id = String(n.id);
+    const pinnedPos = pinned[id];
+    let pos = pinnedPos ?? n.position;
+    if (!pinnedPos && mode === "circle") {
+      const angle = (idx / count) * Math.PI * 2;
+      pos = { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+    }
+    const highlight = term ? matched.has(id) : false;
+    const dim = term ? !matched.has(id) : false;
+    return {
+      ...n,
+      position: pos,
+      data: { ...(n.data as any), highlight },
+      style: dim ? { ...(n.style ?? {}), opacity: 0.25 } : n.style,
+    };
+  });
+}
+
+function InterfacesBody(props: {
+  node: string;
+  data?: DeploymentNodeInterfacesResponse;
+  loading: boolean;
+  error: string;
+}) {
+  if (props.loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (props.error) return <div className="text-sm text-destructive">{props.error}</div>;
+  const rows = props.data?.interfaces ?? [];
+  if (!rows.length) return <div className="text-sm text-muted-foreground">No interfaces found.</div>;
+
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-muted-foreground font-mono truncate">{props.node}</div>
+      <div className="rounded-md border overflow-auto max-h-[60vh]">
+        <table className="w-full text-xs">
+          <thead className="bg-muted/50 sticky top-0">
+            <tr>
+              <th className="text-left p-2">Interface</th>
+              <th className="text-left p-2">Peer</th>
+              <th className="text-left p-2">State</th>
+              <th className="text-right p-2">RX</th>
+              <th className="text-right p-2">TX</th>
+              <th className="text-right p-2">Drops</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.ifName} className="border-t">
+                <td className="p-2 font-mono">{r.ifName}</td>
+                <td className="p-2 font-mono text-muted-foreground">
+                  {r.peerNode ? `${r.peerNode}:${r.peerIf ?? ""}` : "—"}
+                </td>
+                <td className="p-2">{r.operState ?? "—"}</td>
+                <td className="p-2 text-right font-mono">{formatBytes(Number(r.rxBytes ?? 0))}</td>
+                <td className="p-2 text-right font-mono">{formatBytes(Number(r.txBytes ?? 0))}</td>
+                <td className="p-2 text-right font-mono">
+                  {Number(r.rxDropped ?? 0) + Number(r.txDropped ?? 0)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function RunningConfigBody(props: {
+  node: string;
+  data?: DeploymentNodeRunningConfigResponse;
+  loading: boolean;
+  error: string;
+}) {
+  if (props.loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (props.error) return <div className="text-sm text-destructive">{props.error}</div>;
+  if (props.data?.skipped) {
+    return <div className="text-sm text-muted-foreground">{props.data.message || "Skipped"}</div>;
+  }
+  const cfg = String(props.data?.stdout ?? "");
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-muted-foreground font-mono truncate">{props.node}</div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            void navigator.clipboard?.writeText(cfg);
+            toast.success("Copied running config");
+          }}
+          disabled={!cfg}
+        >
+          Copy
+        </Button>
+      </div>
+      <pre className="max-h-[65vh] overflow-auto rounded-md border bg-zinc-950 p-4 font-mono text-xs text-zinc-100 whitespace-pre-wrap">
+        {cfg || "No output"}
+      </pre>
+      {props.data?.stderr ? (
+        <div className="text-xs text-muted-foreground whitespace-pre-wrap">{props.data.stderr}</div>
+      ) : null}
+    </div>
+  );
 }

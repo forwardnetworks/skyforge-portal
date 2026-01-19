@@ -6,6 +6,8 @@ export const queryKeys = {
   runLogs: (runId: string) => ["runLogs", runId] as const,
   deploymentTopology: (workspaceId: string, deploymentId: string) =>
     ["deploymentTopology", workspaceId, deploymentId] as const,
+  deploymentUIEvents: (workspaceId: string, deploymentId: string) =>
+    ["deploymentUIEvents", workspaceId, deploymentId] as const,
   workspaces: () => ["workspaces"] as const,
   workspaceForwardConfig: (workspaceId: string) => ["workspaceForwardConfig", workspaceId] as const,
   workspaceForwardCollectors: (workspaceId: string) => ["workspaceForwardCollectors", workspaceId] as const,
