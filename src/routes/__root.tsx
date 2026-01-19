@@ -1,8 +1,8 @@
-import { createRootRouteWithContext, Link, Outlet, useRouterState, type ErrorComponentProps } from "@tanstack/react-router";
+import { createRootRouteWithContext, Link, Outlet, useNavigate, useRouterState, type ErrorComponentProps } from "@tanstack/react-router";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { buildLoginUrl, getSession, logout } from "../lib/skyforge-api";
+import { buildLoginUrl, getSession, getUserNotifications, logout } from "../lib/skyforge-api";
 import { loginWithPopup } from "../lib/auth-popup";
 import { SideNav } from "../components/side-nav";
 import { CommandMenu } from "../components/command-menu";
@@ -24,6 +24,7 @@ import {
   BreadcrumbSeparator,
 } from "../components/ui/breadcrumb";
 import { GlobalSpinner } from "../components/global-spinner";
+import { useNotificationsEvents, type NotificationsSnapshot } from "../lib/notifications-events";
 
 export type RouterContext = {
   queryClient: QueryClient;
@@ -37,6 +38,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootLayout() {
   const location = useRouterState({ select: (s) => s.location });
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [loggingOut, setLoggingOut] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
@@ -70,6 +72,24 @@ function RootLayout() {
   const who = session.data?.displayName || session.data?.username || "";
   const isAdmin = !!session.data?.isAdmin;
   const showLoginGate = isProtectedRoute && !session.isLoading && !session.data?.authenticated;
+
+  const username = session.data?.username ?? "";
+  const notificationsLimit = "20";
+  useNotificationsEvents(!!username, false, notificationsLimit);
+  const notifications = useQuery<NotificationsSnapshot>({
+    queryKey: queryKeys.notifications(false, notificationsLimit),
+    enabled: !!username,
+    queryFn: async () => {
+      const resp = await getUserNotifications(username, { include_read: "false", limit: notificationsLimit });
+      return { notifications: resp.notifications ?? [] };
+    },
+    staleTime: Infinity,
+    initialData: { notifications: [] }
+  });
+  const unreadCount = useMemo(() => {
+    const list = notifications.data?.notifications ?? [];
+    return list.filter((n: any) => !n.is_read).length;
+  }, [notifications.data?.notifications]);
 
     return (
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -130,10 +150,19 @@ function RootLayout() {
           </div>
 
           <nav className="flex items-center gap-4 text-sm">
-            <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-foreground">
-              <Link to="/notifications" aria-label="Notifications">
-                <Bell className="h-4 w-4" />
-              </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative text-muted-foreground hover:text-foreground"
+              aria-label="Notifications"
+              onClick={() => void navigate({ to: "/notifications" })}
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 ? (
+                <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
             </Button>
             <ModeToggle />
             {session.data?.authenticated ? (

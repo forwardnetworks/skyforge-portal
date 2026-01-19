@@ -71,8 +71,8 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ "SSOT": true });
 
-  const targetForHref = (href: string) => (href.startsWith("http") ? "_blank" : undefined);
-  const relForHref = (href: string) => (href.startsWith("http") ? "noreferrer" : undefined);
+  const targetForExternal = "_blank";
+  const relForExternal = "noreferrer noopener";
 
   const isActiveHref = (href: string) => {
     if (!href) return false;
@@ -126,8 +126,8 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
                             {child.external ? (
                               <a
                                 href={child.href}
-                                target={targetForHref(child.href)}
-                                rel={relForHref(child.href)}
+                                target={targetForExternal}
+                                rel={relForExternal}
                                 className="flex items-center gap-2 cursor-pointer w-full"
                               >
                                 <child.icon className="h-4 w-4 mr-2" />
@@ -183,8 +183,8 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
                               <a
                                 key={child.href}
                                 href={child.href}
-                                target={targetForHref(child.href)}
-                                rel={relForHref(child.href)}
+                                target={targetForExternal}
+                                rel={relForExternal}
                                 className={childClass}
                               >
                                 <ChildIcon className="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" />
@@ -225,8 +225,8 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
                   <a
                     key={item.href}
                     href={item.href}
-                    target={targetForHref(item.href)}
-                    rel={relForHref(item.href)}
+                    target={targetForExternal}
+                    rel={relForExternal}
                     className={baseClass}
                     title={props.collapsed ? item.label : undefined}
                   >
