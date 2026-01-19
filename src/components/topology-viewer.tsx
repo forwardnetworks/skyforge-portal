@@ -26,6 +26,7 @@ import { Server, Network, Laptop, Cloud, Download } from "lucide-react";
 import { useDownloadImage } from '@/hooks/use-download-image';
 import { setDeploymentLinkImpairment, type DeploymentTopology } from "@/lib/skyforge-api";
 import { TerminalModal } from "@/components/terminal-modal";
+import { NodeLogsModal } from "@/components/node-logs-modal";
 import { toast } from "sonner";
 
 // Custom Node Component
@@ -108,7 +109,9 @@ export function TopologyViewer({
   const ref = useRef<HTMLDivElement>(null);
   const { downloadImage } = useDownloadImage();
   const [terminalNode, setTerminalNode] = useState<{ id: string; kind?: string } | null>(null);
+  const [logsNode, setLogsNode] = useState<{ id: string; kind?: string; ip?: string } | null>(null);
   const [edgeMenu, setEdgeMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null);
+  const [nodeMenu, setNodeMenu] = useState<{ x: number; y: number; node: Node } | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<{ id: string; label?: string } | null>(null);
   const [impairOpen, setImpairOpen] = useState(false);
   const [impairSaving, setImpairSaving] = useState(false);
@@ -138,6 +141,20 @@ export function TopologyViewer({
     };
   }, [edgeMenu]);
 
+  useEffect(() => {
+    if (!nodeMenu) return;
+    const onClick = () => setNodeMenu(null);
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") setNodeMenu(null);
+    };
+    window.addEventListener("click", onClick);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("click", onClick);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [nodeMenu]);
+
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges],
@@ -145,13 +162,14 @@ export function TopologyViewer({
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (!enableTerminal) return;
-      if (!workspaceId || !deploymentId) return;
       event.preventDefault();
-      const kind = String((node as any)?.data?.kind ?? "");
-      setTerminalNode({ id: String(node.id), kind });
+      if (!workspaceId || !deploymentId) return;
+      const rect = ref.current?.getBoundingClientRect();
+      const x = rect ? event.clientX - rect.left : event.clientX;
+      const y = rect ? event.clientY - rect.top : event.clientY;
+      setNodeMenu({ x, y, node });
     },
-    [deploymentId, enableTerminal, workspaceId]
+    [deploymentId, workspaceId]
   );
 
   const onEdgeContextMenu = useCallback(
@@ -236,6 +254,97 @@ export function TopologyViewer({
           nodeId={terminalNode?.id ?? ""}
           nodeKind={terminalNode?.kind ?? ""}
         />
+      ) : null}
+
+      {workspaceId && deploymentId ? (
+        <NodeLogsModal
+          open={!!logsNode}
+          onOpenChange={(open) => {
+            if (!open) setLogsNode(null);
+          }}
+          workspaceId={workspaceId}
+          deploymentId={deploymentId}
+          nodeId={logsNode?.id ?? ""}
+          nodeKind={logsNode?.kind ?? ""}
+          nodeIp={logsNode?.ip ?? ""}
+        />
+      ) : null}
+
+      {nodeMenu && workspaceId && deploymentId ? (
+        <div
+          className="absolute z-50"
+          style={{ left: nodeMenu.x, top: nodeMenu.y }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <Card className="w-64 shadow-lg border bg-background/95 backdrop-blur">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm">Node Actions</CardTitle>
+              <div className="text-xs text-muted-foreground font-mono truncate">
+                {String((nodeMenu.node as any)?.data?.label ?? nodeMenu.node.id)}
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-2">
+              <Button
+                size="sm"
+                className="w-full"
+                disabled={!enableTerminal}
+                onClick={() => {
+                  const kind = String((nodeMenu.node as any)?.data?.kind ?? "");
+                  setNodeMenu(null);
+                  setTerminalNode({ id: String(nodeMenu.node.id), kind });
+                }}
+              >
+                Open terminal…
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  const kind = String((nodeMenu.node as any)?.data?.kind ?? "");
+                  const ip = String((nodeMenu.node as any)?.data?.ip ?? "");
+                  setNodeMenu(null);
+                  setLogsNode({ id: String(nodeMenu.node.id), kind, ip });
+                }}
+              >
+                View logs…
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  const ip = String((nodeMenu.node as any)?.data?.ip ?? "").trim();
+                  if (!ip) {
+                    toast.error("No management IP available");
+                    return;
+                  }
+                  void navigator.clipboard?.writeText(ip);
+                  toast.success("Copied management IP");
+                  setNodeMenu(null);
+                }}
+              >
+                Copy management IP
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  const name = String(nodeMenu.node.id);
+                  void navigator.clipboard?.writeText(name);
+                  toast.success("Copied node name");
+                  setNodeMenu(null);
+                }}
+              >
+                Copy node name
+              </Button>
+              <Button size="sm" variant="ghost" className="w-full" onClick={() => setNodeMenu(null)}>
+                Close
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       ) : null}
 
       {edgeMenu && workspaceId && deploymentId ? (

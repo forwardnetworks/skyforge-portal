@@ -220,6 +220,29 @@ export async function setDeploymentLinkImpairment(
   );
 }
 
+export type DeploymentNodeLogsResponse = {
+  namespace?: string;
+  podName?: string;
+  container?: string;
+  tail?: number;
+  logs?: string;
+};
+
+export async function getDeploymentNodeLogs(
+  workspaceId: string,
+  deploymentId: string,
+  nodeId: string,
+  params?: { tail?: number; container?: string }
+): Promise<DeploymentNodeLogsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.tail) qs.set("tail", String(params.tail));
+  if (params?.container) qs.set("container", params.container);
+  const suffix = qs.toString();
+  return apiFetch<DeploymentNodeLogsResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/logs${suffix ? `?${suffix}` : ""}`
+  );
+}
+
 type TemplatesQuery = {
   source?: "workspace" | "blueprints" | "custom" | "external" | string;
   repo?: string;
