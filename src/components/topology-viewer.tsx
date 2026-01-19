@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Server, Network, Laptop, Cloud, Download } from "lucide-react";
 import { useDownloadImage } from '@/hooks/use-download-image';
 import type { DeploymentTopology } from "@/lib/skyforge-api";
+import { TerminalModal } from "@/components/terminal-modal";
 
 // Custom Node Component
 const CustomNode = ({ data }: NodeProps) => {
@@ -56,7 +57,17 @@ const nodeTypes = {
   custom: CustomNode,
 };
 
-export function TopologyViewer({ topology }: { topology?: DeploymentTopology | null }) {
+export function TopologyViewer({
+  topology,
+  workspaceId,
+  deploymentId,
+  enableTerminal,
+}: {
+  topology?: DeploymentTopology | null;
+  workspaceId?: string;
+  deploymentId?: string;
+  enableTerminal?: boolean;
+}) {
   const derived = useMemo(() => {
     if (!topology || !Array.isArray(topology.nodes) || topology.nodes.length === 0) {
       return { nodes: [] as Node[], edges: [] as Edge[] };
@@ -74,7 +85,7 @@ export function TopologyViewer({ topology }: { topology?: DeploymentTopology | n
       return {
         id: String(n.id),
         position: { x: col * gapX, y: row * gapY },
-        data: { label: String(n.label ?? n.id), icon, status, ip: String(n.mgmtIp ?? "") },
+        data: { label: String(n.label ?? n.id), icon, status, ip: String(n.mgmtIp ?? ""), kind },
         type: "custom",
       };
     });
@@ -92,6 +103,7 @@ export function TopologyViewer({ topology }: { topology?: DeploymentTopology | n
   const [edges, setEdges, onEdgesChange] = useEdgesState(derived.edges);
   const ref = useRef<HTMLDivElement>(null);
   const { downloadImage } = useDownloadImage();
+  const [terminalNode, setTerminalNode] = useState<{ id: string; kind?: string } | null>(null);
 
   useEffect(() => {
     setNodes(derived.nodes);
@@ -103,6 +115,17 @@ export function TopologyViewer({ topology }: { topology?: DeploymentTopology | n
     [setEdges],
   );
 
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      if (!enableTerminal) return;
+      if (!workspaceId || !deploymentId) return;
+      event.preventDefault();
+      const kind = String((node as any)?.data?.kind ?? "");
+      setTerminalNode({ id: String(node.id), kind });
+    },
+    [deploymentId, enableTerminal, workspaceId]
+  );
+
   return (
     <div className="h-[600px] w-full border rounded-xl bg-background/50 overflow-hidden relative" ref={ref}>
       <ReactFlow
@@ -111,6 +134,7 @@ export function TopologyViewer({ topology }: { topology?: DeploymentTopology | n
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeContextMenu={onNodeContextMenu}
         nodeTypes={nodeTypes}
         fitView
         className="bg-muted/10"
@@ -130,6 +154,19 @@ export function TopologyViewer({ topology }: { topology?: DeploymentTopology | n
         <MiniMap zoomable pannable className="bg-background border rounded-lg" />
         <Background gap={12} size={1} />
       </ReactFlow>
+
+      {enableTerminal && workspaceId && deploymentId ? (
+        <TerminalModal
+          open={!!terminalNode}
+          onOpenChange={(open) => {
+            if (!open) setTerminalNode(null);
+          }}
+          workspaceId={workspaceId}
+          deploymentId={deploymentId}
+          nodeId={terminalNode?.id ?? ""}
+          nodeKind={terminalNode?.kind ?? ""}
+        />
+      ) : null}
     </div>
   );
 }

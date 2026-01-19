@@ -225,7 +225,12 @@ function DeploymentDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <TopologyViewer topology={topology.data} />
+              <TopologyViewer
+                topology={topology.data}
+                workspaceId={deployment.workspaceId}
+                deploymentId={deployment.id}
+                enableTerminal={["netlab-c9s", "clabernetes"].includes(deployment.type)}
+              />
             </CardContent>
           </Card>
         </TabsContent>

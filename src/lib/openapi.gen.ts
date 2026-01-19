@@ -2105,6 +2105,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{id}/deployments/{deploymentID}/terminal/ws": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * TerminalExecWS provides an interactive in-browser terminal into
+         *     clabernetes-backed nodes
+         * @description using Kubernetes \`pods/exec\` (SPDY) and a WebSocket transport to the browser.
+         *
+         *     Query params: - node: required (clabernetes/topologyNode) - container: optional - command: optional (defaults to "sh"; for EOS nodes use "Cli")
+         */
+        get: operations["GET:skyforge.TerminalExecWS"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{id}/deployments/{deploymentID}/topology": {
         parameters: {
             query?: never;
@@ -7886,6 +7909,28 @@ export interface operations {
                         workspaceId: string;
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.TerminalExecWS": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };

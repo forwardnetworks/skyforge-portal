@@ -33,6 +33,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "5.90.18",
     "@tanstack/react-router": "1.150.0",
+    "@xterm/addon-fit": "^0.10.0",
     "@xyflow/react": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -45,6 +46,7 @@
     "react-hook-form": "^7.71.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
+    "xterm": "^5.3.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
