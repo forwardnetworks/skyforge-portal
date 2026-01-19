@@ -19,6 +19,7 @@ import {
   stopDeployment,
   getDeploymentTopology,
   listForwardCollectors,
+  saveDeploymentNodeConfig,
   syncDeploymentForward,
   updateDeploymentForwardConfig,
   type DashboardSnapshot, type JSONMap,
@@ -168,6 +169,18 @@ function DeploymentDetailPage() {
     staleTime: 10_000
   });
 
+  const saveConfig = useMutation({
+    mutationFn: async (nodeId: string) => saveDeploymentNodeConfig(deployment.workspaceId, deployment.id, nodeId),
+    onSuccess: (resp, nodeId) => {
+      if (resp?.skipped) {
+        toast.message("Save config skipped", { description: resp.message || `Node ${nodeId}` });
+        return;
+      }
+      toast.success("Save config queued/applied", { description: resp.stdout || `Node ${nodeId}` });
+    },
+    onError: (e) => toast.error("Save config failed", { description: (e as Error).message }),
+  });
+
   const forwardCollectorsQ = useQuery({
     queryKey: queryKeys.forwardCollectors(),
     queryFn: listForwardCollectors,
@@ -278,6 +291,86 @@ function DeploymentDetailPage() {
               />
             </CardContent>
           </Card>
+
+          {topology.data?.nodes?.length ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Nodes</CardTitle>
+                <CardDescription>Quick actions (opens in a new tab where applicable).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {topology.data.nodes.map((n) => {
+                    const id = String(n.id);
+                    const kind = String(n.kind ?? "");
+                    const ip = String(n.mgmtIp ?? "");
+                    const status = String(n.status ?? "");
+                    const baseUrl = `${window.location.pathname}?node=${encodeURIComponent(id)}`;
+                    return (
+                      <div key={id} className="flex flex-col gap-2 rounded-md border p-3 md:flex-row md:items-center md:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs">{id}</span>
+                            {status ? <Badge variant="secondary" className="capitalize">{status}</Badge> : null}
+                            {kind ? <span className="text-xs text-muted-foreground truncate">{kind}</span> : null}
+                          </div>
+                          <div className="text-xs text-muted-foreground font-mono truncate mt-1">
+                            {ip || "—"}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={!["netlab-c9s", "clabernetes"].includes(deployment.type)}
+                            onClick={() => window.open(`${baseUrl}&action=terminal`, "_blank", "noopener,noreferrer")}
+                          >
+                            Terminal
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(`${baseUrl}&action=logs`, "_blank", "noopener,noreferrer")}
+                          >
+                            Logs
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(`${baseUrl}&action=describe`, "_blank", "noopener,noreferrer")}
+                          >
+                            Describe
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={saveConfig.isPending}
+                            onClick={() => saveConfig.mutate(id)}
+                          >
+                            {saveConfig.isPending ? "Saving…" : "Save config"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (!ip.trim()) {
+                                toast.error("No management IP available");
+                                return;
+                              }
+                              void navigator.clipboard?.writeText(ip);
+                              toast.success("Copied management IP");
+                            }}
+                          >
+                            Copy IP
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-6 animate-in fade-in-50">

@@ -59,6 +59,9 @@ export type LinkImpairmentRequest = {
   delayMs?: number;
   jitterMs?: number;
   lossPct?: number;
+  dupPct?: number;
+  corruptPct?: number;
+  reorderPct?: number;
   rateKbps?: number;
 };
 
@@ -240,6 +243,88 @@ export async function getDeploymentNodeLogs(
   const suffix = qs.toString();
   return apiFetch<DeploymentNodeLogsResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/logs${suffix ? `?${suffix}` : ""}`
+  );
+}
+
+export type DeploymentNodeDescribeResponse = {
+  namespace?: string;
+  podName?: string;
+  nodeName?: string;
+  phase?: string;
+  podIP?: string;
+  hostIP?: string;
+  qosClass?: string;
+  message?: string;
+  containers?: Array<{
+    name?: string;
+    image?: string;
+    ready?: boolean;
+    restartCount?: number;
+    state?: string;
+    reason?: string;
+    message?: string;
+  }>;
+};
+
+export async function getDeploymentNodeDescribe(
+  workspaceId: string,
+  deploymentId: string,
+  nodeId: string
+): Promise<DeploymentNodeDescribeResponse> {
+  return apiFetch<DeploymentNodeDescribeResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/describe`
+  );
+}
+
+export type DeploymentNodeSaveConfigResponse = {
+  namespace?: string;
+  podName?: string;
+  container?: string;
+  command?: string;
+  stdout?: string;
+  stderr?: string;
+  skipped?: boolean;
+  message?: string;
+};
+
+export async function saveDeploymentNodeConfig(
+  workspaceId: string,
+  deploymentId: string,
+  nodeId: string
+): Promise<DeploymentNodeSaveConfigResponse> {
+  return apiFetch<DeploymentNodeSaveConfigResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/save-config`,
+    { method: "POST", body: "{}" }
+  );
+}
+
+export type LinkStatsSnapshot = {
+  generatedAt: ISO8601;
+  source: string;
+  edges: Array<{
+    edgeId: string;
+    sourceNode: string;
+    sourceIf: string;
+    sourceRxBytes: number;
+    sourceTxBytes: number;
+    sourceRxPackets: number;
+    sourceTxPackets: number;
+    sourceRxDropped: number;
+    sourceTxDropped: number;
+    targetNode: string;
+    targetIf: string;
+    targetRxBytes: number;
+    targetTxBytes: number;
+    targetRxPackets: number;
+    targetTxPackets: number;
+    targetRxDropped: number;
+    targetTxDropped: number;
+  }>;
+};
+
+export async function getDeploymentLinkStats(workspaceId: string, deploymentId: string): Promise<LinkStatsSnapshot> {
+  return apiFetch<LinkStatsSnapshot>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/stats`
   );
 }
 

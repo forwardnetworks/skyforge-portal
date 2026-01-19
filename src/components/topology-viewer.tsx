@@ -22,12 +22,15 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Server, Network, Laptop, Cloud, Download } from "lucide-react";
+import { Server, Network, Laptop, Cloud, Download, Activity } from "lucide-react";
 import { useDownloadImage } from '@/hooks/use-download-image';
-import { setDeploymentLinkImpairment, type DeploymentTopology } from "@/lib/skyforge-api";
+import { getDeploymentLinkStats, setDeploymentLinkImpairment, type DeploymentTopology, type LinkStatsSnapshot } from "@/lib/skyforge-api";
 import { TerminalModal } from "@/components/terminal-modal";
 import { NodeLogsModal } from "@/components/node-logs-modal";
+import { NodeDescribeModal } from "@/components/node-describe-modal";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { saveDeploymentNodeConfig } from "@/lib/skyforge-api";
 
 // Custom Node Component
 const CustomNode = ({ data }: NodeProps) => {
@@ -110,22 +113,69 @@ export function TopologyViewer({
   const { downloadImage } = useDownloadImage();
   const [terminalNode, setTerminalNode] = useState<{ id: string; kind?: string } | null>(null);
   const [logsNode, setLogsNode] = useState<{ id: string; kind?: string; ip?: string } | null>(null);
+  const [describeNode, setDescribeNode] = useState<{ id: string; kind?: string; ip?: string } | null>(null);
   const [edgeMenu, setEdgeMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null);
   const [nodeMenu, setNodeMenu] = useState<{ x: number; y: number; node: Node } | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<{ id: string; label?: string } | null>(null);
   const [impairOpen, setImpairOpen] = useState(false);
   const [impairSaving, setImpairSaving] = useState(false);
-  const [impair, setImpair] = useState<{ delayMs: string; jitterMs: string; lossPct: string; rateKbps: string }>({
+  const [statsEnabled, setStatsEnabled] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [edgeRates, setEdgeRates] = useState<Record<string, { bps: number; pps: number; drops: number }>>({});
+  const lastStatsRef = useRef<{ atMs: number; byEdge: Record<string, LinkStatsSnapshot["edges"][number]> } | null>(null);
+  const baseEdgeLabelsRef = useRef<Record<string, string | undefined>>({});
+  const deepLinkHandledRef = useRef(false);
+  const [impair, setImpair] = useState<{
+    delayMs: string;
+    jitterMs: string;
+    lossPct: string;
+    dupPct: string;
+    corruptPct: string;
+    reorderPct: string;
+    rateKbps: string;
+  }>({
     delayMs: "",
     jitterMs: "",
     lossPct: "",
+    dupPct: "",
+    corruptPct: "",
+    reorderPct: "",
     rateKbps: "",
   });
 
   useEffect(() => {
     setNodes(derived.nodes);
-    setEdges(derived.edges);
+    baseEdgeLabelsRef.current = Object.fromEntries(
+      derived.edges.map((e) => [String(e.id), typeof e.label === "string" ? e.label : undefined])
+    );
+    setEdges(decorateEdges(derived.edges, edgeRates, statsEnabled, baseEdgeLabelsRef.current));
   }, [derived.edges, derived.nodes, setEdges, setNodes]);
+
+  useEffect(() => {
+    // Update edge rendering when stats update.
+    setEdges((prev) => decorateEdges(prev, edgeRates, statsEnabled, baseEdgeLabelsRef.current));
+  }, [edgeRates, setEdges, statsEnabled]);
+
+  useEffect(() => {
+    if (!workspaceId || !deploymentId) return;
+    if (deepLinkHandledRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const node = params.get("node")?.trim();
+    const action = params.get("action")?.trim();
+    if (!node || !action) {
+      deepLinkHandledRef.current = true;
+      return;
+    }
+    if (action === "terminal") setTerminalNode({ id: node });
+    if (action === "logs") setLogsNode({ id: node });
+    if (action === "describe") setDescribeNode({ id: node });
+    deepLinkHandledRef.current = true;
+    params.delete("node");
+    params.delete("action");
+    const suffix = params.toString();
+    const nextUrl = `${window.location.pathname}${suffix ? `?${suffix}` : ""}${window.location.hash || ""}`;
+    window.history.replaceState(null, "", nextUrl);
+  }, [deploymentId, workspaceId]);
 
   useEffect(() => {
     if (!edgeMenu) return;
@@ -140,6 +190,23 @@ export function TopologyViewer({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [edgeMenu]);
+
+  const saveConfig = useMutation({
+    mutationFn: async (nodeId: string) => {
+      if (!workspaceId || !deploymentId) throw new Error("missing workspace/deployment");
+      return saveDeploymentNodeConfig(workspaceId, deploymentId, nodeId);
+    },
+    onSuccess: (resp, nodeId) => {
+      if (resp?.skipped) {
+        toast.message("Save config skipped", { description: resp.message || `Node ${nodeId}` });
+        return;
+      }
+      toast.success("Save config queued/applied", { description: resp.stdout || `Node ${nodeId}` });
+    },
+    onError: (e: any) => {
+      toast.error("Save config failed", { description: e?.message ?? String(e) });
+    },
+  });
 
   useEffect(() => {
     if (!nodeMenu) return;
@@ -189,16 +256,22 @@ export function TopologyViewer({
     try {
       setImpairSaving(true);
       const body: any = { edgeId, action };
-      if (action === "set") {
-        const delayMs = impair.delayMs.trim() ? Number(impair.delayMs.trim()) : undefined;
-        const jitterMs = impair.jitterMs.trim() ? Number(impair.jitterMs.trim()) : undefined;
-        const lossPct = impair.lossPct.trim() ? Number(impair.lossPct.trim()) : undefined;
-        const rateKbps = impair.rateKbps.trim() ? Number(impair.rateKbps.trim()) : undefined;
-        if (Number.isFinite(delayMs)) body.delayMs = delayMs;
-        if (Number.isFinite(jitterMs)) body.jitterMs = jitterMs;
-        if (Number.isFinite(lossPct)) body.lossPct = lossPct;
-        if (Number.isFinite(rateKbps)) body.rateKbps = rateKbps;
-      }
+        if (action === "set") {
+          const delayMs = impair.delayMs.trim() ? Number(impair.delayMs.trim()) : undefined;
+          const jitterMs = impair.jitterMs.trim() ? Number(impair.jitterMs.trim()) : undefined;
+          const lossPct = impair.lossPct.trim() ? Number(impair.lossPct.trim()) : undefined;
+          const dupPct = impair.dupPct.trim() ? Number(impair.dupPct.trim()) : undefined;
+          const corruptPct = impair.corruptPct.trim() ? Number(impair.corruptPct.trim()) : undefined;
+          const reorderPct = impair.reorderPct.trim() ? Number(impair.reorderPct.trim()) : undefined;
+          const rateKbps = impair.rateKbps.trim() ? Number(impair.rateKbps.trim()) : undefined;
+          if (Number.isFinite(delayMs)) body.delayMs = delayMs;
+          if (Number.isFinite(jitterMs)) body.jitterMs = jitterMs;
+          if (Number.isFinite(lossPct)) body.lossPct = lossPct;
+          if (Number.isFinite(dupPct)) body.dupPct = dupPct;
+          if (Number.isFinite(corruptPct)) body.corruptPct = corruptPct;
+          if (Number.isFinite(reorderPct)) body.reorderPct = reorderPct;
+          if (Number.isFinite(rateKbps)) body.rateKbps = rateKbps;
+        }
       const resp = await setDeploymentLinkImpairment(workspaceId, deploymentId, body);
       const failed = resp.results.filter((r) => r.error);
       if (failed.length) {
@@ -211,7 +284,95 @@ export function TopologyViewer({
     } finally {
       setImpairSaving(false);
     }
-  }, [deploymentId, impair.delayMs, impair.jitterMs, impair.lossPct, impair.rateKbps, workspaceId]);
+  }, [
+    deploymentId,
+    impair.corruptPct,
+    impair.delayMs,
+    impair.dupPct,
+    impair.jitterMs,
+    impair.lossPct,
+    impair.rateKbps,
+    impair.reorderPct,
+    workspaceId,
+  ]);
+
+  useEffect(() => {
+    if (!statsEnabled || !workspaceId || !deploymentId) return;
+    setStatsError(null);
+    lastStatsRef.current = null;
+
+    const url = `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/stats/events`;
+    const es = new EventSource(url, { withCredentials: true });
+
+    const onStats = (ev: MessageEvent) => {
+      try {
+        const payload = JSON.parse(String(ev.data ?? "{}")) as { type?: string; snapshot?: LinkStatsSnapshot; error?: string };
+        if (payload.type === "error") {
+          setStatsError(payload.error || "failed to stream link stats");
+          return;
+        }
+        if (payload.type !== "snapshot" || !payload.snapshot) return;
+
+        const snap = payload.snapshot;
+        const atMs = Date.parse(snap.generatedAt || "");
+        if (!Number.isFinite(atMs)) return;
+        const byEdge: Record<string, LinkStatsSnapshot["edges"][number]> = {};
+        for (const e of snap.edges ?? []) {
+          byEdge[String(e.edgeId)] = e;
+        }
+
+        const prev = lastStatsRef.current;
+        lastStatsRef.current = { atMs, byEdge };
+        if (!prev) return;
+
+        const dt = (atMs - prev.atMs) / 1000;
+        if (!(dt > 0)) return;
+
+        const rates: Record<string, { bps: number; pps: number; drops: number }> = {};
+        for (const [edgeId, cur] of Object.entries(byEdge)) {
+          const p = prev.byEdge[edgeId];
+          if (!p) continue;
+          const d = (a: number, b: number) => Math.max(0, a - b);
+
+          const srcTx = d(cur.sourceTxBytes, p.sourceTxBytes);
+          const srcRx = d(cur.sourceRxBytes, p.sourceRxBytes);
+          const dstTx = d(cur.targetTxBytes, p.targetTxBytes);
+          const dstRx = d(cur.targetRxBytes, p.targetRxBytes);
+
+          const dirAToB = Math.max(srcTx, dstRx);
+          const dirBToA = Math.max(dstTx, srcRx);
+          const bytes = dirAToB + dirBToA;
+
+          const srcTxPk = d(cur.sourceTxPackets, p.sourceTxPackets);
+          const srcRxPk = d(cur.sourceRxPackets, p.sourceRxPackets);
+          const dstTxPk = d(cur.targetTxPackets, p.targetTxPackets);
+          const dstRxPk = d(cur.targetRxPackets, p.targetRxPackets);
+          const pps = (Math.max(srcTxPk, dstRxPk) + Math.max(dstTxPk, srcRxPk)) / dt;
+
+          const drops = (d(cur.sourceRxDropped, p.sourceRxDropped) + d(cur.sourceTxDropped, p.sourceTxDropped) +
+            d(cur.targetRxDropped, p.targetRxDropped) + d(cur.targetTxDropped, p.targetTxDropped)) / dt;
+
+          rates[edgeId] = { bps: (bytes * 8) / dt, pps, drops };
+        }
+        setEdgeRates(rates);
+      } catch (e: any) {
+        setStatsError(e?.message ?? String(e));
+      }
+    };
+
+    const onError = () => setStatsError("link stats stream disconnected");
+
+    es.addEventListener("stats", onStats as any);
+    es.onerror = onError;
+
+    // Kick a one-shot fetch too (makes the first delta appear faster after a pause).
+    void getDeploymentLinkStats(workspaceId, deploymentId).catch(() => {});
+
+    return () => {
+      es.removeEventListener("stats", onStats as any);
+      es.close();
+    };
+  }, [deploymentId, statsEnabled, workspaceId]);
 
   return (
     <div className="h-[600px] w-full border rounded-xl bg-background/50 overflow-hidden relative" ref={ref}>
@@ -228,20 +389,49 @@ export function TopologyViewer({
         className="bg-muted/10"
       >
         <Panel position="top-right">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="shadow-sm bg-background/80 backdrop-blur"
-            onClick={() => ref.current && downloadImage(ref.current, 'topology.png')}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Download PNG
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={statsEnabled ? "default" : "outline"}
+              size="sm"
+              className="shadow-sm bg-background/80 backdrop-blur"
+              onClick={() => {
+                setStatsEnabled((v) => {
+                  const next = !v;
+                  if (!next) {
+                    setStatsError(null);
+                    setEdgeRates({});
+                    lastStatsRef.current = null;
+                  }
+                  return next;
+                });
+              }}
+              disabled={!workspaceId || !deploymentId}
+              title="Show live link utilization (SSE)"
+            >
+              <Activity className="mr-2 h-4 w-4" />
+              Live stats
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shadow-sm bg-background/80 backdrop-blur"
+              onClick={() => ref.current && downloadImage(ref.current, "topology.png")}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download PNG
+            </Button>
+          </div>
         </Panel>
         <Controls />
         <MiniMap zoomable pannable className="bg-background border rounded-lg" />
         <Background gap={12} size={1} />
       </ReactFlow>
+
+      {statsEnabled && statsError ? (
+        <div className="absolute bottom-2 left-2 z-40 rounded-md border bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm">
+          Live stats: {statsError}
+        </div>
+      ) : null}
 
       {enableTerminal && workspaceId && deploymentId ? (
         <TerminalModal
@@ -267,6 +457,20 @@ export function TopologyViewer({
           nodeId={logsNode?.id ?? ""}
           nodeKind={logsNode?.kind ?? ""}
           nodeIp={logsNode?.ip ?? ""}
+        />
+      ) : null}
+
+      {workspaceId && deploymentId ? (
+        <NodeDescribeModal
+          open={!!describeNode}
+          onOpenChange={(open) => {
+            if (!open) setDescribeNode(null);
+          }}
+          workspaceId={workspaceId}
+          deploymentId={deploymentId}
+          nodeId={describeNode?.id ?? ""}
+          nodeKind={describeNode?.kind ?? ""}
+          nodeIp={describeNode?.ip ?? ""}
         />
       ) : null}
 
@@ -298,6 +502,20 @@ export function TopologyViewer({
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                className="w-full"
+                disabled={!enableTerminal}
+                onClick={() => {
+                  const id = String(nodeMenu.node.id);
+                  const url = `${window.location.pathname}?node=${encodeURIComponent(id)}&action=terminal`;
+                  window.open(url, "_blank", "noopener,noreferrer");
+                  setNodeMenu(null);
+                }}
+              >
+                Open terminal (new tab)
+              </Button>
+              <Button
+                size="sm"
                 variant="secondary"
                 className="w-full"
                 onClick={() => {
@@ -308,6 +526,58 @@ export function TopologyViewer({
                 }}
               >
                 View logs…
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const id = String(nodeMenu.node.id);
+                  const url = `${window.location.pathname}?node=${encodeURIComponent(id)}&action=logs`;
+                  window.open(url, "_blank", "noopener,noreferrer");
+                  setNodeMenu(null);
+                }}
+              >
+                View logs (new tab)
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  const kind = String((nodeMenu.node as any)?.data?.kind ?? "");
+                  const ip = String((nodeMenu.node as any)?.data?.ip ?? "");
+                  setNodeMenu(null);
+                  setDescribeNode({ id: String(nodeMenu.node.id), kind, ip });
+                }}
+              >
+                Describe…
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const id = String(nodeMenu.node.id);
+                  const url = `${window.location.pathname}?node=${encodeURIComponent(id)}&action=describe`;
+                  window.open(url, "_blank", "noopener,noreferrer");
+                  setNodeMenu(null);
+                }}
+              >
+                Describe (new tab)
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                disabled={saveConfig.isPending}
+                onClick={() => {
+                  const id = String(nodeMenu.node.id);
+                  setNodeMenu(null);
+                  saveConfig.mutate(id);
+                }}
+              >
+                {saveConfig.isPending ? "Saving…" : "Save config"}
               </Button>
               <Button
                 size="sm"
@@ -440,6 +710,36 @@ export function TopologyViewer({
                 />
               </div>
               <div className="space-y-1">
+                <Label htmlFor="dupPct">Duplicate (%)</Label>
+                <Input
+                  id="dupPct"
+                  inputMode="decimal"
+                  placeholder="e.g. 0.1"
+                  value={impair.dupPct}
+                  onChange={(e) => setImpair((p) => ({ ...p, dupPct: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="corruptPct">Corrupt (%)</Label>
+                <Input
+                  id="corruptPct"
+                  inputMode="decimal"
+                  placeholder="e.g. 0.05"
+                  value={impair.corruptPct}
+                  onChange={(e) => setImpair((p) => ({ ...p, corruptPct: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="reorderPct">Reorder (%)</Label>
+                <Input
+                  id="reorderPct"
+                  inputMode="decimal"
+                  placeholder="e.g. 0.2"
+                  value={impair.reorderPct}
+                  onChange={(e) => setImpair((p) => ({ ...p, reorderPct: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
                 <Label htmlFor="rateKbps">Rate (kbit/s)</Label>
                 <Input
                   id="rateKbps"
@@ -477,4 +777,43 @@ export function TopologyViewer({
       </Dialog>
     </div>
   );
+}
+
+function formatBps(bps: number): string {
+  if (!(bps > 0)) return "0 bps";
+  if (bps >= 1e9) return `${(bps / 1e9).toFixed(2)} Gbps`;
+  if (bps >= 1e6) return `${(bps / 1e6).toFixed(1)} Mbps`;
+  if (bps >= 1e3) return `${(bps / 1e3).toFixed(0)} Kbps`;
+  return `${Math.round(bps)} bps`;
+}
+
+function decorateEdges(
+  edges: Edge[],
+  rates: Record<string, { bps: number; pps: number; drops: number }>,
+  enabled: boolean,
+  baseLabels: Record<string, string | undefined>,
+): Edge[] {
+  return edges.map((e) => {
+    const edgeId = String(e.id);
+    const base = baseLabels[edgeId] ?? (typeof e.label === "string" ? e.label : undefined);
+    if (!enabled) {
+      return { ...e, label: base, animated: false, style: undefined };
+    }
+    const r = rates[edgeId];
+    if (!r) {
+      return { ...e, label: base, animated: false, style: undefined };
+    }
+    const bps = r.bps ?? 0;
+    const width = 1 + Math.min(9, Math.log10(Math.max(1, bps)) / 1.2);
+    const label = base ? `${base} · ${formatBps(bps)}` : formatBps(bps);
+    return {
+      ...e,
+      label,
+      animated: bps > 0,
+      style: {
+        ...(e.style ?? {}),
+        strokeWidth: width,
+      },
+    };
+  });
 }
