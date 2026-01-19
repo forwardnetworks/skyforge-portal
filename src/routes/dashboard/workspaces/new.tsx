@@ -28,7 +28,6 @@ const formSchema = z.object({
   isPublic: z.boolean().default(false),
   blueprint: z.string().optional(),
   allowExternalTemplateRepos: z.boolean().default(false),
-  allowCustomEveServers: z.boolean().default(false),
   allowCustomNetlabServers: z.boolean().default(false),
   sharedUsers: z.string().optional(),
   awsAccountId: z.string().optional(),
@@ -56,7 +55,6 @@ function NewWorkspacePage() {
       isPublic: false,
       blueprint: "skyforge/blueprints",
       allowExternalTemplateRepos: false,
-      allowCustomEveServers: false,
       allowCustomNetlabServers: false,
       sharedUsers: "",
       awsAccountId: "",
@@ -73,15 +71,11 @@ function NewWorkspacePage() {
       // Based on openapi.gen.ts we saw, fields are optional in the request body definition if they weren't marked required in OpenAPI.
       // However, the generated type `CreateWorkspaceRequest` might have them as required if not specified otherwise.
       // We'll cast to any or construct a minimal valid object.
-      // Looking at the openapi definition again, `requestBody` has `allowCustomEveServers` etc.
-      // We will assume defaults for now.
-      
       const payload: any = {
         name: data.name,
         slug: data.slug,
         description: data.description || "",
         isPublic: !!data.isPublic,
-        allowCustomEveServers: !!data.allowCustomEveServers,
         allowCustomNetlabServers: !!data.allowCustomNetlabServers,
         allowExternalTemplateRepos: !!data.allowExternalTemplateRepos,
         awsAccountId: (data.awsAccountId || "").trim(),
@@ -316,21 +310,6 @@ function NewWorkspacePage() {
                       <div className="space-y-0.5">
                         <FormLabel>Allow external template repos</FormLabel>
                         <FormDescription>Enable additional template sources for deployments.</FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="allowCustomEveServers"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <FormLabel>Allow custom EVE servers (BYOS)</FormLabel>
-                        <FormDescription>Enable user-provided EVE servers for LabPP.</FormDescription>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />

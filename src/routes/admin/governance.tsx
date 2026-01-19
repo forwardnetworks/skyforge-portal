@@ -5,6 +5,7 @@ import { Activity, Database, DollarSign, Layers, RefreshCcw, Search, Inbox, Cred
 import { toast } from "sonner";
 import { z } from "zod";
 import {
+  getSession,
   getGovernanceSummary,
   listGovernanceCosts,
   listGovernanceResources,
@@ -32,6 +33,14 @@ export const Route = createFileRoute("/admin/governance")({
   validateSearch: (search) => governanceSearchSchema.parse(search),
   loaderDeps: ({ search: { q, tab } }) => ({ q, tab }),
   loader: async ({ context: { queryClient } }) => {
+    const session = await queryClient.ensureQueryData({
+      queryKey: queryKeys.session(),
+      queryFn: getSession,
+      staleTime: 30_000,
+      retry: false,
+    });
+    if (!session?.isAdmin) return;
+
     // Prefetch all data to ensure tab switching is instant
     await Promise.all([
       queryClient.ensureQueryData({
@@ -60,28 +69,37 @@ function GovernancePage() {
   const navigate = Route.useNavigate();
   const { q, tab } = Route.useSearch();
   
-  const session = queryClient.getQueryData<any>(queryKeys.session());
-  const isAdmin = !!session?.isAdmin;
+  const sessionQ = useQuery({
+    queryKey: queryKeys.session(),
+    queryFn: getSession,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const isAdmin = !!sessionQ.data?.isAdmin;
 
   const summary = useQuery({
     queryKey: queryKeys.governanceSummary(),
     queryFn: getGovernanceSummary,
-    staleTime: 30_000
+    staleTime: 30_000,
+    enabled: isAdmin
   });
   const resources = useQuery({
     queryKey: queryKeys.governanceResources("500"),
     queryFn: () => listGovernanceResources({ limit: "500" }),
-    staleTime: 30_000
+    staleTime: 30_000,
+    enabled: isAdmin
   });
   const costs = useQuery({
     queryKey: queryKeys.governanceCosts("50"),
     queryFn: () => listGovernanceCosts({ limit: "50" }),
-    staleTime: 30_000
+    staleTime: 30_000,
+    enabled: isAdmin
   });
   const usage = useQuery({
     queryKey: queryKeys.governanceUsage("50"),
     queryFn: () => listGovernanceUsage({ limit: "50" }),
-    staleTime: 30_000
+    staleTime: 30_000,
+    enabled: isAdmin
   });
 
   const filteredResources = useMemo(() => {

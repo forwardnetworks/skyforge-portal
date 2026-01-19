@@ -162,7 +162,6 @@ function DeploymentsPage() {
         if (typeFilter === "netlab" && !d.type.startsWith("netlab")) return false;
         if (typeFilter === "containerlab" && !["containerlab", "clabernetes"].includes(d.type)) return false;
         if (typeFilter === "terraform" && d.type !== "terraform") return false;
-        if (typeFilter === "labpp" && d.type !== "labpp") return false;
       }
       return true;
     });
@@ -212,7 +211,6 @@ function DeploymentsPage() {
       case "netlab-c9s": return "Netlab";
       case "containerlab": return "Containerlab (BYOS)";
       case "clabernetes": return "Containerlab";
-      case "labpp": return "LabPP";
       default: return typ;
     }
   };
@@ -338,7 +336,6 @@ function DeploymentsPage() {
                 <SelectItem value="netlab">Netlab</SelectItem>
                 <SelectItem value="containerlab">Containerlab</SelectItem>
                 <SelectItem value="terraform">Terraform</SelectItem>
-                <SelectItem value="labpp">LabPP</SelectItem>
               </SelectContent>
             </Select>
             <Link

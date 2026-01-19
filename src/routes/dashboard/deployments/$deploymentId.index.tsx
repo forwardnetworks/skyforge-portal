@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { 
   Play, 
@@ -18,13 +18,19 @@ import {
   startDeployment,
   stopDeployment,
   getDeploymentTopology,
+  listForwardCollectors,
+  syncDeploymentForward,
+  updateDeploymentForwardConfig,
   type DashboardSnapshot, type JSONMap,
+  type ForwardCollectorSummary,
   type WorkspaceDeployment
 } from "../../../lib/skyforge-api";
 import { queryKeys } from "../../../lib/query-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
+import { Switch } from "../../../components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/empty-state";
@@ -48,9 +54,12 @@ export const Route = createFileRoute("/dashboard/deployments/$deploymentId/")({
 function DeploymentDetailPage() {
   const { deploymentId } = Route.useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   useDashboardEvents(true);
 
   const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
+  const [forwardEnabled, setForwardEnabled] = useState(false);
+  const [forwardCollector, setForwardCollector] = useState("");
 
   const snap = useQuery<DashboardSnapshot | null>({
     queryKey: queryKeys.dashboardSnapshot(),
@@ -63,6 +72,13 @@ function DeploymentDetailPage() {
   const deployment = useMemo(() => {
     return (snap.data?.deployments ?? []).find((d: WorkspaceDeployment) => d.id === deploymentId);
   }, [snap.data?.deployments, deploymentId]);
+
+  useEffect(() => {
+    const enabled = Boolean((deployment?.config ?? {})["forwardEnabled"]);
+    const collector = String((deployment?.config ?? {})["forwardCollectorUsername"] ?? "").trim();
+    setForwardEnabled(enabled);
+    setForwardCollector(collector);
+  }, [deployment?.id, deployment?.config]);
 
   const activeRunId = String(deployment?.activeTaskId ?? "");
   useRunEvents(activeRunId, Boolean(activeRunId));
@@ -149,6 +165,34 @@ function DeploymentDetailPage() {
     enabled: ["containerlab", "netlab-c9s", "clabernetes"].includes(deployment.type),
     retry: false,
     staleTime: 10_000
+  });
+
+  const forwardCollectorsQ = useQuery({
+    queryKey: queryKeys.forwardCollectors(),
+    queryFn: listForwardCollectors,
+    enabled: forwardEnabled,
+    retry: false,
+    staleTime: 30_000,
+  });
+  const forwardCollectors = (forwardCollectorsQ.data?.collectors ?? []) as ForwardCollectorSummary[];
+
+  const updateForward = useMutation({
+    mutationFn: async (next: { enabled: boolean; collectorUsername?: string }) =>
+      updateDeploymentForwardConfig(deployment.workspaceId, deployment.id, next),
+    onSuccess: async () => {
+      toast.success("Forward settings updated");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
+    },
+    onError: (e) => toast.error("Failed to update Forward settings", { description: (e as Error).message }),
+  });
+
+  const syncForward = useMutation({
+    mutationFn: async () => syncDeploymentForward(deployment.workspaceId, deployment.id),
+    onSuccess: async (resp) => {
+      toast.success("Forward sync queued", { description: `Run ${String(resp.run?.id ?? "")}` });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
+    },
+    onError: (e) => toast.error("Failed to sync to Forward", { description: (e as Error).message }),
   });
 
   return (
@@ -304,6 +348,75 @@ function DeploymentDetailPage() {
         </TabsContent>
 
         <TabsContent value="config" className="space-y-6 animate-in fade-in-50">
+          <Card>
+            <CardHeader>
+              <CardTitle>Forward Networks</CardTitle>
+              <CardDescription>Optional: sync device IPs into Forward for collection.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Enable Forward collection</div>
+                  <div className="text-xs text-muted-foreground">Requires configuring your Collector first.</div>
+                </div>
+                <Switch
+                  checked={forwardEnabled}
+                  disabled={updateForward.isPending}
+                  onCheckedChange={(checked) => {
+                    setForwardEnabled(checked);
+                    const nextCollector = checked ? forwardCollector.trim() : "";
+                    updateForward.mutate({ enabled: checked, collectorUsername: nextCollector || undefined });
+                  }}
+                />
+              </div>
+
+              {forwardEnabled ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Collector</div>
+                    <Select
+                      value={forwardCollector}
+                      onValueChange={(val) => {
+                        setForwardCollector(val);
+                        updateForward.mutate({ enabled: true, collectorUsername: val });
+                      }}
+                      disabled={forwardCollectorsQ.isLoading || forwardCollectorsQ.isError || updateForward.isPending}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            forwardCollectorsQ.isLoading
+                              ? "Loading…"
+                              : forwardCollectorsQ.isError
+                                ? "Configure Collector first"
+                                : "Select collector…"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {forwardCollectors.map((c) => (
+                          <SelectItem key={c.id || c.username} value={c.username}>
+                            {c.name} ({c.username})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => syncForward.mutate()}
+                      disabled={!forwardCollector.trim() || syncForward.isPending || updateForward.isPending}
+                    >
+                      {syncForward.isPending ? "Queueing…" : "Sync now"}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Configuration</CardTitle>

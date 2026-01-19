@@ -19,10 +19,14 @@ import '@xyflow/react/dist/style.css';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Server, Network, Laptop, Cloud, Download } from "lucide-react";
 import { useDownloadImage } from '@/hooks/use-download-image';
-import type { DeploymentTopology } from "@/lib/skyforge-api";
+import { setDeploymentLinkImpairment, type DeploymentTopology } from "@/lib/skyforge-api";
 import { TerminalModal } from "@/components/terminal-modal";
+import { toast } from "sonner";
 
 // Custom Node Component
 const CustomNode = ({ data }: NodeProps) => {
@@ -104,11 +108,35 @@ export function TopologyViewer({
   const ref = useRef<HTMLDivElement>(null);
   const { downloadImage } = useDownloadImage();
   const [terminalNode, setTerminalNode] = useState<{ id: string; kind?: string } | null>(null);
+  const [edgeMenu, setEdgeMenu] = useState<{ x: number; y: number; edge: Edge } | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<{ id: string; label?: string } | null>(null);
+  const [impairOpen, setImpairOpen] = useState(false);
+  const [impairSaving, setImpairSaving] = useState(false);
+  const [impair, setImpair] = useState<{ delayMs: string; jitterMs: string; lossPct: string; rateKbps: string }>({
+    delayMs: "",
+    jitterMs: "",
+    lossPct: "",
+    rateKbps: "",
+  });
 
   useEffect(() => {
     setNodes(derived.nodes);
     setEdges(derived.edges);
   }, [derived.edges, derived.nodes, setEdges, setNodes]);
+
+  useEffect(() => {
+    if (!edgeMenu) return;
+    const onClick = () => setEdgeMenu(null);
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") setEdgeMenu(null);
+    };
+    window.addEventListener("click", onClick);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("click", onClick);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [edgeMenu]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -126,6 +154,47 @@ export function TopologyViewer({
     [deploymentId, enableTerminal, workspaceId]
   );
 
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      if (!workspaceId || !deploymentId) return;
+      event.preventDefault();
+      const rect = ref.current?.getBoundingClientRect();
+      const x = rect ? event.clientX - rect.left : event.clientX;
+      const y = rect ? event.clientY - rect.top : event.clientY;
+      setEdgeMenu({ x, y, edge });
+    },
+    [deploymentId, workspaceId]
+  );
+
+  const applyImpairment = useCallback(async (action: "set" | "clear", edgeId: string) => {
+    if (!workspaceId || !deploymentId) return;
+    try {
+      setImpairSaving(true);
+      const body: any = { edgeId, action };
+      if (action === "set") {
+        const delayMs = impair.delayMs.trim() ? Number(impair.delayMs.trim()) : undefined;
+        const jitterMs = impair.jitterMs.trim() ? Number(impair.jitterMs.trim()) : undefined;
+        const lossPct = impair.lossPct.trim() ? Number(impair.lossPct.trim()) : undefined;
+        const rateKbps = impair.rateKbps.trim() ? Number(impair.rateKbps.trim()) : undefined;
+        if (Number.isFinite(delayMs)) body.delayMs = delayMs;
+        if (Number.isFinite(jitterMs)) body.jitterMs = jitterMs;
+        if (Number.isFinite(lossPct)) body.lossPct = lossPct;
+        if (Number.isFinite(rateKbps)) body.rateKbps = rateKbps;
+      }
+      const resp = await setDeploymentLinkImpairment(workspaceId, deploymentId, body);
+      const failed = resp.results.filter((r) => r.error);
+      if (failed.length) {
+        toast.error("Link impairment applied with errors", { description: failed.map((r) => `${r.node}: ${r.error}`).join("; ") });
+      } else {
+        toast.success(action === "clear" ? "Link impairment cleared" : "Link impairment applied");
+      }
+    } catch (e: any) {
+      toast.error("Failed to apply link impairment", { description: e?.message ?? String(e) });
+    } finally {
+      setImpairSaving(false);
+    }
+  }, [deploymentId, impair.delayMs, impair.jitterMs, impair.lossPct, impair.rateKbps, workspaceId]);
+
   return (
     <div className="h-[600px] w-full border rounded-xl bg-background/50 overflow-hidden relative" ref={ref}>
       <ReactFlow
@@ -135,6 +204,7 @@ export function TopologyViewer({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeContextMenu={onNodeContextMenu}
+        onEdgeContextMenu={onEdgeContextMenu}
         nodeTypes={nodeTypes}
         fitView
         className="bg-muted/10"
@@ -167,6 +237,135 @@ export function TopologyViewer({
           nodeKind={terminalNode?.kind ?? ""}
         />
       ) : null}
+
+      {edgeMenu && workspaceId && deploymentId ? (
+        <div
+          className="absolute z-50"
+          style={{ left: edgeMenu.x, top: edgeMenu.y }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <Card className="w-64 shadow-lg border bg-background/95 backdrop-blur">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm">Link Actions</CardTitle>
+              <div className="text-xs text-muted-foreground font-mono truncate">
+                {String(edgeMenu.edge.label ?? edgeMenu.edge.id)}
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-2">
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setSelectedEdge({ id: String(edgeMenu.edge.id), label: String(edgeMenu.edge.label ?? "") });
+                  setEdgeMenu(null);
+                  setImpairOpen(true);
+                }}
+              >
+                Configure impairment…
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                disabled={impairSaving}
+                onClick={() => {
+                  const id = String(edgeMenu.edge.id);
+                  setEdgeMenu(null);
+                  applyImpairment("clear", id);
+                }}
+              >
+                Clear impairment
+              </Button>
+              <Button size="sm" variant="ghost" className="w-full" onClick={() => setEdgeMenu(null)}>
+                Close
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      <Dialog
+        open={impairOpen}
+        onOpenChange={(open) => {
+          setImpairOpen(open);
+          if (!open) setSelectedEdge(null);
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Configure Link Impairment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedEdge?.label ? (
+              <div className="text-xs text-muted-foreground font-mono truncate">{selectedEdge.label}</div>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="delayMs">Delay (ms)</Label>
+                <Input
+                  id="delayMs"
+                  inputMode="numeric"
+                  placeholder="e.g. 50"
+                  value={impair.delayMs}
+                  onChange={(e) => setImpair((p) => ({ ...p, delayMs: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="jitterMs">Jitter (ms)</Label>
+                <Input
+                  id="jitterMs"
+                  inputMode="numeric"
+                  placeholder="e.g. 10"
+                  value={impair.jitterMs}
+                  onChange={(e) => setImpair((p) => ({ ...p, jitterMs: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="lossPct">Loss (%)</Label>
+                <Input
+                  id="lossPct"
+                  inputMode="decimal"
+                  placeholder="e.g. 1.0"
+                  value={impair.lossPct}
+                  onChange={(e) => setImpair((p) => ({ ...p, lossPct: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="rateKbps">Rate (kbit/s)</Label>
+                <Input
+                  id="rateKbps"
+                  inputMode="numeric"
+                  placeholder="e.g. 100000"
+                  value={impair.rateKbps}
+                  onChange={(e) => setImpair((p) => ({ ...p, rateKbps: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={() => setImpairOpen(false)} disabled={impairSaving}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const id = String(selectedEdge?.id ?? "");
+                  if (!id) {
+                    toast.error("No link selected");
+                    return;
+                  }
+                  applyImpairment("set", id).finally(() => setImpairOpen(false));
+                }}
+                disabled={impairSaving}
+              >
+                Apply
+              </Button>
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Tip: Right-click a link in the topology to configure impairment.
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

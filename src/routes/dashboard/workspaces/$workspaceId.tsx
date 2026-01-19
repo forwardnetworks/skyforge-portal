@@ -56,7 +56,6 @@ function WorkspaceSettingsPage() {
   const [editorsCSV, setEditorsCSV] = useState("");
 
   const [allowExternalTemplateRepos, setAllowExternalTemplateRepos] = useState(false);
-  const [allowCustomEveServers, setAllowCustomEveServers] = useState(false);
   const [allowCustomNetlabServers, setAllowCustomNetlabServers] = useState(false);
   const [externalReposText, setExternalReposText] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -78,7 +77,6 @@ function WorkspaceSettingsPage() {
     setEditorsCSV((workspace.editors ?? []).join(","));
     setViewersCSV((workspace.viewers ?? []).join(","));
     setAllowExternalTemplateRepos(!!workspace.allowExternalTemplateRepos);
-    setAllowCustomEveServers(!!workspace.allowCustomEveServers);
     setAllowCustomNetlabServers(!!workspace.allowCustomNetlabServers);
     setExternalReposText(JSON.stringify(workspace.externalTemplateRepos ?? [], null, 2));
   }, [workspace]);
@@ -105,13 +103,11 @@ function WorkspaceSettingsPage() {
   const settingsMutation = useMutation({
     mutationFn: async (next: {
       allowExternalTemplateRepos: boolean;
-      allowCustomEveServers: boolean;
       allowCustomNetlabServers: boolean;
       externalTemplateRepos: unknown;
     }) => {
       return updateWorkspaceSettings(workspaceId, {
         allowExternalTemplateRepos: next.allowExternalTemplateRepos,
-        allowCustomEveServers: next.allowCustomEveServers,
         allowCustomNetlabServers: next.allowCustomNetlabServers,
         externalTemplateRepos: (next.externalTemplateRepos as any[]) ?? [],
       });
@@ -257,13 +253,6 @@ function WorkspaceSettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Allow custom EVE servers</Label>
-                  <div className="text-xs text-muted-foreground">Enable BYOS EVE servers per workspace.</div>
-                </div>
-                <Switch checked={allowCustomEveServers} onCheckedChange={setAllowCustomEveServers} disabled={!allowEdit} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
                   <Label>Allow custom Netlab servers</Label>
                   <div className="text-xs text-muted-foreground">Enable BYOS Netlab API servers per workspace.</div>
                 </div>
@@ -297,7 +286,6 @@ function WorkspaceSettingsPage() {
                     }
                     settingsMutation.mutate({
                       allowExternalTemplateRepos,
-                      allowCustomEveServers,
                       allowCustomNetlabServers,
                       externalTemplateRepos: parsed,
                     });

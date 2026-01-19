@@ -17,7 +17,7 @@ export type WorkspaceDeployment = {
   id: string;
   workspaceId: string;
   name: string;
-  type: "terraform" | "netlab" | "netlab-c9s" | "labpp" | "containerlab" | "clabernetes" | string;
+  type: "terraform" | "netlab" | "netlab-c9s" | "containerlab" | "clabernetes" | string;
   config: JSONMap;
   createdBy?: string;
   createdAt?: ISO8601;
@@ -47,8 +47,45 @@ export type DeploymentTopology = {
     id: string;
     source: string;
     target: string;
+    sourceIf?: string;
+    targetIf?: string;
     label?: string;
   }>;
+};
+
+export type LinkImpairmentRequest = {
+  edgeId: string;
+  action: "set" | "clear";
+  delayMs?: number;
+  jitterMs?: number;
+  lossPct?: number;
+  rateKbps?: number;
+};
+
+export type LinkImpairmentResponse = {
+  appliedAt: ISO8601;
+  edge: DeploymentTopology["edges"][number];
+  results: Array<{
+    node: string;
+    namespace: string;
+    pod: string;
+    container: string;
+    ifName: string;
+    command: string;
+    stdout?: string;
+    stderr?: string;
+    error?: string;
+  }>;
+};
+
+export type ForwardCollectorSummary = {
+  id: string;
+  name: string;
+  username: string;
+};
+
+export type ListForwardCollectorsResponse = {
+  collectors: ForwardCollectorSummary[];
 };
 
 // Dashboard snapshot is delivered via SSE (`/api/dashboard/events`) and is not described in OpenAPI.
@@ -123,18 +160,64 @@ export async function deleteNotification(id: string): Promise<DeleteNotification
   return apiFetch<DeleteNotificationResponse>(`/notifications/single/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
-export type ListEveServersResponse =
-  operations["GET:skyforge.ListEveServers"]["responses"][200]["content"]["application/json"];
+export type ListWorkspaceNetlabServersResponse =
+  operations["GET:skyforge.ListWorkspaceNetlabServers"]["responses"][200]["content"]["application/json"];
 
-export async function listEveServers(): Promise<ListEveServersResponse> {
-  return apiFetch<ListEveServersResponse>("/api/eve/servers");
+export async function listWorkspaceNetlabServers(workspaceId: string): Promise<ListWorkspaceNetlabServersResponse> {
+  return apiFetch<ListWorkspaceNetlabServersResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/servers`);
 }
 
-export type ListNetlabServersResponse =
-  operations["GET:skyforge.ListNetlabServers"]["responses"][200]["content"]["application/json"];
+export async function listForwardCollectors(): Promise<ListForwardCollectorsResponse> {
+  return apiFetch<ListForwardCollectorsResponse>("/api/forward/collectors");
+}
 
-export async function listNetlabServers(): Promise<ListNetlabServersResponse> {
-  return apiFetch<ListNetlabServersResponse>("/api/netlab/servers");
+export type UpdateDeploymentForwardConfigRequest = {
+  enabled: boolean;
+  collectorUsername?: string;
+};
+
+export type UpdateDeploymentForwardConfigResponse = {
+  workspaceId: string;
+  deploymentId: string;
+  enabled: boolean;
+  collectorUsername?: string;
+  forwardNetworkId?: string;
+  forwardSnapshotUrl?: string;
+};
+
+export async function updateDeploymentForwardConfig(
+  workspaceId: string,
+  deploymentId: string,
+  body: UpdateDeploymentForwardConfigRequest
+): Promise<UpdateDeploymentForwardConfigResponse> {
+  return apiFetch<UpdateDeploymentForwardConfigResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward`,
+    { method: "PUT", body: JSON.stringify(body) }
+  );
+}
+
+export type SyncDeploymentForwardResponse = {
+  workspaceId: string;
+  deploymentId: string;
+  run: JSONMap;
+};
+
+export async function syncDeploymentForward(workspaceId: string, deploymentId: string): Promise<SyncDeploymentForwardResponse> {
+  return apiFetch<SyncDeploymentForwardResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward/sync`,
+    { method: "POST", body: "{}" }
+  );
+}
+
+export async function setDeploymentLinkImpairment(
+  workspaceId: string,
+  deploymentId: string,
+  body: LinkImpairmentRequest
+): Promise<LinkImpairmentResponse> {
+  return apiFetch<LinkImpairmentResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/impair`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
 }
 
 type TemplatesQuery = {
@@ -165,20 +248,6 @@ export async function getWorkspaceNetlabTemplates(
   const qs = params.toString();
   return apiFetch<WorkspaceTemplatesResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/templates${qs ? `?${qs}` : ""}`
-  );
-}
-
-export async function getWorkspaceLabppTemplates(
-  workspaceId: string,
-  query?: TemplatesQuery
-): Promise<WorkspaceTemplatesResponse> {
-  const params = new URLSearchParams();
-  if (query?.source) params.set("source", query.source);
-  if (query?.repo) params.set("repo", query.repo);
-  if (query?.dir) params.set("dir", query.dir);
-  const qs = params.toString();
-  return apiFetch<WorkspaceTemplatesResponse>(
-    `/api/workspaces/${encodeURIComponent(workspaceId)}/labpp/templates${qs ? `?${qs}` : ""}`
   );
 }
 
