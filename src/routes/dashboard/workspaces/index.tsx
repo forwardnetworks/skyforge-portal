@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getWorkspaces, type SkyforgeWorkspace } from "../../../lib/skyforge-api";
+import { getSession, getWorkspaces, type SkyforgeWorkspace } from "../../../lib/skyforge-api";
 import { queryKeys } from "../../../lib/query-keys";
+import { canEditWorkspace, workspaceAccess } from "../../../lib/workspace-access";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/dashboard/workspaces/")({
 });
 
 function WorkspacesIndexPage() {
+  const session = useQuery({ queryKey: queryKeys.session(), queryFn: getSession, staleTime: 30_000, retry: false });
   const workspacesQ = useQuery({
     queryKey: queryKeys.workspaces(),
     queryFn: getWorkspaces,
@@ -82,6 +84,11 @@ function WorkspacesIndexPage() {
                           to="/dashboard/workspaces/$workspaceId"
                           params={{ workspaceId: w.id }}
                           className={buttonVariants({ variant: "outline", size: "sm" })}
+                          aria-disabled={!canEditWorkspace(workspaceAccess(session.data, w))}
+                          tabIndex={!canEditWorkspace(workspaceAccess(session.data, w)) ? -1 : 0}
+                          onClick={(e) => {
+                            if (!canEditWorkspace(workspaceAccess(session.data, w))) e.preventDefault();
+                          }}
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
@@ -98,4 +105,3 @@ function WorkspacesIndexPage() {
     </div>
   );
 }
-

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  getSession,
   getWorkspaces,
   type SkyforgeWorkspace,
   deleteWorkspace,
@@ -10,6 +11,7 @@ import {
   updateWorkspaceSettings,
 } from "../../../lib/skyforge-api";
 import { queryKeys } from "../../../lib/query-keys";
+import { canDeleteWorkspace, canEditWorkspace, workspaceAccess } from "../../../lib/workspace-access";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Switch } from "../../../components/ui/switch";
@@ -28,6 +30,13 @@ function WorkspaceSettingsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const session = useQuery({
+    queryKey: queryKeys.session(),
+    queryFn: getSession,
+    staleTime: 30_000,
+    retry: false,
+  });
+
   const workspacesQ = useQuery({
     queryKey: queryKeys.workspaces(),
     queryFn: getWorkspaces,
@@ -37,6 +46,10 @@ function WorkspaceSettingsPage() {
     const ws = (workspacesQ.data?.workspaces ?? []) as SkyforgeWorkspace[];
     return ws.find((w) => w.id === workspaceId) ?? null;
   }, [workspacesQ.data, workspaceId]);
+
+  const access = useMemo(() => workspaceAccess(session.data, workspace), [session.data, workspace]);
+  const allowEdit = useMemo(() => canEditWorkspace(access), [access]);
+  const allowDelete = useMemo(() => canDeleteWorkspace(access), [access]);
 
   const [viewersCSV, setViewersCSV] = useState("");
   const [ownersCSV, setOwnersCSV] = useState("");
@@ -157,10 +170,18 @@ function WorkspaceSettingsPage() {
         <TabsList>
           <TabsTrigger value="access">Access</TabsTrigger>
           <TabsTrigger value="features">Features</TabsTrigger>
-          <TabsTrigger value="danger">Danger</TabsTrigger>
+          {allowDelete && <TabsTrigger value="danger">Danger</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="access" className="space-y-6">
+          {!allowEdit && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Read-only access</CardTitle>
+                <CardDescription>You can view this workspace but cannot edit or delete it.</CardDescription>
+              </CardHeader>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Visibility</CardTitle>
@@ -173,6 +194,7 @@ function WorkspaceSettingsPage() {
               </div>
               <Switch
                 checked={!!workspace.isPublic}
+                disabled={!allowEdit}
                 onCheckedChange={(checked) => {
                   const owners = parseCSV(ownersCSV);
                   membersMutation.mutate({ isPublic: checked, owners, editors: parseCSV(editorsCSV), viewers: parseCSV(viewersCSV) });
@@ -189,20 +211,20 @@ function WorkspaceSettingsPage() {
             <CardContent className="space-y-4">
               <div className="space-y-1">
                 <Label>Owners</Label>
-                <Input value={ownersCSV} onChange={(e) => setOwnersCSV(e.target.value)} placeholder="alice,bob" />
+                <Input value={ownersCSV} onChange={(e) => setOwnersCSV(e.target.value)} placeholder="alice,bob" disabled={!allowEdit} />
               </div>
               <div className="space-y-1">
                 <Label>Editors</Label>
-                <Input value={editorsCSV} onChange={(e) => setEditorsCSV(e.target.value)} placeholder="alice,bob" />
+                <Input value={editorsCSV} onChange={(e) => setEditorsCSV(e.target.value)} placeholder="alice,bob" disabled={!allowEdit} />
               </div>
               <div className="space-y-1">
                 <Label>Viewers</Label>
-                <Input value={viewersCSV} onChange={(e) => setViewersCSV(e.target.value)} placeholder="alice,bob" />
+                <Input value={viewersCSV} onChange={(e) => setViewersCSV(e.target.value)} placeholder="alice,bob" disabled={!allowEdit} />
               </div>
               <div className="flex justify-end">
                 <Button
                   variant="default"
-                  disabled={membersMutation.isPending}
+                  disabled={!allowEdit || membersMutation.isPending}
                   onClick={() =>
                     membersMutation.mutate({
                       isPublic: !!workspace.isPublic,
@@ -231,21 +253,21 @@ function WorkspaceSettingsPage() {
                   <Label>Allow external template repos</Label>
                   <div className="text-xs text-muted-foreground">Expose user-defined repo sources in the deployment UI.</div>
                 </div>
-                <Switch checked={allowExternalTemplateRepos} onCheckedChange={setAllowExternalTemplateRepos} />
+                <Switch checked={allowExternalTemplateRepos} onCheckedChange={setAllowExternalTemplateRepos} disabled={!allowEdit} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label>Allow custom EVE servers</Label>
                   <div className="text-xs text-muted-foreground">Enable BYOS EVE servers per workspace.</div>
                 </div>
-                <Switch checked={allowCustomEveServers} onCheckedChange={setAllowCustomEveServers} />
+                <Switch checked={allowCustomEveServers} onCheckedChange={setAllowCustomEveServers} disabled={!allowEdit} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label>Allow custom Netlab servers</Label>
                   <div className="text-xs text-muted-foreground">Enable BYOS Netlab API servers per workspace.</div>
                 </div>
-                <Switch checked={allowCustomNetlabServers} onCheckedChange={setAllowCustomNetlabServers} />
+                <Switch checked={allowCustomNetlabServers} onCheckedChange={setAllowCustomNetlabServers} disabled={!allowEdit} />
               </div>
 
               <div className="space-y-1">
@@ -257,13 +279,14 @@ function WorkspaceSettingsPage() {
                   className="w-full min-h-[160px] rounded-md border bg-background p-3 font-mono text-xs"
                   value={externalReposText}
                   onChange={(e) => setExternalReposText(e.target.value)}
+                  disabled={!allowEdit}
                 />
               </div>
 
               <div className="flex justify-end">
                 <Button
                   variant="default"
-                  disabled={settingsMutation.isPending}
+                  disabled={!allowEdit || settingsMutation.isPending}
                   onClick={() => {
                     let parsed: unknown = [];
                     try {
@@ -299,6 +322,7 @@ function WorkspaceSettingsPage() {
           </Card>
         </TabsContent>
 
+        {allowDelete && (
         <TabsContent value="danger" className="space-y-6">
           <Card>
             <CardHeader>
@@ -322,6 +346,7 @@ function WorkspaceSettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
       </Tabs>
     </div>
   );

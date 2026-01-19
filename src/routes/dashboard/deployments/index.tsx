@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import {
   buildLoginUrl,
   destroyDeployment,
+  getSession,
   getWorkspaces,
   startDeployment,
   stopDeployment,
@@ -34,6 +35,7 @@ import {
 } from "../../../lib/skyforge-api";
 import { loginWithPopup } from "../../../lib/auth-popup";
 import { queryKeys } from "../../../lib/query-keys";
+import { canEditWorkspace, workspaceAccess } from "../../../lib/workspace-access";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
@@ -98,6 +100,13 @@ function DeploymentsPage() {
   const [destroyTarget, setDestroyTarget] = useState<WorkspaceDeployment | null>(null);
   const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 
+  const session = useQuery({
+    queryKey: queryKeys.session(),
+    queryFn: getSession,
+    staleTime: 30_000,
+    retry: false,
+  });
+
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -113,6 +122,13 @@ function DeploymentsPage() {
     if (workspace && workspaces.some((w: SkyforgeWorkspace) => w.id === workspace)) return workspace;
     return workspaces[0]?.id ?? "";
   }, [workspace, workspaces]);
+
+  const selectedWorkspace = useMemo(() => {
+    return workspaces.find((w: SkyforgeWorkspace) => w.id === selectedWorkspaceId) ?? null;
+  }, [workspaces, selectedWorkspaceId]);
+  const canOpenWorkspaceSettings = useMemo(() => {
+    return canEditWorkspace(workspaceAccess(session.data, selectedWorkspace));
+  }, [session.data, selectedWorkspace]);
 
   // Sync internal state selection to URL
   const handleWorkspaceChange = (newId: string) => {
@@ -241,7 +257,7 @@ function DeploymentsPage() {
               params={{ workspaceId: selectedWorkspaceId }}
               title="Workspace Settings"
               className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8" })}
-              disabled={!selectedWorkspaceId}
+              disabled={!selectedWorkspaceId || !canOpenWorkspaceSettings}
             >
               <Settings className="h-4 w-4" />
             </Link>
