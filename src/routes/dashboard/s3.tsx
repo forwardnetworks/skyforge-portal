@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Inbox } from "lucide-react";
+import { toast } from "sonner";
 import { getWorkspaces, downloadWorkspaceArtifact, listWorkspaceArtifacts } from "../../lib/skyforge-api";
 import { queryKeys } from "../../lib/query-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
@@ -22,7 +23,15 @@ function S3Page() {
     staleTime: 30_000
   });
 
-  const selectedWorkspaceId = useMemo(() => workspaces.data?.workspaces?.[0]?.id ?? "", [workspaces.data?.workspaces]);
+  const workspaceOptions = workspaces.data?.workspaces ?? [];
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
+
+  useEffect(() => {
+    if (workspaceOptions.length === 0) return;
+    const stored = window.localStorage.getItem("skyforge.lastWorkspaceId.s3") ?? "";
+    const initial = workspaceOptions.some((w) => w.id === stored) ? stored : (workspaceOptions[0]?.id ?? "");
+    setSelectedWorkspaceId((prev) => prev || initial);
+  }, [workspaceOptions]);
 
   const artifacts = useQuery({
     queryKey: queryKeys.workspaceArtifacts(selectedWorkspaceId),
@@ -62,12 +71,19 @@ function S3Page() {
             <div>
               <div className="p-4 border-b flex items-center gap-3">
                 <div className="text-sm font-medium">Workspace</div>
-                <Select value={selectedWorkspaceId} disabled>
+                <Select
+                  value={selectedWorkspaceId}
+                  onValueChange={(id) => {
+                    setSelectedWorkspaceId(id);
+                    window.localStorage.setItem("skyforge.lastWorkspaceId.s3", id);
+                  }}
+                  disabled={workspaceOptions.length === 0}
+                >
                   <SelectTrigger className="w-[280px]">
                     <SelectValue placeholder="Select workspace" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(workspaces.data?.workspaces ?? []).map((w) => (
+                    {workspaceOptions.map((w) => (
                       <SelectItem key={w.id} value={w.id}>
                         {w.name} ({w.slug})
                       </SelectItem>
@@ -91,16 +107,21 @@ function S3Page() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const resp = await downloadWorkspaceArtifact(selectedWorkspaceId, item.key);
-                            const blob = new Blob([Uint8Array.from(atob(resp.fileData), (c) => c.charCodeAt(0))]);
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement("a");
-                            a.href = url;
-                            a.download = item.key.split("/").pop() || "artifact";
-                            document.body.appendChild(a);
-                            a.click();
-                            a.remove();
-                            URL.revokeObjectURL(url);
+                            try {
+                              const resp = await downloadWorkspaceArtifact(selectedWorkspaceId, item.key);
+                              const bin = Uint8Array.from(atob(resp.fileData), (c) => c.charCodeAt(0));
+                              const blob = new Blob([bin]);
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = item.key.split("/").pop() || "artifact";
+                              document.body.appendChild(a);
+                              a.click();
+                              a.remove();
+                              URL.revokeObjectURL(url);
+                            } catch (e) {
+                              toast.error("Download failed", { description: (e as Error).message });
+                            }
                           }}
                         >
                           <Download className="mr-2 h-3 w-3" />

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -124,11 +124,26 @@ function DeploymentsPage() {
   });
   const workspaces = (workspacesQ.data?.workspaces ?? []) as SkyforgeWorkspace[];
   
-  // Use URL param if available, otherwise fallback to first workspace
+  const lastWorkspaceKey = "skyforge.lastWorkspaceId.deployments";
+
+  // Use URL param if available, otherwise fallback to last-selected, then first workspace
   const selectedWorkspaceId = useMemo(() => {
     if (workspace && workspaces.some((w: SkyforgeWorkspace) => w.id === workspace)) return workspace;
+    const stored = typeof window !== "undefined" ? (window.localStorage.getItem(lastWorkspaceKey) ?? "") : "";
+    if (stored && workspaces.some((w: SkyforgeWorkspace) => w.id === stored)) return stored;
     return workspaces[0]?.id ?? "";
   }, [workspace, workspaces]);
+
+  useEffect(() => {
+    if (!selectedWorkspaceId) return;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(lastWorkspaceKey, selectedWorkspaceId);
+    }
+    if (workspace !== selectedWorkspaceId) {
+      navigate({ search: { workspace: selectedWorkspaceId } as any, replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWorkspaceId]);
 
   const selectedWorkspace = useMemo(() => {
     return workspaces.find((w: SkyforgeWorkspace) => w.id === selectedWorkspaceId) ?? null;
@@ -139,6 +154,9 @@ function DeploymentsPage() {
 
   // Sync internal state selection to URL
   const handleWorkspaceChange = (newId: string) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(lastWorkspaceKey, newId);
+    }
     navigate({
       search: { workspace: newId } as any,
       replace: true,
