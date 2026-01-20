@@ -1,14 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { JSONMap } from "../../../lib/skyforge-api";
-import { buildLoginUrl, getDashboardSnapshot, type DashboardSnapshot } from "../../../lib/skyforge-api";
+import { buildLoginUrl, cancelRun, getDashboardSnapshot, type DashboardSnapshot } from "../../../lib/skyforge-api";
 import { loginWithPopup } from "../../../lib/auth-popup";
 import { useRunEvents, type RunLogState, type TaskLogEntry } from "../../../lib/run-events";
 import { queryKeys } from "../../../lib/query-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/runs/$runId")({
   component: RunDetailPage
@@ -18,6 +19,7 @@ function RunDetailPage() {
   const { runId } = Route.useParams();
   useRunEvents(runId, true);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const snap = useQuery<DashboardSnapshot | null>({
     queryKey: queryKeys.dashboardSnapshot(),
@@ -28,6 +30,8 @@ function RunDetailPage() {
   });
 
   const run = (snap.data?.runs ?? []).find((r: JSONMap) => String(r.id ?? "") === runId) as JSONMap | undefined;
+  const runStatus = String(run?.status ?? "").toLowerCase();
+  const canCancel = runStatus === "queued" || runStatus === "running";
 
   const logs = useQuery({
     queryKey: queryKeys.runLogs(runId),
@@ -50,6 +54,31 @@ function RunDetailPage() {
               <Link className={buttonVariants({ variant: "outline", size: "sm" })} to="/dashboard/deployments">
                 Back
               </Link>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!run || !canCancel}
+                onClick={() => {
+                  if (!run) return;
+                  const ws = String(run.workspaceId ?? "");
+                  if (!ws) {
+                    toast.error("Cannot cancel run", { description: "Missing workspace ID." });
+                    return;
+                  }
+                  void (async () => {
+                    try {
+                      await cancelRun(runId, ws);
+                      toast.success("Run canceled");
+                      await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
+                      navigate({ to: "/dashboard/deployments", search: { workspace: ws } as any });
+                    } catch (e) {
+                      toast.error("Cancel failed", { description: (e as Error).message });
+                    }
+                  })();
+                }}
+              >
+                Cancel
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

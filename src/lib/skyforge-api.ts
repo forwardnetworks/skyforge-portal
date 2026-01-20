@@ -883,6 +883,30 @@ export async function downloadWorkspaceArtifact(
   );
 }
 
+export async function putWorkspaceArtifactObject(
+  workspaceId: string,
+  body: { key: string; contentBase64: string; contentType?: string }
+): Promise<JSONMap> {
+  return apiFetch<JSONMap>(`/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts/object`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteWorkspaceArtifactObject(workspaceId: string, key: string): Promise<JSONMap> {
+  const qs = new URLSearchParams({ key });
+  return apiFetch<JSONMap>(`/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts/object?${qs.toString()}`, {
+    method: "DELETE",
+  });
+}
+
+export async function createWorkspaceArtifactFolder(workspaceId: string, prefix: string): Promise<JSONMap> {
+  return apiFetch<JSONMap>(`/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts/folder`, {
+    method: "POST",
+    body: JSON.stringify({ prefix }),
+  });
+}
+
 export type StorageListResponse = operations["GET:storage.List"]["responses"][200]["content"]["application/json"];
 
 export async function listStorageFiles(): Promise<StorageListResponse> {
@@ -1079,4 +1103,13 @@ export type StatusSummaryResponse = operations["GET:skyforge.StatusSummary"]["re
 };
 export async function getStatusSummary(): Promise<StatusSummaryResponse> {
   return apiFetch<StatusSummaryResponse>("/status/summary");
+}
+
+export async function cancelRun(taskId: string | number, workspaceId: string): Promise<JSONMap> {
+  const qs = new URLSearchParams();
+  if (workspaceId) qs.set("workspace_id", workspaceId);
+  return apiFetch<JSONMap>(`/api/runs/${encodeURIComponent(String(taskId))}/cancel${qs.toString() ? `?${qs.toString()}` : ""}`, {
+    method: "POST",
+    body: "{}",
+  });
 }
