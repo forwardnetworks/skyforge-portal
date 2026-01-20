@@ -6,7 +6,7 @@ import { buildLoginUrl, getSession, getUserNotifications, logout } from "../lib/
 import { loginWithPopup } from "../lib/auth-popup";
 import { SideNav } from "../components/side-nav";
 import { CommandMenu } from "../components/command-menu";
-import { ChevronLeft, ChevronRight, Search, Menu, Bell } from "lucide-react";
+import { Anvil, ChevronLeft, ChevronRight, Search, Menu, Bell } from "lucide-react";
 import { cn } from "../lib/utils";
 import { queryKeys } from "../lib/query-keys";
 import { Toaster } from "../components/ui/sonner";
@@ -123,7 +123,10 @@ function RootLayout() {
               </Sheet>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">Technical Services</div>
-                <div className="text-lg font-bold tracking-tight">Skyforge</div>
+                <div className="flex items-center gap-2 text-lg font-bold tracking-tight">
+                  <Anvil className="h-5 w-5 text-orange-500" />
+                  <span>Skyforge</span>
+                </div>
               </div>
               <div className="h-8 w-px bg-border hidden md:block" />
               <img src="/assets/skyforge/FN-logo.svg" alt="Forward Networks" className="h-6 w-auto hidden sm:block" />
