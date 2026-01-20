@@ -65,6 +65,17 @@ const formSchema = z
     enableForward: z.boolean(),
   });
 
+function hostLabelFromURL(raw: string): string {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  try {
+    const u = new URL(s);
+    return u.hostname || s;
+  } catch {
+    return s.replace(/^https?:\/\//, "").split("/")[0] ?? s;
+  }
+}
+
 function CreateDeploymentPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -280,7 +291,7 @@ function CreateDeploymentPage() {
   const byosEveEnabled = eveOptions.length > 0;
   const netlabServerRefs = netlabOptions.map((s) => ({
     value: `ws:${s.id}`,
-    label: `${s.name} (${s.apiUrl})`,
+    label: hostLabelFromURL(s.apiUrl) || s.name,
   }));
 
   return (
@@ -519,7 +530,7 @@ function CreateDeploymentPage() {
                           <SelectContent>
                             {eveOptions.map((s) => (
                               <SelectItem key={s.id} value={`ws:${s.id}`}>
-                                {s.name} ({s.apiUrl})
+                                {hostLabelFromURL(s.apiUrl) || s.name}
                               </SelectItem>
                             ))}
                           </SelectContent>

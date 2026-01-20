@@ -42,6 +42,21 @@ type ExternalRepoDraft = {
   defaultBranch?: string;
 };
 
+function hostLabelFromURL(raw: string): string {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  try {
+    const u = new URL(s);
+    return u.hostname || s;
+  } catch {
+    return s.replace(/^https?:\/\//, "").split("/")[0] ?? s;
+  }
+}
+
+function nameFromURL(raw: string): string {
+  return hostLabelFromURL(raw) || "server";
+}
+
 function WorkspaceSettingsPage() {
   const { workspaceId } = Route.useParams();
   const navigate = useNavigate();
@@ -76,14 +91,12 @@ function WorkspaceSettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [httpsUsername, setHttpsUsername] = useState("");
   const [httpsToken, setHttpsToken] = useState("");
-  const [newNetlabName, setNewNetlabName] = useState("");
   const [newNetlabURL, setNewNetlabURL] = useState("");
-  const [newNetlabInsecure, setNewNetlabInsecure] = useState(false);
+  const [newNetlabInsecure, setNewNetlabInsecure] = useState(true);
   const [newNetlabUser, setNewNetlabUser] = useState("");
   const [newNetlabPassword, setNewNetlabPassword] = useState("");
-  const [newEveName, setNewEveName] = useState("");
   const [newEveURL, setNewEveURL] = useState("");
-  const [newEveSkipTLS, setNewEveSkipTLS] = useState(false);
+  const [newEveSkipTLS, setNewEveSkipTLS] = useState(true);
   const [newEveUser, setNewEveUser] = useState("");
   const [newEvePassword, setNewEvePassword] = useState("");
 
@@ -202,7 +215,7 @@ function WorkspaceSettingsPage() {
   const upsertNetlabServerMutation = useMutation({
     mutationFn: async () => {
       return upsertWorkspaceNetlabServer(workspaceId, {
-        name: newNetlabName.trim(),
+        name: nameFromURL(newNetlabURL),
         apiUrl: newNetlabURL.trim(),
         apiInsecure: newNetlabInsecure,
         apiUser: newNetlabUser.trim() || undefined,
@@ -211,8 +224,8 @@ function WorkspaceSettingsPage() {
     },
     onSuccess: async () => {
       toast.success("Netlab server saved");
-      setNewNetlabName("");
       setNewNetlabURL("");
+      setNewNetlabInsecure(true);
       setNewNetlabUser("");
       setNewNetlabPassword("");
       await queryClient.invalidateQueries({ queryKey: queryKeys.workspaceNetlabServers(workspaceId) });
@@ -232,7 +245,7 @@ function WorkspaceSettingsPage() {
   const upsertEveServerMutation = useMutation({
     mutationFn: async () => {
       return upsertWorkspaceEveServer(workspaceId, {
-        name: newEveName.trim(),
+        name: nameFromURL(newEveURL),
         apiUrl: newEveURL.trim(),
         skipTlsVerify: newEveSkipTLS,
         apiUser: newEveUser.trim() || undefined,
@@ -241,8 +254,8 @@ function WorkspaceSettingsPage() {
     },
     onSuccess: async () => {
       toast.success("EVE-NG server saved");
-      setNewEveName("");
       setNewEveURL("");
+      setNewEveSkipTLS(true);
       setNewEveUser("");
       setNewEvePassword("");
       await queryClient.invalidateQueries({ queryKey: ["workspaceEveServers", workspaceId] });
@@ -394,7 +407,7 @@ function WorkspaceSettingsPage() {
                     (netlabServersQ.data?.servers ?? []).map((s) => (
                       <div key={s.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
                         <div className="min-w-0">
-                          <div className="font-medium">{s.name}</div>
+                          <div className="font-medium">{hostLabelFromURL(s.apiUrl) || s.name}</div>
                           <div className="text-xs text-muted-foreground truncate">
                             {s.apiUrl} {s.apiInsecure ? "(insecure)" : ""} {s.apiUser ? `· ${s.apiUser}` : ""} {s.hasPassword ? "· password set" : ""}
                           </div>
@@ -414,12 +427,11 @@ function WorkspaceSettingsPage() {
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="space-y-1">
-                    <Label>Name</Label>
-                    <Input value={newNetlabName} disabled={!allowEdit} onChange={(e) => setNewNetlabName(e.target.value)} placeholder="netlab.local" />
-                  </div>
-                  <div className="space-y-1">
                     <Label>API URL</Label>
-                    <Input value={newNetlabURL} disabled={!allowEdit} onChange={(e) => setNewNetlabURL(e.target.value)} placeholder="https://netlab.local.forwardnetworks.com" />
+                    <Input value={newNetlabURL} disabled={!allowEdit} onChange={(e) => setNewNetlabURL(e.target.value)} placeholder="https://netlab.local.forwardnetworks.com:8080" />
+                    <div className="text-xs text-muted-foreground">
+                      Custom ports are supported (e.g. <span className="font-mono">:8080</span>) but won’t be shown in dropdown labels.
+                    </div>
                   </div>
                   <div className="flex items-center justify-between rounded-md border p-3 md:col-span-2">
                     <div className="space-y-1">
@@ -443,7 +455,6 @@ function WorkspaceSettingsPage() {
                     disabled={
                       !allowEdit ||
                       upsertNetlabServerMutation.isPending ||
-                      !newNetlabName.trim() ||
                       !newNetlabURL.trim()
                     }
                     onClick={() => upsertNetlabServerMutation.mutate()}
@@ -465,7 +476,7 @@ function WorkspaceSettingsPage() {
                     (eveServersQ.data?.servers ?? []).map((s) => (
                       <div key={s.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
                         <div className="min-w-0">
-                          <div className="font-medium">{s.name}</div>
+                          <div className="font-medium">{hostLabelFromURL(s.apiUrl) || s.name}</div>
                           <div className="text-xs text-muted-foreground truncate">
                             {s.apiUrl} {s.skipTlsVerify ? "(skip TLS verify)" : ""} {s.apiUser ? `· ${s.apiUser}` : ""} {s.hasPassword ? "· password set" : ""}
                           </div>
@@ -485,12 +496,11 @@ function WorkspaceSettingsPage() {
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="space-y-1">
-                    <Label>Name</Label>
-                    <Input value={newEveName} disabled={!allowEdit} onChange={(e) => setNewEveName(e.target.value)} placeholder="tsa-eve-ng-001" />
-                  </div>
-                  <div className="space-y-1">
                     <Label>API URL</Label>
-                    <Input value={newEveURL} disabled={!allowEdit} onChange={(e) => setNewEveURL(e.target.value)} placeholder="https://eve.example/api" />
+                    <Input value={newEveURL} disabled={!allowEdit} onChange={(e) => setNewEveURL(e.target.value)} placeholder="https://eve.example:8080/api" />
+                    <div className="text-xs text-muted-foreground">
+                      Custom ports are supported (e.g. <span className="font-mono">:8080</span>) but won’t be shown in dropdown labels.
+                    </div>
                   </div>
                   <div className="flex items-center justify-between rounded-md border p-3 md:col-span-2">
                     <div className="space-y-1">
@@ -514,7 +524,6 @@ function WorkspaceSettingsPage() {
                     disabled={
                       !allowEdit ||
                       upsertEveServerMutation.isPending ||
-                      !newEveName.trim() ||
                       !newEveURL.trim()
                     }
                     onClick={() => upsertEveServerMutation.mutate()}
