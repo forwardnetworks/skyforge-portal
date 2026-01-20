@@ -242,7 +242,7 @@ function ForwardCollectorPage() {
               ) : null}
               <div className="pt-2 space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">Logs</div>
+                  <div className="text-xs text-muted-foreground">Client log (`clientd.log`)</div>
                   <Button variant="outline" size="sm" onClick={() => setShowLogs((v) => !v)}>
                     {showLogs ? "Hide" : "Show"}
                   </Button>
