@@ -166,6 +166,9 @@ function CreateDeploymentPage() {
     staleTime: 30_000,
     retry: false,
   });
+  const configuredCollectorUsername = String(
+    (forwardCfgQ.data as any)?.collectorUsername ?? (forwardCfgQ.data as any)?.forwardCollector?.username ?? ""
+  ).trim();
 
   const effectiveSource: TemplateSource = useMemo(() => {
     if (watchKind === "netlab" || watchKind === "netlab-c9s") return watchSource === "workspace" ? "workspace" : "blueprints";
@@ -223,12 +226,11 @@ function CreateDeploymentPage() {
       };
 
       if (values.enableForward && ["netlab-c9s", "clabernetes", "terraform"].includes(values.kind)) {
-        const collectorUsername = String((forwardCfgQ.data as any)?.forwardCollector?.username ?? "").trim();
-        if (!collectorUsername) {
+        if (!configuredCollectorUsername) {
           throw new Error("Configure your Collector first (Dashboard → Collector).");
         }
         config.forwardEnabled = true;
-        config.forwardCollectorUsername = collectorUsername;
+        config.forwardCollectorUsername = configuredCollectorUsername;
       }
 
       if (values.kind === "netlab" || values.kind === "containerlab") {
@@ -389,7 +391,7 @@ function CreateDeploymentPage() {
                           {watchEnableForward && forwardCfgQ.isError && (
                             <div className="text-xs text-destructive">Failed to load collector settings.</div>
                           )}
-                          {watchEnableForward && forwardCfgQ.data && !String((forwardCfgQ.data as any)?.forwardCollector?.username ?? "").trim() && (
+                          {watchEnableForward && forwardCfgQ.data && !configuredCollectorUsername && (
                             <div className="text-xs text-destructive">Collector not configured yet.</div>
                           )}
                         </div>
