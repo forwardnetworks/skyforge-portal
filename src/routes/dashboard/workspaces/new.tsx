@@ -27,8 +27,6 @@ const formSchema = z.object({
   description: z.string().optional(),
   isPublic: z.boolean().default(false),
   blueprint: z.string().optional(),
-  allowExternalTemplateRepos: z.boolean().default(false),
-  allowCustomNetlabServers: z.boolean().default(false),
   sharedUsers: z.string().optional(),
   awsAccountId: z.string().optional(),
   awsRoleName: z.string().optional(),
@@ -54,8 +52,6 @@ function NewWorkspacePage() {
       description: "",
       isPublic: false,
       blueprint: "skyforge/blueprints",
-      allowExternalTemplateRepos: false,
-      allowCustomNetlabServers: false,
       sharedUsers: "",
       awsAccountId: "",
       awsRoleName: "",
@@ -76,8 +72,8 @@ function NewWorkspacePage() {
         slug: data.slug,
         description: data.description || "",
         isPublic: !!data.isPublic,
-        allowCustomNetlabServers: !!data.allowCustomNetlabServers,
-        allowExternalTemplateRepos: !!data.allowExternalTemplateRepos,
+        allowCustomNetlabServers: false,
+        allowExternalTemplateRepos: false,
         awsAccountId: (data.awsAccountId || "").trim(),
         awsAuthMethod: (data.awsAuthMethod || "").trim(),
         awsRegion: (data.awsRegion || "").trim(),
@@ -295,40 +291,6 @@ function NewWorkspacePage() {
                         <Input placeholder="sso" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="space-y-3 rounded-lg border p-4">
-                <div className="text-sm font-medium">Workspace options</div>
-                <FormField
-                  control={form.control}
-                  name="allowExternalTemplateRepos"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <FormLabel>Allow external template repos</FormLabel>
-                        <FormDescription>Enable additional template sources for deployments.</FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="allowCustomNetlabServers"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <FormLabel>Allow custom Netlab servers (BYOS)</FormLabel>
-                        <FormDescription>Enable user-provided Netlab API servers.</FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
                     </FormItem>
                   )}
                 />

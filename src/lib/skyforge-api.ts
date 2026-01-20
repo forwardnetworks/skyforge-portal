@@ -220,6 +220,10 @@ export async function getWorkspaces(): Promise<GetWorkspacesResponse> {
   return apiFetch<GetWorkspacesResponse>("/api/workspaces");
 }
 
+export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
+  return apiFetch<DashboardSnapshot>("/api/dashboard/snapshot");
+}
+
 export type GetUserNotificationsResponse =
   operations["GET:skyforge.GetUserNotifications"]["responses"][200]["content"]["application/json"];
 export async function getUserNotifications(userID: string, params?: { include_read?: string; limit?: string }): Promise<GetUserNotificationsResponse> {
@@ -248,15 +252,114 @@ export async function deleteNotification(id: string): Promise<DeleteNotification
   return apiFetch<DeleteNotificationResponse>(`/notifications/single/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
-export type ListWorkspaceNetlabServersResponse =
-  operations["GET:skyforge.ListWorkspaceNetlabServers"]["responses"][200]["content"]["application/json"];
+export type WorkspaceNetlabServerConfig = {
+  id: string;
+  name: string;
+  apiUrl: string;
+  apiInsecure: boolean;
+  apiUser?: string;
+  hasPassword?: boolean;
+};
 
-export async function listWorkspaceNetlabServers(workspaceId: string): Promise<ListWorkspaceNetlabServersResponse> {
-  return apiFetch<ListWorkspaceNetlabServersResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/servers`);
+export type WorkspaceNetlabServersResponse = {
+  workspaceId: string;
+  servers: WorkspaceNetlabServerConfig[];
+};
+
+export async function listWorkspaceNetlabServers(workspaceId: string): Promise<WorkspaceNetlabServersResponse> {
+  return apiFetch<WorkspaceNetlabServersResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/servers`);
+}
+
+export async function upsertWorkspaceNetlabServer(
+  workspaceId: string,
+  payload: Partial<WorkspaceNetlabServerConfig> & { name: string; apiUrl: string; apiInsecure: boolean; apiPassword?: string; apiToken?: string }
+): Promise<WorkspaceNetlabServerConfig> {
+  return apiFetch<WorkspaceNetlabServerConfig>(`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/servers`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteWorkspaceNetlabServer(workspaceId: string, serverId: string): Promise<void> {
+  await apiFetch<void>(`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/servers/${encodeURIComponent(serverId)}`, {
+    method: "DELETE",
+  });
+}
+
+export type WorkspaceEveServerConfig = {
+  id: string;
+  name: string;
+  apiUrl: string;
+  webUrl?: string;
+  skipTlsVerify: boolean;
+  apiUser?: string;
+  hasPassword?: boolean;
+};
+
+export type WorkspaceEveServersResponse = {
+  workspaceId: string;
+  servers: WorkspaceEveServerConfig[];
+};
+
+export async function listWorkspaceEveServers(workspaceId: string): Promise<WorkspaceEveServersResponse> {
+  return apiFetch<WorkspaceEveServersResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/servers`);
+}
+
+export async function upsertWorkspaceEveServer(
+  workspaceId: string,
+  payload: Partial<WorkspaceEveServerConfig> & {
+    name: string;
+    apiUrl: string;
+    webUrl?: string;
+    skipTlsVerify: boolean;
+    apiUser?: string;
+    apiPassword?: string;
+  }
+): Promise<WorkspaceEveServerConfig> {
+  return apiFetch<WorkspaceEveServerConfig>(`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/servers`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteWorkspaceEveServer(workspaceId: string, serverId: string): Promise<void> {
+  await apiFetch<void>(`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/servers/${encodeURIComponent(serverId)}`, {
+    method: "DELETE",
+  });
 }
 
 export async function listForwardCollectors(): Promise<ListForwardCollectorsResponse> {
   return apiFetch<ListForwardCollectorsResponse>("/api/forward/collectors");
+}
+
+export type UserGitCredentialsResponse = {
+  username: string;
+  sshPublicKey: string;
+  hasSshKey: boolean;
+  httpsUsername?: string;
+  hasHttpsToken: boolean;
+};
+
+export async function getUserGitCredentials(): Promise<UserGitCredentialsResponse> {
+  return apiFetch<UserGitCredentialsResponse>("/api/user/git-credentials");
+}
+
+export async function updateUserGitCredentials(payload: {
+  httpsUsername?: string;
+  httpsToken?: string;
+  clearToken?: boolean;
+}): Promise<UserGitCredentialsResponse> {
+  return apiFetch<UserGitCredentialsResponse>("/api/user/git-credentials", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function rotateUserGitDeployKey(): Promise<UserGitCredentialsResponse> {
+  return apiFetch<UserGitCredentialsResponse>("/api/user/git-credentials/rotate", {
+    method: "POST",
+    body: "{}",
+  });
 }
 
 export type UpdateDeploymentForwardConfigRequest = {
@@ -537,6 +640,20 @@ export async function getWorkspaceContainerlabTemplates(
   );
 }
 
+export async function getWorkspaceLabppTemplates(
+  workspaceId: string,
+  query?: TemplatesQuery
+): Promise<WorkspaceTemplatesResponse> {
+  const params = new URLSearchParams();
+  if (query?.source) params.set("source", query.source);
+  if (query?.repo) params.set("repo", query.repo);
+  if (query?.dir) params.set("dir", query.dir);
+  const qs = params.toString();
+  return apiFetch<WorkspaceTemplatesResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/labpp/templates${qs ? `?${qs}` : ""}`
+  );
+}
+
 export type CreateWorkspaceDeploymentRequest = NonNullable<
   operations["POST:skyforge.CreateWorkspaceDeployment"]["requestBody"]
 >["content"]["application/json"];
@@ -616,6 +733,21 @@ export type UserForwardCollectorResponse = {
     updateAvailable?: boolean;
     updateStatus?: string;
     logsCommandHint?: string;
+    restartCount?: number;
+    lastExitCode?: number;
+    lastReason?: string;
+    lastFinishedAt?: ISO8601;
+  };
+  forwardCollector?: {
+    id?: string;
+    name?: string;
+    username?: string;
+    status?: string;
+    connected?: boolean;
+    connectedAt?: string;
+    lastConnectedAt?: string;
+    lastSeenAt?: string;
+    updatedAt?: string;
   };
   updatedAt?: ISO8601;
 };

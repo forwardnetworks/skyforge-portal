@@ -8,10 +8,14 @@ import * as z from "zod";
 import { toast } from "sonner";
 import {
   createWorkspaceDeployment,
+  getDashboardSnapshot,
   getWorkspaces,
   getWorkspaceContainerlabTemplates,
+  getWorkspaceLabppTemplates,
   getWorkspaceNetlabTemplates,
+  getUserForwardCollector,
   listWorkspaceNetlabServers,
+  listWorkspaceEveServers,
   type CreateWorkspaceDeploymentRequest,
   type DashboardSnapshot,
   type ExternalTemplateRepo,
@@ -25,6 +29,7 @@ import { Button } from "../../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Input } from "../../../components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
+import { Switch } from "../../../components/ui/switch";
 import {
   Form,
   FormControl,
@@ -44,18 +49,20 @@ export const Route = createFileRoute("/dashboard/deployments/new")({
   component: CreateDeploymentPage
 });
 
-type DeploymentKind = "netlab-c9s" | "netlab" | "containerlab" | "clabernetes" | "terraform";
+type DeploymentKind = "netlab-c9s" | "netlab" | "labpp" | "containerlab" | "clabernetes" | "terraform";
 type TemplateSource = "workspace" | "blueprints" | "external";
 
 const formSchema = z
   .object({
     workspaceId: z.string().min(1, "Workspace is required"),
     name: z.string().min(1, "Deployment name is required").max(100),
-    kind: z.enum(["netlab-c9s", "netlab", "containerlab", "clabernetes", "terraform"]),
+    kind: z.enum(["netlab-c9s", "netlab", "containerlab", "clabernetes", "terraform", "labpp"]),
     source: z.enum(["workspace", "blueprints", "external"]),
     templateRepoId: z.string().optional(),
     template: z.string().min(1, "Template is required"),
     netlabServer: z.string().optional(),
+    eveServer: z.string().optional(),
+    enableForward: z.boolean(),
   });
 
 function CreateDeploymentPage() {
@@ -66,8 +73,8 @@ function CreateDeploymentPage() {
   useDashboardEvents(true);
   const dash = useQuery<DashboardSnapshot | null>({
     queryKey: queryKeys.dashboardSnapshot(),
-    queryFn: async () => null,
-    initialData: null,
+    queryFn: getDashboardSnapshot,
+    initialData: () => (queryClient.getQueryData(queryKeys.dashboardSnapshot()) as DashboardSnapshot | undefined) ?? null,
     retry: false,
     staleTime: Infinity,
   });
@@ -89,6 +96,8 @@ function CreateDeploymentPage() {
       templateRepoId: "",
       template: "",
       netlabServer: "",
+      eveServer: "",
+      enableForward: false,
     },
   });
 
@@ -98,6 +107,7 @@ function CreateDeploymentPage() {
   const watchSource = watch("source");
   const watchTemplateRepoId = watch("templateRepoId");
   const watchTemplate = watch("template");
+  const watchEnableForward = watch("enableForward");
   const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 
   // Sync workspaceId when workspaces load if not already set or passed via URL
@@ -131,8 +141,24 @@ function CreateDeploymentPage() {
     staleTime: 30_000
   });
 
+  const eveServersQ = useQuery({
+    queryKey: ["workspaceEveServers", watchWorkspaceId],
+    queryFn: async () => listWorkspaceEveServers(watchWorkspaceId),
+    enabled: !!watchWorkspaceId,
+    staleTime: 30_000,
+  });
+
+  const forwardCfgQ = useQuery({
+    queryKey: queryKeys.userForwardCollector(),
+    queryFn: getUserForwardCollector,
+    enabled: watchEnableForward && ["netlab-c9s", "clabernetes", "terraform"].includes(watchKind),
+    staleTime: 30_000,
+    retry: false,
+  });
+
   const effectiveSource: TemplateSource = useMemo(() => {
     if (watchKind === "netlab" || watchKind === "netlab-c9s") return watchSource === "workspace" ? "workspace" : "blueprints";
+    if (watchKind === "labpp") return "blueprints";
     if (watchKind === "containerlab" || watchKind === "clabernetes") return watchSource;
     return "workspace";
   }, [watchKind, watchSource]);
@@ -154,6 +180,8 @@ function CreateDeploymentPage() {
         case "netlab":
         case "netlab-c9s":
           return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
+        case "labpp":
+          return getWorkspaceLabppTemplates(watchWorkspaceId, query);
         case "containerlab":
         case "clabernetes":
           return getWorkspaceContainerlabTemplates(watchWorkspaceId, query);
@@ -183,6 +211,15 @@ function CreateDeploymentPage() {
         template: values.template
       };
 
+      if (values.enableForward && ["netlab-c9s", "clabernetes", "terraform"].includes(values.kind)) {
+        const collectorUsername = String((forwardCfgQ.data as any)?.forwardCollector?.username ?? "").trim();
+        if (!collectorUsername) {
+          throw new Error("Configure your Collector first (Dashboard → Collector).");
+        }
+        config.forwardEnabled = true;
+        config.forwardCollectorUsername = collectorUsername;
+      }
+
       if (values.kind === "netlab" || values.kind === "containerlab") {
         const v = (values.netlabServer || selectedWorkspace?.netlabServer || "").trim();
         if (!v) throw new Error("netlab server is required");
@@ -202,6 +239,14 @@ function CreateDeploymentPage() {
         config.templateSource = effectiveSource;
         if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
         if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
+      }
+
+      if (values.kind === "labpp") {
+        config.templateSource = "blueprints";
+        if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
+        const eve = (values.eveServer || "").trim();
+        if (!eve) throw new Error("EVE-NG server is required");
+        config.eveServer = eve;
       }
 
       const body: CreateWorkspaceDeploymentRequest = {
@@ -230,6 +275,13 @@ function CreateDeploymentPage() {
   }
 
   const netlabOptions = netlabServersQ.data?.servers ?? [];
+  const eveOptions = eveServersQ.data?.servers ?? [];
+  const byosNetlabEnabled = netlabOptions.length > 0;
+  const byosEveEnabled = eveOptions.length > 0;
+  const netlabServerRefs = netlabOptions.map((s) => ({
+    value: `ws:${s.id}`,
+    label: `${s.name} (${s.apiUrl})`,
+  }));
 
   return (
     <div className="space-y-6 p-6">
@@ -300,8 +352,9 @@ function CreateDeploymentPage() {
                         </FormControl>
                       <SelectContent>
                           <SelectItem value="netlab-c9s">Netlab</SelectItem>
-                          <SelectItem value="netlab">Netlab (BYOS)</SelectItem>
-                          <SelectItem value="containerlab">Containerlab (BYOS)</SelectItem>
+                          {byosNetlabEnabled && <SelectItem value="netlab">Netlab (BYOS)</SelectItem>}
+                          {byosEveEnabled && <SelectItem value="labpp">LabPP</SelectItem>}
+                          {byosNetlabEnabled && <SelectItem value="containerlab">Containerlab (BYOS)</SelectItem>}
                           <SelectItem value="clabernetes">Containerlab</SelectItem>
                           <SelectItem value="terraform">Terraform</SelectItem>
                       </SelectContent>
@@ -310,6 +363,30 @@ function CreateDeploymentPage() {
                     </FormItem>
                   )}
                 />
+
+                {["netlab-c9s", "clabernetes", "terraform"].includes(watchKind) && (
+                  <FormField
+                    control={form.control}
+                    name="enableForward"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-md border p-3 md:col-span-2">
+                        <div className="space-y-1">
+                          <FormLabel>Enable Forward collection</FormLabel>
+                          <FormDescription>
+                            Uses your in-cluster collector. Configure it first under <code className="font-mono">Dashboard → Collector</code>.
+                          </FormDescription>
+                          {watchEnableForward && forwardCfgQ.isError && (
+                            <div className="text-xs text-destructive">Failed to load collector settings.</div>
+                          )}
+                          {watchEnableForward && forwardCfgQ.data && !String((forwardCfgQ.data as any)?.forwardCollector?.username ?? "").trim() && (
+                            <div className="text-xs text-destructive">Collector not configured yet.</div>
+                          )}
+                        </div>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
@@ -412,14 +489,42 @@ function CreateDeploymentPage() {
                             </SelectTrigger>
                           </FormControl>
                             <SelectContent>
-                              {netlabOptions.map((s) => (
-                              <SelectItem key={s.value} value={s.value}>
-                                {s.label}
+                              {netlabServerRefs.map((s) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                  {s.label}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        {netlabServersQ.isLoading && <FormDescription>Loading servers…</FormDescription>}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {watchKind === "labpp" && (
+                  <FormField
+                    control={form.control}
+                    name="eveServer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>EVE-NG server</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || ""} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select server…" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {eveOptions.map((s) => (
+                              <SelectItem key={s.id} value={`ws:${s.id}`}>
+                                {s.name} ({s.apiUrl})
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        {netlabServersQ.isLoading && <FormDescription>Loading servers…</FormDescription>}
+                        {eveServersQ.isLoading && <FormDescription>Loading servers…</FormDescription>}
                         <FormMessage />
                       </FormItem>
                     )}

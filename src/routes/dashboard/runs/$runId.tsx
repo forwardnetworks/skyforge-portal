@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { JSONMap } from "../../../lib/skyforge-api";
-import { buildLoginUrl, type DashboardSnapshot } from "../../../lib/skyforge-api";
+import { buildLoginUrl, getDashboardSnapshot, type DashboardSnapshot } from "../../../lib/skyforge-api";
 import { loginWithPopup } from "../../../lib/auth-popup";
 import { useRunEvents, type RunLogState, type TaskLogEntry } from "../../../lib/run-events";
 import { queryKeys } from "../../../lib/query-keys";
@@ -21,8 +21,8 @@ function RunDetailPage() {
 
   const snap = useQuery<DashboardSnapshot | null>({
     queryKey: queryKeys.dashboardSnapshot(),
-    queryFn: async () => null,
-    initialData: null,
+    queryFn: getDashboardSnapshot,
+    initialData: () => (queryClient.getQueryData(queryKeys.dashboardSnapshot()) as DashboardSnapshot | undefined) ?? null,
     retry: false,
     staleTime: Infinity
   });
@@ -65,7 +65,7 @@ function RunDetailPage() {
       {!snap.data && (
         <Card className="border-dashed">
           <CardContent className="pt-6 text-center text-muted-foreground">
-             Waiting for platform stream…
+             Loading dashboard…
              <div className="mt-2 text-xs">
                 If you are logged out,{" "}
                 <a

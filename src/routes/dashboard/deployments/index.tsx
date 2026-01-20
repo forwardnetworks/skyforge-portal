@@ -25,6 +25,7 @@ import {
   buildLoginUrl,
   destroyDeployment,
   deleteDeployment,
+  getDashboardSnapshot,
   getSession,
   getWorkspaces,
   startDeployment,
@@ -92,8 +93,8 @@ function DeploymentsPage() {
 
   const snap = useQuery<DashboardSnapshot | null>({
     queryKey: queryKeys.dashboardSnapshot(),
-    queryFn: async () => null,
-    initialData: null,
+    queryFn: getDashboardSnapshot,
+    initialData: () => (queryClient.getQueryData(queryKeys.dashboardSnapshot()) as DashboardSnapshot | undefined) ?? null,
     retry: false,
     staleTime: Infinity
   });
@@ -116,7 +117,12 @@ function DeploymentsPage() {
   // UI state
   const [isFeedOpen, setIsFeedOpen] = useState(true);
 
-  const workspaces = snap.data?.workspaces ?? [];
+  const workspacesQ = useQuery({
+    queryKey: queryKeys.workspaces(),
+    queryFn: getWorkspaces,
+    staleTime: 30_000,
+  });
+  const workspaces = (workspacesQ.data?.workspaces ?? []) as SkyforgeWorkspace[];
   
   // Use URL param if available, otherwise fallback to first workspace
   const selectedWorkspaceId = useMemo(() => {
@@ -272,7 +278,7 @@ function DeploymentsPage() {
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
               <Skeleton className="h-4 w-64" />
               <div className="text-center text-muted-foreground">
-                Waiting for platform stream…
+                Loading dashboard…
                 <div className="mt-2 text-xs">
                   If you are logged out,{" "}
                   <a

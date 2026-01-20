@@ -50,6 +50,9 @@ function ForwardCollectorPage() {
 
   const cfg = cfgQ.data;
   const runtime = (runtimeQ.data?.runtime ?? cfg?.runtime) as any;
+  const fwdCollector = (cfg as any)?.forwardCollector as
+    | { connected?: boolean; status?: string; lastConnectedAt?: string; lastSeenAt?: string }
+    | undefined;
 
   const [target, setTarget] = useState<ForwardTarget>("cloud");
   const [onPremHost, setOnPremHost] = useState("");
@@ -123,6 +126,12 @@ function ForwardCollectorPage() {
   const authKey = (cfg?.authorizationKey ?? "").trim();
   const isReady = !!runtime?.ready;
   const logs = (logsQ.data?.logs ?? "").trim();
+  const forwardConnected =
+    typeof fwdCollector?.connected === "boolean"
+      ? fwdCollector.connected
+      : typeof fwdCollector?.status === "string"
+        ? String(fwdCollector.status).toLowerCase().includes("connect")
+        : undefined;
 
   return (
     <div className="space-y-6 p-6">
@@ -154,9 +163,37 @@ function ForwardCollectorPage() {
                   {isReady ? "Running" : "Starting…"}
                 </span>
               </div>
+              {typeof forwardConnected === "boolean" ? (
+                <div className="text-sm">
+                  Forward:{" "}
+                  <span className={forwardConnected ? "text-emerald-600" : "text-muted-foreground"}>
+                    {forwardConnected ? "Connected" : "Not connected"}
+                  </span>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">Forward: Unknown</div>
+              )}
               {runtime?.podName ? (
                 <div className="text-xs text-muted-foreground">
                   Pod: <span className="font-mono">{String(runtime.podName)}</span> ({String(runtime.podPhase ?? "")})
+                </div>
+              ) : null}
+              {typeof runtime?.restartCount === "number" && runtime.restartCount > 0 ? (
+                <div className="text-xs text-muted-foreground">
+                  Restarts: <span className="font-mono">{String(runtime.restartCount)}</span>
+                  {runtime?.lastReason ? (
+                    <>
+                      {" "}
+                      (last: <span className="font-mono">{String(runtime.lastReason)}</span>
+                      {typeof runtime?.lastExitCode === "number" ? (
+                        <>
+                          {" "}
+                          code <span className="font-mono">{String(runtime.lastExitCode)}</span>
+                        </>
+                      ) : null}
+                      )
+                    </>
+                  ) : null}
                 </div>
               ) : null}
               {runtime?.image ? (
