@@ -1050,10 +1050,22 @@ export async function destroyDeployment(workspaceId: string, deploymentId: strin
   );
 }
 
-export async function deleteDeployment(workspaceId: string, deploymentId: string): Promise<JSONMap> {
-  return apiFetch<JSONMap>(`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}`, {
-    method: "DELETE",
-  });
+export async function deleteDeployment(
+  workspaceId: string,
+  deploymentId: string,
+  params?: { forwardDelete?: boolean }
+): Promise<JSONMap> {
+  const qs = new URLSearchParams();
+  if (params?.forwardDelete) qs.set("forward_delete", "true");
+  const suffix = qs.toString();
+  return apiFetch<JSONMap>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}${
+      suffix ? `?${suffix}` : ""
+    }`,
+    {
+      method: "DELETE",
+    }
+  );
 }
 
 export type UIConfigResponse = operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"];

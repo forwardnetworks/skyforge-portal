@@ -47,6 +47,7 @@ import { TableWrapper } from "../../../components/ui/table-wrapper";
 import { Badge } from "../../../components/ui/badge";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/empty-state";
+import { Checkbox } from "../../../components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,6 +102,7 @@ function DeploymentsPage() {
 
   const [destroyTarget, setDestroyTarget] = useState<WorkspaceDeployment | null>(null);
   const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
+  const [destroyAlsoDeleteForward, setDestroyAlsoDeleteForward] = useState(false);
 
   const session = useQuery({
     queryKey: queryKeys.session(),
@@ -222,11 +224,14 @@ function DeploymentsPage() {
     if (!destroyTarget) return;
     try {
       // "Destroy" in the UI means remove the deployment definition (and trigger provider cleanup).
-      await deleteDeployment(destroyTarget.workspaceId, destroyTarget.id);
+      await deleteDeployment(destroyTarget.workspaceId, destroyTarget.id, {
+        forwardDelete: destroyAlsoDeleteForward,
+      });
       toast.success("Deployment deleted", { description: `${destroyTarget.name} has been removed.` });
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
       setDestroyDialogOpen(false);
       setDestroyTarget(null);
+      setDestroyAlsoDeleteForward(false);
     } catch (e) {
       toast.error("Failed to delete", { description: (e as Error).message });
     }
@@ -241,6 +246,8 @@ function DeploymentsPage() {
       default: return typ;
     }
   };
+
+  const destroyHasForward = !!destroyTarget?.config?.forwardNetworkId;
 
   return (
     <div className="space-y-6 p-6">
@@ -576,6 +583,18 @@ function DeploymentsPage() {
               This will remove "{destroyTarget?.name}" from Skyforge and trigger provider cleanup. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {destroyHasForward && (
+            <div className="flex items-start gap-3 rounded-md border p-3">
+              <Checkbox
+                checked={destroyAlsoDeleteForward}
+                onCheckedChange={(v) => setDestroyAlsoDeleteForward(Boolean(v))}
+                id="delete-forward-network"
+              />
+              <label htmlFor="delete-forward-network" className="text-sm leading-tight cursor-pointer">
+                Also delete the Forward network associated with this deployment.
+              </label>
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
