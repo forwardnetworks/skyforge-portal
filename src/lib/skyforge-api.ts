@@ -748,6 +748,10 @@ export type UserForwardCollectorResponse = {
     lastConnectedAt?: string;
     lastSeenAt?: string;
     updatedAt?: string;
+    version?: string;
+    updateStatus?: string;
+    externalIp?: string;
+    internalIps?: string[];
   };
   updatedAt?: ISO8601;
 };

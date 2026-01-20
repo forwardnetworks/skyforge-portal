@@ -51,7 +51,16 @@ function ForwardCollectorPage() {
   const cfg = cfgQ.data;
   const runtime = (runtimeQ.data?.runtime ?? cfg?.runtime) as any;
   const fwdCollector = (cfg as any)?.forwardCollector as
-    | { connected?: boolean; status?: string; lastConnectedAt?: string; lastSeenAt?: string }
+    | {
+        connected?: boolean;
+        status?: string;
+        lastConnectedAt?: string;
+        lastSeenAt?: string;
+        version?: string;
+        updateStatus?: string;
+        externalIp?: string;
+        internalIps?: string[];
+      }
     | undefined;
 
   const [target, setTarget] = useState<ForwardTarget>("cloud");
@@ -173,6 +182,27 @@ function ForwardCollectorPage() {
               ) : (
                 <div className="text-sm text-muted-foreground">Forward: Unknown</div>
               )}
+              {fwdCollector?.version ? (
+                <div className="text-xs text-muted-foreground">
+                  Forward version: <span className="font-mono">{String(fwdCollector.version)}</span>
+                </div>
+              ) : null}
+              {fwdCollector?.updateStatus ? (
+                <div className="text-xs text-muted-foreground">
+                  Forward update: <span className="font-mono">{String(fwdCollector.updateStatus)}</span>
+                </div>
+              ) : null}
+              {fwdCollector?.externalIp ? (
+                <div className="text-xs text-muted-foreground">
+                  External IP: <span className="font-mono">{String(fwdCollector.externalIp)}</span>
+                </div>
+              ) : null}
+              {Array.isArray(fwdCollector?.internalIps) && fwdCollector!.internalIps!.length > 0 ? (
+                <div className="text-xs text-muted-foreground">
+                  Internal IPs:{" "}
+                  <span className="font-mono">{(fwdCollector!.internalIps ?? []).filter(Boolean).join(", ")}</span>
+                </div>
+              ) : null}
               {runtime?.podName ? (
                 <div className="text-xs text-muted-foreground">
                   Pod: <span className="font-mono">{String(runtime.podName)}</span> ({String(runtime.podPhase ?? "")})
