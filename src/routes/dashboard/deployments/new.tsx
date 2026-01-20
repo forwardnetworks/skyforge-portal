@@ -108,7 +108,7 @@ function CreateDeploymentPage() {
       template: "",
       netlabServer: "",
       eveServer: "",
-      enableForward: false,
+      enableForward: true,
     },
   });
 

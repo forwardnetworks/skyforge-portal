@@ -74,6 +74,9 @@ function DeploymentDetailPage() {
     return (snap.data?.deployments ?? []).find((d: WorkspaceDeployment) => d.id === deploymentId);
   }, [snap.data?.deployments, deploymentId]);
 
+  const workspaceId = String(deployment?.workspaceId ?? "");
+  const deploymentType = String(deployment?.type ?? "");
+
   useEffect(() => {
     const enabled = Boolean((deployment?.config ?? {})["forwardEnabled"]);
     const collector = String((deployment?.config ?? {})["forwardCollectorUsername"] ?? "").trim();
@@ -91,36 +94,9 @@ function DeploymentDetailPage() {
     enabled: Boolean(activeRunId),
   });
 
-  if (!snap.data && !deployment) {
-    return (
-      <div className="space-y-6 p-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-48" />
-        </div>
-        <Skeleton className="h-[400px] w-full" />
-      </div>
-    );
-  }
-
-  if (!deployment) {
-    return (
-      <div className="p-6">
-        <EmptyState
-          icon={Box}
-          title="Deployment not found"
-          description="This deployment may have been deleted or you don't have access."
-          action={{
-            label: "Back to Deployments",
-            onClick: () => navigate({ to: "/dashboard/deployments" })
-          }}
-        />
-      </div>
-    );
-  }
-
   const handleStart = async () => {
     try {
+      if (!deployment) throw new Error("deployment not found");
       await startDeployment(deployment.workspaceId, deployment.id);
       toast.success("Deployment starting", { description: `${deployment.name} is queued to start.` });
     } catch (e) {
@@ -130,6 +106,7 @@ function DeploymentDetailPage() {
 
   const handleStop = async () => {
     try {
+      if (!deployment) throw new Error("deployment not found");
       await stopDeployment(deployment.workspaceId, deployment.id);
       toast.success("Deployment stopping", { description: `${deployment.name} is queued to stop.` });
     } catch (e) {
@@ -139,6 +116,7 @@ function DeploymentDetailPage() {
 
   const handleDestroy = async () => {
     try {
+      if (!deployment) throw new Error("deployment not found");
       await deleteDeployment(deployment.workspaceId, deployment.id);
       toast.success("Deployment deleted");
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
@@ -148,10 +126,11 @@ function DeploymentDetailPage() {
     }
   };
 
-  const status = deployment.activeTaskStatus ?? deployment.lastStatus ?? "unknown";
-  const isBusy = !!deployment.activeTaskId;
+  const status = deployment?.activeTaskStatus ?? deployment?.lastStatus ?? "unknown";
+  const isBusy = !!deployment?.activeTaskId;
 
   const runsForDeployment = useMemo(() => {
+    if (!deployment) return [];
     const all = (snap.data?.runs ?? []) as JSONMap[];
     const filtered = all.filter((r) => String(r.workspaceId ?? "") === deployment.workspaceId);
     const depRuns = filtered.filter((r) => String(r.deploymentId ?? "") === deployment.id);
@@ -159,18 +138,24 @@ function DeploymentDetailPage() {
 
     // Fallback for older snapshots that didn't include deploymentId on the run payload.
     return filtered;
-  }, [deployment.id, deployment.workspaceId, snap.data?.runs]);
+  }, [deployment, snap.data?.runs]);
 
   const topology = useQuery({
-    queryKey: queryKeys.deploymentTopology(deployment.workspaceId, deployment.id),
-    queryFn: async () => getDeploymentTopology(deployment.workspaceId, deployment.id),
-    enabled: ["containerlab", "netlab-c9s", "clabernetes"].includes(deployment.type),
+    queryKey: queryKeys.deploymentTopology(workspaceId, deploymentId),
+    queryFn: async () => {
+      if (!deployment) throw new Error("deployment not found");
+      return getDeploymentTopology(deployment.workspaceId, deployment.id);
+    },
+    enabled: !!deployment && ["containerlab", "netlab-c9s", "clabernetes"].includes(deploymentType),
     retry: false,
     staleTime: 10_000
   });
 
   const saveConfig = useMutation({
-    mutationFn: async (nodeId: string) => saveDeploymentNodeConfig(deployment.workspaceId, deployment.id, nodeId),
+    mutationFn: async (nodeId: string) => {
+      if (!deployment) throw new Error("deployment not found");
+      return saveDeploymentNodeConfig(deployment.workspaceId, deployment.id, nodeId);
+    },
     onSuccess: (resp, nodeId) => {
       if (resp?.skipped) {
         toast.message("Save config skipped", { description: resp.message || `Node ${nodeId}` });
@@ -191,8 +176,10 @@ function DeploymentDetailPage() {
   const forwardCollectors = (forwardCollectorsQ.data?.collectors ?? []) as ForwardCollectorSummary[];
 
   const updateForward = useMutation({
-    mutationFn: async (next: { enabled: boolean; collectorUsername?: string }) =>
-      updateDeploymentForwardConfig(deployment.workspaceId, deployment.id, next),
+    mutationFn: async (next: { enabled: boolean; collectorUsername?: string }) => {
+      if (!deployment) throw new Error("deployment not found");
+      return updateDeploymentForwardConfig(deployment.workspaceId, deployment.id, next);
+    },
     onSuccess: async () => {
       toast.success("Forward settings updated");
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
@@ -201,13 +188,43 @@ function DeploymentDetailPage() {
   });
 
   const syncForward = useMutation({
-    mutationFn: async () => syncDeploymentForward(deployment.workspaceId, deployment.id),
+    mutationFn: async () => {
+      if (!deployment) throw new Error("deployment not found");
+      return syncDeploymentForward(deployment.workspaceId, deployment.id);
+    },
     onSuccess: async (resp) => {
       toast.success("Forward sync queued", { description: `Run ${String(resp.run?.id ?? "")}` });
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
     },
     onError: (e) => toast.error("Failed to sync to Forward", { description: (e as Error).message }),
   });
+
+  if (!deployment) {
+    if (snap.isLoading || snap.isFetching) {
+      return (
+        <div className="space-y-6 p-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-48" />
+          </div>
+          <Skeleton className="h-[400px] w-full" />
+        </div>
+      );
+    }
+    return (
+      <div className="p-6">
+        <EmptyState
+          icon={Box}
+          title="Deployment not found"
+          description="This deployment may have been deleted or you don't have access."
+          action={{
+            label: "Back to Deployments",
+            onClick: () => navigate({ to: "/dashboard/deployments" })
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6 pb-20">

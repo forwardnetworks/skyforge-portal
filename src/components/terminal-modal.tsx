@@ -27,7 +27,9 @@ export function TerminalModal({ open, onOpenChange, workspaceId, deploymentId, n
 
   const command = useMemo(() => {
     const k = String(nodeKind ?? "").toLowerCase();
-    if (k.includes("eos") || k.includes("ceos")) return "Cli";
+    // Arista cEOS in our clabernetes native mode ships without the `Cli` binary but
+    // includes `CliShell` and `FastCli`.
+    if (k.includes("eos") || k.includes("ceos")) return "CliShell";
     return "sh";
   }, [nodeKind]);
 
@@ -198,4 +200,3 @@ export function TerminalModal({ open, onOpenChange, workspaceId, deploymentId, n
     </Dialog>
   );
 }
-
