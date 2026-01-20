@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getStatusSummary, getUIConfig } from "../lib/skyforge-api";
+import { getStatusSummary, getUIConfig, SKYFORGE_API } from "../lib/skyforge-api";
 import { queryKeys } from "../lib/query-keys";
 import { useStatusSummaryEvents } from "../lib/status-events";
 import {
@@ -260,8 +260,8 @@ function StatusPage() {
               { id: 'gitea', name: 'Git', path: '/git/', icon: GitBranch },
               { id: 'netbox', name: 'NetBox', path: '/netbox/', icon: Network },
               { id: 'nautobot', name: 'Nautobot', path: '/nautobot/', icon: Network },
-              { id: 'coder', name: 'Coder', path: '/coder', icon: Cloud },
-              { id: 'yaade', name: 'API Testing', path: '/api-testing/', icon: Zap },
+              { id: 'coder', name: 'Coder', path: '/coder/launch', icon: Cloud },
+              { id: 'yaade', name: 'API Testing', path: `${SKYFORGE_API}/yaade/sso`, icon: Zap },
               { id: 'webhooks', name: 'Webhooks', path: '/dashboard/webhooks', icon: Workflow },
             ].map((tool) => {
               // Find check status (simple fuzzy match)

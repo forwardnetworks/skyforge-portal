@@ -60,7 +60,10 @@ const items: NavItem[] = [
   { label: "SNMP", href: "/snmp", icon: ShieldCheck },
   { label: "Git", href: "/git/", icon: GitBranch, external: true },
   { label: "DNS", href: `${SKYFORGE_API}/dns/sso?next=/dns/`, icon: Network, external: true },
-  { label: "Coder", href: "/workspaces", icon: Cloud, external: true },
+  // Default UX: send users directly to the VS Code app inside Coder.
+  { label: "Coder", href: "/coder/launch", icon: Cloud, external: true },
+  // Admins can still access the full Coder UI for management.
+  { label: "Coder Admin", href: "/coder/", icon: Cloud, external: true, adminOnly: true },
   { label: "API Testing", href: `${SKYFORGE_API}/yaade/sso`, icon: PanelTop, external: true },
   { label: "Docs", href: "/docs/", icon: BookOpen, external: true },
   { label: "Settings", href: "/admin/settings", icon: Settings, adminOnly: true },
