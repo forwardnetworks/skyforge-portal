@@ -27,9 +27,10 @@ export function TerminalModal({ open, onOpenChange, workspaceId, deploymentId, n
 
   const command = useMemo(() => {
     const k = String(nodeKind ?? "").toLowerCase();
-    // Arista cEOS in our clabernetes native mode ships without the `Cli` binary but
-    // includes `CliShell` and `FastCli`.
-    if (k.includes("eos") || k.includes("ceos")) return "CliShell";
+    // For EOS/cEOS, keep this as a shell by default for maximum compatibility.
+    // Users can run `FastCli -p 15 -c "show version"` etc. from within the shell.
+    // (Some cEOS images do not include `Cli`/`CliShell` on $PATH.)
+    if (k.includes("eos") || k.includes("ceos")) return "sh";
     return "sh";
   }, [nodeKind]);
 
