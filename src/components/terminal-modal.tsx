@@ -42,6 +42,9 @@ export function TerminalModal({ open, onOpenChange, workspaceId, deploymentId, n
     )}/deployments/${encodeURIComponent(deploymentId)}/terminal/ws`;
     const params = new URLSearchParams();
     params.set("node", nodeId);
+    // Always target the NOS/linux container by name (Skyforge uses the node id as the container name).
+    // Without this, pods with sidecars can end up selecting the wrong container and immediately disconnect.
+    params.set("container", nodeId);
     params.set("command", command);
     return `${base}?${params.toString()}`;
   }, [command, deploymentId, nodeId, workspaceId]);
