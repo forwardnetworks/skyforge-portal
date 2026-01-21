@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Info } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Loader2, Info, Plus, Trash2 } from "lucide-react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import {
   getUserForwardCollector,
   listWorkspaceNetlabServers,
   listWorkspaceEveServers,
+  listWorkspaceVariableGroups,
   type CreateWorkspaceDeploymentRequest,
   type DashboardSnapshot,
   type ExternalTemplateRepo,
@@ -63,6 +64,8 @@ const formSchema = z
     netlabServer: z.string().optional(),
     eveServer: z.string().optional(),
     enableForward: z.boolean(),
+    variableGroupId: z.string().optional(),
+    env: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
   });
 
 function hostLabelFromURL(raw: string): string {
@@ -109,10 +112,17 @@ function CreateDeploymentPage() {
       netlabServer: "",
       eveServer: "",
       enableForward: true,
+      variableGroupId: "none",
+      env: [],
     },
   });
 
-  const { watch, setValue } = form;
+  const { watch, setValue, control } = form;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "env",
+  });
+
   const watchWorkspaceId = watch("workspaceId");
   const watchKind = watch("kind");
   const watchSource = watch("source");
@@ -155,6 +165,13 @@ function CreateDeploymentPage() {
   const eveServersQ = useQuery({
     queryKey: ["workspaceEveServers", watchWorkspaceId],
     queryFn: async () => listWorkspaceEveServers(watchWorkspaceId),
+    enabled: !!watchWorkspaceId,
+    staleTime: 30_000,
+  });
+
+  const variableGroupsQ = useQuery({
+    queryKey: ["workspaceVariableGroups", watchWorkspaceId],
+    queryFn: async () => listWorkspaceVariableGroups(watchWorkspaceId),
     enabled: !!watchWorkspaceId,
     staleTime: 30_000,
   });
@@ -225,6 +242,20 @@ function CreateDeploymentPage() {
         template: values.template
       };
 
+      if (values.variableGroupId && values.variableGroupId !== "none") {
+        config.envGroupIds = [parseInt(values.variableGroupId, 10)];
+      }
+
+      if (values.env && values.env.length > 0) {
+        const envMap: Record<string, string> = {};
+        for (const e of values.env) {
+          if (e.key.trim()) envMap[e.key.trim()] = e.value;
+        }
+        if (Object.keys(envMap).length > 0) {
+          config.environment = envMap;
+        }
+      }
+
       if (values.enableForward && ["netlab-c9s", "clabernetes", "terraform"].includes(values.kind)) {
         if (!configuredCollectorUsername) {
           throw new Error("Configure your Collector first (Dashboard → Collector).");
@@ -289,6 +320,7 @@ function CreateDeploymentPage() {
 
   const netlabOptions = netlabServersQ.data?.servers ?? [];
   const eveOptions = eveServersQ.data?.servers ?? [];
+  const variableGroups = variableGroupsQ.data?.groups ?? [];
   const byosNetlabEnabled = netlabOptions.length > 0;
   const byosEveEnabled = eveOptions.length > 0;
   const netlabServerRefs = netlabOptions.map((s) => ({
@@ -591,6 +623,89 @@ function CreateDeploymentPage() {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="rounded-md border p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <FormLabel>Environment Variables</FormLabel>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ key: "", value: "" })}
+                  >
+                    <Plus className="mr-2 h-3 w-3" /> Add Variable
+                  </Button>
+                </div>
+                
+                <div className="grid gap-6 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="variableGroupId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground">Variable Group</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || "none"} value={field.value || "none"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="None" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {variableGroups.map((g) => (
+                              <SelectItem key={g.id} value={String(g.id)}>
+                                {g.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {fields.length > 0 && (
+                  <div className="space-y-2">
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="flex gap-2 items-start">
+                        <FormField
+                          control={form.control}
+                          name={`env.${index}.key`}
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <FormControl>
+                                <Input {...field} placeholder="KEY" className="font-mono text-xs" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`env.${index}.value`}
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <FormControl>
+                                <Input {...field} placeholder="VALUE" className="font-mono text-xs" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          className="shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {mutation.isError && (

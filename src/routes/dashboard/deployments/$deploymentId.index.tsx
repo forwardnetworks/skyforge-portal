@@ -47,13 +47,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../../components/ui/alert-dialog";
+import { TerminalView } from "../../../components/terminal-view";
+import { NodeLogsView } from "../../../components/node-logs-view";
+import { NodeDescribeView } from "../../../components/node-describe-view";
 
 export const Route = createFileRoute("/dashboard/deployments/$deploymentId/")({
-  component: DeploymentDetailPage
+  component: DeploymentDetailPage,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      action: (search.action as string) || undefined,
+      node: (search.node as string) || undefined,
+    };
+  },
 });
 
 function DeploymentDetailPage() {
   const { deploymentId } = Route.useParams();
+  const { action, node } = Route.useSearch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   useDashboardEvents(true);
@@ -75,6 +85,7 @@ function DeploymentDetailPage() {
   }, [snap.data?.deployments, deploymentId]);
 
   const workspaceId = String(deployment?.workspaceId ?? "");
+  
   const deploymentType = String(deployment?.type ?? "");
 
   useEffect(() => {
@@ -198,6 +209,47 @@ function DeploymentDetailPage() {
     },
     onError: (e) => toast.error("Failed to sync to Forward", { description: (e as Error).message }),
   });
+
+  // Handling for standalone tool windows (terminal, logs, describe)
+  // This must be at the end to ensure hooks run unconditionally.
+  if (action && node && deployment) {
+    if (action === "terminal") {
+      return (
+        <div className="h-screen w-screen bg-zinc-950 flex flex-col">
+          <TerminalView 
+            workspaceId={workspaceId} 
+            deploymentId={deploymentId} 
+            nodeId={node} 
+            className="flex-1"
+          />
+        </div>
+      );
+    }
+    if (action === "logs") {
+      return (
+        <div className="h-screen w-screen bg-background flex flex-col">
+          <NodeLogsView
+            workspaceId={workspaceId}
+            deploymentId={deploymentId}
+            nodeId={node}
+            className="flex-1"
+          />
+        </div>
+      );
+    }
+    if (action === "describe") {
+      return (
+        <div className="h-screen w-screen bg-background flex flex-col">
+          <NodeDescribeView
+            workspaceId={workspaceId}
+            deploymentId={deploymentId}
+            nodeId={node}
+            className="flex-1"
+          />
+        </div>
+      );
+    }
+  }
 
   if (!deployment) {
     if (snap.isLoading || snap.isFetching) {

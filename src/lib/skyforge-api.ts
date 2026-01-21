@@ -1113,3 +1113,41 @@ export async function cancelRun(taskId: string | number, workspaceId: string): P
     body: "{}",
   });
 }
+
+export type WorkspaceVariableGroup = components["schemas"]["skyforge.WorkspaceVariableGroup"];
+export type WorkspaceVariableGroupListResponse = components["schemas"]["skyforge.WorkspaceVariableGroupListResponse"];
+export type WorkspaceVariableGroupUpsertRequest = components["schemas"]["skyforge.WorkspaceVariableGroupUpsertRequest"];
+
+export async function listWorkspaceVariableGroups(workspaceId: string): Promise<WorkspaceVariableGroupListResponse> {
+  return apiFetch<WorkspaceVariableGroupListResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups`);
+}
+
+export async function createWorkspaceVariableGroup(
+  workspaceId: string,
+  body: WorkspaceVariableGroupUpsertRequest
+): Promise<WorkspaceVariableGroup> {
+  return apiFetch<WorkspaceVariableGroup>(`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateWorkspaceVariableGroup(
+  workspaceId: string,
+  groupId: number,
+  body: WorkspaceVariableGroupUpsertRequest
+): Promise<WorkspaceVariableGroup> {
+  return apiFetch<WorkspaceVariableGroup>(`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteWorkspaceVariableGroup(
+  workspaceId: string,
+  groupId: number
+): Promise<WorkspaceVariableGroupListResponse> {
+  return apiFetch<WorkspaceVariableGroupListResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`, {
+    method: "DELETE",
+  });
+}
