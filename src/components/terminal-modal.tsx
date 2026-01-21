@@ -118,12 +118,15 @@ export function TerminalModal({ open, onOpenChange, workspaceId, deploymentId, n
         return;
       }
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       setStatus("closed");
-      term.writeln("\r\n[disconnected]");
+      const code = typeof ev.code === "number" ? ev.code : 0;
+      const reason = ev.reason ? ` ${ev.reason}` : "";
+      term.writeln(`\r\n[disconnected]${code ? ` (code ${code})` : ""}${reason}`);
     };
     ws.onerror = () => {
       setStatus("error");
+      term.writeln("\r\n[error] websocket error (check browser console/network)");
     };
 
     const disposeData = term.onData((data) => {

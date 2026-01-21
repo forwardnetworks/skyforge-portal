@@ -26,7 +26,7 @@ export function NodeLogsModal({ open, onOpenChange, workspaceId, deploymentId, n
   const logs = useQuery({
     queryKey: ["deploymentNodeLogs", workspaceId, deploymentId, nodeId, tail],
     enabled: open && !!workspaceId && !!deploymentId && !!nodeId,
-    queryFn: async () => getDeploymentNodeLogs(workspaceId, deploymentId, nodeId, { tail }),
+    queryFn: async () => getDeploymentNodeLogs(workspaceId, deploymentId, nodeId, { tail, container: nodeId }),
     refetchOnWindowFocus: false,
     retry: 1,
   });
