@@ -53,6 +53,21 @@ export const Route = createFileRoute("/dashboard/deployments/new")({
 type DeploymentKind = "netlab-c9s" | "netlab" | "labpp" | "containerlab" | "clabernetes" | "terraform";
 type TemplateSource = "workspace" | "blueprints" | "external";
 
+const NETLAB_DEVICE_PRESETS: { label: string; value: string }[] = [
+  { label: "Arista EOS (eos)", value: "eos" },
+  { label: "Cisco IOL (iol)", value: "iol" },
+  { label: "Cisco IOSv (iosv)", value: "iosv" },
+  { label: "Cisco IOSvL2 (iosvl2)", value: "iosvl2" },
+  { label: "Cisco CSR1000v (csr)", value: "csr" },
+  { label: "Cisco ASA (asav)", value: "asav" },
+  { label: "Cisco NX-OSv9k (nxos)", value: "nxos" },
+  { label: "Juniper vMX (vmx)", value: "vmx" },
+  { label: "Juniper vJunos Router (vjunos-router)", value: "vjunos-router" },
+  { label: "Juniper vJunos Switch (vjunos-switch)", value: "vjunos-switch" },
+  { label: "Nokia SR OS (sros)", value: "sros" },
+  { label: "Linux (linux)", value: "linux" },
+];
+
 const formSchema = z
   .object({
     workspaceId: z.string().min(1, "Workspace is required"),
@@ -123,13 +138,33 @@ function CreateDeploymentPage() {
     name: "env",
   });
 
+  const upsertEnvVar = (key: string, value: string) => {
+    const k = key.trim();
+    const v = value;
+    if (!k) return;
+    const cur = (form.getValues("env") ?? []).slice();
+    const idx = cur.findIndex((e) => String(e?.key ?? "").trim() === k);
+    if (idx >= 0) {
+      cur[idx] = { key: k, value: v };
+    } else {
+      cur.push({ key: k, value: v });
+    }
+    setValue("env", cur, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+  };
+
   const watchWorkspaceId = watch("workspaceId");
   const watchKind = watch("kind");
   const watchSource = watch("source");
   const watchTemplateRepoId = watch("templateRepoId");
   const watchTemplate = watch("template");
   const watchEnableForward = watch("enableForward");
+  const watchEnv = watch("env");
   const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
+  const netlabDeviceValue = useMemo(() => {
+    const env = (watchEnv ?? []) as { key?: string; value?: string }[];
+    const hit = env.find((e) => String(e?.key ?? "").trim().toUpperCase() === "NETLAB_DEVICE");
+    return String(hit?.value ?? "").trim();
+  }, [watchEnv]);
 
   // Sync workspaceId when workspaces load if not already set or passed via URL
   useEffect(() => {
@@ -637,7 +672,40 @@ function CreateDeploymentPage() {
                     <Plus className="mr-2 h-3 w-3" /> Add Variable
                   </Button>
                 </div>
-                
+
+                {(watchKind === "netlab-c9s" || watchKind === "netlab") && (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">NETLAB_DEVICE</FormLabel>
+                      <Select
+                        value={netlabDeviceValue || "none"}
+                        onValueChange={(v) => {
+                          if (v === "none") {
+                            // leave as-is; user can delete from the list below
+                            return;
+                          }
+                          upsertEnvVar("NETLAB_DEVICE", v);
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select device preset…" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {NETLAB_DEVICE_PRESETS.map((p) => (
+                            <SelectItem key={p.value} value={p.value}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>Convenience preset; stored as env var `NETLAB_DEVICE`.</FormDescription>
+                    </FormItem>
+                  </div>
+                )}
+
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField
                     control={form.control}
