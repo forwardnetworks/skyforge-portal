@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Webhook,
   Database,
+  Hammer,
   ChevronDown,
   ChevronRight
 } from "lucide-react";
@@ -42,6 +43,7 @@ type NavItem = {
 const items: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
+  { label: "Lab Designer", href: "/dashboard/labs/designer", icon: Hammer },
   { label: "Workspaces", href: "/dashboard/workspaces", icon: FolderKanban },
   { label: "Collector", href: "/dashboard/forward", icon: Radio },
   { label: "S3", href: "/dashboard/s3", icon: Server },

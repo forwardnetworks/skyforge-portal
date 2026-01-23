@@ -53,13 +53,79 @@ const CustomNode = ({ data }: NodeProps) => {
   const Icon = data.icon === 'switch' ? Network : data.icon === 'cloud' ? Cloud : data.icon === 'client' ? Laptop : Server;
   const statusColor = data.status === 'running' ? 'default' : data.status === 'stopped' ? 'secondary' : 'destructive';
   const highlight = Boolean((data as any)?.highlight);
+  const vendor = String((data as any)?.vendor ?? "");
+
+  const VendorMark = ({ vendor }: { vendor: string }) => {
+    const v = String(vendor).toLowerCase();
+    if (v === "cisco") {
+      return (
+        <div
+          className="h-6 w-6 rounded-md flex items-center justify-center"
+          title="Cisco"
+          style={{ background: "rgba(0, 142, 204, 0.15)", color: "rgb(0, 142, 204)" }}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            {[
+              { x: 4, h: 8 },
+              { x: 7, h: 10 },
+              { x: 10, h: 12 },
+              { x: 13, h: 10 },
+              { x: 16, h: 8 },
+            ].map((b) => (
+              <rect key={b.x} x={b.x} y={14 - b.h} width="2" height={b.h} rx="1" fill="currentColor" />
+            ))}
+          </svg>
+        </div>
+      );
+    }
+    if (v === "arista") {
+      return (
+        <div
+          className="h-6 w-6 rounded-md flex items-center justify-center"
+          title="Arista"
+          style={{ background: "rgba(232, 43, 44, 0.14)", color: "rgb(232, 43, 44)" }}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path
+              d="M12 3 4.5 21h3.6l1.6-4h4.6l1.6 4h3.6L12 3zm-1 11 1-2.6 1 2.6h-2z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+      );
+    }
+    if (v === "linux") {
+      return (
+        <div
+          className="h-6 w-6 rounded-md flex items-center justify-center"
+          title="Linux"
+          style={{ background: "rgba(34, 197, 94, 0.12)", color: "rgb(34, 197, 94)" }}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <circle cx="12" cy="9" r="4" fill="#111827" />
+            <ellipse cx="12" cy="16" rx="5" ry="6" fill="#111827" />
+            <ellipse cx="12" cy="17" rx="3.3" ry="4.2" fill="#ffffff" />
+            <path d="M12 10l2 1-2 1-2-1 2-1z" fill="#f59e0b" />
+          </svg>
+        </div>
+      );
+    }
+    return (
+      <div className="h-6 w-6 rounded-md flex items-center justify-center bg-muted text-[11px] font-bold" title="Unknown">
+        ?
+      </div>
+    );
+  };
 
   return (
     <Card className={`min-w-[180px] border-2 shadow-md ${highlight ? "border-primary ring-2 ring-primary/30" : ""}`}>
       <CardHeader className="p-3 pb-2">
         <div className="flex items-center justify-between gap-2">
-          <div className="p-1.5 bg-muted rounded-md">
-            <Icon className="w-4 h-4" />
+          <div className="flex items-center gap-2">
+            <VendorMark vendor={vendor} />
+            <div className="p-1.5 bg-muted rounded-md" title={String((data as any)?.kind ?? "")}>
+              <Icon className="w-4 h-4" />
+            </div>
           </div>
           <Badge variant={statusColor} className="text-[10px] h-5">
             {String(data.status)}
@@ -87,12 +153,27 @@ export function TopologyViewer({
   workspaceId,
   deploymentId,
   enableTerminal,
+  fullHeight,
+  className,
 }: {
   topology?: DeploymentTopology | null;
   workspaceId?: string;
   deploymentId?: string;
   enableTerminal?: boolean;
+  fullHeight?: boolean;
+  className?: string;
 }) {
+  const vendorFromKind = useCallback((kindRaw: string): "cisco" | "arista" | "linux" | "unknown" => {
+    const k = String(kindRaw ?? "").toLowerCase();
+    if (!k) return "unknown";
+    if (k.includes("arista") || k.includes("eos") || k.includes("ceos") || k.includes("veos")) return "arista";
+    if (k.includes("cisco") || k.includes("ios") || k.includes("nxos") || k.includes("csr") || k.includes("c8k") || k.includes("iosxr"))
+      return "cisco";
+    if (k.includes("linux") || k.includes("ubuntu") || k.includes("debian") || k.includes("alpine") || k.includes("rocky") || k.includes("centos"))
+      return "linux";
+    return "unknown";
+  }, []);
+
   const derived = useMemo(() => {
     if (!topology || !Array.isArray(topology.nodes) || topology.nodes.length === 0) {
       return { nodes: [] as Node[], edges: [] as Edge[] };
@@ -104,13 +185,14 @@ export function TopologyViewer({
       const col = idx % cols;
       const row = Math.floor(idx / cols);
       const kind = String(n.kind ?? "");
+      const vendor = vendorFromKind(kind);
       const icon =
-        kind.includes("linux") ? "client" : kind.includes("ceos") || kind.includes("eos") ? "switch" : "server";
+        vendor === "linux" ? "client" : vendor === "arista" || vendor === "cisco" ? "switch" : "server";
       const status = String(n.status ?? "unknown");
       return {
         id: String(n.id),
         position: { x: col * gapX, y: row * gapY },
-        data: { label: String(n.label ?? n.id), icon, status, ip: String(n.mgmtIp ?? ""), kind },
+        data: { label: String(n.label ?? n.id), icon, status, ip: String(n.mgmtIp ?? ""), kind, vendor },
         type: "custom",
       };
     });
@@ -122,7 +204,7 @@ export function TopologyViewer({
       animated: false,
     }));
     return { nodes, edges };
-  }, [topology]);
+  }, [topology, vendorFromKind]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(derived.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(derived.edges);
@@ -539,7 +621,12 @@ export function TopologyViewer({
   }, [deploymentId, statsEnabled, workspaceId]);
 
   return (
-    <div className="h-[600px] w-full border rounded-xl bg-background/50 overflow-hidden relative" ref={ref}>
+    <div
+      className={`w-full bg-background/50 overflow-hidden relative ${fullHeight ? "h-full" : "h-[600px]"} border rounded-xl ${
+        className ?? ""
+      }`}
+      ref={ref}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}

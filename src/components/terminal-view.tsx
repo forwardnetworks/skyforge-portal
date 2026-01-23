@@ -25,7 +25,8 @@ export function TerminalView({ workspaceId, deploymentId, nodeId, nodeKind, onCl
 
   const command = useMemo(() => {
     const k = String(nodeKind ?? "").toLowerCase();
-    if (k.includes("eos") || k.includes("ceos")) return "sh";
+    // Server-side defaults to "sh"; for EOS/cEOS, "Cli" is more useful.
+    if (k.includes("eos") || k.includes("ceos")) return "Cli";
     return "sh";
   }, [nodeKind]);
 
@@ -37,7 +38,6 @@ export function TerminalView({ workspaceId, deploymentId, nodeId, nodeKind, onCl
     )}/deployments/${encodeURIComponent(deploymentId)}/terminal/ws`;
     const params = new URLSearchParams();
     params.set("node", nodeId);
-    params.set("container", nodeId);
     params.set("command", command);
     return `${base}?${params.toString()}`;
   }, [command, deploymentId, nodeId, workspaceId]);

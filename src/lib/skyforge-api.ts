@@ -640,6 +640,31 @@ export async function getWorkspaceContainerlabTemplates(
   );
 }
 
+export type WorkspaceContainerlabTemplateResponse = {
+  workspaceId: string;
+  source: string;
+  repo?: string;
+  branch?: string;
+  dir: string;
+  file: string;
+  path: string;
+  yaml: string;
+};
+
+export async function getWorkspaceContainerlabTemplate(
+  workspaceId: string,
+  params: { source?: string; repo?: string; dir?: string; file: string }
+): Promise<WorkspaceContainerlabTemplateResponse> {
+  const qs = new URLSearchParams();
+  if (params.source) qs.set("source", params.source);
+  if (params.repo) qs.set("repo", params.repo);
+  if (params.dir) qs.set("dir", params.dir);
+  qs.set("file", params.file);
+  return apiFetch<WorkspaceContainerlabTemplateResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/containerlab/template?${qs.toString()}`
+  );
+}
+
 export async function getWorkspaceLabppTemplates(
   workspaceId: string,
   query?: TemplatesQuery
@@ -666,6 +691,121 @@ export async function createWorkspaceDeployment(
 ): Promise<CreateWorkspaceDeploymentResponse> {
   return apiFetch<CreateWorkspaceDeploymentResponse>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export type CreateContainerlabDeploymentFromYAMLRequest = {
+  name: string;
+  netlabServer?: string;
+  topologyYAML: string;
+  templatesDir?: string;
+  template?: string;
+  autoDeploy?: boolean;
+};
+
+export type CreateContainerlabDeploymentFromYAMLResponse = {
+  workspaceId: string;
+  deployment?: WorkspaceDeployment;
+  run?: JSONMap;
+  note?: string;
+};
+
+export async function createContainerlabDeploymentFromYAML(
+  workspaceId: string,
+  body: CreateContainerlabDeploymentFromYAMLRequest
+): Promise<CreateContainerlabDeploymentFromYAMLResponse> {
+  return apiFetch<CreateContainerlabDeploymentFromYAMLResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/containerlab/from-yaml`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export type CreateClabernetesDeploymentFromYAMLRequest = {
+  name: string;
+  topologyYAML: string;
+  templatesDir?: string;
+  template?: string;
+  autoDeploy?: boolean;
+};
+
+export type CreateClabernetesDeploymentFromYAMLResponse = {
+  workspaceId: string;
+  deployment?: WorkspaceDeployment;
+  run?: JSONMap;
+  note?: string;
+};
+
+export async function createClabernetesDeploymentFromYAML(
+  workspaceId: string,
+  body: CreateClabernetesDeploymentFromYAMLRequest
+): Promise<CreateClabernetesDeploymentFromYAMLResponse> {
+  return apiFetch<CreateClabernetesDeploymentFromYAMLResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/clabernetes/from-yaml`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export type SaveContainerlabTopologyYAMLRequest = {
+  name: string;
+  topologyYAML: string;
+  templatesDir?: string;
+  template?: string;
+};
+
+export type SaveContainerlabTopologyYAMLResponse = {
+  workspaceId: string;
+  branch: string;
+  templatesDir: string;
+  template: string;
+  filePath: string;
+};
+
+export async function saveContainerlabTopologyYAML(
+  workspaceId: string,
+  body: SaveContainerlabTopologyYAMLRequest
+): Promise<SaveContainerlabTopologyYAMLResponse> {
+  return apiFetch<SaveContainerlabTopologyYAMLResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/containerlab/topologies`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export type CreateDeploymentFromTemplateRequest = {
+  name: string;
+  templateSource?: string;
+  templatesDir?: string;
+  template: string;
+  autoDeploy?: boolean;
+};
+
+export type CreateDeploymentFromTemplateResponse = {
+  workspaceId: string;
+  deployment?: WorkspaceDeployment;
+  run?: JSONMap;
+  note?: string;
+};
+
+export type CreateContainerlabDeploymentFromTemplateRequest = CreateDeploymentFromTemplateRequest & {
+  netlabServer?: string;
+};
+
+export async function createClabernetesDeploymentFromTemplate(
+  workspaceId: string,
+  body: CreateDeploymentFromTemplateRequest
+): Promise<CreateDeploymentFromTemplateResponse> {
+  return apiFetch<CreateDeploymentFromTemplateResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/clabernetes/from-template`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export async function createContainerlabDeploymentFromTemplate(
+  workspaceId: string,
+  body: CreateContainerlabDeploymentFromTemplateRequest
+): Promise<CreateDeploymentFromTemplateResponse> {
+  return apiFetch<CreateDeploymentFromTemplateResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/containerlab/from-template`,
     { method: "POST", body: JSON.stringify(body) }
   );
 }
@@ -701,6 +841,35 @@ export async function updateWorkspaceMembers(workspaceId: string, body: UpdateWo
 export async function getDeploymentTopology(workspaceId: string, deploymentId: string): Promise<DeploymentTopology> {
   return apiFetch<DeploymentTopology>(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/topology`
+  );
+}
+
+export type RegistryReposResponse = {
+  baseUrl?: string;
+  repositories: string[];
+  filteredCount: number;
+  totalCount: number;
+};
+
+export type RegistryTagsListResponse = {
+  repository: string;
+  tags: string[];
+};
+
+export async function listRegistryRepositories(params?: { q?: string; n?: number }): Promise<RegistryReposResponse> {
+  const qs = new URLSearchParams();
+  if (params?.q) qs.set("q", params.q);
+  if (params?.n) qs.set("n", String(params.n));
+  const suffix = qs.toString();
+  return apiFetch<RegistryReposResponse>(`/api/registry/repos${suffix ? `?${suffix}` : ""}`);
+}
+
+export async function listRegistryTags(repo: string, params?: { q?: string }): Promise<RegistryTagsListResponse> {
+  const qs = new URLSearchParams();
+  if (params?.q) qs.set("q", params.q);
+  const suffix = qs.toString();
+  return apiFetch<RegistryTagsListResponse>(
+    `/api/registry/repos/${encodeURIComponent(repo)}/tags${suffix ? `?${suffix}` : ""}`
   );
 }
 

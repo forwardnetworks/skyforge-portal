@@ -9,7 +9,10 @@ import {
   Terminal, 
   Network, 
   FileJson,
-  Box
+  Box,
+  ExternalLink,
+  Download,
+  Copy
 } from "lucide-react";
 import { toast } from "sonner";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
@@ -176,6 +179,63 @@ function DeploymentDetailPage() {
     },
     onError: (e) => toast.error("Save config failed", { description: (e as Error).message }),
   });
+
+  const saveAllConfigs = async () => {
+    if (!deployment) return;
+    const nodes = topology.data?.nodes ?? [];
+    if (!nodes.length) {
+      toast.message("No nodes to save");
+      return;
+    }
+    if (saveConfig.isPending) return;
+
+    toast.message("Saving configs…", { description: `Nodes: ${nodes.length}` });
+
+    const ids = nodes.map((n) => String(n.id));
+    const concurrency = 3;
+    let idx = 0;
+    let ok = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    const worker = async () => {
+      while (idx < ids.length) {
+        const cur = ids[idx++];
+        try {
+          const resp = await saveDeploymentNodeConfig(deployment.workspaceId, deployment.id, cur);
+          if (resp?.skipped) skipped++;
+          else ok++;
+        } catch {
+          failed++;
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }, worker));
+
+    if (failed) {
+      toast.error("Save configs finished with errors", { description: `ok=${ok} skipped=${skipped} failed=${failed}` });
+      return;
+    }
+    toast.success("Save configs finished", { description: `ok=${ok} skipped=${skipped}` });
+  };
+
+  const downloadDeploymentConfig = () => {
+    try {
+      const blob = new Blob([JSON.stringify(deployment.config ?? {}, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      const safeName = String(deployment.name ?? "deployment").replace(/[^a-zA-Z0-9._-]+/g, "_");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${safeName}.config.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5_000);
+      toast.success("Downloaded config");
+    } catch (e) {
+      toast.error("Failed to download config", { description: (e as Error).message });
+    }
+  };
 
   const forwardCollectorsQ = useQuery({
     queryKey: queryKeys.forwardCollectors(),
@@ -349,6 +409,21 @@ function DeploymentDetailPage() {
                           : "Topology is provider-dependent; not yet implemented for this deployment type."}
                   </CardDescription>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const p = window.location.pathname;
+                      const base = p.endsWith("/") ? p.slice(0, -1) : p;
+                      window.open(`${base}/map`, "_blank", "noopener,noreferrer");
+                    }}
+                    title="Open the full-screen map view in a new tab"
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Open map
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -363,9 +438,16 @@ function DeploymentDetailPage() {
 
           {topology.data?.nodes?.length ? (
             <Card>
-              <CardHeader>
-                <CardTitle>Nodes</CardTitle>
-                <CardDescription>Quick actions (opens in a new tab where applicable).</CardDescription>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle>Nodes</CardTitle>
+                    <CardDescription>Quick actions (opens in a new tab where applicable).</CardDescription>
+                  </div>
+                  <Button size="sm" variant="outline" disabled={saveConfig.isPending} onClick={saveAllConfigs}>
+                    {saveConfig.isPending ? "Saving…" : "Save all configs"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -582,8 +664,29 @@ function DeploymentDetailPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Configuration</CardTitle>
-              <CardDescription>Read-only view of the deployment parameters.</CardDescription>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle>Configuration</CardTitle>
+                  <CardDescription>Read-only view of the deployment parameters.</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(JSON.stringify(deployment.config ?? {}, null, 2));
+                      toast.success("Copied config JSON");
+                    }}
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={downloadDeploymentConfig}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <pre className="bg-muted p-4 rounded-lg overflow-auto font-mono text-xs max-h-[500px]">
