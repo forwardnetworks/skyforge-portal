@@ -716,7 +716,7 @@ export async function createContainerlabDeploymentFromYAML(
   body: CreateContainerlabDeploymentFromYAMLRequest
 ): Promise<CreateContainerlabDeploymentFromYAMLResponse> {
   return apiFetch<CreateContainerlabDeploymentFromYAMLResponse>(
-    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/containerlab/from-yaml`,
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments-designer/containerlab/from-yaml`,
     { method: "POST", body: JSON.stringify(body) }
   );
 }
@@ -741,7 +741,7 @@ export async function createClabernetesDeploymentFromYAML(
   body: CreateClabernetesDeploymentFromYAMLRequest
 ): Promise<CreateClabernetesDeploymentFromYAMLResponse> {
   return apiFetch<CreateClabernetesDeploymentFromYAMLResponse>(
-    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/clabernetes/from-yaml`,
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments-designer/clabernetes/from-yaml`,
     { method: "POST", body: JSON.stringify(body) }
   );
 }
@@ -795,7 +795,7 @@ export async function createClabernetesDeploymentFromTemplate(
   body: CreateDeploymentFromTemplateRequest
 ): Promise<CreateDeploymentFromTemplateResponse> {
   return apiFetch<CreateDeploymentFromTemplateResponse>(
-    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/clabernetes/from-template`,
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments-designer/clabernetes/from-template`,
     { method: "POST", body: JSON.stringify(body) }
   );
 }
@@ -805,7 +805,7 @@ export async function createContainerlabDeploymentFromTemplate(
   body: CreateContainerlabDeploymentFromTemplateRequest
 ): Promise<CreateDeploymentFromTemplateResponse> {
   return apiFetch<CreateDeploymentFromTemplateResponse>(
-    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/containerlab/from-template`,
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments-designer/containerlab/from-template`,
     { method: "POST", body: JSON.stringify(body) }
   );
 }
