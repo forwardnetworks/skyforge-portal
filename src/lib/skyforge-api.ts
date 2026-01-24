@@ -626,6 +626,30 @@ export async function getWorkspaceNetlabTemplates(
   );
 }
 
+export type WorkspaceRunResponse = {
+  workspaceId: string;
+  task: JSONMap;
+  user?: string;
+};
+
+export type ValidateWorkspaceNetlabTemplateRequest = {
+  source?: string;
+  repo?: string;
+  dir?: string;
+  template: string;
+  environment?: JSONMap;
+};
+
+export async function validateWorkspaceNetlabTemplate(
+  workspaceId: string,
+  body: ValidateWorkspaceNetlabTemplateRequest
+): Promise<WorkspaceRunResponse> {
+  return apiFetch<WorkspaceRunResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/validate`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
 export async function getWorkspaceContainerlabTemplates(
   workspaceId: string,
   query?: TemplatesQuery

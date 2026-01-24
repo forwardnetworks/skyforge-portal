@@ -13,6 +13,7 @@ import {
   getWorkspaceContainerlabTemplates,
   getWorkspaceLabppTemplates,
   getWorkspaceNetlabTemplates,
+  validateWorkspaceNetlabTemplate,
   getUserForwardCollector,
   listWorkspaceNetlabServers,
   listWorkspaceEveServers,
@@ -349,6 +350,32 @@ function CreateDeploymentPage() {
     }
   });
 
+  const validateNetlabTemplate = useMutation({
+    mutationFn: async () => {
+      if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+      if (!watchTemplate) throw new Error("Select a template first.");
+      const body: any = {
+        source: effectiveSource,
+        template: watchTemplate,
+      };
+      if (effectiveSource === "external" && watchTemplateRepoId) body.repo = watchTemplateRepoId;
+      if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
+      return validateWorkspaceNetlabTemplate(watchWorkspaceId, body);
+    },
+    onSuccess: async (res: any) => {
+      const runId = String(res?.task?.id ?? res?.task?.task_id ?? "").trim();
+      toast.success("Validation queued", {
+        description: runId ? `Run ${runId} started.` : "Validation run started.",
+      });
+      if (runId) {
+        navigate({ to: "/dashboard/runs/$runId", params: { runId } });
+      }
+    },
+    onError: (err: any) => {
+      toast.error("Validation failed", { description: String(err?.message ?? err) });
+    },
+  });
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     mutation.mutate(values);
   }
@@ -616,7 +643,26 @@ function CreateDeploymentPage() {
                   name="template"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Template</FormLabel>
+                      <div className="flex items-center justify-between gap-3">
+                        <FormLabel>Template</FormLabel>
+                        {(watchKind === "netlab" || watchKind === "netlab-c9s") && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={!watchTemplate || validateNetlabTemplate.isPending}
+                            onClick={() => validateNetlabTemplate.mutate()}
+                          >
+                            {validateNetlabTemplate.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-3 w-3 animate-spin" /> Validating…
+                              </>
+                            ) : (
+                              "Validate"
+                            )}
+                          </Button>
+                        )}
+                      </div>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
