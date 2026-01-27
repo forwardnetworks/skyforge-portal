@@ -35,6 +35,7 @@ type NavItem = {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   external?: boolean;
+  newTab?: boolean;
   adminOnly?: boolean;
   children?: NavItem[];
 };
@@ -42,7 +43,7 @@ type NavItem = {
 const items: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
-  { label: "Lab Designer", href: "/dashboard/labs/designer", icon: Hammer },
+  { label: "Lab Designer", href: "/dashboard/labs/designer", icon: Hammer, newTab: true },
   { label: "Workspaces", href: "/dashboard/workspaces", icon: FolderKanban },
   { label: "Collector", href: "/dashboard/forward", icon: Radio },
   { label: "S3", href: "/dashboard/s3", icon: Server },
@@ -76,6 +77,7 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
 
   const targetForExternal = "_blank";
   const relForExternal = "noreferrer noopener";
+  const shouldOpenNewTab = (item: NavItem) => !!item.external || !!item.newTab;
 
   const isActiveHref = (href: string) => {
     if (!href) return false;
@@ -240,7 +242,14 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
               }
 
               return (
-                <Link key={item.href} to={item.href} className={baseClass} title={props.collapsed ? item.label : undefined}>
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={baseClass}
+                  title={props.collapsed ? item.label : undefined}
+                  target={shouldOpenNewTab(item) ? targetForExternal : undefined}
+                  rel={shouldOpenNewTab(item) ? relForExternal : undefined}
+                >
                   <Icon className={iconClass} />
                   {!props.collapsed ? <span>{item.label}</span> : null}
                 </Link>

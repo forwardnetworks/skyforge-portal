@@ -45,6 +45,19 @@ function RootLayout() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isLabDesignerRoute = useMemo(() => {
+    return location.pathname === "/dashboard/labs/designer";
+  }, [location.pathname]);
+
+  const isFullBleedRoute = useMemo(() => {
+    return isLabDesignerRoute || location.pathname === "/dashboard/labs/map";
+  }, [isLabDesignerRoute, location.pathname]);
+
+  useEffect(() => {
+    if (!isLabDesignerRoute) return;
+    setNavCollapsed(true);
+  }, [isLabDesignerRoute]);
+
   useEffect(() => {
     if (window.location.pathname === "/index.html") {
       void navigate({ to: "/", replace: true });
@@ -222,7 +235,7 @@ function RootLayout() {
           </nav>
         </div>
       </header>
-      <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[1600px]">
+      <div className={cn("mx-auto flex min-h-[calc(100vh-64px)]", isFullBleedRoute ? "max-w-none" : "max-w-[1600px]")}>
         {session.data?.authenticated && (
           <aside
             className={cn(
@@ -248,7 +261,7 @@ function RootLayout() {
             </div>
           </aside>
         )}
-        <main className="flex-1 px-4 py-6 w-full overflow-hidden flex flex-col">
+        <main className={cn("flex-1 w-full overflow-hidden flex flex-col", isFullBleedRoute ? "px-0 py-0" : "px-4 py-6")}>
           {showLoginGate ? (
             <div className="mx-auto max-w-xl">
               <Card>
@@ -284,6 +297,7 @@ function RootLayout() {
             </div>
           ) : (
             <>
+                        {!isFullBleedRoute ? (
                         <div className="mb-6">
                           <Breadcrumb>
                             <BreadcrumbList>
@@ -310,7 +324,9 @@ function RootLayout() {
                   </BreadcrumbList>
                 </Breadcrumb>
               </div>
+              ) : null}
               <Outlet />
+              {!isFullBleedRoute ? (
               <footer className="mt-auto pt-12 pb-6 flex items-center justify-between text-xs text-muted-foreground border-t">
                 <div className="flex gap-4">
                   <span>Questions? Reach out at <span className="font-mono text-primary">#ask-skyforge</span></span>
@@ -324,6 +340,7 @@ function RootLayout() {
                   File an issue
                 </a>
               </footer>
+              ) : null}
             </>
           )}
         </main>

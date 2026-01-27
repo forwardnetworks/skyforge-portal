@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { addEdge, Background, Controls, MiniMap, ReactFlow, useEdgesState, useNodesState, type Edge, type Node } from "@xyflow/react";
+import { addEdge, Background, Controls, MiniMap, ReactFlow, useEdgesState, useNodesState, type Edge, type Node, type NodeProps, Handle, Position } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { RegistryImagePicker } from "@/components/registry-image-picker";
 import { designToContainerlabYaml, type LabDesign } from "@/lib/containerlab-yaml";
-import { Plus, Download, Copy, Rocket, Save, FolderOpen, ExternalLink } from "lucide-react";
+import { Cpu, Copy, Download, ExternalLink, FolderOpen, LayoutGrid, Link2, Plus, Rocket, Save, Server } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -45,10 +45,41 @@ type SavedConfigRef = {
   branch: string;
 };
 
+function DesignerNode(props: NodeProps<DesignNodeData>) {
+  const kind = String(props.data?.kind ?? "");
+  const label = String(props.data?.label ?? props.id);
+  const isHost = kind.toLowerCase().includes("linux") || kind.toLowerCase().includes("host");
+  const Icon = isHost ? Server : Cpu;
+  const accent = isHost ? "border-emerald-500/60" : "border-sky-500/60";
+
+  return (
+    <div
+      className={[
+        "rounded-xl border bg-background/95 px-3 py-2 shadow-sm min-w-[140px]",
+        props.selected ? "ring-2 ring-primary/60" : "",
+        accent,
+      ].join(" ")}
+    >
+      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={Position.Left} />
+      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Bottom} />
+      <div className="flex items-start gap-2">
+        <div className="mt-0.5 rounded-md border bg-muted p-1.5">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <div className="font-medium leading-tight truncate">{label}</div>
+          <div className="text-[11px] text-muted-foreground truncate">{kind || "node"}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LabDesignerPage() {
   const storageKey = "skyforge.labDesigner.v1";
   const rfRef = useRef<HTMLDivElement | null>(null);
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [labName, setLabName] = useState("lab");
@@ -63,19 +94,22 @@ function LabDesignerPage() {
   const [paletteSearch, setPaletteSearch] = useState("");
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node<DesignNodeData>, Edge> | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string>("");
+  const [linkMode, setLinkMode] = useState(false);
+  const [pendingLinkSource, setPendingLinkSource] = useState<string>("");
   const [yamlMode, setYamlMode] = useState<"generated" | "custom">("generated");
   const [customYaml, setCustomYaml] = useState<string>("");
   const [importOpen, setImportOpen] = useState(false);
   const [importSource, setImportSource] = useState<"workspace" | "blueprints">("blueprints");
   const [importDir, setImportDir] = useState("containerlab");
   const [importFile, setImportFile] = useState("");
+  const [openDeploymentOnCreate, setOpenDeploymentOnCreate] = useState(true);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<DesignNodeData>>([
     {
       id: "r1",
       position: { x: 80, y: 80 },
       data: { label: "r1", kind: "linux", image: "" },
-      type: "default",
+      type: "designerNode",
     },
   ]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -148,9 +182,29 @@ function LabDesignerPage() {
       id = `${base}${i}`;
     }
     const pos = { x: 120 + nodes.length * 40, y: 120 + nodes.length * 30 };
-    const next: Node<DesignNodeData> = { id, position: pos, data: { label: id, kind: "linux", image: "" } };
+    const next: Node<DesignNodeData> = { id, position: pos, data: { label: id, kind: "linux", image: "" }, type: "designerNode" };
     setNodes((prev) => [...prev, next]);
     setSelectedNodeId(id);
+  };
+
+  const autoLayout = () => {
+    const count = nodes.length;
+    if (!count) return;
+    const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
+    const cellW = 260;
+    const cellH = 180;
+    const startX = 120;
+    const startY = 120;
+    setNodes((prev) =>
+      prev.map((n, idx) => ({
+        ...n,
+        position: {
+          x: startX + (idx % cols) * cellW,
+          y: startY + Math.floor(idx / cols) * cellH,
+        },
+      }))
+    );
+    requestAnimationFrame(() => rfInstance?.fitView({ padding: 0.15, duration: 300 }));
   };
 
   const exportYaml = () => {
@@ -290,7 +344,10 @@ function LabDesignerPage() {
     onSuccess: async (resp) => {
       toast.success("Deployment created", { description: resp.deployment?.name ?? labName });
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
-      await navigate({ to: "/dashboard/deployments", search: { workspace: workspaceId } });
+      const id = resp.deployment?.id;
+      if (openDeploymentOnCreate && id) {
+        window.open(`/dashboard/deployments/${id}`, "_blank", "noopener,noreferrer");
+      }
     },
     onError: (e) => toast.error("Create deployment failed", { description: (e as Error).message }),
   });
@@ -370,6 +427,7 @@ function LabDesignerPage() {
       id,
       position,
       data: { label: id, kind, image: "" },
+      type: "designerNode",
     };
     setNodes((prev) => [...prev, next]);
     setSelectedNodeId(id);
@@ -432,12 +490,14 @@ function LabDesignerPage() {
     );
   };
 
+  const nodeTypes = useMemo(() => ({ designerNode: DesignerNode }), []);
+
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
+    <div className="h-full w-full p-4 flex flex-col gap-4 min-h-0">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
           <div className="text-2xl font-bold tracking-tight">Lab Designer</div>
-          <div className="text-sm text-muted-foreground">Design a topology, pick images from the registry, export Containerlab YAML.</div>
+          <div className="text-sm text-muted-foreground">Drag nodes, wire links, generate Containerlab YAML, and deploy.</div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} disabled={!workspaceId}>
@@ -461,14 +521,33 @@ function LabDesignerPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
-        <Card>
+      <div className="grid gap-4 lg:grid-cols-[1fr_420px] flex-1 min-h-0">
+        <Card className="flex flex-col min-h-0">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3">
               <CardTitle>Topology</CardTitle>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={() => setSnapToGrid((v) => !v)}>
                   {snapToGrid ? "Snap: on" : "Snap: off"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant={linkMode ? "default" : "outline"}
+                  onClick={() => {
+                    setLinkMode((v) => {
+                      const next = !v;
+                      if (!next) setPendingLinkSource("");
+                      return next;
+                    });
+                  }}
+                  title="Create links by clicking a source node, then a target node"
+                >
+                  <Link2 className="mr-2 h-4 w-4" />
+                  {linkMode ? "Link: on" : "Link: off"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={autoLayout} disabled={nodes.length < 2}>
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Auto-layout
                 </Button>
                 <Button size="sm" variant="outline" onClick={addNode}>
                   <Plus className="mr-2 h-4 w-4" />
@@ -477,8 +556,8 @@ function LabDesignerPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex h-[640px] w-full border rounded-xl overflow-hidden bg-background/50">
+          <CardContent className="flex-1 min-h-0">
+            <div className="flex h-full w-full border rounded-xl overflow-hidden bg-background/50">
               <div className="w-[180px] border-r bg-background p-3">
                 <div className="text-xs font-semibold text-muted-foreground">Palette</div>
                 <div className="mt-2">
@@ -510,7 +589,7 @@ function LabDesignerPage() {
               </div>
 
               <div
-                className="flex-1 outline-none"
+                className="flex-1 outline-none relative"
                 ref={rfRef}
                 onDrop={onDrop}
                 onDragOver={onDragOver}
@@ -518,6 +597,17 @@ function LabDesignerPage() {
                 onKeyDown={onCanvasKeyDown}
                 onMouseDown={(e) => (e.currentTarget as HTMLDivElement).focus()}
               >
+                {linkMode ? (
+                  <div className="absolute z-10 m-3 rounded-lg border bg-background/80 px-3 py-2 text-xs text-muted-foreground backdrop-blur">
+                    {pendingLinkSource ? (
+                      <>
+                        Link mode: select target for <span className="font-mono text-foreground">{pendingLinkSource}</span>
+                      </>
+                    ) : (
+                      <>Link mode: click a source node, then click a target node</>
+                    )}
+                  </div>
+                ) : null}
                 <ReactFlow<Node<DesignNodeData>, Edge>
                   nodes={nodes}
                   edges={edges}
@@ -528,10 +618,33 @@ function LabDesignerPage() {
                     setEdges((eds) => addEdge({ ...c, label }, eds));
                   }}
                   fitView
-                  onNodeClick={(_, n) => setSelectedNodeId(String(n.id))}
+                  onNodeClick={(_, n) => {
+                    const id = String(n.id);
+                    if (linkMode) {
+                      if (!pendingLinkSource) {
+                        setPendingLinkSource(id);
+                        return;
+                      }
+                      if (pendingLinkSource === id) {
+                        setPendingLinkSource("");
+                        return;
+                      }
+                      const edgeId = `e-${pendingLinkSource}-${id}-${Date.now()}`;
+                      setEdges((prev) =>
+                        addEdge(
+                          { id: edgeId, source: pendingLinkSource, target: id, label: `${pendingLinkSource} ↔ ${id}` },
+                          prev
+                        )
+                      );
+                      setPendingLinkSource("");
+                      return;
+                    }
+                    setSelectedNodeId(id);
+                  }}
                   onInit={setRfInstance}
                   snapToGrid={snapToGrid}
                   snapGrid={[12, 12]}
+                  nodeTypes={nodeTypes}
                 >
                   <Controls />
                   <MiniMap zoomable pannable className="bg-background border rounded-lg" />
@@ -653,6 +766,13 @@ function LabDesignerPage() {
                   <Rocket className="mr-2 h-4 w-4" />
                   {createDeployment.isPending ? "Creating…" : "Create deployment + deploy"}
                 </Button>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">Open deployment on create</div>
+                  <div className="text-xs text-muted-foreground">Keeps the Designer open in this tab.</div>
+                </div>
+                <Switch checked={openDeploymentOnCreate} onCheckedChange={(v) => setOpenDeploymentOnCreate(Boolean(v))} />
               </div>
             </CardContent>
           </Card>
