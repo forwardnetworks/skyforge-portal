@@ -7,11 +7,13 @@ import {
   updateWorkspaceVariableGroup,
   deleteWorkspaceVariableGroup,
   type WorkspaceVariableGroup,
+  type WorkspaceVariableGroupListResponse,
   type WorkspaceVariableGroupUpsertRequest,
 } from "../lib/skyforge-api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import {
   Table,
@@ -41,6 +43,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { NETLAB_ENV_KEYS, isNetlabMultilineKey, netlabValuePresets } from "../lib/netlab-env";
 
 type Props = {
   workspaceId: string;
@@ -53,7 +57,7 @@ export function WorkspaceVariableGroups({ workspaceId, allowEdit }: Props) {
   const [editingGroup, setEditingGroup] = useState<WorkspaceVariableGroup | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WorkspaceVariableGroup | null>(null);
 
-  const groupsQ = useQuery({
+  const groupsQ = useQuery<WorkspaceVariableGroupListResponse>({
     queryKey: ["workspaceVariableGroups", workspaceId],
     queryFn: async () => listWorkspaceVariableGroups(workspaceId),
     staleTime: 30_000,
@@ -109,7 +113,7 @@ export function WorkspaceVariableGroups({ workspaceId, allowEdit }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {groups.map((g) => (
+                {groups.map((g: WorkspaceVariableGroup) => (
                   <TableRow key={g.id}>
                     <TableCell className="font-medium">{g.name}</TableCell>
                     <TableCell className="text-muted-foreground text-xs">
@@ -149,6 +153,7 @@ export function WorkspaceVariableGroups({ workspaceId, allowEdit }: Props) {
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         workspaceId={workspaceId}
+        allowEdit={allowEdit}
         mode="create"
       />
 
@@ -157,6 +162,7 @@ export function WorkspaceVariableGroups({ workspaceId, allowEdit }: Props) {
           open={!!editingGroup}
           onOpenChange={(open) => !open && setEditingGroup(null)}
           workspaceId={workspaceId}
+          allowEdit={allowEdit}
           mode="edit"
           initialData={editingGroup}
         />
@@ -189,17 +195,20 @@ function VariableGroupDialog({
   open,
   onOpenChange,
   workspaceId,
+  allowEdit,
   mode,
   initialData,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceId: string;
+  allowEdit: boolean;
   mode: "create" | "edit";
   initialData?: WorkspaceVariableGroup;
 }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(initialData?.name ?? "");
+  const [helpOpen, setHelpOpen] = useState(false);
   const [vars, setVars] = useState<{ key: string; value: string }[]>(() => {
     if (!initialData?.variables) return [{ key: "", value: "" }];
     return Object.entries(initialData.variables).map(([key, value]) => ({ key, value }));
@@ -254,55 +263,162 @@ function VariableGroupDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Production Vars"
+              disabled={!allowEdit}
             />
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Variables</Label>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="ghost" size="sm" onClick={() => setHelpOpen(true)}>
+                  Supported vars
+                </Button>
               <Button
                 type="button"
                 variant="outline"
-                size="xs"
+                size="sm"
                 onClick={() => setVars([...vars, { key: "", value: "" }])}
+                disabled={!allowEdit}
               >
                 <Plus className="mr-2 h-3 w-3" /> Add Variable
               </Button>
+              </div>
             </div>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-              {vars.map((v, idx) => (
-                <div key={idx} className="flex items-start gap-2">
-                  <Input
-                    placeholder="Key"
-                    value={v.key}
-                    onChange={(e) => {
-                      const next = [...vars];
-                      next[idx].key = e.target.value;
-                      setVars(next);
-                    }}
-                    className="font-mono text-xs"
-                  />
-                  <Input
-                    placeholder="Value"
-                    value={v.value}
-                    onChange={(e) => {
-                      const next = [...vars];
-                      next[idx].value = e.target.value;
-                      setVars(next);
-                    }}
-                    className="font-mono text-xs"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => setVars(vars.filter((_, i) => i !== idx))}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </div>
-              ))}
+            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
+              {vars.map((v, idx) => {
+                const currentKey = String(v.key ?? "").trim();
+                const isKnown = NETLAB_ENV_KEYS.some((k) => k.key === currentKey);
+                const selectValue = isKnown ? currentKey : "__custom__";
+                const isMultiline = isNetlabMultilineKey(currentKey);
+                const presets = netlabValuePresets(currentKey);
+
+                const updateVar = (patch: Partial<{ key: string; value: string }>) => {
+                  setVars((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], ...patch };
+                    return next;
+                  });
+                };
+
+                const removeVar = () => {
+                  setVars((prev) => {
+                    const next = prev.filter((_, i) => i !== idx);
+                    return next.length ? next : [{ key: "", value: "" }];
+                  });
+                };
+
+                return (
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-start">
+                    <div className="col-span-5 space-y-1">
+                      <Label className="text-xs text-muted-foreground">Key</Label>
+                      <Select
+                        value={selectValue}
+                        onValueChange={(val) => updateVar({ key: val === "__custom__" ? "" : val })}
+                        disabled={!allowEdit}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select key…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {NETLAB_ENV_KEYS.map((k) => (
+                            <SelectItem key={k.key} value={k.key}>
+                              {k.label}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="__custom__">Custom…</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {selectValue === "__custom__" && (
+                        <Input
+                          placeholder="KEY"
+                          value={v.key}
+                          onChange={(e) => updateVar({ key: e.target.value })}
+                          className="font-mono text-xs"
+                          disabled={!allowEdit}
+                        />
+                      )}
+                    </div>
+
+                    <div className="col-span-6 space-y-1">
+                      <Label className="text-xs text-muted-foreground">Value</Label>
+                      {isMultiline ? (
+                        <Textarea
+                          value={v.value}
+                          onChange={(e) => updateVar({ value: e.target.value })}
+                          placeholder={"One `key=value` per line.\nExample:\naddressing.p2p.ipv4=198.18.0.0/16"}
+                          className="font-mono text-xs min-h-[120px]"
+                          disabled={!allowEdit}
+                        />
+                      ) : presets ? (
+                        <div className="space-y-2">
+                          {(() => {
+                            const currentValue = String(v.value ?? "").trim();
+                            const isPreset = presets.some((p) => p.value === currentValue);
+                            const valueSelect = currentValue ? (isPreset ? currentValue : "__custom__") : "none";
+                            return (
+                              <>
+                                <Select
+                                  value={valueSelect}
+                                  onValueChange={(val) => {
+                                    if (val === "none") updateVar({ value: "" });
+                                    else if (val === "__custom__") updateVar({ value: isPreset ? "" : currentValue });
+                                    else updateVar({ value: val });
+                                  }}
+                                  disabled={!allowEdit}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select value…" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    {presets.map((p) => (
+                                      <SelectItem key={p.value} value={p.value}>
+                                        {p.label}
+                                      </SelectItem>
+                                    ))}
+                                    <SelectItem value="__custom__">Custom…</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {valueSelect === "__custom__" && (
+                                  <Input
+                                    placeholder="VALUE"
+                                    value={v.value}
+                                    onChange={(e) => updateVar({ value: e.target.value })}
+                                    className="font-mono text-xs"
+                                    disabled={!allowEdit}
+                                  />
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      ) : (
+                        <Input
+                          placeholder="VALUE"
+                          value={v.value}
+                          onChange={(e) => updateVar({ value: e.target.value })}
+                          className="font-mono text-xs"
+                          disabled={!allowEdit}
+                        />
+                      )}
+                    </div>
+
+                    <div className="col-span-1 flex justify-end pt-6">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={removeVar}
+                        disabled={!allowEdit}
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -311,12 +427,35 @@ function VariableGroupDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name.trim()}>
+          <Button onClick={() => mutation.mutate()} disabled={!allowEdit || mutation.isPending || !name.trim()}>
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Group
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supported NETLAB_ variables</AlertDialogTitle>
+            <AlertDialogDescription>
+              These are the most useful Netlab defaults you can override via environment variables (plus Skyforge’s
+              multiline `SKYFORGE_NETLAB_SET_OVERRIDES`).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-[50vh] overflow-auto rounded-md border bg-muted/30 p-3 font-mono text-xs">
+            {NETLAB_ENV_KEYS.map((k) => (
+              <div key={k.key} className="flex gap-2">
+                <span className="text-foreground">{k.key}</span>
+                <span className="text-muted-foreground">— {k.label}</span>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction>Close</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

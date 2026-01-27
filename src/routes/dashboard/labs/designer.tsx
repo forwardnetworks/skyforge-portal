@@ -61,7 +61,7 @@ function LabDesignerPage() {
   const [templateFile, setTemplateFile] = useState("");
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [paletteSearch, setPaletteSearch] = useState("");
-  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node<DesignNodeData>, Edge> | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string>("");
   const [yamlMode, setYamlMode] = useState<"generated" | "custom">("generated");
   const [customYaml, setCustomYaml] = useState<string>("");
@@ -518,7 +518,7 @@ function LabDesignerPage() {
                 onKeyDown={onCanvasKeyDown}
                 onMouseDown={(e) => (e.currentTarget as HTMLDivElement).focus()}
               >
-                <ReactFlow
+                <ReactFlow<Node<DesignNodeData>, Edge>
                   nodes={nodes}
                   edges={edges}
                   onNodesChange={onNodesChange}

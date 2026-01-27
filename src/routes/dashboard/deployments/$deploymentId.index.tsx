@@ -57,10 +57,10 @@ import { NodeDescribeView } from "../../../components/node-describe-view";
 export const Route = createFileRoute("/dashboard/deployments/$deploymentId/")({
   component: DeploymentDetailPage,
   validateSearch: (search: Record<string, unknown>) => {
-    return {
-      action: (search.action as string) || undefined,
-      node: (search.node as string) || undefined,
-    };
+    const out: { action?: string; node?: string } = {};
+    if (typeof search.action === "string" && search.action.trim()) out.action = search.action.trim();
+    if (typeof search.node === "string" && search.node.trim()) out.node = search.node.trim();
+    return out;
   },
 });
 
@@ -222,6 +222,10 @@ function DeploymentDetailPage() {
 
   const downloadDeploymentConfig = () => {
     try {
+      if (!deployment) {
+        toast.error("Cannot download config", { description: "Deployment not found." });
+        return;
+      }
       const blob = new Blob([JSON.stringify(deployment.config ?? {}, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       const safeName = String(deployment.name ?? "deployment").replace(/[^a-zA-Z0-9._-]+/g, "_");

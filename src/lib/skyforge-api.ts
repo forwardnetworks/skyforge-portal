@@ -690,6 +690,20 @@ export async function getWorkspaceContainerlabTemplates(
   );
 }
 
+export async function getWorkspaceTerraformTemplates(
+  workspaceId: string,
+  query?: TemplatesQuery
+): Promise<WorkspaceTemplatesResponse> {
+  const params = new URLSearchParams();
+  if (query?.source) params.set("source", query.source);
+  if (query?.repo) params.set("repo", query.repo);
+  if (query?.dir) params.set("dir", query.dir);
+  const qs = params.toString();
+  return apiFetch<WorkspaceTemplatesResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/terraform/templates${qs ? `?${qs}` : ""}`
+  );
+}
+
 export type WorkspaceContainerlabTemplateResponse = {
   workspaceId: string;
   source: string;
@@ -1334,8 +1348,10 @@ export async function cancelRun(taskId: string | number, workspaceId: string): P
 }
 
 export type WorkspaceVariableGroup = components["schemas"]["skyforge.WorkspaceVariableGroup"];
-export type WorkspaceVariableGroupListResponse = components["schemas"]["skyforge.WorkspaceVariableGroupListResponse"];
-export type WorkspaceVariableGroupUpsertRequest = components["schemas"]["skyforge.WorkspaceVariableGroupUpsertRequest"];
+export type WorkspaceVariableGroupListResponse =
+  operations["GET:skyforge.ListWorkspaceVariableGroups"]["responses"][200]["content"]["application/json"];
+export type WorkspaceVariableGroupUpsertRequest =
+  NonNullable<operations["POST:skyforge.CreateWorkspaceVariableGroup"]["requestBody"]>["content"]["application/json"];
 
 export async function listWorkspaceVariableGroups(workspaceId: string): Promise<WorkspaceVariableGroupListResponse> {
   return apiFetch<WorkspaceVariableGroupListResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups`);

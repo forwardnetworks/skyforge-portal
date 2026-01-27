@@ -14,6 +14,7 @@ import {
   getWorkspaceContainerlabTemplates,
   getWorkspaceLabppTemplates,
   getWorkspaceNetlabTemplates,
+  getWorkspaceTerraformTemplates,
   validateWorkspaceNetlabTemplate,
   getUserForwardCollector,
   listWorkspaceNetlabServers,
@@ -23,6 +24,7 @@ import {
   type DashboardSnapshot,
   type ExternalTemplateRepo,
   type SkyforgeWorkspace,
+  type WorkspaceVariableGroup,
   type WorkspaceTemplatesResponse
 } from "../../../lib/skyforge-api";
 import { queryKeys } from "../../../lib/query-keys";
@@ -44,6 +46,7 @@ import {
   FormLabel,
   FormMessage,
 } from "../../../components/ui/form";
+import { NETLAB_ENV_KEYS, isNetlabMultilineKey, netlabValuePresets } from "../../../lib/netlab-env";
 
 const deploymentsSearchSchema = z.object({
   workspace: z.string().optional().catch(""),
@@ -56,69 +59,6 @@ export const Route = createFileRoute("/dashboard/deployments/new")({
 
 type DeploymentKind = "netlab-c9s" | "netlab" | "labpp" | "containerlab" | "clabernetes" | "terraform";
 type TemplateSource = "workspace" | "blueprints" | "external";
-
-const NETLAB_DEVICE_PRESETS: { label: string; value: string }[] = [
-  { label: "Arista EOS (eos)", value: "eos" },
-  { label: "Cisco IOL (iol)", value: "iol" },
-  { label: "Cisco IOSv (iosv)", value: "iosv" },
-  { label: "Cisco IOSvL2 (iosvl2)", value: "iosvl2" },
-  { label: "Cisco CSR1000v (csr)", value: "csr" },
-  { label: "Cisco ASA (asav)", value: "asav" },
-  { label: "Cisco NX-OSv9k (nxos)", value: "nxos" },
-  { label: "Juniper vMX (vmx)", value: "vmx" },
-  { label: "Juniper vJunos Router (vjunos-router)", value: "vjunos-router" },
-  { label: "Juniper vJunos Switch (vjunos-switch)", value: "vjunos-switch" },
-  { label: "Nokia SR OS (sros)", value: "sros" },
-  { label: "Linux (linux)", value: "linux" },
-];
-
-const NETLAB_ENV_KEYS: { label: string; key: string }[] = [
-  { label: "Device (`NETLAB_DEVICE`)", key: "NETLAB_DEVICE" },
-  { label: "BGP AS (`NETLAB_BGP_AS`)", key: "NETLAB_BGP_AS" },
-  { label: "P2P IPv4 pool (`NETLAB_ADDRESSING_P2P_IPV4`)", key: "NETLAB_ADDRESSING_P2P_IPV4" },
-  { label: "P2P IPv6 mode (`NETLAB_ADDRESSING_P2P_IPV6`)", key: "NETLAB_ADDRESSING_P2P_IPV6" },
-  { label: "Loopback IPv4 pool (`NETLAB_ADDRESSING_LOOPBACK_IPV4`)", key: "NETLAB_ADDRESSING_LOOPBACK_IPV4" },
-  { label: "LAN IPv4 pool (`NETLAB_ADDRESSING_LAN_IPV4`)", key: "NETLAB_ADDRESSING_LAN_IPV4" },
-];
-
-function netlabValuePresets(keyRaw: string): { label: string; value: string }[] | null {
-  const key = String(keyRaw ?? "").trim().toUpperCase();
-  switch (key) {
-    case "NETLAB_DEVICE":
-      return NETLAB_DEVICE_PRESETS;
-    case "NETLAB_BGP_AS":
-      return [
-        { label: "65000", value: "65000" },
-        { label: "65100", value: "65100" },
-        { label: "65200", value: "65200" },
-        { label: "65500", value: "65500" },
-      ];
-    case "NETLAB_ADDRESSING_P2P_IPV4":
-      return [
-        { label: "198.18.0.0/16 (benchmark range)", value: "198.18.0.0/16" },
-        { label: "172.16.0.0/12", value: "172.16.0.0/12" },
-        { label: "100.64.0.0/10", value: "100.64.0.0/10" },
-      ];
-    case "NETLAB_ADDRESSING_P2P_IPV6":
-      return [
-        { label: "false (disable / avoid LLA-only)", value: "false" },
-        { label: "true", value: "true" },
-      ];
-    case "NETLAB_ADDRESSING_LOOPBACK_IPV4":
-      return [
-        { label: "10.0.0.0/24", value: "10.0.0.0/24" },
-        { label: "198.18.1.0/24", value: "198.18.1.0/24" },
-        { label: "172.16.0.0/24", value: "172.16.0.0/24" },
-      ];
-    case "NETLAB_ADDRESSING_LAN_IPV4":
-      return [
-        { label: "172.18.0.0/16", value: "172.18.0.0/16" },
-        { label: "198.18.128.0/17", value: "198.18.128.0/17" },
-      ];
-    default:
-      return null;
-  }
-}
 
 const formSchema = z
   .object({
@@ -133,7 +73,6 @@ const formSchema = z
     enableForward: z.boolean(),
     variableGroupId: z.string().optional(),
     env: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
-    netlabSetOverrides: z.string().optional(),
   });
 
 function hostLabelFromURL(raw: string): string {
@@ -152,6 +91,7 @@ function CreateDeploymentPage() {
   const queryClient = useQueryClient();
   const { workspace } = Route.useSearch();
   const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
+  const [netlabHelpOpen, setNetlabHelpOpen] = useState(false);
 
   useDashboardEvents(true);
   const dash = useQuery<DashboardSnapshot | null>({
@@ -183,7 +123,6 @@ function CreateDeploymentPage() {
       enableForward: true,
       variableGroupId: "none",
       env: [],
-      netlabSetOverrides: "",
     },
   });
 
@@ -214,13 +153,7 @@ function CreateDeploymentPage() {
   const watchTemplate = watch("template");
   const watchEnableForward = watch("enableForward");
   const watchEnv = watch("env");
-  const watchNetlabSetOverrides = watch("netlabSetOverrides");
   const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
-  const netlabDeviceValue = useMemo(() => {
-    const env = (watchEnv ?? []) as { key?: string; value?: string }[];
-    const hit = env.find((e) => String(e?.key ?? "").trim().toUpperCase() === "NETLAB_DEVICE");
-    return String(hit?.value ?? "").trim();
-  }, [watchEnv]);
 
   // Sync workspaceId when workspaces load if not already set or passed via URL
   useEffect(() => {
@@ -282,6 +215,7 @@ function CreateDeploymentPage() {
     if (watchKind === "netlab" || watchKind === "netlab-c9s") return watchSource === "workspace" ? "workspace" : "blueprints";
     if (watchKind === "labpp") return "blueprints";
     if (watchKind === "containerlab" || watchKind === "clabernetes") return watchSource;
+    if (watchKind === "terraform") return watchSource;
     return "workspace";
   }, [watchKind, watchSource]);
 
@@ -307,6 +241,8 @@ function CreateDeploymentPage() {
         case "containerlab":
         case "clabernetes":
           return getWorkspaceContainerlabTemplates(watchWorkspaceId, query);
+        case "terraform":
+          return getWorkspaceTerraformTemplates(watchWorkspaceId, query);
         default:
           return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
       }
@@ -386,17 +322,15 @@ function CreateDeploymentPage() {
         config.templateSource = effectiveSource;
         if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
         if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
-        const raw = String(values.netlabSetOverrides ?? "").trim();
-        if (raw) {
-          const setOverrides = raw
-            .split("\n")
-            .map((s) => s.trim())
-            .filter(Boolean);
-          if (setOverrides.length > 0) config.netlabSetOverrides = setOverrides;
-        }
       }
 
       if (values.kind === "clabernetes") {
+        config.templateSource = effectiveSource;
+        if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
+        if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
+      }
+
+      if (values.kind === "terraform") {
         config.templateSource = effectiveSource;
         if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
         if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
@@ -444,7 +378,7 @@ function CreateDeploymentPage() {
 
       const groupIdRaw = String(form.getValues("variableGroupId") ?? "none");
       const groupId = groupIdRaw !== "none" ? Number(groupIdRaw) : null;
-      const groupVars = groupId ? variableGroups.find((g) => g.id === groupId)?.variables : undefined;
+      const groupVars = groupId ? variableGroups.find((g: WorkspaceVariableGroup) => g.id === groupId)?.variables : undefined;
       const env: Record<string, string> = {
         ...(groupVars ?? {}),
       };
@@ -455,15 +389,6 @@ function CreateDeploymentPage() {
         template: watchTemplate,
         environment: env,
       };
-      if (watchKind === "netlab-c9s") {
-        const raw = String(watchNetlabSetOverrides ?? "").trim();
-        if (raw) {
-          body.setOverrides = raw
-            .split("\n")
-            .map((s: string) => String(s ?? "").trim())
-            .filter(Boolean);
-        }
-      }
       if (effectiveSource === "external" && watchTemplateRepoId) body.repo = watchTemplateRepoId;
       if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
       return validateWorkspaceNetlabTemplate(watchWorkspaceId, body);
@@ -488,7 +413,7 @@ function CreateDeploymentPage() {
 
   const netlabOptions = netlabServersQ.data?.servers ?? [];
   const eveOptions = eveServersQ.data?.servers ?? [];
-  const variableGroups = variableGroupsQ.data?.groups ?? [];
+  const variableGroups = (variableGroupsQ.data?.groups ?? []) as WorkspaceVariableGroup[];
   const byosNetlabEnabled = netlabOptions.length > 0;
   const byosEveEnabled = eveOptions.length > 0;
   const netlabServerRefs = netlabOptions.map((s) => ({
@@ -637,13 +562,16 @@ function CreateDeploymentPage() {
                           <SelectItem value="blueprints">Blueprints</SelectItem>
                           <SelectItem 
                             value="external" 
-                            disabled={!externalAllowed || (watchKind !== "containerlab" && watchKind !== "clabernetes")}
+                            disabled={
+                              !externalAllowed ||
+                              (watchKind !== "containerlab" && watchKind !== "clabernetes" && watchKind !== "terraform")
+                            }
                           >
                             External repo
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      {!externalAllowed && (watchKind === "containerlab" || watchKind === "clabernetes") && (
+                      {!externalAllowed && (watchKind === "containerlab" || watchKind === "clabernetes" || watchKind === "terraform") && (
                         <FormDescription>External repos disabled or not configured for this workspace.</FormDescription>
                       )}
                       <FormMessage />
@@ -826,48 +754,27 @@ function CreateDeploymentPage() {
               <div className="rounded-md border p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <FormLabel>Environment Variables</FormLabel>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => append({ key: "", value: "" })}
-                  >
-                    <Plus className="mr-2 h-3 w-3" /> Add Variable
-                  </Button>
-                </div>
-
-                {(watchKind === "netlab-c9s" || watchKind === "netlab") && (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <FormItem>
-                      <FormLabel className="text-xs text-muted-foreground">NETLAB_DEVICE</FormLabel>
-                      <Select
-                        value={netlabDeviceValue || "none"}
-                        onValueChange={(v) => {
-                          if (v === "none") {
-                            // leave as-is; user can delete from the list below
-                            return;
-                          }
-                          upsertEnvVar("NETLAB_DEVICE", v);
-                        }}
+                  <div className="flex items-center gap-2">
+                    {(watchKind === "netlab-c9s" || watchKind === "netlab") && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNetlabHelpOpen(true)}
                       >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select device preset…" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {NETLAB_DEVICE_PRESETS.map((p) => (
-                            <SelectItem key={p.value} value={p.value}>
-                              {p.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>Convenience preset; stored as env var `NETLAB_DEVICE`.</FormDescription>
-                    </FormItem>
+                        Supported NETLAB_ vars
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => append({ key: "", value: "" })}
+                    >
+                      <Plus className="mr-2 h-3 w-3" /> Add Variable
+                    </Button>
                   </div>
-                )}
+                </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <FormField
@@ -966,6 +873,15 @@ function CreateDeploymentPage() {
                               <FormControl>
                                 {(() => {
                                   const key = String(form.getValues(`env.${index}.key`) ?? "").trim();
+                                  if (isNetlabMultilineKey(key)) {
+                                    return (
+                                      <Textarea
+                                        {...field}
+                                        placeholder={"One `key=value` per line.\nExample:\naddressing.p2p.ipv4=198.18.0.0/16"}
+                                        className="font-mono text-xs min-h-[120px]"
+                                      />
+                                    );
+                                  }
                                   const presets = netlabValuePresets(key);
                                   if (!presets) return <Input {...field} placeholder="VALUE" className="font-mono text-xs" />;
 
@@ -1021,29 +937,27 @@ function CreateDeploymentPage() {
                   </div>
                 )}
               </div>
-
-              {watchKind === "netlab-c9s" && (
-                <div className="rounded-md border p-4 space-y-2">
-                  <FormField
-                    control={form.control}
-                    name="netlabSetOverrides"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Netlab `--set` overrides (netlab-c9s only)</FormLabel>
-                        <FormDescription>One `key=value` per line. These have highest precedence and can override template keys.</FormDescription>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder={"Example:\naddressing.p2p.ipv4=198.18.0.0/16"}
-                            className="font-mono text-xs min-h-[120px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
+              <Dialog open={netlabHelpOpen} onOpenChange={setNetlabHelpOpen}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Supported Netlab overrides</DialogTitle>
+                    <DialogDescription>
+                      These variables are passed into the Netlab generator. Use <span className="font-mono">NETLAB_*</span> for native Netlab defaults, and{" "}
+                      <span className="font-mono">SKYFORGE_NETLAB_SET_OVERRIDES</span> for generator-only <span className="font-mono">netlab --set</span> overrides.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2 text-sm">
+                    {NETLAB_ENV_KEYS.map((k) => (
+                      <div key={k.key} className="flex items-start justify-between gap-3 rounded-md border p-3">
+                        <div className="min-w-0">
+                          <div className="font-medium">{k.label}</div>
+                          <div className="text-xs text-muted-foreground font-mono break-all">{k.key}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {mutation.isError && (
                 <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive border border-destructive/20">

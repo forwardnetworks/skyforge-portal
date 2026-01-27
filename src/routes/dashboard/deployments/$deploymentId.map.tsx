@@ -76,9 +76,8 @@ function DeploymentMapPage() {
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
           <Link
-            to="/dashboard/deployments/$deploymentId/"
+            to="/dashboard/deployments/$deploymentId"
             params={{ deploymentId }}
-            search={{}}
             className={buttonVariants({ variant: "outline", size: "icon", className: "h-9 w-9" })}
             title="Back to deployment"
           >
@@ -99,9 +98,8 @@ function DeploymentMapPage() {
         </div>
         <div className="flex items-center gap-2">
           <Link
-            to="/dashboard/deployments/$deploymentId/"
+            to="/dashboard/deployments/$deploymentId"
             params={{ deploymentId }}
-            search={{}}
             className={buttonVariants({ variant: "outline", size: "sm" })}
             title="Open the deployment page"
           >
