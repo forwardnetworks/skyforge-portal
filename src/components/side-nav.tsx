@@ -5,7 +5,6 @@ import {
   FolderKanban,
   GitBranch,
   Inbox,
-  KeyRound,
   LayoutDashboard,
   Network,
   PanelTop,
@@ -56,7 +55,6 @@ const items: NavItem[] = [
       { label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
     ]
   },
-  { label: "PKI", href: "/dashboard/pki", icon: KeyRound },
   { label: "Webhooks", href: "/webhooks", icon: Webhook },
   { label: "Syslog", href: "/syslog", icon: Inbox },
   { label: "SNMP", href: "/snmp", icon: ShieldCheck },

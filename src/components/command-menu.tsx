@@ -4,7 +4,6 @@ import {
   Bell,
   FolderKanban,
   Inbox,
-  KeyRound,
   LayoutDashboard,
   ShieldCheck,
   Webhook,
@@ -75,12 +74,6 @@ export function CommandMenu() {
           >
             <Server className="mr-2 h-4 w-4" />
             <span>S3 Storage</span>
-          </CommandItem>
-          <CommandItem
-            onSelect={() => runCommand(() => navigate({ to: "/dashboard/pki" }))}
-          >
-            <KeyRound className="mr-2 h-4 w-4" />
-            <span>PKI Management</span>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
