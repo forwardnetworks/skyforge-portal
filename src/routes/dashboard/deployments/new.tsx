@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Info, Plus, Trash2 } from "lucide-react";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -10,6 +10,7 @@ import {
   createWorkspaceDeployment,
   getDashboardSnapshot,
   getWorkspaces,
+  getWorkspaceNetlabTemplate,
   getWorkspaceContainerlabTemplates,
   getWorkspaceLabppTemplates,
   getWorkspaceNetlabTemplates,
@@ -30,8 +31,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Button } from "../../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Input } from "../../../components/ui/input";
+import { Textarea } from "../../../components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { Switch } from "../../../components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -69,6 +72,54 @@ const NETLAB_DEVICE_PRESETS: { label: string; value: string }[] = [
   { label: "Linux (linux)", value: "linux" },
 ];
 
+const NETLAB_ENV_KEYS: { label: string; key: string }[] = [
+  { label: "Device (`NETLAB_DEVICE`)", key: "NETLAB_DEVICE" },
+  { label: "BGP AS (`NETLAB_BGP_AS`)", key: "NETLAB_BGP_AS" },
+  { label: "P2P IPv4 pool (`NETLAB_ADDRESSING_P2P_IPV4`)", key: "NETLAB_ADDRESSING_P2P_IPV4" },
+  { label: "P2P IPv6 mode (`NETLAB_ADDRESSING_P2P_IPV6`)", key: "NETLAB_ADDRESSING_P2P_IPV6" },
+  { label: "Loopback IPv4 pool (`NETLAB_ADDRESSING_LOOPBACK_IPV4`)", key: "NETLAB_ADDRESSING_LOOPBACK_IPV4" },
+  { label: "LAN IPv4 pool (`NETLAB_ADDRESSING_LAN_IPV4`)", key: "NETLAB_ADDRESSING_LAN_IPV4" },
+];
+
+function netlabValuePresets(keyRaw: string): { label: string; value: string }[] | null {
+  const key = String(keyRaw ?? "").trim().toUpperCase();
+  switch (key) {
+    case "NETLAB_DEVICE":
+      return NETLAB_DEVICE_PRESETS;
+    case "NETLAB_BGP_AS":
+      return [
+        { label: "65000", value: "65000" },
+        { label: "65100", value: "65100" },
+        { label: "65200", value: "65200" },
+        { label: "65500", value: "65500" },
+      ];
+    case "NETLAB_ADDRESSING_P2P_IPV4":
+      return [
+        { label: "198.18.0.0/16 (benchmark range)", value: "198.18.0.0/16" },
+        { label: "172.16.0.0/12", value: "172.16.0.0/12" },
+        { label: "100.64.0.0/10", value: "100.64.0.0/10" },
+      ];
+    case "NETLAB_ADDRESSING_P2P_IPV6":
+      return [
+        { label: "false (disable / avoid LLA-only)", value: "false" },
+        { label: "true", value: "true" },
+      ];
+    case "NETLAB_ADDRESSING_LOOPBACK_IPV4":
+      return [
+        { label: "10.0.0.0/24", value: "10.0.0.0/24" },
+        { label: "198.18.1.0/24", value: "198.18.1.0/24" },
+        { label: "172.16.0.0/24", value: "172.16.0.0/24" },
+      ];
+    case "NETLAB_ADDRESSING_LAN_IPV4":
+      return [
+        { label: "172.18.0.0/16", value: "172.18.0.0/16" },
+        { label: "198.18.128.0/17", value: "198.18.128.0/17" },
+      ];
+    default:
+      return null;
+  }
+}
+
 const formSchema = z
   .object({
     workspaceId: z.string().min(1, "Workspace is required"),
@@ -82,6 +133,7 @@ const formSchema = z
     enableForward: z.boolean(),
     variableGroupId: z.string().optional(),
     env: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
+    netlabSetOverrides: z.string().optional(),
   });
 
 function hostLabelFromURL(raw: string): string {
@@ -99,6 +151,7 @@ function CreateDeploymentPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { workspace } = Route.useSearch();
+  const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 
   useDashboardEvents(true);
   const dash = useQuery<DashboardSnapshot | null>({
@@ -130,6 +183,7 @@ function CreateDeploymentPage() {
       enableForward: true,
       variableGroupId: "none",
       env: [],
+      netlabSetOverrides: "",
     },
   });
 
@@ -160,6 +214,7 @@ function CreateDeploymentPage() {
   const watchTemplate = watch("template");
   const watchEnableForward = watch("enableForward");
   const watchEnv = watch("env");
+  const watchNetlabSetOverrides = watch("netlabSetOverrides");
   const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
   const netlabDeviceValue = useMemo(() => {
     const env = (watchEnv ?? []) as { key?: string; value?: string }[];
@@ -267,6 +322,24 @@ function CreateDeploymentPage() {
 
   const templates = templatesQ.data?.templates ?? [];
 
+  const templatePreviewQ = useQuery({
+    queryKey: ["workspaceNetlabTemplate", watchWorkspaceId, effectiveSource, watchTemplateRepoId, templatesQ.data?.dir, watchTemplate],
+    queryFn: async () => {
+      if (!watchWorkspaceId) throw new Error("workspaceId is required");
+      if (!watchTemplate) throw new Error("template is required");
+      const query: any = {
+        source: effectiveSource,
+        template: watchTemplate,
+      };
+      if (effectiveSource === "external" && watchTemplateRepoId) query.repo = watchTemplateRepoId;
+      if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
+      return getWorkspaceNetlabTemplate(watchWorkspaceId, query);
+    },
+    enabled: templatePreviewOpen && Boolean(watchWorkspaceId) && Boolean(watchTemplate) && (watchKind === "netlab" || watchKind === "netlab-c9s"),
+    retry: false,
+    staleTime: 30_000,
+  });
+
   const externalRepos = ((selectedWorkspace?.externalTemplateRepos ?? []) as ExternalTemplateRepo[]).filter(
     (r) => !!r && typeof r.id === "string" && typeof r.repo === "string"
   );
@@ -313,6 +386,14 @@ function CreateDeploymentPage() {
         config.templateSource = effectiveSource;
         if (effectiveSource === "external" && values.templateRepoId) config.templateRepo = values.templateRepoId;
         if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
+        const raw = String(values.netlabSetOverrides ?? "").trim();
+        if (raw) {
+          const setOverrides = raw
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (setOverrides.length > 0) config.netlabSetOverrides = setOverrides;
+        }
       }
 
       if (values.kind === "clabernetes") {
@@ -354,10 +435,35 @@ function CreateDeploymentPage() {
     mutationFn: async () => {
       if (!watchWorkspaceId) throw new Error("Select a workspace first.");
       if (!watchTemplate) throw new Error("Select a template first.");
+      const envFromList = new Map<string, string>();
+      for (const kv of form.getValues("env") || []) {
+        const k = (kv?.key ?? "").trim();
+        if (!k) continue;
+        envFromList.set(k, String(kv?.value ?? ""));
+      }
+
+      const groupIdRaw = String(form.getValues("variableGroupId") ?? "none");
+      const groupId = groupIdRaw !== "none" ? Number(groupIdRaw) : null;
+      const groupVars = groupId ? variableGroups.find((g) => g.id === groupId)?.variables : undefined;
+      const env: Record<string, string> = {
+        ...(groupVars ?? {}),
+      };
+      for (const [k, v] of envFromList.entries()) env[k] = v;
+
       const body: any = {
         source: effectiveSource,
         template: watchTemplate,
+        environment: env,
       };
+      if (watchKind === "netlab-c9s") {
+        const raw = String(watchNetlabSetOverrides ?? "").trim();
+        if (raw) {
+          body.setOverrides = raw
+            .split("\n")
+            .map((s: string) => String(s ?? "").trim())
+            .filter(Boolean);
+        }
+      }
       if (effectiveSource === "external" && watchTemplateRepoId) body.repo = watchTemplateRepoId;
       if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
       return validateWorkspaceNetlabTemplate(watchWorkspaceId, body);
@@ -646,21 +752,32 @@ function CreateDeploymentPage() {
                       <div className="flex items-center justify-between gap-3">
                         <FormLabel>Template</FormLabel>
                         {(watchKind === "netlab" || watchKind === "netlab-c9s") && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={!watchTemplate || validateNetlabTemplate.isPending}
-                            onClick={() => validateNetlabTemplate.mutate()}
-                          >
-                            {validateNetlabTemplate.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-3 w-3 animate-spin" /> Validating…
-                              </>
-                            ) : (
-                              "Validate"
-                            )}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={!watchTemplate}
+                              onClick={() => setTemplatePreviewOpen(true)}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={!watchTemplate || validateNetlabTemplate.isPending}
+                              onClick={() => validateNetlabTemplate.mutate()}
+                            >
+                              {validateNetlabTemplate.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-3 w-3 animate-spin" /> Validating…
+                                </>
+                              ) : (
+                                "Validate"
+                              )}
+                            </Button>
+                          </div>
                         )}
                       </div>
                       <Select 
@@ -783,25 +900,108 @@ function CreateDeploymentPage() {
                   <div className="space-y-2">
                     {fields.map((field, index) => (
                       <div key={field.id} className="flex gap-2 items-start">
-                        <FormField
-                          control={form.control}
-                          name={`env.${index}.key`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormControl>
-                                <Input {...field} placeholder="KEY" className="font-mono text-xs" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        {(watchKind === "netlab-c9s" || watchKind === "netlab") ? (
+                          <FormField
+                            control={form.control}
+                            name={`env.${index}.key`}
+                            render={({ field }) => {
+                              const currentKey = String(field.value ?? "").trim();
+                              const isKnown = NETLAB_ENV_KEYS.some((k) => k.key === currentKey);
+                              const selectValue = isKnown ? currentKey : "__custom__";
+                              return (
+                                <FormItem className="flex-1 space-y-2">
+                                  <FormControl>
+                                    <Select
+                                      value={selectValue}
+                                      onValueChange={(v) => {
+                                        if (v === "__custom__") {
+                                          field.onChange("");
+                                        } else {
+                                          field.onChange(v);
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select env var…" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {NETLAB_ENV_KEYS.map((k) => (
+                                          <SelectItem key={k.key} value={k.key}>
+                                            {k.label}
+                                          </SelectItem>
+                                        ))}
+                                        <SelectItem value="__custom__">Custom…</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  {selectValue === "__custom__" && (
+                                    <FormControl>
+                                      <Input {...field} placeholder="KEY" className="font-mono text-xs" />
+                                    </FormControl>
+                                  )}
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        ) : (
+                          <FormField
+                            control={form.control}
+                            name={`env.${index}.key`}
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormControl>
+                                  <Input {...field} placeholder="KEY" className="font-mono text-xs" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                         <FormField
                           control={form.control}
                           name={`env.${index}.value`}
                           render={({ field }) => (
                             <FormItem className="flex-1">
                               <FormControl>
-                                <Input {...field} placeholder="VALUE" className="font-mono text-xs" />
+                                {(() => {
+                                  const key = String(form.getValues(`env.${index}.key`) ?? "").trim();
+                                  const presets = netlabValuePresets(key);
+                                  if (!presets) return <Input {...field} placeholder="VALUE" className="font-mono text-xs" />;
+
+                                  const currentValue = String(field.value ?? "").trim();
+                                  const isPreset = presets.some((p) => p.value === currentValue);
+                                  const selectValue = currentValue ? (isPreset ? currentValue : "__custom__") : "none";
+
+                                  return (
+                                    <div className="space-y-2">
+                                      <Select
+                                        value={selectValue}
+                                        onValueChange={(v) => {
+                                          if (v === "none") field.onChange("");
+                                          else if (v === "__custom__") field.onChange(currentValue && !isPreset ? currentValue : "");
+                                          else field.onChange(v);
+                                        }}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select value…" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="none">None</SelectItem>
+                                          {presets.map((p) => (
+                                            <SelectItem key={p.value} value={p.value}>
+                                              {p.label}
+                                            </SelectItem>
+                                          ))}
+                                          <SelectItem value="__custom__">Custom…</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      {selectValue === "__custom__" && (
+                                        <Input {...field} placeholder="VALUE" className="font-mono text-xs" />
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -821,6 +1021,29 @@ function CreateDeploymentPage() {
                   </div>
                 )}
               </div>
+
+              {watchKind === "netlab-c9s" && (
+                <div className="rounded-md border p-4 space-y-2">
+                  <FormField
+                    control={form.control}
+                    name="netlabSetOverrides"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Netlab `--set` overrides (netlab-c9s only)</FormLabel>
+                        <FormDescription>One `key=value` per line. These have highest precedence and can override template keys.</FormDescription>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder={"Example:\naddressing.p2p.ipv4=198.18.0.0/16"}
+                            className="font-mono text-xs min-h-[120px]"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               {mutation.isError && (
                 <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive border border-destructive/20">
@@ -846,6 +1069,26 @@ function CreateDeploymentPage() {
           </Form>
         </CardContent>
       </Card>
+
+      <Dialog open={templatePreviewOpen} onOpenChange={setTemplatePreviewOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Netlab template</DialogTitle>
+            <DialogDescription className="font-mono text-xs truncate">
+              {String((templatePreviewQ.data as any)?.path ?? watchTemplate)}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {templatePreviewQ.isError && <div className="text-sm text-destructive">Failed to load template.</div>}
+            <Textarea
+              readOnly
+              value={String((templatePreviewQ.data as any)?.yaml ?? "")}
+              className="h-[60vh] font-mono text-xs"
+              placeholder={templatePreviewQ.isLoading ? "Loading…" : "No template loaded."}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

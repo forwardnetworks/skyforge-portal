@@ -626,6 +626,31 @@ export async function getWorkspaceNetlabTemplates(
   );
 }
 
+export type WorkspaceNetlabTemplateResponse = {
+  workspaceId: string;
+  source: string;
+  repo?: string;
+  branch?: string;
+  dir: string;
+  template: string;
+  path: string;
+  yaml: string;
+};
+
+export async function getWorkspaceNetlabTemplate(
+  workspaceId: string,
+  params: { source?: string; repo?: string; dir?: string; template: string }
+): Promise<WorkspaceNetlabTemplateResponse> {
+  const qs = new URLSearchParams();
+  if (params.source) qs.set("source", params.source);
+  if (params.repo) qs.set("repo", params.repo);
+  if (params.dir) qs.set("dir", params.dir);
+  qs.set("template", params.template);
+  return apiFetch<WorkspaceNetlabTemplateResponse>(
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/template?${qs.toString()}`
+  );
+}
+
 export type WorkspaceRunResponse = {
   workspaceId: string;
   task: JSONMap;
@@ -638,6 +663,7 @@ export type ValidateWorkspaceNetlabTemplateRequest = {
   dir?: string;
   template: string;
   environment?: JSONMap;
+  setOverrides?: string[];
 };
 
 export async function validateWorkspaceNetlabTemplate(
