@@ -1261,21 +1261,21 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/session/traefik": {
+    "/api/session/nginx": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** SessionTraefik is a Skyforge SSO gate compatible endpoint. */
-        get: operations["GET:skyforge.SessionTraefik"];
+        /** SessionNginx is a Skyforge SSO gate compatible endpoint. */
+        get: operations["GET:skyforge.SessionNginx"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
-        /** SessionTraefikHead is a Skyforge SSO gate compatible endpoint (HEAD). */
-        head: operations["HEAD:skyforge.SessionTraefikHead"];
+        /** SessionNginxHead is a Skyforge SSO gate compatible endpoint (HEAD). */
+        head: operations["HEAD:skyforge.SessionNginxHead"];
         patch?: never;
         trace?: never;
     };
@@ -5911,7 +5911,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.SessionTraefik": {
+    "GET:skyforge.SessionNginx": {
         parameters: {
             query?: never;
             header?: never;
@@ -5930,7 +5930,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "HEAD:skyforge.SessionTraefikHead": {
+    "HEAD:skyforge.SessionNginxHead": {
         parameters: {
             query?: never;
             header?: never;

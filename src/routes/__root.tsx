@@ -45,6 +45,12 @@ function RootLayout() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    if (window.location.pathname === "/index.html") {
+      void navigate({ to: "/", replace: true });
+    }
+  }, [navigate]);
+
   const session = useQuery({
     queryKey: queryKeys.session(),
     queryFn: getSession,
