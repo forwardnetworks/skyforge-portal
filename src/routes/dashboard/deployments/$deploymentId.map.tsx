@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Hammer } from "lucide-react";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { queryKeys } from "../../../lib/query-keys";
 import { getDeploymentTopology, type DashboardSnapshot, type WorkspaceDeployment } from "../../../lib/skyforge-api";
@@ -97,6 +97,16 @@ function DeploymentMapPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href={`/dashboard/labs/designer?workspaceId=${encodeURIComponent(workspaceId)}&importDeploymentId=${encodeURIComponent(deploymentId)}`}
+            target="_blank"
+            rel="noreferrer noopener"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+            title="Open this running topology in the Lab Designer (new tab)"
+          >
+            <Hammer className="mr-2 h-4 w-4" />
+            Edit in Designer
+          </a>
           <Link
             to="/dashboard/deployments/$deploymentId"
             params={{ deploymentId }}

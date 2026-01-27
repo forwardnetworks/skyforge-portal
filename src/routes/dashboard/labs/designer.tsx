@@ -19,6 +19,7 @@ import {
   createClabernetesDeploymentFromTemplate,
   createContainerlabDeploymentFromTemplate,
   getWorkspaces,
+  getDeploymentTopology,
   getWorkspaceContainerlabTemplate,
   getWorkspaceContainerlabTemplates,
   listWorkspaceNetlabServers,
@@ -26,8 +27,15 @@ import {
 } from "@/lib/skyforge-api";
 import { queryKeys } from "@/lib/query-keys";
 import type { ReactFlowInstance } from "@xyflow/react";
+import { z } from "zod";
+
+const designerSearchSchema = z.object({
+  workspaceId: z.string().optional().catch(""),
+  importDeploymentId: z.string().optional().catch(""),
+});
 
 export const Route = createFileRoute("/dashboard/labs/designer")({
+  validateSearch: (search) => designerSearchSchema.parse(search),
   component: LabDesignerPage,
 });
 
@@ -78,6 +86,7 @@ function DesignerNode(props: NodeProps<DesignNodeData>) {
 }
 
 function LabDesignerPage() {
+  const search = Route.useSearch();
   const storageKey = "skyforge.labDesigner.v1";
   const rfRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
@@ -217,6 +226,51 @@ function LabDesignerPage() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5_000);
   };
+
+  // Optional: import an existing running deployment topology into the canvas.
+  useEffect(() => {
+    const ws = String(search.workspaceId ?? "").trim();
+    const depId = String(search.importDeploymentId ?? "").trim();
+    if (!ws || !depId) return;
+    setWorkspaceId(ws);
+    setUseSavedConfig(false);
+    setLastSaved(null);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const topo = await getDeploymentTopology(ws, depId);
+        if (cancelled) return;
+        const nextNodes: Array<Node<DesignNodeData>> = (topo.nodes ?? []).map((n, idx) => ({
+          id: String(n.id),
+          position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 180 },
+          data: { label: String(n.label || n.id), kind: String(n.kind || ""), image: "" },
+          type: "designerNode",
+        }));
+        const nextEdges: Array<Edge> = (topo.edges ?? []).map((e) => ({
+          id: String(e.id),
+          source: String(e.source),
+          target: String(e.target),
+          label: e.label || `${e.source} ↔ ${e.target}`,
+        }));
+
+        if (!nextNodes.length) throw new Error("No nodes found in deployment topology");
+        setNodes(nextNodes);
+        setEdges(nextEdges);
+        setSelectedNodeId(String(nextNodes[0].id));
+        toast.success("Imported running topology", { description: `Deployment ${depId}` });
+        requestAnimationFrame(() => rfInstance?.fitView({ padding: 0.15, duration: 250 }));
+      } catch (e) {
+        if (cancelled) return;
+        toast.error("Failed to import deployment topology", { description: (e as Error).message });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.importDeploymentId, search.workspaceId]);
 
   const saveDraft = () => {
     try {
