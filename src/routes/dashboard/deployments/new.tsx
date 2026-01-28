@@ -16,7 +16,7 @@ import {
   getWorkspaceNetlabTemplates,
   getWorkspaceTerraformTemplates,
   validateWorkspaceNetlabTemplate,
-  getUserForwardCollector,
+  listUserForwardCollectorConfigs,
   listWorkspaceNetlabServers,
   listWorkspaceEveServers,
   listWorkspaceVariableGroups,
@@ -70,7 +70,7 @@ const formSchema = z
     template: z.string().min(1, "Template is required"),
     netlabServer: z.string().optional(),
     eveServer: z.string().optional(),
-    enableForward: z.boolean(),
+    forwardCollectorId: z.string().optional(),
     variableGroupId: z.string().optional(),
     env: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
   });
@@ -120,7 +120,7 @@ function CreateDeploymentPage() {
       template: "",
       netlabServer: "",
       eveServer: "",
-      enableForward: true,
+      forwardCollectorId: "none",
       variableGroupId: "none",
       env: [],
     },
@@ -151,7 +151,7 @@ function CreateDeploymentPage() {
   const watchSource = watch("source");
   const watchTemplateRepoId = watch("templateRepoId");
   const watchTemplate = watch("template");
-  const watchEnableForward = watch("enableForward");
+  const watchForwardCollectorId = watch("forwardCollectorId");
   const watchEnv = watch("env");
   const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 
@@ -200,16 +200,29 @@ function CreateDeploymentPage() {
     staleTime: 30_000,
   });
 
-  const forwardCfgQ = useQuery({
-    queryKey: queryKeys.userForwardCollector(),
-    queryFn: getUserForwardCollector,
-    enabled: watchEnableForward && ["netlab-c9s", "clabernetes", "terraform"].includes(watchKind),
+  const forwardCollectorsQ = useQuery({
+    queryKey: queryKeys.userForwardCollectorConfigs(),
+    queryFn: listUserForwardCollectorConfigs,
+    enabled: ["netlab-c9s", "clabernetes", "terraform"].includes(watchKind),
     staleTime: 30_000,
     retry: false,
   });
-  const configuredCollectorUsername = String(
-    (forwardCfgQ.data as any)?.collectorUsername ?? (forwardCfgQ.data as any)?.forwardCollector?.username ?? ""
-  ).trim();
+
+  const selectableCollectors = useMemo(() => {
+    return (forwardCollectorsQ.data?.collectors ?? [])
+      .filter((c: any) => c && typeof c.id === "string" && typeof c.name === "string")
+      .filter((c: any) => !c.decryptionFailed);
+  }, [forwardCollectorsQ.data?.collectors]);
+
+  useEffect(() => {
+    if (!["netlab-c9s", "clabernetes", "terraform"].includes(watchKind)) {
+      if ((watchForwardCollectorId ?? "none") !== "none") setValue("forwardCollectorId", "none");
+      return;
+    }
+    if ((watchForwardCollectorId ?? "none") !== "none") return;
+    const def = selectableCollectors.find((c: any) => c.isDefault) ?? selectableCollectors[0];
+    if (def?.id) setValue("forwardCollectorId", String(def.id));
+  }, [watchKind, watchForwardCollectorId, selectableCollectors, setValue]);
 
   const effectiveSource: TemplateSource = useMemo(() => {
     if (watchKind === "netlab" || watchKind === "netlab-c9s") return watchSource === "workspace" ? "workspace" : "blueprints";
@@ -301,12 +314,12 @@ function CreateDeploymentPage() {
         }
       }
 
-      if (values.enableForward && ["netlab-c9s", "clabernetes", "terraform"].includes(values.kind)) {
-        if (!configuredCollectorUsername) {
-          throw new Error("Configure your Collector first (Dashboard → Collector).");
+      if (["netlab-c9s", "clabernetes", "terraform"].includes(values.kind)) {
+        const cid = String(values.forwardCollectorId ?? "none").trim();
+        if (cid && cid !== "none") {
+          config.forwardEnabled = true;
+          (config as any).forwardCollectorId = cid;
         }
-        config.forwardEnabled = true;
-        config.forwardCollectorUsername = configuredCollectorUsername;
       }
 
       if (values.kind === "netlab" || values.kind === "containerlab") {
@@ -505,22 +518,37 @@ function CreateDeploymentPage() {
                 {["netlab-c9s", "clabernetes", "terraform"].includes(watchKind) && (
                   <FormField
                     control={form.control}
-                    name="enableForward"
+                    name="forwardCollectorId"
                     render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-md border p-3 md:col-span-2">
-                        <div className="space-y-1">
-                          <FormLabel>Enable Forward collection</FormLabel>
-                          <FormDescription>
-                            Uses your in-cluster collector. Configure it first under <code className="font-mono">Dashboard → Collector</code>.
-                          </FormDescription>
-                          {watchEnableForward && forwardCfgQ.isError && (
-                            <div className="text-xs text-destructive">Failed to load collector settings.</div>
-                          )}
-                          {watchEnableForward && forwardCfgQ.data && !configuredCollectorUsername && (
-                            <div className="text-xs text-destructive">Collector not configured yet.</div>
-                          )}
-                        </div>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <FormItem className="rounded-md border p-3 md:col-span-2 space-y-2">
+                        <FormLabel>Forward collector</FormLabel>
+                        <FormDescription>
+                          Optional. Select a per-user in-cluster Collector. Configure collectors under{" "}
+                          <code className="font-mono">Dashboard → Collector</code>.
+                        </FormDescription>
+                        {forwardCollectorsQ.isError ? (
+                          <div className="text-xs text-destructive">Failed to load collectors.</div>
+                        ) : null}
+                        {forwardCollectorsQ.data && selectableCollectors.length === 0 ? (
+                          <div className="text-xs text-destructive">No collectors configured yet.</div>
+                        ) : null}
+                        <Select
+                          value={String(field.value ?? "none")}
+                          onValueChange={(v) => field.onChange(v)}
+                          disabled={forwardCollectorsQ.isLoading}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a collector (or None)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {selectableCollectors.map((c: any) => (
+                              <SelectItem key={String(c.id)} value={String(c.id)}>
+                                {String(c.name)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormItem>
                     )}
                   />

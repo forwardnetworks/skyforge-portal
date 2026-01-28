@@ -561,6 +561,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dashboard/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * DashboardSnapshot returns the latest dashboard snapshot.
+         * @description This is a non-streaming companion to \`/api/dashboard/events\` used by the UI to quickly populate state (and during SSE reconnects).
+         */
+        get: operations["GET:skyforge.DashboardSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dns/bootstrap": {
         parameters: {
             query?: never;
@@ -647,6 +667,111 @@ export interface paths {
         post?: never;
         /** ClearUserForwardCollector deletes the stored user Forward collector settings. */
         delete: operations["DELETE:skyforge.ClearUserForwardCollector"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector-configs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListUserForwardCollectorConfigs lists Forward collector configurations managed
+         *     by Skyforge for the current user.
+         */
+        get: operations["GET:skyforge.ListUserForwardCollectorConfigs"];
+        put?: never;
+        /**
+         * CreateUserForwardCollectorConfig creates a new Forward collector configuration
+         *     and deploys a matching in-cluster collector.
+         */
+        post: operations["POST:skyforge.CreateUserForwardCollectorConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector-configs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DeleteUserForwardCollectorConfig deletes the in-cluster resources for a
+         *     collector config and removes it from Skyforge.
+         * @description It intentionally does NOT delete the Forward-side collector.
+         */
+        delete: operations["DELETE:skyforge.DeleteUserForwardCollectorConfig"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector-configs/{id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserForwardCollectorConfigLogs returns the collector's `clientd.log` (or a
+         *     fallback log) for debugging.
+         */
+        get: operations["GET:skyforge.GetUserForwardCollectorConfigLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector-configs/{id}/restart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RestartUserForwardCollectorConfig restarts the collector Deployment (best-effort
+         *     image update).
+         */
+        post: operations["POST:skyforge.RestartUserForwardCollectorConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector-configs/{id}/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserForwardCollectorConfigRuntime returns runtime state for a configured
+         *     collector.
+         */
+        get: operations["GET:skyforge.GetUserForwardCollectorConfigRuntime"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1152,6 +1277,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/registry/repos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListRegistryRepos returns available repositories from the configured registry.
+         * @description Uses Docker Registry HTTP API v2 \`\_catalog\`.
+         *
+         *     Env: - SKYFORGE\_REGISTRY\_URL (required), e.g. [https://ghcr.io](https://ghcr.io) - SKYFORGE\_REGISTRY\_USERNAME / SKYFORGE\_REGISTRY\_PASSWORD (optional) - SKYFORGE\_REGISTRY\_SKIP\_TLS\_VERIFY (optional: true/false) - SKYFORGE\_REGISTRY\_REPO\_PREFIXES (optional comma-separated prefixes to include)
+         *
+         *     Query: - q: substring match filter - n: server-side page size for \_catalog
+         */
+        get: operations["GET:skyforge.ListRegistryRepos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/registry/repos/{repo}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListRegistryTags returns tags for a specific repository from the configured
+         *     registry.
+         */
+        get: operations["GET:skyforge.ListRegistryTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/runs": {
         parameters: {
             query?: never;
@@ -1517,6 +1686,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user/git-credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserGitCredentials returns the current user's deploy key (public) and HTTPS
+         *     token status.
+         */
+        get: operations["GET:skyforge.GetUserGitCredentials"];
+        /** UpdateUserGitCredentials sets (or clears) the user's HTTPS git token. */
+        put: operations["PUT:skyforge.UpdateUserGitCredentials"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/git-credentials/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RotateUserGitDeployKey rotates the user's SSH deploy key. */
+        post: operations["POST:skyforge.RotateUserGitDeployKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/webhooks/events": {
         parameters: {
             query?: never;
@@ -1685,6 +1892,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{id}/artifacts/folder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CreateWorkspaceArtifactFolder creates a "folder" placeholder (zero-byte object
+         *     with trailing slash).
+         */
+        post: operations["POST:skyforge.CreateWorkspaceArtifactFolder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/artifacts/object": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * PutWorkspaceArtifactObject writes/overwrites a single artifact object.
+         * @description This is an object-store-native alternative to the legacy \`UploadWorkspaceArtifact\` endpoint (which uses Encore's objects SDK and may require bucket subdomain DNS).
+         */
+        post: operations["POST:skyforge.PutWorkspaceArtifactObject"];
+        /** DeleteWorkspaceArtifactObject deletes a single artifact object. */
+        delete: operations["DELETE:skyforge.DeleteWorkspaceArtifactObject"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{id}/artifacts/upload": {
         parameters: {
             query?: never;
@@ -1779,6 +2027,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{id}/containerlab/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceContainerlabTemplate reads a containerlab YAML template from a
+         *     workspace/blueprints/external repo.
+         * @description This is used by the Lab Designer "Import from templates" feature.
+         */
+        get: operations["GET:skyforge.GetWorkspaceContainerlabTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{id}/containerlab/templates": {
         parameters: {
             query?: never;
@@ -1790,6 +2059,27 @@ export interface paths {
         get: operations["GET:skyforge.GetWorkspaceContainerlabTemplates"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/containerlab/topologies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * SaveContainerlabTopologyYAML writes a containerlab topology YAML into the user's
+         *     workspace repo so it can be
+         * @description deployed later (e.g. by creating a deployment referencing the file).
+         */
+        post: operations["POST:skyforge.SaveContainerlabTopologyYAML"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1808,6 +2098,94 @@ export interface paths {
         put?: never;
         /** CreateWorkspaceDeployment creates a deployment definition for a workspace. */
         post: operations["POST:skyforge.CreateWorkspaceDeployment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments-designer/clabernetes/from-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CreateClabernetesDeploymentFromTemplate creates a clabernetes deployment
+         *     pointing at an existing workspace template YAML
+         * @description (no YAML commit step).
+         */
+        post: operations["POST:skyforge.CreateClabernetesDeploymentFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments-designer/clabernetes/from-yaml": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CreateClabernetesDeploymentFromYAML persists a containerlab topology YAML into
+         *     the workspace repo,
+         * @description creates a "clabernetes" deployment referencing that template, and (optionally) queues an initial deploy.
+         *
+         *     This is the first-class in-cluster mode (no netlab server required).
+         */
+        post: operations["POST:skyforge.CreateClabernetesDeploymentFromYAML"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments-designer/containerlab/from-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CreateContainerlabDeploymentFromTemplate creates a containerlab (BYOS)
+         *     deployment pointing at an existing workspace template YAML
+         * @description (no YAML commit step).
+         */
+        post: operations["POST:skyforge.CreateContainerlabDeploymentFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments-designer/containerlab/from-yaml": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CreateContainerlabDeploymentFromYAML persists a containerlab topology YAML into
+         *     the workspace repo,
+         * @description creates a "containerlab" deployment referencing that template, and (optionally) queues an initial deploy.
+         *
+         *     NOTE: containerlab is BYOS mode (requires a workspace netlabServer selection).
+         */
+        post: operations["POST:skyforge.CreateContainerlabDeploymentFromYAML"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1932,6 +2310,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{id}/deployments/{deploymentID}/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceDeploymentInventory returns a simple inventory of nodes and
+         *     management IPs.
+         */
+        get: operations["GET:skyforge.GetWorkspaceDeploymentInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/links/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * UpdateWorkspaceDeploymentLinkAdmin performs administrative link operations
+         *     (up/down) on a topology edge.
+         */
+        post: operations["POST:skyforge.UpdateWorkspaceDeploymentLinkAdmin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/links/capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CaptureWorkspaceDeploymentLinkPcap captures a short pcap on a topology link and
+         *     uploads it as a workspace artifact.
+         */
+        post: operations["POST:skyforge.CaptureWorkspaceDeploymentLinkPcap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{id}/deployments/{deploymentID}/links/impair": {
         parameters: {
             query?: never;
@@ -1947,6 +2385,44 @@ export interface paths {
          * @description The impairment is applied "outside" of the network OS by executing \`tc\` in the clabernetes launcher container (or another non-NOS container in the same pod netns).
          */
         post: operations["POST:skyforge.SetWorkspaceDeploymentLinkImpairment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/links/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceDeploymentLinkStats returns a snapshot of interface counters for
+         *     each topology edge.
+         * @description This is used to render live link utilization on the topology graph (similar to c9s VSCode extension).
+         */
+        get: operations["GET:skyforge.GetWorkspaceDeploymentLinkStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/links/stats/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetWorkspaceDeploymentLinkStatsEvents streams link stats snapshots as SSE. */
+        get: operations["GET:skyforge.GetWorkspaceDeploymentLinkStatsEvents"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1988,6 +2464,109 @@ export interface paths {
          * @description This is an alternative to local SSH ProxyJump when clients can't reach the lab network.
          */
         post: operations["POST:skyforge.NetlabConnect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/nodes/{node}/describe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceDeploymentNodeDescribe returns a lightweight summary of the
+         *     clabernetes node pod.
+         */
+        get: operations["GET:skyforge.GetWorkspaceDeploymentNodeDescribe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/nodes/{node}/interfaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceDeploymentNodeInterfaces returns interface stats (launcher
+         *     container) for a clabernetes node.
+         */
+        get: operations["GET:skyforge.GetWorkspaceDeploymentNodeInterfaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/nodes/{node}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceDeploymentNodeLogs returns recent log lines for a clabernetes node
+         *     pod.
+         * @description This powers the "View logs" action in the topology UI (similar to the c9s VSCode extension).
+         */
+        get: operations["GET:skyforge.GetWorkspaceDeploymentNodeLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/nodes/{node}/running-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceDeploymentNodeRunningConfig fetches the running config from a NOS
+         *     node (best-effort).
+         * @description Currently supports EOS/cEOS via \`Cli -c "show running-config"\`.
+         */
+        get: operations["GET:skyforge.GetWorkspaceDeploymentNodeRunningConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/nodes/{node}/save-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * SaveWorkspaceDeploymentNodeConfig triggers a best-effort "save config" operation
+         *     on a node.
+         * @description For EOS/cEOS, this runs \`write memory\`.
+         */
+        post: operations["POST:skyforge.SaveWorkspaceDeploymentNodeConfig"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2075,6 +2654,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{id}/deployments/{deploymentID}/ui-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListWorkspaceDeploymentUIEvents returns recent UI/graph events for a deployment. */
+        get: operations["GET:skyforge.ListWorkspaceDeploymentUIEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/deployments/{deploymentID}/ui-events/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DeploymentUIEventsStream streams deployment UI events as SSE. */
+        get: operations["GET:skyforge.DeploymentUIEventsStream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/eve/servers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListWorkspaceEveServers returns the configured EVE-NG API endpoints for this
+         *     workspace.
+         */
+        get: operations["GET:skyforge.ListWorkspaceEveServers"];
+        /** UpsertWorkspaceEveServer creates or updates a workspace-scoped EVE-NG server. */
+        put: operations["PUT:skyforge.UpsertWorkspaceEveServer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/eve/servers/{serverID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DeleteWorkspaceEveServer deletes a workspace-scoped EVE-NG server. */
+        delete: operations["DELETE:skyforge.DeleteWorkspaceEveServer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{id}/integrations/forward": {
         parameters: {
             query?: never;
@@ -2116,6 +2767,26 @@ export interface paths {
         put?: never;
         /** CreateWorkspaceForwardCollector creates a Forward collector for the workspace. */
         post: operations["POST:skyforge.CreateWorkspaceForwardCollector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/labpp/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceLabppTemplates lists LabPP templates for a workspace.
+         * @description Templates are expected to live under a repo directory (default: blueprints/labpp) where each template is a subdirectory (e.g. blueprints/labpp/junos-example/...).
+         */
+        get: operations["GET:skyforge.GetWorkspaceLabppTemplates"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2218,6 +2889,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{id}/netlab/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetWorkspaceNetlabTemplate reads a netlab YAML template from a
+         *     workspace/blueprints/external repo.
+         * @description This powers "View template" in the deployment creation flow.
+         */
+        get: operations["GET:skyforge.GetWorkspaceNetlabTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{id}/netlab/templates": {
         parameters: {
             query?: never;
@@ -2229,6 +2921,27 @@ export interface paths {
         get: operations["GET:skyforge.GetWorkspaceNetlabTemplates"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{id}/netlab/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ValidateWorkspaceNetlabTemplate runs `netlab create` against a selected template
+         *     bundle without deploying it.
+         * @description This catches missing images, invalid attributes, and missing required plugins/templates.
+         */
+        post: operations["POST:skyforge.ValidateWorkspaceNetlabTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2615,6 +3328,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/favicon.ico": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:skyforge.FrontendFaviconICO"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/favicon.svg": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendFavicon serves the SPA favicon (and compatibility icon paths). */
+        get: operations["GET:skyforge.FrontendFavicon"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -2750,6 +3496,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/bridge/cloud/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CronCloudCredentialChecksBridge triggers cloud credential checks maintenance. */
+        post: operations["POST:worker.CronCloudCredentialChecksBridge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/bridge/worker/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CronWorkerHeartbeatBridge triggers the worker heartbeat task. */
+        post: operations["POST:worker.CronWorkerHeartbeatBridge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/bridge/worker/tasks/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CronReconcileQueuedTasksBridge triggers reconciliation for queued tasks. */
+        post: operations["POST:worker.CronReconcileQueuedTasksBridge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/bridge/worker/tasks/reconcile-running": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CronReconcileRunningTasksBridge triggers reconciliation for running tasks. */
+        post: operations["POST:worker.CronReconcileRunningTasksBridge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/bridge/workspaces/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CronWorkspaceSyncBridge triggers workspace sync maintenance. */
+        post: operations["POST:worker.CronWorkspaceSyncBridge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/cron/cloud/checks": {
         parameters: {
             query?: never;
@@ -2870,6 +3701,23 @@ export interface paths {
          *     manual "reset").
          */
         get: operations["GET:skyforge.LogoutAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manifest.webmanifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendManifest serves the PWA manifest. */
+        get: operations["GET:skyforge.FrontendManifest"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3031,6 +3879,23 @@ export interface paths {
         get?: never;
         /** MarkNotificationAsRead marks a notification as read. */
         put: operations["PUT:skyforge.MarkNotificationAsRead"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/robots.txt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendRobots serves robots.txt. */
+        get: operations["GET:skyforge.FrontendRobots"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3423,12 +4288,73 @@ export interface components {
             apiUrl: string;
             labName: string;
         };
+        "skyforge.DeploymentInventoryNode": {
+            id: string;
+            kind: string;
+            mgmtIp: string;
+            /** Format: int64 */
+            sshPort: number;
+        };
+        "skyforge.DeploymentLinkAdminResult": {
+            command: string;
+            container: string;
+            error: string;
+            ifName: string;
+            namespace: string;
+            node: string;
+            pod: string;
+            stderr: string;
+            stdout: string;
+        };
+        "skyforge.DeploymentNodeInterface": {
+            edgeId: string;
+            ifName: string;
+            operState: string;
+            peerIf: string;
+            peerNode: string;
+            /** Format: int64 */
+            rxBytes: number;
+            /** Format: int64 */
+            rxDropped: number;
+            /** Format: int64 */
+            rxPackets: number;
+            /** Format: int64 */
+            txBytes: number;
+            /** Format: int64 */
+            txDropped: number;
+            /** Format: int64 */
+            txPackets: number;
+        };
+        "skyforge.DeploymentUIEvent": {
+            createdAt: string;
+            createdBy: string;
+            deploymentId: string;
+            eventType: string;
+            /** Format: int64 */
+            id: number;
+            payload: Record<string, never>;
+        };
         "skyforge.ExternalTemplateRepo": {
             defaultBranch: string;
             id: string;
             name: string;
             /** gitea owner/repo */
             repo: string;
+        };
+        "skyforge.ForwardCollectorInfo": {
+            connected: boolean;
+            connectedAt: string;
+            externalIp: string;
+            id: string;
+            internalIps: string[];
+            lastConnectedAt: string;
+            lastSeenAt: string;
+            name: string;
+            status: string;
+            updateStatus: string;
+            updatedAt: string;
+            username: string;
+            version: string;
         };
         "skyforge.ForwardCollectorSummary": {
             id: string;
@@ -3536,6 +4462,37 @@ export interface components {
         "skyforge.JSONMap": {
             [key: string]: Record<string, never>;
         };
+        "skyforge.LinkEdgeStats": {
+            edgeId: string;
+            sourceIf: string;
+            sourceNode: string;
+            /** Format: int64 */
+            sourceRxBytes: number;
+            /** Format: int64 */
+            sourceRxDropped: number;
+            /** Format: int64 */
+            sourceRxPackets: number;
+            /** Format: int64 */
+            sourceTxBytes: number;
+            /** Format: int64 */
+            sourceTxDropped: number;
+            /** Format: int64 */
+            sourceTxPackets: number;
+            targetIf: string;
+            targetNode: string;
+            /** Format: int64 */
+            targetRxBytes: number;
+            /** Format: int64 */
+            targetRxDropped: number;
+            /** Format: int64 */
+            targetRxPackets: number;
+            /** Format: int64 */
+            targetTxBytes: number;
+            /** Format: int64 */
+            targetTxDropped: number;
+            /** Format: int64 */
+            targetTxPackets: number;
+        };
         "skyforge.LinkImpairmentResult": {
             command: string;
             container: string;
@@ -3628,6 +4585,11 @@ export interface components {
          * @description NOTE: This type must live in the service package (not a type alias to an internal package) to satisfy Encore's API schema rules.
          */
         "skyforge.SkyforgeWorkspace": {
+            /**
+             * LabPP requires an EVE-NG endpoint. This flag enables configuring a per-workspace
+             *     EVE server.
+             */
+            allowCustomEveServers: boolean;
             allowCustomNetlabServers: boolean;
             allowExternalTemplateRepos: boolean;
             /** Format: int64 */
@@ -3647,6 +4609,7 @@ export interface components {
             description: string;
             editorGroups: string[];
             editors: string[];
+            eveServer: string;
             externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
             giteaOwner: string;
             giteaRepo: string;
@@ -3743,6 +4706,20 @@ export interface components {
             mgmtIp: string;
             status: string;
         };
+        "skyforge.UserForwardCollectorConfigSummary": {
+            baseUrl: string;
+            collectorId: string;
+            collectorUsername: string;
+            decryptionFailed: boolean;
+            forwardCollector: components["schemas"]["skyforge.ForwardCollectorInfo"];
+            id: string;
+            isDefault: boolean;
+            name: string;
+            runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+            skipTlsVerify: boolean;
+            updatedAt: string;
+            username: string;
+        };
         "skyforge.UserProfile": {
             actorUsername: string;
             authenticated: boolean;
@@ -3790,16 +4767,40 @@ export interface components {
             updatedAt: string;
             workspaceId: string;
         };
+        "skyforge.WorkspaceEveServerConfig": {
+            apiPassword: string;
+            apiUrl: string;
+            apiUser: string;
+            hasPassword: boolean;
+            id: string;
+            name: string;
+            skipTlsVerify: boolean;
+            webUrl: string;
+        };
         "skyforge.WorkspaceForwardCollector": {
             id: string;
             name: string;
             username: string;
         };
-        "skyforge.WorkspaceServerRef": {
-            label: string;
-            /** global|workspace */
-            scope: string;
-            value: string;
+        "skyforge.WorkspaceNetlabServerConfig": {
+            apiInsecure: boolean;
+            apiPassword: string;
+            apiToken: string;
+            apiUrl: string;
+            apiUser: string;
+            hasPassword: boolean;
+            id: string;
+            name: string;
+        };
+        "skyforge.WorkspacePodContainer": {
+            image: string;
+            message: string;
+            name: string;
+            ready: boolean;
+            reason: string;
+            /** Format: int32 */
+            restartCount: number;
+            state: string;
         };
         "skyforge.WorkspaceVariableGroup": {
             /** Format: int64 */
@@ -3813,15 +4814,27 @@ export interface components {
             deploymentName: string;
             image: string;
             imageId: string;
+            /** Format: int32 */
+            lastExitCode: number;
+            lastFinishedAt: string;
+            lastReason: string;
             logsCommandHint: string;
             namespace: string;
             podName: string;
             podPhase: string;
             ready: boolean;
             remoteDigest: string;
+            /** Format: int32 */
+            restartCount: number;
             startTime: string;
             updateAvailable: boolean;
             updateStatus: string;
+        };
+        "skyforge.dashboardAwsSsoStatus": {
+            configured: boolean;
+            connected: boolean;
+            expiresAt: string;
+            lastAuthenticatedAt: string;
         };
         "skyforge.storageObjectSummary": {
             contentType: string;
@@ -4784,6 +5797,34 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.DashboardSnapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        awsSsoStatus: components["schemas"]["skyforge.dashboardAwsSsoStatus"];
+                        deployments: components["schemas"]["skyforge.WorkspaceDeployment"][];
+                        refreshedAt: string;
+                        runs: components["schemas"]["skyforge.JSONMap"][];
+                        templatesIndexUpdatedAt: string;
+                        workspaces: components["schemas"]["skyforge.SkyforgeWorkspace"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.DNSBootstrap": {
         parameters: {
             query?: never;
@@ -4878,6 +5919,7 @@ export interface operations {
                         collectorId: string;
                         collectorUsername: string;
                         configured: boolean;
+                        forwardCollector: components["schemas"]["skyforge.ForwardCollectorInfo"];
                         hasJumpCert: boolean;
                         hasJumpPrivateKey: boolean;
                         hasPassword: boolean;
@@ -4921,6 +5963,7 @@ export interface operations {
                         collectorId: string;
                         collectorUsername: string;
                         configured: boolean;
+                        forwardCollector: components["schemas"]["skyforge.ForwardCollectorInfo"];
                         hasJumpCert: boolean;
                         hasJumpPrivateKey: boolean;
                         hasPassword: boolean;
@@ -4955,6 +5998,7 @@ export interface operations {
                         collectorId: string;
                         collectorUsername: string;
                         configured: boolean;
+                        forwardCollector: components["schemas"]["skyforge.ForwardCollectorInfo"];
                         hasJumpCert: boolean;
                         hasJumpPrivateKey: boolean;
                         hasPassword: boolean;
@@ -4962,6 +6006,210 @@ export interface operations {
                         skipTlsVerify: boolean;
                         updatedAt: string;
                         username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListUserForwardCollectorConfigs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        collectors: components["schemas"]["skyforge.UserForwardCollectorConfigSummary"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateUserForwardCollectorConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    baseUrl: string;
+                    name: string;
+                    password: string;
+                    setDefault: boolean;
+                    skipTlsVerify: boolean;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseUrl: string;
+                        collectorId: string;
+                        collectorUsername: string;
+                        decryptionFailed: boolean;
+                        forwardCollector: components["schemas"]["skyforge.ForwardCollectorInfo"];
+                        id: string;
+                        isDefault: boolean;
+                        name: string;
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        skipTlsVerify: boolean;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteUserForwardCollectorConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserForwardCollectorConfigLogs": {
+        parameters: {
+            query?: {
+                tail?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        logs: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RestartUserForwardCollectorConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deploymentName: string;
+                        image: string;
+                        imageId: string;
+                        /** Format: int32 */
+                        lastExitCode: number;
+                        lastFinishedAt: string;
+                        lastReason: string;
+                        logsCommandHint: string;
+                        namespace: string;
+                        podName: string;
+                        podPhase: string;
+                        ready: boolean;
+                        remoteDigest: string;
+                        /** Format: int32 */
+                        restartCount: number;
+                        startTime: string;
+                        updateAvailable: boolean;
+                        updateStatus: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserForwardCollectorConfigRuntime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deploymentName: string;
+                        image: string;
+                        imageId: string;
+                        /** Format: int32 */
+                        lastExitCode: number;
+                        lastFinishedAt: string;
+                        lastReason: string;
+                        logsCommandHint: string;
+                        namespace: string;
+                        podName: string;
+                        podPhase: string;
+                        ready: boolean;
+                        remoteDigest: string;
+                        /** Format: int32 */
+                        restartCount: number;
+                        startTime: string;
+                        updateAvailable: boolean;
+                        updateStatus: string;
                     };
                 };
             };
@@ -5015,6 +6263,7 @@ export interface operations {
                         collectorId: string;
                         collectorUsername: string;
                         configured: boolean;
+                        forwardCollector: components["schemas"]["skyforge.ForwardCollectorInfo"];
                         hasJumpCert: boolean;
                         hasJumpPrivateKey: boolean;
                         hasPassword: boolean;
@@ -5684,6 +6933,46 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.ListRegistryRepos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListRegistryTags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                repo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetRuns": {
         parameters: {
             query?: {
@@ -6328,6 +7617,95 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetUserGitCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.UpdateUserGitCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    clearToken: boolean;
+                    httpsToken: string;
+                    httpsUsername: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RotateUserGitDeployKey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.ListWebhookEvents": {
         parameters: {
             query?: {
@@ -6484,6 +7862,11 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        /**
+                         * LabPP requires an EVE-NG endpoint. This flag enables configuring a per-workspace
+                         *     EVE server.
+                         */
+                        allowCustomEveServers: boolean;
                         allowCustomNetlabServers: boolean;
                         allowExternalTemplateRepos: boolean;
                         /** Format: int64 */
@@ -6503,6 +7886,7 @@ export interface operations {
                         description: string;
                         editorGroups: string[];
                         editors: string[];
+                        eveServer: string;
                         externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
                         giteaOwner: string;
                         giteaRepo: string;
@@ -6642,6 +8026,102 @@ export interface operations {
                     "application/json": {
                         bucket: string;
                         fileData: string;
+                        key: string;
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateWorkspaceArtifactFolder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    prefix: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        prefix: string;
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.PutWorkspaceArtifactObject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    contentBase64: string;
+                    contentType: string;
+                    key: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        bytes: number;
+                        key: string;
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteWorkspaceArtifactObject": {
+        parameters: {
+            query: {
+                key: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
                         key: string;
                         status: string;
                     };
@@ -6983,6 +8463,46 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetWorkspaceContainerlabTemplate": {
+        parameters: {
+            query?: {
+                dir?: string;
+                /** @description workspace (default), blueprints, external, custom */
+                source?: string;
+                /** @description external/custom selector */
+                repo?: string;
+                /** @description filename (required) */
+                file?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        branch: string;
+                        dir: string;
+                        file: string;
+                        path: string;
+                        repo: string;
+                        source: string;
+                        workspaceId: string;
+                        yaml: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetWorkspaceContainerlabTemplates": {
         parameters: {
             query?: {
@@ -7011,6 +8531,56 @@ export interface operations {
                         dir: string;
                         repo: string;
                         templates: string[];
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.SaveContainerlabTopologyYAML": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Name drives the default filename. */
+                    name: string;
+                    /**
+                     * Template is the filename to write under TemplatesDir.
+                     * @description Default: "\<normalized-name>.clab.yml".
+                     */
+                    template: string;
+                    /**
+                     * TemplatesDir is where we store the YAML inside the workspace repo.
+                     * @description Default: "containerlab/designer".
+                     *
+                     *     For this endpoint, TemplatesDir must be under "containerlab/".
+                     */
+                    templatesDir: string;
+                    /** TopologyYAML is the raw containerlab topology YAML. */
+                    topologyYAML: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        branch: string;
+                        filePath: string;
+                        template: string;
+                        templatesDir: string;
                         workspaceId: string;
                     };
                 };
@@ -7089,6 +8659,208 @@ export interface operations {
                         queueDepth: number;
                         type: string;
                         updatedAt: string;
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateClabernetesDeploymentFromTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * AutoDeploy queues an initial "create" action after creating the deployment.
+                     * @description Default: true.
+                     */
+                    autoDeploy: boolean;
+                    /** Name becomes the Skyforge deployment name (and drives the lab name). */
+                    name: string;
+                    /** Template is the filename under TemplatesDir. */
+                    template: string;
+                    /**
+                     * TemplateSource is the repository scope to resolve templates from.
+                     * @description For now, only "workspace" is supported by this endpoint.
+                     */
+                    templateSource: string;
+                    /**
+                     * TemplatesDir is the repo-relative directory containing the YAML.
+                     * @description Default: "containerlab/designer".
+                     */
+                    templatesDir: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deployment: components["schemas"]["skyforge.WorkspaceDeployment"];
+                        note: string;
+                        run: components["schemas"]["skyforge.JSONMap"];
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateClabernetesDeploymentFromYAML": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * AutoDeploy queues an initial "create" action after creating the deployment.
+                     * @description Default: true.
+                     */
+                    autoDeploy: boolean;
+                    /** Name becomes the Skyforge deployment name (and drives the clabernetes lab name). */
+                    name: string;
+                    /**
+                     * Template is the filename to write under TemplatesDir.
+                     * @description Default: "\<deployment-name>.clab.yml".
+                     */
+                    template: string;
+                    /**
+                     * TemplatesDir is where we store the YAML inside the workspace repo.
+                     * @description Default: "containerlab/designer".
+                     */
+                    templatesDir: string;
+                    /** TopologyYAML is the raw containerlab topology YAML. */
+                    topologyYAML: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deployment: components["schemas"]["skyforge.WorkspaceDeployment"];
+                        note: string;
+                        run: components["schemas"]["skyforge.JSONMap"];
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateContainerlabDeploymentFromTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * NetlabServer is a workspace netlab server ref (e.g. "ws:<id>").
+                     * @description If omitted, we fall back to the workspace default.
+                     */
+                    netlabServer: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deployment: components["schemas"]["skyforge.WorkspaceDeployment"];
+                        note: string;
+                        run: components["schemas"]["skyforge.JSONMap"];
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateContainerlabDeploymentFromYAML": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * AutoDeploy queues an initial "create" action after creating the deployment.
+                     * @description Default: true.
+                     */
+                    autoDeploy: boolean;
+                    /**
+                     * Name becomes the Skyforge deployment name (and drives the containerlab lab
+                     *     name).
+                     */
+                    name: string;
+                    /**
+                     * NetlabServer is a workspace netlab server ref (e.g. "ws:<id>").
+                     * @description If omitted, we fall back to the workspace default.
+                     */
+                    netlabServer: string;
+                    /**
+                     * Template is the filename to write under TemplatesDir.
+                     * @description Default: "\<deployment-name>.clab.yml".
+                     */
+                    template: string;
+                    /**
+                     * TemplatesDir is where we store the YAML inside the workspace repo.
+                     * @description Default: "containerlab/designer".
+                     */
+                    templatesDir: string;
+                    /** TopologyYAML is the raw containerlab topology YAML. */
+                    topologyYAML: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deployment: components["schemas"]["skyforge.WorkspaceDeployment"];
+                        note: string;
+                        run: components["schemas"]["skyforge.JSONMap"];
                         workspaceId: string;
                     };
                 };
@@ -7254,6 +9026,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    collectorConfigId: string;
                     collectorUsername: string;
                     enabled: boolean;
                 };
@@ -7267,6 +9040,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        collectorConfigId: string;
                         collectorUsername: string;
                         deploymentId: string;
                         enabled: boolean;
@@ -7344,6 +9118,128 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetWorkspaceDeploymentInventory": {
+        parameters: {
+            query: {
+                /** @description json|csv */
+                format: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        csv: string;
+                        deploymentId: string;
+                        format: string;
+                        generatedAt: string;
+                        nodes: components["schemas"]["skyforge.DeploymentInventoryNode"][];
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.UpdateWorkspaceDeploymentLinkAdmin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** up|down */
+                    action: string;
+                    edgeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        action: string;
+                        appliedAt: string;
+                        edgeId: string;
+                        results: components["schemas"]["skyforge.DeploymentLinkAdminResult"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CaptureWorkspaceDeploymentLinkPcap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    durationSeconds: number;
+                    edgeId: string;
+                    /** Format: int64 */
+                    maxBytes: number;
+                    /** Format: int64 */
+                    maxPackets: number;
+                    /** source|target */
+                    side: string;
+                    /** Format: int64 */
+                    snaplen: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        artifactKey: string;
+                        capturedAt: string;
+                        edgeId: string;
+                        ifName: string;
+                        node: string;
+                        side: string;
+                        /** Format: int64 */
+                        sizeBytes: number;
+                        stderr: string;
+                        stdout: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.SetWorkspaceDeploymentLinkImpairment": {
         parameters: {
             query?: never;
@@ -7359,14 +9255,17 @@ export interface operations {
                 "application/json": {
                     /** set|clear */
                     action: string;
+                    corruptPct: number;
                     /** Format: int64 */
                     delayMs: number;
+                    dupPct: number;
                     edgeId: string;
                     /** Format: int64 */
                     jitterMs: number;
                     lossPct: number;
                     /** Format: int64 */
                     rateKbps: number;
+                    reorderPct: number;
                 };
             };
         };
@@ -7383,6 +9282,56 @@ export interface operations {
                         results: components["schemas"]["skyforge.LinkImpairmentResult"][];
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetWorkspaceDeploymentLinkStats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        edges: components["schemas"]["skyforge.LinkEdgeStats"][];
+                        generatedAt: string;
+                        source: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetWorkspaceDeploymentLinkStatsEvents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -7442,6 +9391,175 @@ export interface operations {
                 content: {
                     "application/json": {
                         output: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetWorkspaceDeploymentNodeDescribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        containers: components["schemas"]["skyforge.WorkspacePodContainer"][];
+                        hostIP: string;
+                        message: string;
+                        namespace: string;
+                        nodeName: string;
+                        phase: string;
+                        podIP: string;
+                        podName: string;
+                        qosClass: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetWorkspaceDeploymentNodeInterfaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        generatedAt: string;
+                        interfaces: components["schemas"]["skyforge.DeploymentNodeInterface"][];
+                        namespace: string;
+                        node: string;
+                        podName: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetWorkspaceDeploymentNodeLogs": {
+        parameters: {
+            query?: {
+                tail?: number;
+                container?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        container: string;
+                        logs: string;
+                        namespace: string;
+                        podName: string;
+                        /** Format: int64 */
+                        tail: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetWorkspaceDeploymentNodeRunningConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        container: string;
+                        message: string;
+                        namespace: string;
+                        node: string;
+                        podName: string;
+                        skipped: boolean;
+                        stderr: string;
+                        stdout: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.SaveWorkspaceDeploymentNodeConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        command: string;
+                        container: string;
+                        message: string;
+                        namespace: string;
+                        podName: string;
+                        skipped: boolean;
+                        stderr: string;
+                        stdout: string;
                     };
                 };
             };
@@ -7559,6 +9677,152 @@ export interface operations {
                         source: string;
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListWorkspaceDeploymentUIEvents": {
+        parameters: {
+            query: {
+                after_id: number;
+                limit: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deploymentId: string;
+                        events: components["schemas"]["skyforge.DeploymentUIEvent"][];
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.DeploymentUIEventsStream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListWorkspaceEveServers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        servers: components["schemas"]["skyforge.WorkspaceEveServerConfig"][];
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.UpsertWorkspaceEveServer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    apiPassword: string;
+                    apiUrl: string;
+                    apiUser: string;
+                    hasPassword: boolean;
+                    id: string;
+                    name: string;
+                    skipTlsVerify: boolean;
+                    webUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        apiPassword: string;
+                        apiUrl: string;
+                        apiUser: string;
+                        hasPassword: boolean;
+                        id: string;
+                        name: string;
+                        skipTlsVerify: boolean;
+                        webUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteWorkspaceEveServer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                serverID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -7768,6 +10032,44 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetWorkspaceLabppTemplates": {
+        parameters: {
+            query?: {
+                dir?: string;
+                /** @description workspace (default), blueprints, external, custom */
+                source?: string;
+                /** @description external repo id (external) or owner/repo url (custom) */
+                repo?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        branch: string;
+                        cached: boolean;
+                        dir: string;
+                        headSha: string;
+                        repo: string;
+                        templates: string[];
+                        updatedAt: string;
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "PUT:skyforge.UpdateWorkspaceMembers": {
         parameters: {
             query?: never;
@@ -7798,6 +10100,11 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        /**
+                         * LabPP requires an EVE-NG endpoint. This flag enables configuring a per-workspace
+                         *     EVE server.
+                         */
+                        allowCustomEveServers: boolean;
                         allowCustomNetlabServers: boolean;
                         allowExternalTemplateRepos: boolean;
                         /** Format: int64 */
@@ -7817,6 +10124,7 @@ export interface operations {
                         description: string;
                         editorGroups: string[];
                         editors: string[];
+                        eveServer: string;
                         externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
                         giteaOwner: string;
                         giteaRepo: string;
@@ -7895,6 +10203,11 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        /**
+                         * LabPP requires an EVE-NG endpoint. This flag enables configuring a per-workspace
+                         *     EVE server.
+                         */
+                        allowCustomEveServers: boolean;
                         allowCustomNetlabServers: boolean;
                         allowExternalTemplateRepos: boolean;
                         /** Format: int64 */
@@ -7914,6 +10227,7 @@ export interface operations {
                         description: string;
                         editorGroups: string[];
                         editors: string[];
+                        eveServer: string;
                         externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
                         giteaOwner: string;
                         giteaRepo: string;
@@ -7959,7 +10273,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        servers: components["schemas"]["skyforge.WorkspaceServerRef"][];
+                        servers: components["schemas"]["skyforge.WorkspaceNetlabServerConfig"][];
                         workspaceId: string;
                     };
                 };
@@ -7980,8 +10294,11 @@ export interface operations {
             content: {
                 "application/json": {
                     apiInsecure: boolean;
+                    apiPassword: string;
                     apiToken: string;
                     apiUrl: string;
+                    apiUser: string;
+                    hasPassword: boolean;
                     id: string;
                     name: string;
                 };
@@ -7996,8 +10313,11 @@ export interface operations {
                 content: {
                     "application/json": {
                         apiInsecure: boolean;
+                        apiPassword: string;
                         apiToken: string;
                         apiUrl: string;
+                        apiUser: string;
+                        hasPassword: boolean;
                         id: string;
                         name: string;
                     };
@@ -8056,6 +10376,46 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetWorkspaceNetlabTemplate": {
+        parameters: {
+            query?: {
+                dir?: string;
+                /** @description workspace (default), blueprints, external, custom */
+                source?: string;
+                /** @description external/custom selector (id or repo ref) */
+                repo?: string;
+                /** @description repo-relative file within Dir (may include subdirs) */
+                template?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        branch: string;
+                        dir: string;
+                        path: string;
+                        repo: string;
+                        source: string;
+                        template: string;
+                        workspaceId: string;
+                        yaml: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetWorkspaceNetlabTemplates": {
         parameters: {
             query?: {
@@ -8087,6 +10447,53 @@ export interface operations {
                         repo: string;
                         templates: string[];
                         updatedAt: string;
+                        workspaceId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ValidateWorkspaceNetlabTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** repo-relative dir */
+                    dir: string;
+                    environment: components["schemas"]["skyforge.JSONMap"];
+                    /** owner/repo or URL (custom only) */
+                    repo: string;
+                    /**
+                     * SetOverrides are netlab CLI `--set` overrides (highest precedence) applied
+                     *     during validation.
+                     * @description They are only used by the in-cluster netlab generator (netlab-c9s), not BYOS netlab.
+                     */
+                    setOverrides: string[];
+                    /** workspace|blueprints|external|custom */
+                    source: string;
+                    /** repo-relative file within Dir (may include subdirs) */
+                    template: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        task: components["schemas"]["skyforge.JSONMap"];
+                        user: string;
                         workspaceId: string;
                     };
                 };
@@ -8304,6 +10711,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    allowCustomEveServers: boolean;
                     allowCustomNetlabServers: boolean;
                     allowExternalTemplateRepos: boolean;
                     externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
@@ -8791,6 +11199,44 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.FrontendFaviconICO": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendFavicon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:health.CheckAll": {
         parameters: {
             query?: never;
@@ -8979,6 +11425,111 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:worker.CronCloudCredentialChecksBridge": {
+        parameters: {
+            query?: never;
+            header: {
+                "x-skyforge-internal-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:worker.CronWorkerHeartbeatBridge": {
+        parameters: {
+            query?: never;
+            header: {
+                "x-skyforge-internal-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:worker.CronReconcileQueuedTasksBridge": {
+        parameters: {
+            query?: never;
+            header: {
+                "x-skyforge-internal-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:worker.CronReconcileRunningTasksBridge": {
+        parameters: {
+            query?: never;
+            header: {
+                "x-skyforge-internal-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:worker.CronWorkspaceSyncBridge": {
+        parameters: {
+            query?: never;
+            header: {
+                "x-skyforge-internal-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:worker.CronCloudCredentialChecks": {
         parameters: {
             query?: never;
@@ -9094,6 +11645,25 @@ export interface operations {
         };
     };
     "GET:skyforge.LogoutAll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendManifest": {
         parameters: {
             query?: never;
             header?: never;
@@ -9346,6 +11916,25 @@ export interface operations {
                         status: string;
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.FrontendRobots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };

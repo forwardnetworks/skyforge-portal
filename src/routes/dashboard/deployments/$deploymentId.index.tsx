@@ -21,12 +21,12 @@ import {
   startDeployment,
   stopDeployment,
   getDeploymentTopology,
-  listForwardCollectors,
+  listUserForwardCollectorConfigs,
   saveDeploymentNodeConfig,
   syncDeploymentForward,
   updateDeploymentForwardConfig,
   type DashboardSnapshot, type JSONMap,
-  type ForwardCollectorSummary,
+  type UserForwardCollectorConfigSummary,
   type WorkspaceDeployment
 } from "../../../lib/skyforge-api";
 import { queryKeys } from "../../../lib/query-keys";
@@ -93,7 +93,7 @@ function DeploymentDetailPage() {
 
   useEffect(() => {
     const enabled = Boolean((deployment?.config ?? {})["forwardEnabled"]);
-    const collector = String((deployment?.config ?? {})["forwardCollectorUsername"] ?? "").trim();
+    const collector = String((deployment?.config ?? {})["forwardCollectorId"] ?? "").trim();
     setForwardEnabled(enabled);
     setForwardCollector(collector);
   }, [deployment?.id, deployment?.config]);
@@ -242,16 +242,16 @@ function DeploymentDetailPage() {
   };
 
   const forwardCollectorsQ = useQuery({
-    queryKey: queryKeys.forwardCollectors(),
-    queryFn: listForwardCollectors,
+    queryKey: queryKeys.userForwardCollectorConfigs(),
+    queryFn: listUserForwardCollectorConfigs,
     enabled: forwardEnabled,
     retry: false,
     staleTime: 30_000,
   });
-  const forwardCollectors = (forwardCollectorsQ.data?.collectors ?? []) as ForwardCollectorSummary[];
+  const forwardCollectors = (forwardCollectorsQ.data?.collectors ?? []) as UserForwardCollectorConfigSummary[];
 
   const updateForward = useMutation({
-    mutationFn: async (next: { enabled: boolean; collectorUsername?: string }) => {
+    mutationFn: async (next: { enabled: boolean; collectorConfigId?: string }) => {
       if (!deployment) throw new Error("deployment not found");
       return updateDeploymentForwardConfig(deployment.workspaceId, deployment.id, next);
     },
@@ -611,12 +611,12 @@ function DeploymentDetailPage() {
                 <Switch
                   checked={forwardEnabled}
                   disabled={updateForward.isPending}
-                  onCheckedChange={(checked) => {
-                    setForwardEnabled(checked);
-                    const nextCollector = checked ? forwardCollector.trim() : "";
-                    updateForward.mutate({ enabled: checked, collectorUsername: nextCollector || undefined });
-                  }}
-                />
+	                  onCheckedChange={(checked) => {
+	                    setForwardEnabled(checked);
+	                    const nextCollector = checked ? forwardCollector.trim() : "";
+	                    updateForward.mutate({ enabled: checked, collectorConfigId: nextCollector || undefined });
+	                  }}
+	                />
               </div>
 
               {forwardEnabled ? (
@@ -625,10 +625,10 @@ function DeploymentDetailPage() {
                     <div className="text-sm font-medium">Collector</div>
                     <Select
                       value={forwardCollector}
-                      onValueChange={(val) => {
-                        setForwardCollector(val);
-                        updateForward.mutate({ enabled: true, collectorUsername: val });
-                      }}
+	                      onValueChange={(val) => {
+	                        setForwardCollector(val);
+	                        updateForward.mutate({ enabled: true, collectorConfigId: val });
+	                      }}
                       disabled={forwardCollectorsQ.isLoading || forwardCollectorsQ.isError || updateForward.isPending}
                     >
                       <SelectTrigger>
@@ -642,14 +642,14 @@ function DeploymentDetailPage() {
                           }
                         />
                       </SelectTrigger>
-                      <SelectContent>
-                        {forwardCollectors.map((c) => (
-                          <SelectItem key={c.id || c.username} value={c.username}>
-                            {c.name} ({c.username})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+	                      <SelectContent>
+	                        {forwardCollectors.map((c) => (
+	                          <SelectItem key={c.id} value={c.id}>
+	                            {c.name}
+	                          </SelectItem>
+	                        ))}
+	                      </SelectContent>
+	                    </Select>
                   </div>
 
                   <div className="flex items-end gap-2">
