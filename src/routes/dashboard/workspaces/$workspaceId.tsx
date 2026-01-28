@@ -188,6 +188,7 @@ function WorkspaceSettingsPage() {
         allowExternalTemplateRepos: ((next.externalTemplateRepos as any[]) ?? []).length > 0,
         // These legacy flags are intentionally always enabled; BYOS availability is
         // determined by whether servers are configured (and shown in the UI).
+        allowCustomEveServers: true,
         allowCustomNetlabServers: true,
         externalTemplateRepos: (next.externalTemplateRepos as any[]) ?? [],
       });

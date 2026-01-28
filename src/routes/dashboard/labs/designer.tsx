@@ -45,6 +45,8 @@ type DesignNodeData = {
   image: string;
 };
 
+type DesignNode = Node<DesignNodeData>;
+
 type SavedConfigRef = {
   workspaceId: string;
   templatesDir: string;
@@ -53,7 +55,7 @@ type SavedConfigRef = {
   branch: string;
 };
 
-function DesignerNode(props: NodeProps<DesignNodeData>) {
+function DesignerNode(props: NodeProps<DesignNode>) {
   const kind = String(props.data?.kind ?? "");
   const label = String(props.data?.label ?? props.id);
   const isHost = kind.toLowerCase().includes("linux") || kind.toLowerCase().includes("host");
@@ -101,7 +103,7 @@ function LabDesignerPage() {
   const [templateFile, setTemplateFile] = useState("");
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [paletteSearch, setPaletteSearch] = useState("");
-  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node<DesignNodeData>, Edge> | null>(null);
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<DesignNode, Edge> | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string>("");
   const [linkMode, setLinkMode] = useState(false);
   const [pendingLinkSource, setPendingLinkSource] = useState<string>("");
@@ -113,7 +115,7 @@ function LabDesignerPage() {
   const [importFile, setImportFile] = useState("");
   const [openDeploymentOnCreate, setOpenDeploymentOnCreate] = useState(true);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<DesignNodeData>>([
+  const [nodes, setNodes, onNodesChange] = useNodesState<DesignNode>([
     {
       id: "r1",
       position: { x: 80, y: 80 },

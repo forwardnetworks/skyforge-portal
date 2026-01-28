@@ -38,6 +38,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetAdminEffectiveConfig returns the effective (non-secret) typed Encore config
+         *     (admin only).
+         * @description This endpoint is meant for self-diagnosis: it reports the config actually seen by the running API process (including defaults), plus a list of required fields that are missing.
+         */
+        get: operations["GET:skyforge.GetAdminEffectiveConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/governance/costs": {
         parameters: {
             query?: never;
@@ -1430,25 +1451,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/session/nginx": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** SessionNginx is a Skyforge SSO gate compatible endpoint. */
-        get: operations["GET:skyforge.SessionNginx"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        /** SessionNginxHead is a Skyforge SSO gate compatible endpoint (HEAD). */
-        head: operations["HEAD:skyforge.SessionNginxHead"];
-        patch?: never;
-        trace?: never;
-    };
-    "/api/skyforge/api/oidc/callback": {
+    "/api/session/forwardauth": {
         parameters: {
             query?: never;
             header?: never;
@@ -1456,32 +1459,19 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * OIDCCallbackAlias provides backward-compatible routing for legacy OIDC callback
-         *     URLs.
+         * SessionForwardAuth is a Skyforge SSO gate compatible endpoint used by Traefik
+         *     forwardAuth.
          */
-        get: operations["GET:skyforge.OIDCCallbackAlias"];
+        get: operations["GET:skyforge.SessionForwardAuth"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/skyforge/api/oidc/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** OIDCLoginAlias provides backward-compatible routing for legacy OIDC login URLs. */
-        get: operations["GET:skyforge.OIDCLoginAlias"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
+        /**
+         * SessionForwardAuthHead is a Skyforge SSO gate compatible endpoint used by
+         *     Traefik forwardAuth (HEAD).
+         */
+        head: operations["HEAD:skyforge.SessionForwardAuthHead"];
         patch?: never;
         trace?: never;
     };
@@ -4928,6 +4918,58 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetAdminEffectiveConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        flags: {
+                            disableEncoreCache: boolean;
+                            notificationsEnabled: boolean;
+                            taskWorkerEnabled: boolean;
+                        };
+                        forwardCollector: {
+                            /** Format: int64 */
+                            heapSizeGb: number;
+                            image: string;
+                            imagePullSecretName: string;
+                            imagePullSecretNamespace: string;
+                            pullPolicy: string;
+                        };
+                        integrations: {
+                            giteaBaseUrl: string;
+                            nautobotBaseUrl: string;
+                            netboxBaseUrl: string;
+                            yaadeBaseUrl: string;
+                        };
+                        missing: string[];
+                        netlabGenerator: {
+                            generatorImage: string;
+                            mode: string;
+                            pullPolicy: string;
+                        };
+                        objectStorage: {
+                            endpoint: string;
+                            useSsl: boolean;
+                        };
+                        publicUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.ListGovernanceCosts": {
         parameters: {
             query?: {
@@ -7200,7 +7242,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.SessionNginx": {
+    "GET:skyforge.SessionForwardAuth": {
         parameters: {
             query?: never;
             header?: never;
@@ -7219,45 +7261,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "HEAD:skyforge.SessionNginxHead": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.OIDCCallbackAlias": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.OIDCLoginAlias": {
+    "HEAD:skyforge.SessionForwardAuthHead": {
         parameters: {
             query?: never;
             header?: never;
