@@ -15,6 +15,7 @@ export const queryKeys = {
   userForwardCollector: () => ["userForwardCollector"] as const,
   userCollectorRuntime: () => ["userCollectorRuntime"] as const,
   userCollectorLogs: () => ["userCollectorLogs"] as const,
+  userGitCredentials: () => ["userGitCredentials"] as const,
   userForwardCollectorConfigs: () => ["userForwardCollectorConfigs"] as const,
   userForwardCollectorConfigRuntime: (id: string) => ["userForwardCollectorConfigRuntime", id] as const,
   userForwardCollectorConfigLogs: (id: string) => ["userForwardCollectorConfigLogs", id] as const,

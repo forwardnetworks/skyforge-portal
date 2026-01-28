@@ -7,6 +7,7 @@ import {
   createUserForwardCollectorConfig,
   deleteUserForwardCollectorConfig,
   getUserForwardCollectorConfigLogs,
+  getUserGitCredentials,
   listUserForwardCollectorConfigs,
   restartUserForwardCollectorConfig,
   type UserForwardCollectorConfigSummary,
@@ -61,15 +62,31 @@ function ForwardCollectorPage() {
   const [target, setTarget] = useState<ForwardTarget>("cloud");
   const [onPremHost, setOnPremHost] = useState("");
   const [skipTlsVerify, setSkipTlsVerify] = useState(true);
-  const [collectorName, setCollectorName] = useState("default");
+  const [collectorName, setCollectorName] = useState("");
+  const [collectorNameTouched, setCollectorNameTouched] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [setDefault, setSetDefault] = useState(true);
+
+  const userGitQ = useQuery({
+    queryKey: queryKeys.userGitCredentials(),
+    queryFn: getUserGitCredentials,
+    staleTime: 60_000,
+    retry: false,
+  });
 
   useEffect(() => {
     if (target === "cloud") setSkipTlsVerify(false);
     else setSkipTlsVerify(true);
   }, [target]);
+
+  useEffect(() => {
+    if (collectorNameTouched) return;
+    if (collectorName.trim()) return;
+    const u = (userGitQ.data?.username ?? "").trim();
+    if (!u) return;
+    setCollectorName(`skyforge-${u}`);
+  }, [collectorNameTouched, collectorName, userGitQ.data?.username]);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -114,6 +131,20 @@ function ForwardCollectorPage() {
     onError: (e) => toast.error("Failed to delete collector", { description: (e as Error).message }),
   });
 
+  const deleteAllMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) {
+        await deleteUserForwardCollectorConfig(id);
+      }
+    },
+    onSuccess: async () => {
+      toast.success("Collectors deleted");
+      setShowLogsId("");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.userForwardCollectorConfigs() });
+    },
+    onError: (e) => toast.error("Failed to delete collectors", { description: (e as Error).message }),
+  });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -136,7 +167,14 @@ function ForwardCollectorPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Collector name</Label>
-            <Input value={collectorName} onChange={(e) => setCollectorName(e.target.value)} placeholder="default" />
+            <Input
+              value={collectorName}
+              onChange={(e) => {
+                setCollectorNameTouched(true);
+                setCollectorName(e.target.value);
+              }}
+              placeholder="skyforge-yourname"
+            />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -191,7 +229,24 @@ function ForwardCollectorPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Configured collectors</CardTitle>
+          <div className="flex items-center justify-between gap-4">
+            <CardTitle>Configured collectors</CardTitle>
+            {collectors.length > 0 ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={deleteAllMutation.isPending}
+                onClick={() => {
+                  const ids = collectors.map((c) => String(c.id)).filter(Boolean);
+                  if (ids.length === 0) return;
+                  if (!confirm(`Delete ${ids.length} collector(s)? This removes in-cluster Deployments and saved credentials.`)) return;
+                  deleteAllMutation.mutate(ids);
+                }}
+              >
+                {deleteAllMutation.isPending ? "Deleting…" : "Delete all"}
+              </Button>
+            ) : null}
+          </div>
           <CardDescription>Each entry maps to one in-cluster Deployment and one Forward collector.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -305,4 +360,3 @@ function ForwardCollectorPage() {
     </div>
   );
 }
-
