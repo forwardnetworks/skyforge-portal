@@ -189,10 +189,20 @@ export function TopologyViewer({
       const icon =
         vendor === "linux" ? "client" : vendor === "arista" || vendor === "cisco" ? "switch" : "server";
       const status = String(n.status ?? "unknown");
+      const pingIp = String((n as any).pingIp ?? n.mgmtIp ?? "");
+      const mgmtHost = String((n as any).mgmtHost ?? "");
       return {
         id: String(n.id),
         position: { x: col * gapX, y: row * gapY },
-        data: { label: String(n.label ?? n.id), icon, status, ip: String(n.mgmtIp ?? ""), kind, vendor },
+        data: {
+          label: String(n.label ?? n.id),
+          icon,
+          status,
+          ip: pingIp,
+          mgmtHost,
+          kind,
+          vendor,
+        },
         type: "custom",
       };
     });

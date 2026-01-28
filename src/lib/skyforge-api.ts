@@ -40,7 +40,9 @@ export type DeploymentTopology = {
     id: string;
     label: string;
     kind?: string;
-    mgmtIp?: string;
+    mgmtIp?: string; // pod IP (ping/debug)
+    mgmtHost?: string; // service DNS (SSH/HTTPS/SNMP)
+    pingIp?: string;
     status?: string;
   }>;
   edges: Array<{
