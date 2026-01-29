@@ -93,6 +93,7 @@ function CreateDeploymentPage() {
   const { workspace } = Route.useSearch();
   const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
   const [netlabHelpOpen, setNetlabHelpOpen] = useState(false);
+  const [terraformProviderFilter, setTerraformProviderFilter] = useState<string>("all");
 
   useDashboardEvents(true);
   const dash = useQuery<DashboardSnapshot | null>({
@@ -156,12 +157,34 @@ function CreateDeploymentPage() {
   const watchEnv = watch("env");
   const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 
+  const lastWorkspaceKey = "skyforge.lastWorkspaceId.deployments";
+
   // Sync workspaceId when workspaces load if not already set or passed via URL
   useEffect(() => {
-    if (!watchWorkspaceId && workspaces.length > 0) {
-      setValue("workspaceId", workspaces[0].id);
+    if (watchWorkspaceId || workspaces.length === 0) return;
+    const urlWs = String(workspace ?? "").trim();
+    if (urlWs && workspaces.some((w) => w.id === urlWs)) {
+      setValue("workspaceId", urlWs);
+      return;
     }
+    const stored = typeof window !== "undefined" ? (window.localStorage.getItem(lastWorkspaceKey) ?? "") : "";
+    if (stored && workspaces.some((w) => w.id === stored)) {
+      setValue("workspaceId", stored);
+      return;
+    }
+    setValue("workspaceId", workspaces[0].id);
   }, [watchWorkspaceId, workspaces, setValue]);
+
+  // Persist last-selected workspace for Create Deployment.
+  useEffect(() => {
+    if (!watchWorkspaceId) return;
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(lastWorkspaceKey, watchWorkspaceId);
+    } catch {
+      // ignore
+    }
+  }, [watchWorkspaceId]);
 
   // Auto-generate name when template or kind changes
   useEffect(() => {
@@ -270,7 +293,35 @@ function CreateDeploymentPage() {
     void queryClient.invalidateQueries({ queryKey: ["workspaceTemplates"] });
   }, [templatesUpdatedAt, queryClient]);
 
-  const templates = templatesQ.data?.templates ?? [];
+  const templates = useMemo(() => {
+    const raw = templatesQ.data?.templates ?? [];
+    if (watchKind !== "terraform") return raw;
+    const f = String(terraformProviderFilter ?? "all").trim().toLowerCase();
+    if (!f || f === "all") return raw;
+    return raw.filter((t) => String(t).toLowerCase().startsWith(`${f}/`) || String(t).toLowerCase() === f);
+  }, [templatesQ.data?.templates, terraformProviderFilter, watchKind]);
+
+  const terraformProviders = useMemo(() => {
+    if (watchKind !== "terraform") return [];
+    const raw = templatesQ.data?.templates ?? [];
+    const providers = new Set<string>();
+    for (const t of raw) {
+      const first = String(t ?? "").split("/")[0]?.trim();
+      if (first) providers.add(first);
+    }
+    return Array.from(providers).sort((a, b) => a.localeCompare(b));
+  }, [templatesQ.data?.templates, watchKind]);
+
+  useEffect(() => {
+    if (watchKind !== "terraform") {
+      setTerraformProviderFilter("all");
+      return;
+    }
+    // If filter is no longer present after a template refresh, reset to all.
+    if (terraformProviderFilter !== "all" && !terraformProviders.includes(terraformProviderFilter)) {
+      setTerraformProviderFilter("all");
+    }
+  }, [terraformProviderFilter, terraformProviders, watchKind]);
 
   const templatePreviewQ = useQuery({
     queryKey: ["workspaceTemplate", watchKind, watchWorkspaceId, effectiveSource, watchTemplateRepoId, templatesQ.data?.dir, watchTemplate],
@@ -747,6 +798,33 @@ function CreateDeploymentPage() {
                           </div>
                         )}
                       </div>
+                      {watchKind === "terraform" ? (
+                        <div className="grid gap-2 rounded-md border p-3">
+                          <div className="text-xs text-muted-foreground">
+                            Terraform templates are grouped by provider (folder name). Select a provider to filter the template list.
+                          </div>
+                          <Select
+                            value={terraformProviderFilter}
+                            onValueChange={(v) => setTerraformProviderFilter(v)}
+                            disabled={templatesQ.isLoading || (terraformProviders.length === 0 && templates.length === 0)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Provider filter" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All providers</SelectItem>
+                              {terraformProviders.map((p) => (
+                                <SelectItem key={p} value={p}>
+                                  {p}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="ibm" disabled>
+                                ibm (coming soon)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : null}
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
