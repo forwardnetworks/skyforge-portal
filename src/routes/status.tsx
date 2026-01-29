@@ -46,6 +46,7 @@ function StatusPage() {
     queryFn: getUIConfig,
     staleTime: Infinity,
   });
+  const features = uiConfig.data?.features;
 
   const statusData = summary.data;
   const checks = statusData?.checks ?? [];
@@ -257,13 +258,15 @@ function StatusPage() {
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
-              { id: 'gitea', name: 'Git', path: '/git/', icon: GitBranch },
-              { id: 'netbox', name: 'NetBox', path: '/netbox/', icon: Network },
-              { id: 'nautobot', name: 'Nautobot', path: '/nautobot/', icon: Network },
-              { id: 'coder', name: 'Coder', path: '/coder/launch', icon: Cloud },
-              { id: 'yaade', name: 'API Testing', path: `${SKYFORGE_API}/yaade/sso`, icon: Zap },
-              { id: 'webhooks', name: 'Webhooks', path: '/dashboard/webhooks', icon: Workflow },
-            ].map((tool) => {
+              { id: "gitea", name: "Git", path: "/git/", icon: GitBranch, enabled: features?.giteaEnabled ?? true, external: true },
+              { id: "netbox", name: "NetBox", path: "/netbox/", icon: Network, enabled: features?.netboxEnabled ?? false, external: true },
+              { id: "nautobot", name: "Nautobot", path: "/nautobot/", icon: Network, enabled: features?.nautobotEnabled ?? false, external: true },
+              { id: "coder", name: "Coder", path: "/coder/launch", icon: Cloud, enabled: features?.coderEnabled ?? false, external: true },
+              { id: "yaade", name: "API Testing", path: `${SKYFORGE_API}/yaade/sso`, icon: Zap, enabled: features?.yaadeEnabled ?? false, external: true },
+              { id: "webhooks", name: "Webhooks", path: "/dashboard/webhooks", icon: Workflow, enabled: true, external: false },
+            ]
+              .filter((tool) => tool.enabled)
+              .map((tool) => {
               // Find check status (simple fuzzy match)
               const check = checks.find(c => c.name.toLowerCase().includes(tool.id));
               const isUp = check ? (check.status === "up" || check.status === "ok") : true; 
@@ -274,7 +277,8 @@ function StatusPage() {
                 <a
                   key={tool.id}
                   href={tool.path}
-                  target={tool.path.startsWith("http") || tool.path.startsWith("/api") || tool.path.includes("/") ? "_blank" : "_self"}
+                  target={tool.external ? "_blank" : "_self"}
+                  rel={tool.external ? "noreferrer noopener" : undefined}
                   className="flex flex-col items-center justify-center p-4 rounded-lg bg-background/50 border hover:bg-background/80 transition-colors group relative overflow-hidden"
                 >
                   <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${statusColor} ${!isUp ? 'animate-pulse' : ''}`} />
