@@ -2,7 +2,7 @@ import { createRootRouteWithContext, Link, Outlet, useNavigate, useRouterState, 
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { buildLoginUrl, getSession, getUserNotifications, logout } from "../lib/skyforge-api";
+import { buildLoginUrl, getSession, getUIConfig, getUserNotifications, logout } from "../lib/skyforge-api";
 import { loginWithPopup } from "../lib/auth-popup";
 import { SideNav } from "../components/side-nav";
 import { CommandMenu } from "../components/command-menu";
@@ -71,6 +71,15 @@ function RootLayout() {
     staleTime: 30_000
   });
 
+  const uiConfig = useQuery({
+    queryKey: queryKeys.uiConfig(),
+    queryFn: getUIConfig,
+    staleTime: 5 * 60_000,
+  });
+
+  const productName = uiConfig.data?.productName || "Skyforge";
+  const productSubtitle = uiConfig.data?.productSubtitle || "Automation Platform";
+
   const next = useMemo(() => `${location.pathname}${location.searchStr ?? ""}${location.hash ?? ""}`, [
     location.pathname,
     location.searchStr,
@@ -127,15 +136,15 @@ function RootLayout() {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[240px] p-0">
                   <div className="px-2 py-6">
-                    <SideNav collapsed={false} isAdmin={isAdmin} />
+                    <SideNav collapsed={false} isAdmin={isAdmin} features={uiConfig.data?.features} />
                   </div>
                 </SheetContent>
               </Sheet>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">Automation Platform</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">{productSubtitle}</div>
                 <div className="flex items-center gap-2 text-base font-semibold tracking-tight">
                   <Anvil className="h-5 w-5 text-primary" />
-                  <span>Skyforge</span>
+                  <span>{productName}</span>
                 </div>
               </div>
               <div className="h-8 w-px bg-border hidden md:block" />
@@ -237,7 +246,7 @@ function RootLayout() {
           >
             <div className="relative h-full">
               <div className={cn("h-full px-4 py-4", navCollapsed && "px-2")}>
-                <SideNav collapsed={navCollapsed} isAdmin={isAdmin} />
+                <SideNav collapsed={navCollapsed} isAdmin={isAdmin} features={uiConfig.data?.features} />
               </div>
               <button
                 className={cn(

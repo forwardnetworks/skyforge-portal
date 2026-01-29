@@ -4840,6 +4840,17 @@ export interface components {
             updated: boolean;
             workspaceId: string;
         };
+        "skyforgecore.FeaturesConfig": {
+            coderEnabled: boolean;
+            dexEnabled: boolean;
+            dnsEnabled: boolean;
+            giteaEnabled: boolean;
+            minioEnabled: boolean;
+            nautobotEnabled: boolean;
+            netboxEnabled: boolean;
+            swaggerUIEnabled: boolean;
+            yaadeEnabled: boolean;
+        };
     };
     responses: {
         /** @description Error response */
@@ -7605,6 +7616,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         externalUrl: string;
+                        features: components["schemas"]["skyforgecore.FeaturesConfig"];
                         headerBackground: string;
                         logoAlt: string;
                         logoUrl: string;

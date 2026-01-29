@@ -40,6 +40,19 @@ type NavItem = {
   children?: NavItem[];
 };
 
+type Features = {
+  giteaEnabled?: boolean;
+  minioEnabled?: boolean;
+  dexEnabled?: boolean;
+  coderEnabled?: boolean;
+  yaadeEnabled?: boolean;
+  swaggerUIEnabled?: boolean;
+  forwardEnabled?: boolean;
+  netboxEnabled?: boolean;
+  nautobotEnabled?: boolean;
+  dnsEnabled?: boolean;
+};
+
 const items: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
@@ -70,7 +83,7 @@ const items: NavItem[] = [
   { label: "Governance", href: "/admin/governance", icon: ShieldCheck, adminOnly: true }
 ];
 
-export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
+export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean; features?: Features }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ "SSOT": true });
 
@@ -98,6 +111,30 @@ export function SideNav(props: { collapsed?: boolean; isAdmin?: boolean }) {
         <div className="grid gap-1">
           {items
             .filter((item) => (item.adminOnly ? !!props.isAdmin : true))
+            .flatMap((item) => {
+              const f = props.features;
+              if (!f) return [item];
+
+              if (item.label === "Git" && !f.giteaEnabled) return [];
+              if (item.label === "DNS" && !f.dnsEnabled) return [];
+              if (item.label === "Coder" && !f.coderEnabled) return [];
+              if (item.label === "Coder Admin" && !f.coderEnabled) return [];
+              if (item.label === "API Testing" && !f.yaadeEnabled) return [];
+              if (item.label === "Collector" && !f.forwardEnabled) return [];
+
+              if (item.label === "SSOT") {
+                const children =
+                  item.children?.filter((child) => {
+                    if (child.label === "NetBox") return !!f.netboxEnabled;
+                    if (child.label === "Nautobot") return !!f.nautobotEnabled;
+                    return true;
+                  }) ?? [];
+                if (children.length === 0) return [];
+                return [{ ...item, children }];
+              }
+
+              return [item];
+            })
             .map((item) => {
               const Icon = item.icon;
               
