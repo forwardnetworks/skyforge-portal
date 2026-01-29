@@ -1,0 +1,43 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"files": {
+		"ignore": ["dist/**", "node_modules/**", "src/routeTree.gen.ts"]
+	},
+	"formatter": {
+		"enabled": true
+	},
+	"organizeImports": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"a11y": {
+				"noNoninteractiveTabindex": "off",
+				"useButtonType": "off",
+				"useFocusableInteractive": "off",
+				"useKeyWithClickEvents": "off",
+				"useSemanticElements": "off"
+			},
+			"complexity": {
+				"useLiteralKeys": "off",
+				"useOptionalChain": "off"
+			},
+			"correctness": {
+				"useExhaustiveDependencies": "off"
+			},
+			"style": {
+				"useNodejsImportProtocol": "off",
+				"noNonNullAssertion": "off",
+				"noUnusedTemplateLiteral": "off",
+				"noUselessElse": "off",
+				"useTemplate": "off"
+			},
+			"suspicious": {
+				"noArrayIndexKey": "off",
+				"noExplicitAny": "off"
+			}
+		}
+	}
+}
