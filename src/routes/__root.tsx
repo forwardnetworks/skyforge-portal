@@ -114,17 +114,8 @@ function RootLayout() {
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <div className="min-h-full">
               <GlobalSpinner />
-                              <header 
-                                className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-                                style={{
-                                  backgroundImage:
-                                    "linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.4)), url('/assets/skyforge/header-background.png')",
-                                  backgroundSize: "cover",
-                                  backgroundPosition: "left 50%",
-                                  height: "120px"
-                                }}
-                              >
-                                <div className="mx-auto flex h-full max-w-[1600px] items-center justify-between gap-4 px-4">
+      <header className="sticky top-0 z-40 border-b glass-header">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -141,9 +132,9 @@ function RootLayout() {
                 </SheetContent>
               </Sheet>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">Technical Services</div>
-                <div className="flex items-center gap-2 text-lg font-bold tracking-tight">
-                  <Anvil className="h-5 w-5 text-orange-500" />
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">Automation Platform</div>
+                <div className="flex items-center gap-2 text-base font-semibold tracking-tight">
+                  <Anvil className="h-5 w-5 text-primary" />
                   <span>Skyforge</span>
                 </div>
               </div>
@@ -235,7 +226,7 @@ function RootLayout() {
           </nav>
         </div>
       </header>
-      <div className={cn("mx-auto flex min-h-[calc(100vh-64px)]", isFullBleedRoute ? "max-w-none" : "max-w-[1600px]")}>
+      <div className={cn("mx-auto flex min-h-[calc(100vh-4rem)]", isFullBleedRoute ? "max-w-none" : "max-w-[1600px]")}>
         {session.data?.authenticated && (
           <aside
             className={cn(

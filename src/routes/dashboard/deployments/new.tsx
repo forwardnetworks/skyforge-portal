@@ -11,6 +11,7 @@ import {
   getDashboardSnapshot,
   getWorkspaces,
   getWorkspaceNetlabTemplate,
+  getWorkspaceContainerlabTemplate,
   getWorkspaceContainerlabTemplates,
   getWorkspaceLabppTemplates,
   getWorkspaceNetlabTemplates,
@@ -272,19 +273,24 @@ function CreateDeploymentPage() {
   const templates = templatesQ.data?.templates ?? [];
 
   const templatePreviewQ = useQuery({
-    queryKey: ["workspaceNetlabTemplate", watchWorkspaceId, effectiveSource, watchTemplateRepoId, templatesQ.data?.dir, watchTemplate],
+    queryKey: ["workspaceTemplate", watchKind, watchWorkspaceId, effectiveSource, watchTemplateRepoId, templatesQ.data?.dir, watchTemplate],
     queryFn: async () => {
       if (!watchWorkspaceId) throw new Error("workspaceId is required");
       if (!watchTemplate) throw new Error("template is required");
-      const query: any = {
-        source: effectiveSource,
-        template: watchTemplate,
-      };
+      const query: any = { source: effectiveSource };
       if (effectiveSource === "external" && watchTemplateRepoId) query.repo = watchTemplateRepoId;
       if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
-      return getWorkspaceNetlabTemplate(watchWorkspaceId, query);
+      if (watchKind === "containerlab" || watchKind === "clabernetes") {
+        return getWorkspaceContainerlabTemplate(watchWorkspaceId, { ...query, file: watchTemplate });
+      }
+      // Default: treat as netlab-like.
+      return getWorkspaceNetlabTemplate(watchWorkspaceId, { ...query, template: watchTemplate });
     },
-    enabled: templatePreviewOpen && Boolean(watchWorkspaceId) && Boolean(watchTemplate) && (watchKind === "netlab" || watchKind === "netlab-c9s"),
+    enabled:
+      templatePreviewOpen &&
+      Boolean(watchWorkspaceId) &&
+      Boolean(watchTemplate) &&
+      (watchKind === "netlab" || watchKind === "netlab-c9s" || watchKind === "containerlab" || watchKind === "clabernetes"),
     retry: false,
     staleTime: 30_000,
   });
@@ -707,7 +713,10 @@ function CreateDeploymentPage() {
                     <FormItem>
                       <div className="flex items-center justify-between gap-3">
                         <FormLabel>Template</FormLabel>
-                        {(watchKind === "netlab" || watchKind === "netlab-c9s") && (
+                        {(watchKind === "netlab" ||
+                          watchKind === "netlab-c9s" ||
+                          watchKind === "containerlab" ||
+                          watchKind === "clabernetes") && (
                           <div className="flex items-center gap-2">
                             <Button
                               type="button"
@@ -718,21 +727,23 @@ function CreateDeploymentPage() {
                             >
                               View
                             </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={!watchTemplate || validateNetlabTemplate.isPending}
-                              onClick={() => validateNetlabTemplate.mutate()}
-                            >
-                              {validateNetlabTemplate.isPending ? (
-                                <>
-                                  <Loader2 className="mr-2 h-3 w-3 animate-spin" /> Validating…
-                                </>
-                              ) : (
-                                "Validate"
-                              )}
-                            </Button>
+                            {(watchKind === "netlab" || watchKind === "netlab-c9s") ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={!watchTemplate || validateNetlabTemplate.isPending}
+                                onClick={() => validateNetlabTemplate.mutate()}
+                              >
+                                {validateNetlabTemplate.isPending ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-3 w-3 animate-spin" /> Validating…
+                                  </>
+                                ) : (
+                                  "Validate"
+                                )}
+                              </Button>
+                            ) : null}
                           </div>
                         )}
                       </div>
@@ -1015,7 +1026,7 @@ function CreateDeploymentPage() {
       <Dialog open={templatePreviewOpen} onOpenChange={setTemplatePreviewOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Netlab template</DialogTitle>
+            <DialogTitle>Template</DialogTitle>
             <DialogDescription className="font-mono text-xs truncate">
               {String((templatePreviewQ.data as any)?.path ?? watchTemplate)}
             </DialogDescription>

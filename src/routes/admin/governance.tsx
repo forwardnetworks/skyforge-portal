@@ -16,12 +16,12 @@ import { queryKeys } from "../../lib/query-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Badge } from "../../components/ui/badge";
 import { BentoGrid, BentoStatCard, BentoItem } from "../../components/ui/bento-grid";
 import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { DataTable, type DataTableColumn } from "../../components/ui/data-table";
 
 // Search Params Schema
 const governanceSearchSchema = z.object({
@@ -280,34 +280,36 @@ function GovernancePage() {
                   description="No resources match your search criteria."
                 />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Workspace</TableHead>
-                      <TableHead>Owner</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredResources.slice(0, 500).map((r) => (
-                      <TableRow key={r.resourceId}>
-                        <TableCell className="font-medium">{r.name}</TableCell>
-                        <TableCell>{r.provider}</TableCell>
-                        <TableCell>{r.resourceType}</TableCell>
-                        <TableCell>{r.workspaceName}</TableCell>
-                        <TableCell>{r.owner}</TableCell>
-                        <TableCell>
+                <DataTable
+                  columns={
+                    [
+                      {
+                        id: "name",
+                        header: "Name",
+                        width: "minmax(220px, 1fr)",
+                        cell: (r) => <span className="font-medium">{r.name}</span>
+                      },
+                      { id: "provider", header: "Provider", width: 140, cell: (r) => r.provider },
+                      { id: "type", header: "Type", width: 160, cell: (r) => r.resourceType },
+                      { id: "workspace", header: "Workspace", width: 200, cell: (r) => r.workspaceName },
+                      { id: "owner", header: "Owner", width: 160, cell: (r) => r.owner },
+                      {
+                        id: "status",
+                        header: "Status",
+                        width: 120,
+                        cell: (r) => (
                           <Badge variant={r.status === "active" ? "default" : "secondary"}>
                             {r.status ?? "unknown"}
                           </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        )
+                      }
+                    ] satisfies Array<DataTableColumn<(typeof filteredResources)[number]>>
+                  }
+                  rows={filteredResources.slice(0, 500)}
+                  getRowId={(r) => String(r.resourceId)}
+                  maxHeightClassName="max-h-[60vh]"
+                  minWidthClassName="min-w-[1100px]"
+                />
               )}
             </CardContent>
           </Card>
@@ -332,26 +334,33 @@ function GovernancePage() {
                   description="No financial snapshots available."
                 />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Currency</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead className="text-right">Period End</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(costs.data?.costs ?? []).slice(0, 50).map((c, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium">{c.provider}</TableCell>
-                        <TableCell>{c.currency}</TableCell>
-                        <TableCell>{c.amount}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{c.periodEnd}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  columns={
+                    [
+                      {
+                        id: "provider",
+                        header: "Provider",
+                        width: 180,
+                        cell: (c) => <span className="font-medium">{c.provider}</span>
+                      },
+                      { id: "currency", header: "Currency", width: 120, cell: (c) => c.currency },
+                      { id: "amount", header: "Amount", width: 140, cell: (c) => c.amount },
+                      {
+                        id: "periodEnd",
+                        header: "Period End",
+                        width: 200,
+                        align: "right",
+                        cell: (c) => (
+                          <span className="text-muted-foreground">{c.periodEnd}</span>
+                        )
+                      }
+                    ] satisfies Array<DataTableColumn<(NonNullable<typeof costs.data>["costs"])[number]>>
+                  }
+                  rows={(costs.data?.costs ?? []).slice(0, 50)}
+                  getRowId={(c) => `${c.provider}:${c.periodEnd}:${c.amount}`}
+                  maxHeightClassName="max-h-[50vh]"
+                  minWidthClassName="min-w-[900px]"
+                />
               )}
             </CardContent>
           </Card>
@@ -376,26 +385,33 @@ function GovernancePage() {
                   description="No telemetry snapshots available."
                 />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Metric</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead className="text-right">Collected At</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(usage.data?.usage ?? []).slice(0, 50).map((u, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium">{u.provider}</TableCell>
-                        <TableCell>{u.metric}</TableCell>
-                        <TableCell>{u.value}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{u.collectedAt}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  columns={
+                    [
+                      {
+                        id: "provider",
+                        header: "Provider",
+                        width: 180,
+                        cell: (u) => <span className="font-medium">{u.provider}</span>
+                      },
+                      { id: "metric", header: "Metric", cell: (u) => u.metric },
+                      { id: "value", header: "Value", width: 200, cell: (u) => u.value },
+                      {
+                        id: "collectedAt",
+                        header: "Collected At",
+                        width: 220,
+                        align: "right",
+                        cell: (u) => (
+                          <span className="text-muted-foreground">{u.collectedAt}</span>
+                        )
+                      }
+                    ] satisfies Array<DataTableColumn<(NonNullable<typeof usage.data>["usage"])[number]>>
+                  }
+                  rows={(usage.data?.usage ?? []).slice(0, 50)}
+                  getRowId={(u) => `${u.provider}:${u.metric}:${u.collectedAt}`}
+                  maxHeightClassName="max-h-[50vh]"
+                  minWidthClassName="min-w-[900px]"
+                />
               )}
             </CardContent>
           </Card>

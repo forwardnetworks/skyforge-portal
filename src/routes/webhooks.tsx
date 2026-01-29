@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Inbox } from "lucide-react";
-import { listWebhookEvents } from "../lib/skyforge-api";
+import { type ListWebhookEventsResponse, listWebhookEvents } from "../lib/skyforge-api";
 import { queryKeys } from "../lib/query-keys";
 import { useWebhookEvents } from "../lib/webhook-events";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Skeleton } from "../components/ui/skeleton";
 import { EmptyState } from "../components/ui/empty-state";
+import { DataTable, type DataTableColumn } from "../components/ui/data-table";
 
 export const Route = createFileRoute("/webhooks")({
   component: WebhooksPage
@@ -22,6 +22,46 @@ function WebhooksPage() {
   });
 
   const list = events.data?.events ?? [];
+  type WebhookRow = NonNullable<ListWebhookEventsResponse["events"]>[number];
+
+  const columns: Array<DataTableColumn<WebhookRow>> = [
+    {
+      id: "time",
+      header: "Time",
+      width: 190,
+      cell: (e) => (
+        <span className="text-muted-foreground whitespace-nowrap text-xs">
+          {e.receivedAt ?? ""}
+        </span>
+      )
+    },
+    {
+      id: "source",
+      header: "Source",
+      width: 160,
+      cell: (e) => <span className="font-mono text-xs">{e.sourceIp ?? ""}</span>
+    },
+    {
+      id: "event",
+      header: "Event",
+      cell: (e) => (
+        <span className="font-medium text-sm">
+          {e.method} {e.path}
+        </span>
+      )
+    },
+    {
+      id: "id",
+      header: "ID",
+      width: 120,
+      align: "right",
+      cell: (e) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {String(e.id)}
+        </span>
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6 p-6">
@@ -49,28 +89,12 @@ function WebhooksPage() {
               description="No webhook events have been received yet."
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">Time</TableHead>
-                  <TableHead className="w-[140px]">Source</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead className="w-[100px] text-right">ID</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((e) => (
-                  <TableRow key={String(e.id)}>
-                    <TableCell className="text-muted-foreground whitespace-nowrap text-xs">{e.receivedAt ?? ""}</TableCell>
-                    <TableCell>{e.sourceIp ?? ""}</TableCell>
-                    <TableCell className="font-medium text-sm">
-                      {e.method} {e.path}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground text-right">{String(e.id)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable<WebhookRow>
+              columns={columns}
+              rows={list as WebhookRow[]}
+              getRowId={(row) => String(row.id)}
+              maxHeightClassName="max-h-[65vh]"
+            />
           )}
         </CardContent>
       </Card>

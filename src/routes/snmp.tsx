@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Inbox } from "lucide-react";
-import { listSnmpTrapEvents } from "../lib/skyforge-api";
+import { type ListSnmpTrapEventsResponse, listSnmpTrapEvents } from "../lib/skyforge-api";
 import { queryKeys } from "../lib/query-keys";
 import { useSnmpTrapEvents } from "../lib/snmp-events";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Skeleton } from "../components/ui/skeleton";
 import { EmptyState } from "../components/ui/empty-state";
+import { DataTable, type DataTableColumn } from "../components/ui/data-table";
 
 export const Route = createFileRoute("/snmp")({
   component: SnmpTrapsPage
@@ -23,6 +23,46 @@ function SnmpTrapsPage() {
   });
 
   const list = events.data?.events ?? [];
+  type TrapRow = NonNullable<ListSnmpTrapEventsResponse["events"]>[number];
+
+  const columns: Array<DataTableColumn<TrapRow>> = [
+    {
+      id: "time",
+      header: "Time",
+      width: 190,
+      cell: (e) => (
+        <span className="text-muted-foreground whitespace-nowrap text-xs">
+          {e.receivedAt ?? ""}
+        </span>
+      )
+    },
+    {
+      id: "source",
+      header: "Source",
+      width: 160,
+      cell: (e) => <span className="font-mono text-xs">{e.sourceIp ?? ""}</span>
+    },
+    {
+      id: "oid",
+      header: "OID",
+      cell: (e) => (
+        <span className="font-medium text-foreground text-sm font-mono">
+          {e.oid ?? ""}
+        </span>
+      )
+    },
+    {
+      id: "id",
+      header: "ID",
+      width: 120,
+      align: "right",
+      cell: (e) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {String(e.id)}
+        </span>
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6 p-6">
@@ -50,26 +90,12 @@ function SnmpTrapsPage() {
               description="No SNMP traps have been received yet."
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">Time</TableHead>
-                  <TableHead className="w-[140px]">Source</TableHead>
-                  <TableHead>OID</TableHead>
-                  <TableHead className="w-[100px] text-right">ID</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((e) => (
-                  <TableRow key={String(e.id)}>
-                    <TableCell className="text-muted-foreground whitespace-nowrap text-xs">{e.receivedAt ?? ""}</TableCell>
-                    <TableCell className="font-mono text-xs">{e.sourceIp ?? ""}</TableCell>
-                    <TableCell className="font-medium text-foreground text-sm font-mono">{e.oid ?? ""}</TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground text-right">{String(e.id)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable<TrapRow>
+              columns={columns}
+              rows={list as TrapRow[]}
+              getRowId={(row) => String(row.id)}
+              maxHeightClassName="max-h-[65vh]"
+            />
           )}
         </CardContent>
       </Card>

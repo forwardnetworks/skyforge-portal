@@ -19,7 +19,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
-import { Route as DashboardPkiRouteImport } from './routes/dashboard/pki'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
@@ -82,11 +81,6 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const DashboardS3Route = DashboardS3RouteImport.update({
   id: '/dashboard/s3',
   path: '/dashboard/s3',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardPkiRoute = DashboardPkiRouteImport.update({
-  id: '/dashboard/pki',
-  path: '/dashboard/pki',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardForwardRoute = DashboardForwardRouteImport.update({
@@ -171,7 +165,6 @@ export interface FileRoutesByFullPath {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRoute
-  '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -197,7 +190,6 @@ export interface FileRoutesByTo {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRoute
-  '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -224,7 +216,6 @@ export interface FileRoutesById {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRoute
-  '/dashboard/pki': typeof DashboardPkiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -252,7 +243,6 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/forward'
-    | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin'
     | '/dashboard'
@@ -278,7 +268,6 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/forward'
-    | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin'
     | '/dashboard'
@@ -304,7 +293,6 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/forward'
-    | '/dashboard/pki'
     | '/dashboard/s3'
     | '/admin/'
     | '/dashboard/'
@@ -331,7 +319,6 @@ export interface RootRouteChildren {
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardForwardRoute: typeof DashboardForwardRoute
-  DashboardPkiRoute: typeof DashboardPkiRoute
   DashboardS3Route: typeof DashboardS3Route
   AdminIndexRoute: typeof AdminIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -417,13 +404,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/s3'
       fullPath: '/dashboard/s3'
       preLoaderRoute: typeof DashboardS3RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/pki': {
-      id: '/dashboard/pki'
-      path: '/dashboard/pki'
-      fullPath: '/dashboard/pki'
-      preLoaderRoute: typeof DashboardPkiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/forward': {
@@ -531,7 +511,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   DashboardForwardRoute: DashboardForwardRoute,
-  DashboardPkiRoute: DashboardPkiRoute,
   DashboardS3Route: DashboardS3Route,
   AdminIndexRoute: AdminIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,

@@ -42,12 +42,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Button, buttonVariants } from "../../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Input } from "../../../components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { TableWrapper } from "../../../components/ui/table-wrapper";
 import { Badge } from "../../../components/ui/badge";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/empty-state";
 import { Checkbox } from "../../../components/ui/checkbox";
+import { DataTable, type DataTableColumn } from "../../../components/ui/data-table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -181,7 +180,7 @@ function DeploymentsPage() {
       if (statusFilter !== "all") {
         const status = (d.activeTaskStatus ?? d.lastStatus ?? "unknown").toLowerCase();
         if (statusFilter === "running" && !["running", "active", "healthy"].includes(status)) return false;
-        if (statusFilter === "stopped" && !["created", "stopped", "success", "succeeded"].includes(status)) return false;
+        if (statusFilter === "stopped" && !["created", "stopped", "success", "succeeded", "ready"].includes(status)) return false;
         if (statusFilter === "failed" && !["failed", "error", "crashloopbackoff"].includes(status)) return false;
       }
       // Type
@@ -193,14 +192,6 @@ function DeploymentsPage() {
       return true;
     });
   }, [allDeployments, searchQuery, statusFilter, typeFilter]);
-
-  const runs = useMemo(() => {
-    const all = (snap.data?.runs ?? []) as JSONMap[];
-    if (!selectedWorkspaceId) return all;
-    return all.filter((r: JSONMap) => String(r.workspaceId ?? "") === selectedWorkspaceId);
-  }, [selectedWorkspaceId, snap.data?.runs]);
-
-  const loginHref = buildLoginUrl(window.location.pathname + window.location.search);
 
   const handleStart = async (d: WorkspaceDeployment) => {
     try {
@@ -219,6 +210,107 @@ function DeploymentsPage() {
       toast.error("Failed to stop", { description: (e as Error).message });
     }
   };
+
+  const deploymentColumns = useMemo((): Array<DataTableColumn<WorkspaceDeployment>> => {
+    return [
+      {
+        id: "name",
+        header: "Name",
+        width: "minmax(240px, 1fr)",
+        cell: (d) => (
+          <Link
+            to="/dashboard/deployments/$deploymentId"
+            params={{ deploymentId: d.id }}
+            className="hover:underline flex items-center gap-2 font-medium text-foreground"
+          >
+            {d.name}
+          </Link>
+        )
+      },
+      {
+        id: "type",
+        header: "Type",
+        width: 160,
+        cell: (d) => (
+          <span className="text-muted-foreground">
+            {formatDeploymentType(d.type)}
+          </span>
+        )
+      },
+      {
+        id: "status",
+        header: "Status",
+        width: 150,
+        cell: (d) => (
+          <StatusBadge status={d.activeTaskStatus ?? d.lastStatus ?? "unknown"} />
+        )
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        width: 120,
+        align: "right",
+        cell: (d) => {
+          const status = (d.activeTaskStatus ?? d.lastStatus ?? "unknown").toLowerCase();
+          const isRunning = ["running", "active", "healthy"].includes(status);
+          const isBusy = Boolean(d.activeTaskId);
+          return (
+            <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() =>
+                  navigate({
+                    to: "/dashboard/deployments/$deploymentId",
+                    params: { deploymentId: d.id }
+                  })
+                }
+              >
+                <Info className="mr-2 h-4 w-4" />
+                Details
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleStart(d)} disabled={isBusy || isRunning}>
+                <Play className="mr-2 h-4 w-4" />
+                Start
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStop(d)} disabled={isBusy || !isRunning}>
+                <StopCircle className="mr-2 h-4 w-4" />
+                Stop
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  setDestroyTarget(d)
+                  setDestroyDialogOpen(true)
+                }}
+                className="text-destructive focus:text-destructive"
+                disabled={isBusy}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          );
+        }
+      }
+    ]
+  }, [handleStart, handleStop, navigate]);
+
+  const runs = useMemo(() => {
+    const all = (snap.data?.runs ?? []) as JSONMap[];
+    if (!selectedWorkspaceId) return all;
+    return all.filter((r: JSONMap) => String(r.workspaceId ?? "") === selectedWorkspaceId);
+  }, [selectedWorkspaceId, snap.data?.runs]);
+
+  const loginHref = buildLoginUrl(window.location.pathname + window.location.search);
 
   const handleDestroy = async () => {
     if (!destroyTarget) return;
@@ -404,80 +496,13 @@ function DeploymentsPage() {
                   } : undefined}
                 />
               ) : (
-                <TableWrapper className="border-none">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {deployments.map((d: WorkspaceDeployment) => (
-                        <TableRow key={d.id}>
-                          <TableCell className="font-medium text-foreground">
-                            <Link
-                              to="/dashboard/deployments/$deploymentId"
-                              params={{ deploymentId: d.id }}
-                              className="hover:underline flex items-center gap-2"
-                            >
-                              {d.name}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{formatDeploymentType(d.type)}</TableCell>
-                          <TableCell>
-                             <StatusBadge status={d.activeTaskStatus ?? d.lastStatus ?? "unknown"} />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Open menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onClick={() => navigate({
-                                    to: "/dashboard/deployments/$deploymentId",
-                                    params: { deploymentId: d.id }
-                                  })}
-                                >
-                                  <Info className="mr-2 h-4 w-4" />
-                                  Details
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleStart(d)} disabled={!!d.activeTaskId}>
-                                  <Play className="mr-2 h-4 w-4" />
-                                  Start
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleStop(d)} disabled={!d.activeTaskId}>
-                                  <StopCircle className="mr-2 h-4 w-4" />
-                                  Stop
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setDestroyTarget(d);
-                                    setDestroyDialogOpen(true);
-                                  }}
-                                  className="text-destructive focus:text-destructive"
-                                  disabled={!!d.activeTaskId}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableWrapper>
+                <DataTable
+                  columns={deploymentColumns}
+                  rows={deployments}
+                  getRowId={(d) => d.id}
+                  maxHeightClassName="max-h-[60vh]"
+                  minWidthClassName="min-w-[900px]"
+                />
               )}
             </CardContent>
           </Card>
@@ -613,8 +638,17 @@ function DeploymentsPage() {
 function StatusBadge({ status, size = "default" }: { status: string, size?: "default" | "xs" }) {
   let variant: "default" | "secondary" | "destructive" | "outline" = "secondary";
   const s = status.toLowerCase();
-  if (["running", "active", "healthy", "succeeded", "success"].includes(s)) variant = "default";
-  if (["failed", "error", "stopped", "crashloopbackoff"].includes(s)) variant = "destructive";
+  const label =
+    s === "success" || s === "succeeded" ? "ready" :
+    s === "crashloopbackoff" ? "crashloop" :
+    status;
+
+  if (["running", "active", "healthy"].includes(s)) variant = "default";
+  if (["failed", "error", "crashloopbackoff"].includes(s)) variant = "destructive";
   
-  return <Badge variant={variant} className={`capitalize ${size === "xs" ? "px-1.5 py-0 text-[10px] h-5" : ""}`}>{status}</Badge>;
+  return (
+    <Badge variant={variant} className={`capitalize ${size === "xs" ? "px-1.5 py-0 text-[10px] h-5" : ""}`}>
+      {label}
+    </Badge>
+  );
 }

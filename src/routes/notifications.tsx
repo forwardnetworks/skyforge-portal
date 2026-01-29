@@ -8,14 +8,13 @@ import { queryKeys } from "../lib/query-keys";
 import { useNotificationsEvents, type NotificationsSnapshot } from "../lib/notifications-events";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button, buttonVariants } from "../components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
-import { TableWrapper } from "../components/ui/table-wrapper";
 import { Switch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
 import { Skeleton } from "../components/ui/skeleton";
 import { EmptyState } from "../components/ui/empty-state";
 import { toast } from "sonner";
 import { Checkbox } from "../components/ui/checkbox";
+import { DataTable, type DataTableColumn } from "../components/ui/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -138,6 +137,104 @@ function NotificationsPage() {
     }
   };
 
+  const columns: Array<DataTableColumn<NotificationRecord>> = [
+      {
+        id: "select",
+        header: (
+          <Checkbox
+            checked={list.length > 0 && selected.size === list.length}
+            onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
+            aria-label="Select all"
+          />
+        ),
+        width: 54,
+        headerClassName: "px-2 py-0",
+        className: "px-2 py-0",
+        cell: (n) => {
+          const id = String(n.id);
+          const isSelected = selected.has(id);
+          return (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => handleSelectOne(id, checked as boolean)}
+              aria-label={`Select notification ${id}`}
+            />
+          );
+        }
+      },
+      {
+        id: "time",
+        header: "Time",
+        width: 190,
+        cell: (n) => (
+          <span className="text-muted-foreground text-xs whitespace-nowrap">
+            {n.created_at ?? ""}
+          </span>
+        )
+      },
+      {
+        id: "message",
+        header: "Title & Message",
+        cell: (n) => (
+          <div>
+            <div className="font-medium text-sm">{n.title ?? ""}</div>
+            {n.message ? (
+              <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                {n.message}
+              </div>
+            ) : null}
+          </div>
+        )
+      },
+      {
+        id: "category",
+        header: "Category",
+        width: 160,
+        cell: (n) => (
+          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">
+            {n.category ?? "System"}
+          </span>
+        )
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        width: 120,
+        align: "right",
+        cell: (n) => {
+          const id = String(n.id);
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {!n.is_read && (
+                  <DropdownMenuItem onClick={() => handleMarkRead(id)}>
+                    <Check className="mr-2 h-4 w-4" />
+                    <span>Mark as read</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => {
+                    setDeleteTarget(id);
+                    setDeleteDialogOpen(true);
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        }
+      }
+    ];
+
   return (
     <div className="space-y-6 p-6">
       <Card variant="glass">
@@ -212,85 +309,22 @@ function NotificationsPage() {
               description={includeRead ? "You don't have any notifications at the moment." : "You've read all your notifications!"}
             />
           ) : (
-            <TableWrapper className="border-none">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">
-                      <Checkbox 
-                        checked={list.length > 0 && selected.size === list.length}
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead className="w-[180px]">Time</TableHead>
-                    <TableHead>Title & Message</TableHead>
-                    <TableHead className="w-[120px]">Category</TableHead>
-                    <TableHead className="w-[80px] text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {list.map((n: NotificationRecord) => {
-                    const id = String(n.id);
-                    const isSelected = selected.has(id);
-                    
-                    return (
-                      <TableRow 
-                        key={id} 
-                        className={n.is_read ? "opacity-60 grayscale-[0.5]" : ""}
-                        data-state={isSelected ? "selected" : undefined}
-                      >
-                        <TableCell>
-                          <Checkbox 
-                            checked={isSelected}
-                            onCheckedChange={(checked) => handleSelectOne(id, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                          {n.created_at ?? ""}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium text-sm">{n.title ?? ""}</div>
-                          {n.message ? <div className="mt-1 text-xs text-muted-foreground line-clamp-2">{n.message}</div> : null}
-                        </TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">
-                            {n.category ?? "System"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {!n.is_read && (
-                                <DropdownMenuItem onClick={() => handleMarkRead(id)}>
-                                  <Check className="mr-2 h-4 w-4" />
-                                  <span>Mark as read</span>
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem 
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => {
-                                  setDeleteTarget(id);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Delete</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableWrapper>
+            <DataTable
+              columns={columns}
+              rows={list}
+              getRowId={(row) => String(row.id)}
+              getRowClassName={(row) => {
+                const id = String(row.id);
+                const isSelected = selected.has(id);
+                return [
+                  row.is_read ? "opacity-60 grayscale-[0.5]" : "",
+                  isSelected ? "bg-primary/10 hover:bg-primary/10" : ""
+                ].filter(Boolean).join(" ");
+              }}
+              getRowAriaSelected={(row) => selected.has(String(row.id))}
+              maxHeightClassName="max-h-[65vh]"
+              minWidthClassName="min-w-[900px]"
+            />
           )}
         </CardContent>
       </Card>

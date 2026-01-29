@@ -36,9 +36,10 @@ function normalizeBaseURL(target: ForwardTarget, onPremHost: string): string {
 
 function ForwardCollectorPage() {
   const queryClient = useQueryClient();
+  const collectorsKey = queryKeys.userForwardCollectorConfigs();
 
   const collectorsQ = useQuery({
-    queryKey: queryKeys.userForwardCollectorConfigs(),
+    queryKey: collectorsKey,
     queryFn: listUserForwardCollectorConfigs,
     refetchInterval: 5000,
     staleTime: 10_000,
@@ -107,7 +108,7 @@ function ForwardCollectorPage() {
     onSuccess: async () => {
       toast.success("Collector created");
       setPassword("");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.userForwardCollectorConfigs() });
+      await queryClient.invalidateQueries({ queryKey: collectorsKey });
     },
     onError: (e) => toast.error("Failed to create collector", { description: (e as Error).message }),
   });
@@ -116,17 +117,21 @@ function ForwardCollectorPage() {
     mutationFn: async (id: string) => restartUserForwardCollectorConfig(id),
     onSuccess: async () => {
       toast.success("Collector restarted");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.userForwardCollectorConfigs() });
+      await queryClient.invalidateQueries({ queryKey: collectorsKey });
     },
     onError: (e) => toast.error("Failed to restart collector", { description: (e as Error).message }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => deleteUserForwardCollectorConfig(id),
-    onSuccess: async () => {
+    onSuccess: async (_data, id) => {
       toast.success("Collector deleted");
       setShowLogsId("");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.userForwardCollectorConfigs() });
+      queryClient.setQueryData(collectorsKey, (prev: any) => {
+        const prevCollectors = (prev?.collectors ?? []) as UserForwardCollectorConfigSummary[];
+        return { ...(prev ?? {}), collectors: prevCollectors.filter((c) => String(c?.id ?? "") !== String(id)) };
+      });
+      await queryClient.invalidateQueries({ queryKey: collectorsKey });
     },
     onError: (e) => toast.error("Failed to delete collector", { description: (e as Error).message }),
   });
@@ -140,7 +145,8 @@ function ForwardCollectorPage() {
     onSuccess: async () => {
       toast.success("Collectors deleted");
       setShowLogsId("");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.userForwardCollectorConfigs() });
+      queryClient.setQueryData(collectorsKey, (prev: any) => ({ ...(prev ?? {}), collectors: [] }));
+      await queryClient.invalidateQueries({ queryKey: collectorsKey });
     },
     onError: (e) => toast.error("Failed to delete collectors", { description: (e as Error).message }),
   });

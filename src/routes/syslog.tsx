@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Inbox } from "lucide-react";
-import { listSyslogEvents } from "../lib/skyforge-api";
+import { type ListSyslogEventsResponse, listSyslogEvents } from "../lib/skyforge-api";
 import { queryKeys } from "../lib/query-keys";
 import { useSyslogEvents } from "../lib/syslog-events";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Skeleton } from "../components/ui/skeleton";
 import { EmptyState } from "../components/ui/empty-state";
+import { DataTable, type DataTableColumn } from "../components/ui/data-table";
 
 export const Route = createFileRoute("/syslog")({
   component: SyslogPage
@@ -23,6 +23,41 @@ function SyslogPage() {
   });
 
   const list = events.data?.events ?? [];
+  type SyslogRow = NonNullable<ListSyslogEventsResponse["events"]>[number];
+
+  const columns: Array<DataTableColumn<SyslogRow>> = [
+    {
+      id: "time",
+      header: "Time",
+      width: 190,
+      cell: (e) => (
+        <span className="text-muted-foreground whitespace-nowrap text-xs">
+          {e.receivedAt ?? ""}
+        </span>
+      )
+    },
+    {
+      id: "source",
+      header: "Source",
+      width: 160,
+      cell: (e) => <span className="font-mono text-xs">{e.sourceIp ?? ""}</span>
+    },
+    {
+      id: "app",
+      header: "App",
+      width: 160,
+      cell: (e) => <span className="text-xs">{e.appName ?? ""}</span>
+    },
+    {
+      id: "message",
+      header: "Message",
+      cell: (e) => (
+        <span className="font-medium text-foreground text-sm line-clamp-2">
+          {e.message ?? ""}
+        </span>
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6 p-6">
@@ -50,26 +85,12 @@ function SyslogPage() {
               description="No syslog messages have been received yet."
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">Time</TableHead>
-                  <TableHead className="w-[140px]">Source</TableHead>
-                  <TableHead className="w-[140px]">App</TableHead>
-                  <TableHead>Message</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((e) => (
-                  <TableRow key={String(e.id)}>
-                    <TableCell className="text-muted-foreground whitespace-nowrap text-xs">{e.receivedAt ?? ""}</TableCell>
-                    <TableCell className="font-mono text-xs">{e.sourceIp ?? ""}</TableCell>
-                    <TableCell className="text-xs">{e.appName ?? ""}</TableCell>
-                    <TableCell className="font-medium text-foreground text-sm line-clamp-2">{e.message ?? ""}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable<SyslogRow>
+              columns={columns}
+              rows={list as SyslogRow[]}
+              getRowId={(row) => String(row.id)}
+              maxHeightClassName="max-h-[65vh]"
+            />
           )}
         </CardContent>
       </Card>

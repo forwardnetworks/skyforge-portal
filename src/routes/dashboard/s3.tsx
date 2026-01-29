@@ -14,11 +14,11 @@ import {
 import { queryKeys } from "../../lib/query-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Input } from "../../components/ui/input";
+import { DataTable, type DataTableColumn } from "../../components/ui/data-table";
 
 export const Route = createFileRoute("/dashboard/s3")({
   component: S3Page
@@ -50,6 +50,97 @@ function S3Page() {
   });
 
   const list = artifacts.data?.items ?? [];
+
+  const columns = useMemo((): Array<DataTableColumn<(typeof list)[number]>> => {
+    return [
+      {
+        id: "object",
+        header: "Object",
+        cell: (item) => <span className="font-mono text-xs">{item.key}</span>
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        width: 300,
+        align: "right",
+        cell: (item) => (
+          <div className="flex justify-end gap-2">
+            {item.key.toLowerCase().endsWith(".json") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const resp = await downloadWorkspaceArtifact(selectedWorkspaceId, item.key);
+                    const raw = atob(resp.fileData);
+                    const bin = new Uint8Array(raw.length);
+                    for (let i = 0; i < raw.length; i++) bin[i] = raw.charCodeAt(i);
+                    const txt = new TextDecoder().decode(bin);
+                    const pretty = JSON.stringify(JSON.parse(txt), null, 2);
+                    const blob = new Blob([pretty], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, "_blank", "noopener,noreferrer");
+                    window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+                  } catch (e) {
+                    toast.error("View failed", { description: (e as Error).message });
+                  }
+                }}
+                disabled={!selectedWorkspaceId}
+              >
+                <Eye className="mr-2 h-3 w-3" />
+                View
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const resp = await downloadWorkspaceArtifact(selectedWorkspaceId, item.key);
+                  const raw = atob(resp.fileData);
+                  const bin = new Uint8Array(raw.length);
+                  for (let i = 0; i < raw.length; i++) bin[i] = raw.charCodeAt(i);
+                  const blob = new Blob([bin]);
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = item.key.split("/").pop() || "artifact";
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  URL.revokeObjectURL(url);
+                } catch (e) {
+                  toast.error("Download failed", { description: (e as Error).message });
+                }
+              }}
+              disabled={!selectedWorkspaceId}
+            >
+              <Download className="mr-2 h-3 w-3" />
+              Download
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={async () => {
+                if (!confirm(`Delete ${item.key}?`)) return;
+                try {
+                  await deleteWorkspaceArtifactObject(selectedWorkspaceId, item.key);
+                  toast.success("Deleted", { description: item.key });
+                  await artifacts.refetch();
+                } catch (e) {
+                  toast.error("Delete failed", { description: (e as Error).message });
+                }
+              }}
+              disabled={!selectedWorkspaceId}
+            >
+              <Trash2 className="mr-2 h-3 w-3" />
+              Delete
+            </Button>
+          </div>
+        )
+      }
+    ];
+  }, [artifacts.refetch, selectedWorkspaceId]);
 
   const toolbar = (
     <div className="p-4 border-b flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -177,95 +268,13 @@ function S3Page() {
                   <EmptyState icon={Inbox} title="No objects found" description="No artifacts found for this workspace." />
                 </div>
               ) : (
-                <div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Object</TableHead>
-                        <TableHead className="w-[260px] text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {list.map((item) => (
-                        <TableRow key={item.key}>
-                          <TableCell className="font-mono text-xs">{item.key}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              {item.key.toLowerCase().endsWith(".json") && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={async () => {
-                                    try {
-                                      const resp = await downloadWorkspaceArtifact(selectedWorkspaceId, item.key);
-                                      const raw = atob(resp.fileData);
-                                      const bin = new Uint8Array(raw.length);
-                                      for (let i = 0; i < raw.length; i++) bin[i] = raw.charCodeAt(i);
-                                      const txt = new TextDecoder().decode(bin);
-                                      const pretty = JSON.stringify(JSON.parse(txt), null, 2);
-                                      const blob = new Blob([pretty], { type: "application/json" });
-                                      const url = URL.createObjectURL(blob);
-                                      window.open(url, "_blank", "noopener,noreferrer");
-                                      window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
-                                    } catch (e) {
-                                      toast.error("View failed", { description: (e as Error).message });
-                                    }
-                                  }}
-                                >
-                                  <Eye className="mr-2 h-3 w-3" />
-                                  View
-                                </Button>
-                              )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={async () => {
-                                  try {
-                                    const resp = await downloadWorkspaceArtifact(selectedWorkspaceId, item.key);
-                                    const raw = atob(resp.fileData);
-                                    const bin = new Uint8Array(raw.length);
-                                    for (let i = 0; i < raw.length; i++) bin[i] = raw.charCodeAt(i);
-                                    const blob = new Blob([bin]);
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement("a");
-                                    a.href = url;
-                                    a.download = item.key.split("/").pop() || "artifact";
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    a.remove();
-                                    URL.revokeObjectURL(url);
-                                  } catch (e) {
-                                    toast.error("Download failed", { description: (e as Error).message });
-                                  }
-                                }}
-                              >
-                                <Download className="mr-2 h-3 w-3" />
-                                Download
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={async () => {
-                                  if (!confirm(`Delete ${item.key}?`)) return;
-                                  try {
-                                    await deleteWorkspaceArtifactObject(selectedWorkspaceId, item.key);
-                                    toast.success("Deleted", { description: item.key });
-                                    await artifacts.refetch();
-                                  } catch (e) {
-                                    toast.error("Delete failed", { description: (e as Error).message });
-                                  }
-                                }}
-                              >
-                                <Trash2 className="mr-2 h-3 w-3" />
-                                Delete
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <DataTable
+                  columns={columns}
+                  rows={list}
+                  getRowId={(row) => row.key}
+                  maxHeightClassName="max-h-[60vh]"
+                  minWidthClassName="min-w-[900px]"
+                />
               )}
             </div>
           )}
