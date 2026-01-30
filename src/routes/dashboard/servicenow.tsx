@@ -126,6 +126,11 @@ function ServiceNowPage() {
 		staleTime: 0,
 	});
 
+	const schemaMissingTables = useMemo(() => {
+		const missing = schemaQ.data?.missing ?? [];
+		return missing.some((m) => m.startsWith("table:"));
+	}, [schemaQ.data?.missing]);
+
 	const wakeMutation = useMutation({
 		mutationFn: async () => wakeUserServiceNowPdi(),
 		onSuccess: async () => {
@@ -302,9 +307,9 @@ function ServiceNowPage() {
 				<CardHeader>
 					<CardTitle>Schema status</CardTitle>
 					<CardDescription>
-						The demo requires two custom tables and fields. ServiceNow does not
-						allow Skyforge to create these via Table API, so you create them
-						once in the PDI and Skyforge installs everything else.
+						The demo requires two custom tables. Create the tables once in the
+						PDI; Skyforge can auto-create the required fields and choice lists
+						when you install the demo app.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -334,6 +339,20 @@ function ServiceNowPage() {
 							<div className="text-xs text-muted-foreground mb-2">
 								Missing items:
 							</div>
+							{schemaMissingTables ? (
+								<div className="text-xs text-muted-foreground mb-2">
+									Create the missing <span className="font-medium">tables</span>{" "}
+									in ServiceNow first; then click <span className="font-medium">
+										Install demo app
+									</span>{" "}
+									to let Skyforge auto-create the rest.
+								</div>
+							) : (
+								<div className="text-xs text-muted-foreground mb-2">
+									Click <span className="font-medium">Install demo app</span> to
+									let Skyforge auto-create these fields/choices.
+								</div>
+							)}
 							<ul className="text-xs font-mono space-y-1">
 								{schemaQ.data.missing.map((m) => (
 									<li key={m}>- {m}</li>
@@ -501,7 +520,7 @@ function ServiceNowPage() {
 								installMutation.isPending ||
 								saveMutation.isPending ||
 								!cfg?.configured ||
-								schemaQ.data?.status === "missing"
+								schemaMissingTables
 							}
 						>
 							Install demo app
