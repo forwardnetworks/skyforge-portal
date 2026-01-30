@@ -15,8 +15,10 @@ import { Label } from "../../components/ui/label";
 import { queryKeys } from "../../lib/query-keys";
 import {
 	getUserServiceNowConfig,
+	getUserServiceNowPdiStatus,
 	installUserServiceNowDemo,
 	putUserServiceNowConfig,
+	wakeUserServiceNowPdi,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/servicenow")({
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/dashboard/servicenow")({
 function ServiceNowPage() {
 	const qc = useQueryClient();
 	const cfgKey = queryKeys.userServiceNowConfig();
+	const pdiKey = queryKeys.userServiceNowPdiStatus();
 
 	const cfgQ = useQuery({
 		queryKey: cfgKey,
@@ -49,6 +52,69 @@ function ServiceNowPage() {
 		setForwardBaseUrl(cfg.forwardBaseUrl ?? "https://fwd.app/api");
 		setForwardUsername(cfg.forwardUsername ?? "");
 	}, [cfg]);
+
+	const pdiQ = useQuery({
+		queryKey: pdiKey,
+		queryFn: getUserServiceNowPdiStatus,
+		enabled: Boolean(cfg?.configured),
+		retry: false,
+		refetchOnWindowFocus: false,
+		staleTime: 0,
+	});
+
+	const wakeMutation = useMutation({
+		mutationFn: async () => wakeUserServiceNowPdi(),
+		onSuccess: async () => {
+			toast.success("Wake requested");
+			await qc.invalidateQueries({ queryKey: pdiKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to wake PDI", { description: (e as Error).message }),
+	});
+
+	const importEnvFile = async (file: File) => {
+		const text = await file.text();
+		const lines = text.split(/\r?\n/);
+		const parsed: Record<string, string> = {};
+		for (const raw of lines) {
+			const line = raw.trim();
+			if (!line || line.startsWith("#")) continue;
+			const withoutExport = line.startsWith("export ")
+				? line.slice("export ".length).trim()
+				: line;
+			const eq = withoutExport.indexOf("=");
+			if (eq <= 0) continue;
+			const key = withoutExport.slice(0, eq).trim();
+			let value = withoutExport.slice(eq + 1).trim();
+			if (
+				(value.startsWith('"') && value.endsWith('"')) ||
+				(value.startsWith("'") && value.endsWith("'"))
+			) {
+				value = value.slice(1, -1);
+			}
+			parsed[key] = value;
+		}
+
+		const snURL =
+			parsed.SN_INSTANCE_URL || parsed.SERVICENOW_INSTANCE_URL || "";
+		const snUser =
+			parsed.SN_ADMIN_USERNAME || parsed.SERVICENOW_ADMIN_USERNAME || "";
+		const snPass =
+			parsed.SN_ADMIN_PASSWORD || parsed.SERVICENOW_ADMIN_PASSWORD || "";
+		const fwdBase =
+			parsed.FWD_BASE_URL || parsed.FORWARD_BASE_URL || "https://fwd.app/api";
+		const fwdUser = parsed.FWD_USERNAME || parsed.FORWARD_USERNAME || "";
+		const fwdPass = parsed.FWD_PASSWORD || parsed.FORWARD_PASSWORD || "";
+
+		if (snURL) setInstanceUrl(snURL);
+		if (snUser) setAdminUsername(snUser);
+		if (snPass) setAdminPassword(snPass);
+		if (fwdBase) setForwardBaseUrl(fwdBase);
+		if (fwdUser) setForwardUsername(fwdUser);
+		if (fwdPass) setForwardPassword(fwdPass);
+
+		toast.success("Imported env file (not uploaded)");
+	};
 
 	const effectiveAdminPassword = useMemo(() => {
 		if (adminPassword.trim()) return adminPassword;
@@ -85,6 +151,7 @@ function ServiceNowPage() {
 			setAdminPassword("");
 			setForwardPassword("");
 			await qc.invalidateQueries({ queryKey: cfgKey });
+			await qc.invalidateQueries({ queryKey: pdiKey });
 		},
 		onError: (e) =>
 			toast.error("Failed to save ServiceNow settings", {
@@ -133,6 +200,72 @@ function ServiceNowPage() {
 					>
 						Create a Personal Developer Instance (PDI)
 					</a>
+					<div className="pt-2">
+						<Label>Import from env file</Label>
+						<div className="text-xs text-muted-foreground mt-1">
+							Expected keys: <code>SN_INSTANCE_URL</code>,{" "}
+							<code>SN_ADMIN_USERNAME</code>, <code>SN_ADMIN_PASSWORD</code>,{" "}
+							<code>FWD_BASE_URL</code>, <code>FWD_USERNAME</code>,{" "}
+							<code>FWD_PASSWORD</code>.
+						</div>
+						<Input
+							type="file"
+							accept=".env,.txt"
+							onChange={(e) => {
+								const f = e.target.files?.[0];
+								if (f) void importEnvFile(f);
+								e.target.value = "";
+							}}
+							className="mt-2"
+						/>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>PDI status</CardTitle>
+					<CardDescription>
+						ServiceNow PDIs can sleep after inactivity. Skyforge can detect this
+						and attempt to wake the instance.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<div className="text-sm">
+						{cfg?.configured ? (
+							<>
+								Status:{" "}
+								<span className="font-medium">
+									{pdiQ.data?.status ??
+										(pdiQ.isFetching ? "checking…" : "unknown")}
+								</span>
+								{pdiQ.data?.httpStatus ? ` (HTTP ${pdiQ.data.httpStatus})` : ""}
+								{pdiQ.data?.detail ? ` — ${pdiQ.data.detail}` : ""}
+							</>
+						) : (
+							<span className="text-muted-foreground">
+								Save configuration first.
+							</span>
+						)}
+					</div>
+					<div className="flex items-center gap-2">
+						<Button
+							variant="secondary"
+							onClick={() => void pdiQ.refetch()}
+							disabled={
+								!cfg?.configured || pdiQ.isFetching || wakeMutation.isPending
+							}
+						>
+							Check now
+						</Button>
+						<Button
+							variant="secondary"
+							onClick={() => wakeMutation.mutate()}
+							disabled={!cfg?.configured || wakeMutation.isPending}
+						>
+							Wake up
+						</Button>
+					</div>
 				</CardContent>
 			</Card>
 
@@ -234,6 +367,14 @@ function ServiceNowPage() {
 						>
 							Install demo app
 						</Button>
+						<a
+							className="text-sm underline text-muted-foreground ml-2"
+							href="/assets/skyforge/docs/servicenow.html"
+							target="_blank"
+							rel="noreferrer"
+						>
+							Docs
+						</a>
 						{cfg?.lastInstallStatus ? (
 							<div className="text-sm text-muted-foreground">
 								Status: {cfg.lastInstallStatus}

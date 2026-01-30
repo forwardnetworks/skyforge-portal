@@ -24,6 +24,7 @@ export const queryKeys = {
 	userForwardCollectorConfigLogs: (id: string) =>
 		["userForwardCollectorConfigLogs", id] as const,
 	userServiceNowConfig: () => ["userServiceNowConfig"] as const,
+	userServiceNowPdiStatus: () => ["userServiceNowPdiStatus"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	workspaceArtifacts: (workspaceId: string) =>
 		["workspaceArtifacts", workspaceId] as const,

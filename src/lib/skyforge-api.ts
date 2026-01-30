@@ -54,6 +54,13 @@ export type InstallUserServiceNowDemoResponse = {
 	message?: string;
 };
 
+export type ServiceNowPdiStatusResponse = {
+	status: string;
+	httpStatus?: number;
+	detail?: string;
+	checkedAt?: ISO8601;
+};
+
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
 // This type reflects the fields Skyforge currently emits in the dashboard snapshot and related APIs.
 export type WorkspaceDeployment = {
@@ -462,6 +469,22 @@ export async function installUserServiceNowDemo(): Promise<InstallUserServiceNow
 	return apiFetch<InstallUserServiceNowDemoResponse>(
 		"/api/user/integrations/servicenow/install",
 		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function getUserServiceNowPdiStatus(): Promise<ServiceNowPdiStatusResponse> {
+	return apiFetch<ServiceNowPdiStatusResponse>(
+		"/api/user/integrations/servicenow/pdiStatus",
+	);
+}
+
+export async function wakeUserServiceNowPdi(): Promise<ServiceNowPdiStatusResponse> {
+	return apiFetch<ServiceNowPdiStatusResponse>(
+		"/api/user/integrations/servicenow/wake",
+		{
+			method: "POST",
+			body: "{}",
+		},
 	);
 }
 
