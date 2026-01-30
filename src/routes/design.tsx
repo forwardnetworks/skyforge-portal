@@ -330,7 +330,7 @@ function DesignSystemPage() {
 					<Breadcrumb>
 						<BreadcrumbList>
 							<BreadcrumbItem>
-								<BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+								<BreadcrumbLink href="/status">Dashboard</BreadcrumbLink>
 							</BreadcrumbItem>{" "}
 							<BreadcrumbSeparator />
 							<BreadcrumbItem>

@@ -6,7 +6,7 @@
 	:root {
 		--font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
 			Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-		--background: 220 33% 98%;
+		--background: 220 33% 99%;
 		--foreground: 222 47% 11%;
 		--card: 0 0% 100%;
 		--card-foreground: 222 47% 11%;
@@ -14,16 +14,16 @@
 		--popover-foreground: 222 47% 11%;
 		--primary: 24 95% 50%;
 		--primary-foreground: 0 0% 100%;
-		--secondary: 220 16% 94%;
+		--secondary: 220 16% 93%;
 		--secondary-foreground: 222 47% 11%;
-		--muted: 220 16% 94%;
-		--muted-foreground: 215 16% 47%;
-		--accent: 220 16% 92%;
+		--muted: 220 16% 93%;
+		--muted-foreground: 215 18% 36%;
+		--accent: 220 16% 90%;
 		--accent-foreground: 222 47% 11%;
 		--destructive: 0 84% 56%;
 		--destructive-foreground: 0 0% 98%;
-		--border: 220 13% 88%;
-		--input: 220 13% 88%;
+		--border: 220 13% 84%;
+		--input: 220 13% 84%;
 		--ring: 24 95% 50%;
 		--radius: 0.9rem;
 	}

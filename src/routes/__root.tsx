@@ -389,7 +389,9 @@ function RootLayout() {
 										<Breadcrumb>
 											<BreadcrumbList>
 												<BreadcrumbItem>
-													<BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+													<BreadcrumbLink href="/status">
+														Dashboard
+													</BreadcrumbLink>
 												</BreadcrumbItem>{" "}
 												{location.pathname
 													.split("/")
