@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
-import { Checkbox } from "../../components/ui/checkbox";
 import {
 	Card,
 	CardContent,
@@ -11,6 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../components/ui/card";
+import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import {
@@ -328,7 +328,8 @@ function ServiceNowPage() {
 						)}
 					</div>
 
-					{schemaQ.data?.status === "missing" && schemaQ.data.missing?.length ? (
+					{schemaQ.data?.status === "missing" &&
+					schemaQ.data.missing?.length ? (
 						<div className="rounded-md border p-3 bg-muted/30">
 							<div className="text-xs text-muted-foreground mb-2">
 								Missing items:
@@ -481,8 +482,8 @@ function ServiceNowPage() {
 							</Label>
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Configures Forward SaaS to auto-create and auto-update incidents in
-							this ServiceNow instance.
+							Configures Forward SaaS to auto-create and auto-update incidents
+							in this ServiceNow instance.
 						</div>
 					</div>
 

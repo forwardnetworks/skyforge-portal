@@ -11,7 +11,7 @@ import {
 	RefreshCcw,
 	Search,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Badge } from "../../components/ui/badge";
@@ -43,18 +43,23 @@ import {
 } from "../../components/ui/tabs";
 import { queryKeys } from "../../lib/query-keys";
 import {
+	getGovernancePolicy,
 	getGovernanceSummary,
 	getSession,
 	listGovernanceCosts,
 	listGovernanceResources,
 	listGovernanceUsage,
 	syncGovernanceSources,
+	updateGovernancePolicy,
 } from "../../lib/skyforge-api";
 
 // Search Params Schema
 const governanceSearchSchema = z.object({
 	q: z.string().optional().catch(""),
-	tab: z.enum(["resources", "costs", "usage"]).optional().catch("resources"),
+	tab: z
+		.enum(["policy", "resources", "costs", "usage"])
+		.optional()
+		.catch("policy"),
 });
 
 export const Route = createFileRoute("/admin/governance")({
@@ -71,6 +76,10 @@ export const Route = createFileRoute("/admin/governance")({
 
 		// Prefetch all data to ensure tab switching is instant
 		await Promise.all([
+			queryClient.ensureQueryData({
+				queryKey: queryKeys.governancePolicy(),
+				queryFn: getGovernancePolicy,
+			}),
 			queryClient.ensureQueryData({
 				queryKey: queryKeys.governanceSummary(),
 				queryFn: getGovernanceSummary,
@@ -110,6 +119,13 @@ function GovernancePage() {
 		queryFn: getGovernanceSummary,
 		staleTime: 30_000,
 		enabled: isAdmin,
+	});
+	const policy = useQuery({
+		queryKey: queryKeys.governancePolicy(),
+		queryFn: getGovernancePolicy,
+		staleTime: 30_000,
+		enabled: isAdmin,
+		retry: false,
 	});
 	const resources = useQuery({
 		queryKey: queryKeys.governanceResources("500"),
@@ -180,6 +196,42 @@ function GovernancePage() {
 		},
 	});
 
+	const [policyDraft, setPolicyDraft] = useState({
+		maxDeploymentsPerUser: 0,
+		maxCollectorsPerUser: 0,
+	});
+	useEffect(() => {
+		if (!policy.data?.policy) return;
+		setPolicyDraft({
+			maxDeploymentsPerUser: policy.data.policy.maxDeploymentsPerUser ?? 0,
+			maxCollectorsPerUser: policy.data.policy.maxCollectorsPerUser ?? 0,
+		});
+	}, [
+		policy.data?.policy?.maxDeploymentsPerUser,
+		policy.data?.policy?.maxCollectorsPerUser,
+	]);
+
+	const savePolicy = useMutation({
+		mutationFn: async () =>
+			updateGovernancePolicy({
+				policy: {
+					maxDeploymentsPerUser: Math.max(0, policyDraft.maxDeploymentsPerUser),
+					maxCollectorsPerUser: Math.max(0, policyDraft.maxCollectorsPerUser),
+				},
+			}),
+		onSuccess: async () => {
+			toast.success("Governance policy saved");
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.governancePolicy(),
+			});
+		},
+		onError: (e) => {
+			toast.error("Failed to save governance policy", {
+				description: (e as Error).message,
+			});
+		},
+	});
+
 	const summaryData = summary.data;
 
 	const handleSearch = (value: string) => {
@@ -204,7 +256,7 @@ function GovernancePage() {
 						<div>
 							<CardTitle>Governance</CardTitle>
 							<CardDescription>
-								Admin-only inventory, cost, and usage telemetry.
+								Admin-only guardrails, inventory, cost, and usage telemetry.
 							</CardDescription>
 						</div>
 						<Button
@@ -232,7 +284,8 @@ function GovernancePage() {
 				</Card>
 			)}
 
-			{(summary.isError ||
+			{(policy.isError ||
+				summary.isError ||
 				resources.isError ||
 				costs.isError ||
 				usage.isError) && (
@@ -291,6 +344,10 @@ function GovernancePage() {
 			{/* Tabbed Data Views */}
 			<Tabs value={tab} onValueChange={handleTabChange} className="space-y-6">
 				<TabsList>
+					<TabsTrigger value="policy" className="gap-2">
+						<Inbox className="h-4 w-4" />
+						Policy
+					</TabsTrigger>
 					<TabsTrigger value="resources" className="gap-2">
 						<Database className="h-4 w-4" />
 						Resources
@@ -304,6 +361,73 @@ function GovernancePage() {
 						Telemetry
 					</TabsTrigger>
 				</TabsList>
+
+				<TabsContent value="policy" className="space-y-6 animate-in fade-in-50">
+					<Card>
+						<CardHeader>
+							<CardTitle>Policy</CardTitle>
+							<CardDescription>
+								Optional guardrails. Use 0 for unlimited.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="grid gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										Max deployments per user
+									</div>
+									<Input
+										inputMode="numeric"
+										value={String(policyDraft.maxDeploymentsPerUser)}
+										onChange={(e) =>
+											setPolicyDraft((prev) => ({
+												...prev,
+												maxDeploymentsPerUser:
+													Number.parseInt(e.target.value || "0", 10) || 0,
+											}))
+										}
+									/>
+									<p className="text-xs text-muted-foreground">
+										Applies when creating new deployment definitions.
+									</p>
+								</div>
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										Max collectors per user
+									</div>
+									<Input
+										inputMode="numeric"
+										value={String(policyDraft.maxCollectorsPerUser)}
+										onChange={(e) =>
+											setPolicyDraft((prev) => ({
+												...prev,
+												maxCollectorsPerUser:
+													Number.parseInt(e.target.value || "0", 10) || 0,
+											}))
+										}
+									/>
+									<p className="text-xs text-muted-foreground">
+										Applies when creating in-cluster Forward collectors.
+									</p>
+								</div>
+							</div>
+
+							<div className="flex items-center justify-between gap-3">
+								<div className="text-xs text-muted-foreground">
+									{policy.data?.retrievedAt
+										? `Loaded ${policy.data.retrievedAt}`
+										: ""}
+								</div>
+								<Button
+									onClick={() => savePolicy.mutate()}
+									disabled={savePolicy.isPending || !isAdmin}
+								>
+									{savePolicy.isPending ? "Saving…" : "Save policy"}
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
 
 				<TabsContent
 					value="resources"

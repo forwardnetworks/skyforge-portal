@@ -65,6 +65,10 @@ export const queryKeys = {
 		["governanceCosts", limit ?? ""] as const,
 	governanceUsage: (limit?: string) =>
 		["governanceUsage", limit ?? ""] as const,
+	governancePolicy: () => ["governancePolicy"] as const,
+	adminConfig: () => ["adminConfig"] as const,
+	adminAudit: (limit?: string) => ["adminAudit", limit ?? ""] as const,
+	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,
 	registryRepos: (q: string) => ["registryRepos", q] as const,
 	registryTags: (repo: string, q: string) => ["registryTags", repo, q] as const,
 };

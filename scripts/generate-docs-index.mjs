@@ -16,9 +16,7 @@ function titleFromFilename(filename) {
 		servicenow: "ServiceNow",
 	};
 	if (special[base.toLowerCase()]) return special[base.toLowerCase()];
-	return base
-		.replace(/[-_]+/g, " ")
-		.replace(/\b\w/g, (m) => m.toUpperCase());
+	return base.replace(/[-_]+/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
 function listDocs() {
@@ -64,4 +62,3 @@ function main() {
 }
 
 main();
-

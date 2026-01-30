@@ -1712,6 +1712,143 @@ export async function syncGovernanceSources(): Promise<void> {
 	});
 }
 
+export type AdminEffectiveConfigResponse =
+	operations["GET:skyforge.GetAdminEffectiveConfig"]["responses"][200]["content"]["application/json"];
+export async function getAdminEffectiveConfig(): Promise<AdminEffectiveConfigResponse> {
+	return apiFetch<AdminEffectiveConfigResponse>("/api/admin/config");
+}
+
+export type AdminAuditResponse =
+	operations["GET:skyforge.GetAdminAudit"]["responses"][200]["content"]["application/json"];
+export async function getAdminAudit(params?: {
+	limit?: string;
+}): Promise<AdminAuditResponse> {
+	const qs = new URLSearchParams();
+	if (params?.limit) qs.set("limit", params.limit);
+	const suffix = qs.toString();
+	return apiFetch<AdminAuditResponse>(
+		`/api/admin/audit${suffix ? `?${suffix}` : ""}`,
+	);
+}
+
+export type AdminImpersonateStatusResponse =
+	operations["GET:skyforge.GetAdminImpersonateStatus"]["responses"][200]["content"]["application/json"];
+export async function getAdminImpersonateStatus(): Promise<AdminImpersonateStatusResponse> {
+	return apiFetch<AdminImpersonateStatusResponse>(
+		"/api/admin/impersonate/status",
+	);
+}
+
+export type AdminImpersonateStartRequest = NonNullable<
+	operations["POST:skyforge.AdminImpersonateStart"]["requestBody"]
+>["content"]["application/json"];
+export type AdminImpersonateStartResponse =
+	operations["POST:skyforge.AdminImpersonateStart"]["responses"][200]["content"]["application/json"];
+export async function adminImpersonateStart(
+	body: AdminImpersonateStartRequest,
+): Promise<AdminImpersonateStartResponse> {
+	return apiFetch<AdminImpersonateStartResponse>(
+		"/api/admin/impersonate/start",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export type AdminImpersonateStopResponse =
+	operations["POST:skyforge.AdminImpersonateStop"]["responses"][200]["content"]["application/json"];
+export async function adminImpersonateStop(): Promise<AdminImpersonateStopResponse> {
+	return apiFetch<AdminImpersonateStopResponse>("/api/admin/impersonate/stop", {
+		method: "POST",
+		body: "{}",
+	});
+}
+
+export type AdminReconcileQueuedTasksRequest = NonNullable<
+	operations["POST:skyforge.ReconcileQueuedTasks"]["requestBody"]
+>["content"]["application/json"];
+export type AdminReconcileQueuedTasksResponse =
+	operations["POST:skyforge.ReconcileQueuedTasks"]["responses"][200]["content"]["application/json"];
+export async function reconcileQueuedTasks(
+	body: AdminReconcileQueuedTasksRequest,
+): Promise<AdminReconcileQueuedTasksResponse> {
+	return apiFetch<AdminReconcileQueuedTasksResponse>(
+		"/api/admin/tasks/reconcile",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export type AdminReconcileRunningTasksRequest = NonNullable<
+	operations["POST:skyforge.ReconcileRunningTasks"]["requestBody"]
+>["content"]["application/json"];
+export type AdminReconcileRunningTasksResponse =
+	operations["POST:skyforge.ReconcileRunningTasks"]["responses"][200]["content"]["application/json"];
+export async function reconcileRunningTasks(
+	body: AdminReconcileRunningTasksRequest,
+): Promise<AdminReconcileRunningTasksResponse> {
+	return apiFetch<AdminReconcileRunningTasksResponse>(
+		"/api/admin/tasks/reconcile-running",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export type AdminPurgeUserRequest = NonNullable<
+	operations["POST:skyforge.PurgeUser"]["requestBody"]
+>["content"]["application/json"];
+export type AdminPurgeUserResponse =
+	operations["POST:skyforge.PurgeUser"]["responses"][200]["content"]["application/json"];
+export async function adminPurgeUser(
+	body: AdminPurgeUserRequest,
+): Promise<AdminPurgeUserResponse> {
+	return apiFetch<AdminPurgeUserResponse>("/api/admin/users/purge", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export type GovernancePolicy = {
+	maxDeploymentsPerUser: number;
+	maxCollectorsPerUser: number;
+};
+
+export type AdminGovernancePolicyResponse = {
+	policy: GovernancePolicy;
+	retrievedAt: string;
+};
+
+export async function getGovernancePolicy(): Promise<AdminGovernancePolicyResponse> {
+	return apiFetch<AdminGovernancePolicyResponse>(
+		"/api/admin/governance/policy",
+	);
+}
+
+export type UpdateGovernancePolicyRequest = {
+	policy: GovernancePolicy;
+};
+export type UpdateGovernancePolicyResponse = {
+	status: "ok";
+	policy: GovernancePolicy;
+	updatedAt: string;
+};
+export async function updateGovernancePolicy(
+	body: UpdateGovernancePolicyRequest,
+): Promise<UpdateGovernancePolicyResponse> {
+	return apiFetch<UpdateGovernancePolicyResponse>(
+		"/api/admin/governance/policy",
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
 export async function startDeployment(
 	workspaceId: string,
 	deploymentId: string,
