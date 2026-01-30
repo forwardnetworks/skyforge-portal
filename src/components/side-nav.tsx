@@ -57,15 +57,15 @@ const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
 	{
-		label: "Lab Designer",
+		label: "Designer",
 		href: "/dashboard/labs/designer",
 		icon: Hammer,
 		newTab: true,
 	},
-	{ label: "Collector", href: "/dashboard/forward", icon: Radio },
-	{ label: "S3", href: "/dashboard/s3", icon: Server },
+	{ label: "Collector (Forward)", href: "/dashboard/forward", icon: Radio },
+	{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
 	{
-		label: "SSOT",
+		label: "Tools",
 		href: "",
 		icon: Database,
 		children: [
@@ -159,9 +159,10 @@ export function SideNav(props: {
 							if (item.label === "Coder" && !f.coderEnabled) return [];
 							if (item.label === "Coder Admin" && !f.coderEnabled) return [];
 							if (item.label === "API Testing" && !f.yaadeEnabled) return [];
-							if (item.label === "Collector" && !f.forwardEnabled) return [];
+							if (item.label === "Collector (Forward)" && !f.forwardEnabled)
+								return [];
 
-							if (item.label === "SSOT") {
+							if (item.label === "Tools") {
 								const children =
 									item.children?.filter((child) => {
 										if (child.label === "NetBox") return !!f.netboxEnabled;

@@ -281,6 +281,19 @@ function PaletteDraggableItem(props: { item: PaletteItem }) {
 	const p = props.item;
 	const Icon =
 		p.role === "firewall" ? Shield : p.role === "host" ? Server : Waypoints;
+	const heading = p.vendor
+		? `${p.vendor}${p.model ? ` · ${p.model}` : ""}`
+		: p.label;
+	const role =
+		p.role === "router"
+			? "Router"
+			: p.role === "switch"
+				? "Switch"
+				: p.role === "firewall"
+					? "Firewall"
+					: p.role === "host"
+						? "Host"
+						: "Node";
 	return (
 		<div
 			className="cursor-grab select-none rounded-lg border bg-background px-3 py-2 text-sm hover:bg-accent"
@@ -294,7 +307,12 @@ function PaletteDraggableItem(props: { item: PaletteItem }) {
 			<div className="flex items-start gap-2">
 				<Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
 				<div className="min-w-0">
-					<div className="truncate">{p.label}</div>
+					<div className="truncate flex items-center gap-2">
+						<span className="truncate">{heading}</span>
+						<span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+							{role}
+						</span>
+					</div>
 					<div className="truncate text-[11px] text-muted-foreground font-mono">
 						{p.repo ?? p.kind}
 					</div>
@@ -383,6 +401,7 @@ function DesignerNode(props: NodeProps<DesignNode>) {
 
 function LabDesignerPage() {
 	const search = Route.useSearch();
+	const importDeploymentId = String(search.importDeploymentId ?? "").trim();
 	const storageKey = "skyforge.labDesigner.v1";
 	const rfRef = useRef<HTMLDivElement | null>(null);
 	const queryClient = useQueryClient();
@@ -399,6 +418,8 @@ function LabDesignerPage() {
 	const [templateFile, setTemplateFile] = useState("");
 	const [snapToGrid, setSnapToGrid] = useState(true);
 	const [paletteSearch, setPaletteSearch] = useState("");
+	const [paletteVendor, setPaletteVendor] = useState<string>("all");
+	const [paletteRole, setPaletteRole] = useState<string>("all");
 	const [rfInstance, setRfInstance] = useState<ReactFlowInstance<
 		DesignNode,
 		Edge
@@ -559,6 +580,61 @@ function LabDesignerPage() {
 		setNodeMenu(null);
 		setEdgeMenu(null);
 		setCanvasMenu(null);
+	};
+
+	const openImportedTool = (opts: {
+		action: "terminal" | "logs" | "describe";
+		node: string;
+	}) => {
+		if (!importDeploymentId) return;
+		const qs = new URLSearchParams();
+		qs.set("action", opts.action);
+		qs.set("node", opts.node);
+		const url = `/dashboard/deployments/${encodeURIComponent(importDeploymentId)}?${qs.toString()}`;
+		window.open(url, "_blank", "noopener,noreferrer");
+	};
+
+	const renameNode = (nodeId: string) => {
+		const n = nodes.find((x) => String(x.id) === nodeId);
+		if (!n) return;
+		const current = String(n.data?.label ?? n.id);
+		const nextRaw = window.prompt("Node name", current);
+		if (nextRaw == null) return;
+		const nextTrim = nextRaw.trim();
+		if (!nextTrim) return;
+
+		const used = new Set(nodes.map((x) => String(x.id)));
+		used.delete(nodeId);
+		let nextId = nextTrim;
+		let i = 2;
+		while (used.has(nextId)) {
+			nextId = `${nextTrim}-${i++}`;
+		}
+
+		setNodes((prev) =>
+			prev.map((x) =>
+				String(x.id) === nodeId
+					? { ...x, id: nextId, data: { ...(x.data as any), label: nextTrim } }
+					: x,
+			),
+		);
+		setEdges((prev) =>
+			prev.map((e) => ({
+				...e,
+				source: String(e.source) === nodeId ? nextId : e.source,
+				target: String(e.target) === nodeId ? nextId : e.target,
+				label:
+					String(e.source) === nodeId || String(e.target) === nodeId
+						? `${String(e.source) === nodeId ? nextId : e.source} ↔ ${
+								String(e.target) === nodeId ? nextId : e.target
+							}`
+						: e.label,
+			})),
+		);
+		if (selectedNodeId === nodeId) setSelectedNodeId(nextId);
+		setNodeMenu((m) =>
+			m && m.nodeId === nodeId ? { ...m, nodeId: nextId } : m,
+		);
 	};
 
 	useEffect(() => {
@@ -1028,17 +1104,38 @@ function LabDesignerPage() {
 
 	const nodeTypes = useMemo(() => ({ designerNode: DesignerNode }), []);
 
-	const paletteItems = useMemo(() => {
+	const paletteBaseItems = useMemo(() => {
 		const repos = registryReposQ.data?.repositories ?? [];
-		const base: PaletteItem[] = repos.map(inferPaletteItemFromRepo);
+		return repos.map(inferPaletteItemFromRepo);
+	}, [registryReposQ.data?.repositories]);
+
+	const paletteVendors = useMemo(() => {
+		const set = new Set<string>();
+		for (const p of paletteBaseItems) {
+			const v = String(p.vendor ?? "").trim();
+			if (v) set.add(v);
+		}
+		return Array.from(set).sort((a, b) => a.localeCompare(b));
+	}, [paletteBaseItems]);
+
+	const paletteItems = useMemo(() => {
+		const base = paletteBaseItems;
 		const q = paletteSearch.trim().toLowerCase();
-		const filtered = q
-			? base.filter((p) =>
-					`${p.label} ${p.kind} ${p.category} ${p.repo ?? ""}`
-						.toLowerCase()
-						.includes(q),
-				)
-			: base;
+		const filtered = base
+			.filter((p) => {
+				if (paletteVendor === "all") return true;
+				return String(p.vendor ?? "") === paletteVendor;
+			})
+			.filter((p) => {
+				if (paletteRole === "all") return true;
+				return String(p.role ?? "other") === paletteRole;
+			})
+			.filter((p) => {
+				if (!q) return true;
+				return `${p.label} ${p.kind} ${p.category} ${p.repo ?? ""}`
+					.toLowerCase()
+					.includes(q);
+			});
 
 		const order: Record<PaletteCategory, number> = {
 			Hosts: 0,
@@ -1053,13 +1150,15 @@ function LabDesignerPage() {
 			if (oa !== ob) return oa - ob;
 			return a.label.localeCompare(b.label);
 		});
-	}, [paletteSearch, registryReposQ.data?.repositories]);
+	}, [paletteBaseItems, paletteRole, paletteSearch, paletteVendor]);
 
 	return (
 		<div className="h-full w-full p-4 flex flex-col gap-4 min-h-0">
 			<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 				<div className="space-y-1">
-					<div className="text-2xl font-bold tracking-tight">Lab Designer</div>
+					<div className="text-2xl font-bold tracking-tight">
+						Lab Designer (Containerlab)
+					</div>
 					<div className="text-sm text-muted-foreground">
 						Drag nodes, wire links, generate Containerlab YAML, and deploy.
 					</div>
@@ -1153,6 +1252,37 @@ function LabDesignerPage() {
 										placeholder="Search…"
 										className="h-8"
 									/>
+								</div>
+								<div className="mt-2 grid gap-2">
+									<Select
+										value={paletteVendor}
+										onValueChange={setPaletteVendor}
+									>
+										<SelectTrigger className="h-8">
+											<SelectValue placeholder="Vendor" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="all">All vendors</SelectItem>
+											{paletteVendors.map((v) => (
+												<SelectItem key={v} value={v}>
+													{v}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<Select value={paletteRole} onValueChange={setPaletteRole}>
+										<SelectTrigger className="h-8">
+											<SelectValue placeholder="Role" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="all">All roles</SelectItem>
+											<SelectItem value="router">Routers</SelectItem>
+											<SelectItem value="switch">Switches</SelectItem>
+											<SelectItem value="firewall">Firewalls</SelectItem>
+											<SelectItem value="host">Hosts</SelectItem>
+											<SelectItem value="other">Other</SelectItem>
+										</SelectContent>
+									</Select>
 								</div>
 								<div className="mt-3 space-y-2">
 									{registryReposQ.isError ? (
@@ -1337,6 +1467,60 @@ function LabDesignerPage() {
 													}}
 												>
 													Edit…
+												</Button>
+												{importDeploymentId ? (
+													<div className="grid grid-cols-3 gap-2">
+														<Button
+															size="sm"
+															variant="outline"
+															onClick={() => {
+																openImportedTool({
+																	action: "terminal",
+																	node: nodeMenu.nodeId,
+																});
+																closeMenus();
+															}}
+														>
+															Terminal
+														</Button>
+														<Button
+															size="sm"
+															variant="outline"
+															onClick={() => {
+																openImportedTool({
+																	action: "logs",
+																	node: nodeMenu.nodeId,
+																});
+																closeMenus();
+															}}
+														>
+															Logs
+														</Button>
+														<Button
+															size="sm"
+															variant="outline"
+															onClick={() => {
+																openImportedTool({
+																	action: "describe",
+																	node: nodeMenu.nodeId,
+																});
+																closeMenus();
+															}}
+														>
+															Describe
+														</Button>
+													</div>
+												) : null}
+												<Button
+													size="sm"
+													variant="outline"
+													className="w-full"
+													onClick={() => {
+														renameNode(nodeMenu.nodeId);
+														closeMenus();
+													}}
+												>
+													Rename…
 												</Button>
 												<Button
 													size="sm"

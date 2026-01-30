@@ -75,7 +75,7 @@ export function CommandMenu() {
 						onSelect={() => runCommand(() => navigate({ to: "/dashboard/s3" }))}
 					>
 						<Server className="mr-2 h-4 w-4" />
-						<span>S3 Storage</span>
+						<span>Artifacts (S3)</span>
 					</CommandItem>
 				</CommandGroup>
 				<CommandSeparator />
