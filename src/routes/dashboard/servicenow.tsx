@@ -12,11 +12,20 @@ import {
 } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../../components/ui/select";
 import { queryKeys } from "../../lib/query-keys";
 import {
+	configureForwardServiceNowTicketing,
 	getUserServiceNowConfig,
 	getUserServiceNowPdiStatus,
 	installUserServiceNowDemo,
+	listUserForwardCollectorConfigs,
 	putUserServiceNowConfig,
 	wakeUserServiceNowPdi,
 } from "../../lib/skyforge-api";
@@ -29,6 +38,7 @@ function ServiceNowPage() {
 	const qc = useQueryClient();
 	const cfgKey = queryKeys.userServiceNowConfig();
 	const pdiKey = queryKeys.userServiceNowPdiStatus();
+	const collectorsKey = queryKeys.userForwardCollectorConfigs();
 
 	const cfgQ = useQuery({
 		queryKey: cfgKey,
@@ -41,25 +51,58 @@ function ServiceNowPage() {
 	const [instanceUrl, setInstanceUrl] = useState("");
 	const [adminUsername, setAdminUsername] = useState("");
 	const [adminPassword, setAdminPassword] = useState("");
-	const [forwardBaseUrl, setForwardBaseUrl] = useState("https://fwd.app/api");
-	const [forwardUsername, setForwardUsername] = useState("");
-	const [forwardPassword, setForwardPassword] = useState("");
+	const [forwardCollectorConfigId, setForwardCollectorConfigId] = useState("");
+	const [forwardCredSource, setForwardCredSource] = useState<
+		"collector" | "custom"
+	>("collector");
+	const [forwardUsername, setForwardUsername] = useState(""); // custom
+	const [forwardPassword, setForwardPassword] = useState(""); // custom
 
 	useEffect(() => {
 		if (!cfg) return;
 		setInstanceUrl(cfg.instanceUrl ?? "");
 		setAdminUsername(cfg.adminUsername ?? "");
-		setForwardBaseUrl(cfg.forwardBaseUrl ?? "https://fwd.app/api");
+		setForwardCollectorConfigId(cfg.forwardCollectorConfigId ?? "");
+		setForwardCredSource(cfg.forwardCollectorConfigId ? "collector" : "custom");
 		setForwardUsername(cfg.forwardUsername ?? "");
 	}, [cfg]);
+
+	const collectorsQ = useQuery({
+		queryKey: collectorsKey,
+		queryFn: listUserForwardCollectorConfigs,
+		retry: false,
+		staleTime: 30_000,
+	});
+	const collectorOptions = useMemo(
+		() => collectorsQ.data?.collectors ?? [],
+		[collectorsQ.data],
+	);
+
+	useEffect(() => {
+		// Prefer using an existing collector by default (recommended path).
+		if (cfg) return;
+		if (forwardCredSource !== "collector") return;
+		if (forwardCollectorConfigId) return;
+		const preferred =
+			collectorOptions.find((c) => c.isDefault) ?? collectorOptions[0];
+		if (preferred?.id) setForwardCollectorConfigId(preferred.id);
+	}, [cfg, collectorOptions, forwardCollectorConfigId, forwardCredSource]);
 
 	const pdiQ = useQuery({
 		queryKey: pdiKey,
 		queryFn: getUserServiceNowPdiStatus,
 		enabled: Boolean(cfg?.configured),
 		retry: false,
-		refetchOnWindowFocus: false,
+		refetchOnWindowFocus: true,
 		staleTime: 0,
+		refetchInterval: (query) => {
+			if (document.visibilityState === "hidden") return false;
+			const st = query.state.data?.status ?? "";
+			if (st === "awake") return 120_000;
+			if (st === "sleeping" || st === "waking" || st === "unreachable")
+				return 30_000;
+			return 60_000;
+		},
 	});
 
 	const wakeMutation = useMutation({
@@ -71,50 +114,6 @@ function ServiceNowPage() {
 		onError: (e) =>
 			toast.error("Failed to wake PDI", { description: (e as Error).message }),
 	});
-
-	const importEnvFile = async (file: File) => {
-		const text = await file.text();
-		const lines = text.split(/\r?\n/);
-		const parsed: Record<string, string> = {};
-		for (const raw of lines) {
-			const line = raw.trim();
-			if (!line || line.startsWith("#")) continue;
-			const withoutExport = line.startsWith("export ")
-				? line.slice("export ".length).trim()
-				: line;
-			const eq = withoutExport.indexOf("=");
-			if (eq <= 0) continue;
-			const key = withoutExport.slice(0, eq).trim();
-			let value = withoutExport.slice(eq + 1).trim();
-			if (
-				(value.startsWith('"') && value.endsWith('"')) ||
-				(value.startsWith("'") && value.endsWith("'"))
-			) {
-				value = value.slice(1, -1);
-			}
-			parsed[key] = value;
-		}
-
-		const snURL =
-			parsed.SN_INSTANCE_URL || parsed.SERVICENOW_INSTANCE_URL || "";
-		const snUser =
-			parsed.SN_ADMIN_USERNAME || parsed.SERVICENOW_ADMIN_USERNAME || "";
-		const snPass =
-			parsed.SN_ADMIN_PASSWORD || parsed.SERVICENOW_ADMIN_PASSWORD || "";
-		const fwdBase =
-			parsed.FWD_BASE_URL || parsed.FORWARD_BASE_URL || "https://fwd.app/api";
-		const fwdUser = parsed.FWD_USERNAME || parsed.FORWARD_USERNAME || "";
-		const fwdPass = parsed.FWD_PASSWORD || parsed.FORWARD_PASSWORD || "";
-
-		if (snURL) setInstanceUrl(snURL);
-		if (snUser) setAdminUsername(snUser);
-		if (snPass) setAdminPassword(snPass);
-		if (fwdBase) setForwardBaseUrl(fwdBase);
-		if (fwdUser) setForwardUsername(fwdUser);
-		if (fwdPass) setForwardPassword(fwdPass);
-
-		toast.success("Imported env file (not uploaded)");
-	};
 
 	const effectiveAdminPassword = useMemo(() => {
 		if (adminPassword.trim()) return adminPassword;
@@ -132,18 +131,24 @@ function ServiceNowPage() {
 				throw new Error("ServiceNow instance URL is required");
 			if (!adminUsername.trim())
 				throw new Error("ServiceNow admin username is required");
-			if (!forwardUsername.trim())
-				throw new Error("Forward username is required");
-			if (!forwardBaseUrl.trim())
-				throw new Error("Forward base URL is required");
+			const isCollector = forwardCredSource === "collector";
+			if (isCollector) {
+				if (!forwardCollectorConfigId.trim())
+					throw new Error("Select a Forward collector (or choose Custom)");
+			} else {
+				if (!forwardUsername.trim())
+					throw new Error("Forward username is required");
+			}
 
 			return putUserServiceNowConfig({
 				instanceUrl: instanceUrl.trim(),
 				adminUsername: adminUsername.trim(),
 				adminPassword,
-				forwardBaseUrl: forwardBaseUrl.trim(),
-				forwardUsername: forwardUsername.trim(),
-				forwardPassword,
+				forwardCollectorConfigId: isCollector
+					? forwardCollectorConfigId.trim()
+					: "",
+				forwardUsername: isCollector ? "" : forwardUsername.trim(),
+				forwardPassword: isCollector ? "" : forwardPassword,
 			});
 		},
 		onSuccess: async () => {
@@ -169,6 +174,22 @@ function ServiceNowPage() {
 		},
 		onError: (e) =>
 			toast.error("Failed to install ServiceNow demo", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const configureForwardTicketingMutation = useMutation({
+		mutationFn: async () => configureForwardServiceNowTicketing(),
+		onSuccess: async (resp) => {
+			if (resp.configured)
+				toast.success("Configured Forward ticketing integration");
+			else
+				toast.error("Failed to configure Forward", {
+					description: resp.message,
+				});
+		},
+		onError: (e) =>
+			toast.error("Failed to configure Forward", {
 				description: (e as Error).message,
 			}),
 	});
@@ -200,24 +221,9 @@ function ServiceNowPage() {
 					>
 						Create a Personal Developer Instance (PDI)
 					</a>
-					<div className="pt-2">
-						<Label>Import from env file</Label>
-						<div className="text-xs text-muted-foreground mt-1">
-							Expected keys: <code>SN_INSTANCE_URL</code>,{" "}
-							<code>SN_ADMIN_USERNAME</code>, <code>SN_ADMIN_PASSWORD</code>,{" "}
-							<code>FWD_BASE_URL</code>, <code>FWD_USERNAME</code>,{" "}
-							<code>FWD_PASSWORD</code>.
-						</div>
-						<Input
-							type="file"
-							accept=".env,.txt"
-							onChange={(e) => {
-								const f = e.target.files?.[0];
-								if (f) void importEnvFile(f);
-								e.target.value = "";
-							}}
-							className="mt-2"
-						/>
+					<div className="text-xs text-muted-foreground">
+						Create and wake your PDI in the ServiceNow portal; then paste the
+						instance URL and admin creds below.
 					</div>
 				</CardContent>
 			</Card>
@@ -314,40 +320,72 @@ function ServiceNowPage() {
 						</div>
 					</div>
 
-					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label>Forward base URL</Label>
-							<Input
-								value={forwardBaseUrl}
-								onChange={(e) => setForwardBaseUrl(e.target.value)}
-								placeholder="https://fwd.app/api"
-							/>
+					<div className="space-y-2">
+						<Label>Forward credentials</Label>
+						<div className="text-xs text-muted-foreground">
+							Uses Forward SaaS (<code>https://fwd.app</code>).
 						</div>
-						<div className="space-y-2">
-							<Label>Forward username</Label>
-							<Input
-								value={forwardUsername}
-								onChange={(e) => setForwardUsername(e.target.value)}
-								placeholder="you@example.com"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Forward password</Label>
-							<Input
-								type="password"
-								value={forwardPassword}
-								onChange={(e) => setForwardPassword(e.target.value)}
-								placeholder={
-									cfg?.hasForwardPassword ? "(leave blank to keep stored)" : ""
+						<Select
+							value={
+								forwardCredSource === "custom"
+									? "custom"
+									: forwardCollectorConfigId || ""
+							}
+							onValueChange={(v) => {
+								if (v === "custom") {
+									setForwardCredSource("custom");
+									setForwardCollectorConfigId("");
+									return;
 								}
-							/>
-							{effectiveForwardPassword ? (
-								<div className="text-xs text-muted-foreground">
-									Current: {effectiveForwardPassword}
-								</div>
-							) : null}
-						</div>
+								setForwardCredSource("collector");
+								setForwardCollectorConfigId(v);
+							}}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue placeholder="Select a collector" />
+							</SelectTrigger>
+							<SelectContent>
+								{collectorOptions.map((c) => (
+									<SelectItem key={c.id} value={c.id}>
+										{c.name}
+										{c.isDefault ? " (default)" : ""}
+									</SelectItem>
+								))}
+								<SelectItem value="custom">Custom…</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
+
+					{forwardCredSource === "custom" ? (
+						<div className="grid gap-4 md:grid-cols-2">
+							<div className="space-y-2">
+								<Label>Forward username</Label>
+								<Input
+									value={forwardUsername}
+									onChange={(e) => setForwardUsername(e.target.value)}
+									placeholder="you@example.com"
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Forward password</Label>
+								<Input
+									type="password"
+									value={forwardPassword}
+									onChange={(e) => setForwardPassword(e.target.value)}
+									placeholder={
+										cfg?.hasForwardPassword
+											? "(leave blank to keep stored)"
+											: ""
+									}
+								/>
+								{effectiveForwardPassword ? (
+									<div className="text-xs text-muted-foreground">
+										Current: {effectiveForwardPassword}
+									</div>
+								) : null}
+							</div>
+						</div>
+					) : null}
 
 					<div className="flex items-center gap-2">
 						<Button
@@ -366,6 +404,17 @@ function ServiceNowPage() {
 							}
 						>
 							Install demo app
+						</Button>
+						<Button
+							variant="secondary"
+							onClick={() => configureForwardTicketingMutation.mutate()}
+							disabled={
+								configureForwardTicketingMutation.isPending ||
+								saveMutation.isPending ||
+								!cfg?.configured
+							}
+						>
+							Configure Forward (ticketing)
 						</Button>
 						<a
 							className="text-sm underline text-muted-foreground ml-2"

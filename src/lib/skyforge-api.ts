@@ -29,7 +29,7 @@ export type UserServiceNowConfigResponse = {
 	instanceUrl?: string;
 	adminUsername?: string;
 	hasAdminPassword: boolean;
-	forwardBaseUrl?: string;
+	forwardCollectorConfigId?: string;
 	forwardUsername?: string;
 	hasForwardPassword: boolean;
 	updatedAt?: ISO8601;
@@ -43,14 +43,19 @@ export type PutUserServiceNowConfigRequest = {
 	instanceUrl: string;
 	adminUsername: string;
 	adminPassword: string;
-	forwardBaseUrl: string;
-	forwardUsername: string;
-	forwardPassword: string;
+	forwardCollectorConfigId?: string;
+	forwardUsername?: string;
+	forwardPassword?: string;
 };
 
 export type InstallUserServiceNowDemoResponse = {
 	installed: boolean;
 	status: string;
+	message?: string;
+};
+
+export type ConfigureForwardServiceNowTicketingResponse = {
+	configured: boolean;
 	message?: string;
 };
 
@@ -485,6 +490,13 @@ export async function wakeUserServiceNowPdi(): Promise<ServiceNowPdiStatusRespon
 			method: "POST",
 			body: "{}",
 		},
+	);
+}
+
+export async function configureForwardServiceNowTicketing(): Promise<ConfigureForwardServiceNowTicketingResponse> {
+	return apiFetch<ConfigureForwardServiceNowTicketingResponse>(
+		"/api/user/integrations/servicenow/configureForwardTicketing",
+		{ method: "POST", body: "{}" },
 	);
 }
 
