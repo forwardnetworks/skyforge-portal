@@ -24,6 +24,36 @@ export type SkyforgeWorkspace =
 export type NotificationRecord =
 	components["schemas"]["skyforge.NotificationRecord"];
 
+export type UserServiceNowConfigResponse = {
+	configured: boolean;
+	instanceUrl?: string;
+	adminUsername?: string;
+	hasAdminPassword: boolean;
+	forwardBaseUrl?: string;
+	forwardUsername?: string;
+	hasForwardPassword: boolean;
+	updatedAt?: ISO8601;
+	lastInstallStatus?: string;
+	lastInstallError?: string;
+	lastInstallStartedAt?: ISO8601;
+	lastInstallFinishedAt?: ISO8601;
+};
+
+export type PutUserServiceNowConfigRequest = {
+	instanceUrl: string;
+	adminUsername: string;
+	adminPassword: string;
+	forwardBaseUrl: string;
+	forwardUsername: string;
+	forwardPassword: string;
+};
+
+export type InstallUserServiceNowDemoResponse = {
+	installed: boolean;
+	status: string;
+	message?: string;
+};
+
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
 // This type reflects the fields Skyforge currently emits in the dashboard snapshot and related APIs.
 export type WorkspaceDeployment = {
@@ -408,6 +438,31 @@ export async function deleteWorkspaceEveServer(
 
 export async function listForwardCollectors(): Promise<ListForwardCollectorsResponse> {
 	return apiFetch<ListForwardCollectorsResponse>("/api/forward/collectors");
+}
+
+export async function getUserServiceNowConfig(): Promise<UserServiceNowConfigResponse> {
+	return apiFetch<UserServiceNowConfigResponse>(
+		"/api/user/integrations/servicenow",
+	);
+}
+
+export async function putUserServiceNowConfig(
+	payload: PutUserServiceNowConfigRequest,
+): Promise<UserServiceNowConfigResponse> {
+	return apiFetch<UserServiceNowConfigResponse>(
+		"/api/user/integrations/servicenow",
+		{
+			method: "PUT",
+			body: JSON.stringify(payload),
+		},
+	);
+}
+
+export async function installUserServiceNowDemo(): Promise<InstallUserServiceNowDemoResponse> {
+	return apiFetch<InstallUserServiceNowDemoResponse>(
+		"/api/user/integrations/servicenow/install",
+		{ method: "POST", body: "{}" },
+	);
 }
 
 export type UserGitCredentialsResponse = {

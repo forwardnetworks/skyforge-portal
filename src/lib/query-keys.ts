@@ -23,6 +23,7 @@ export const queryKeys = {
 		["userForwardCollectorConfigRuntime", id] as const,
 	userForwardCollectorConfigLogs: (id: string) =>
 		["userForwardCollectorConfigLogs", id] as const,
+	userServiceNowConfig: () => ["userServiceNowConfig"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	workspaceArtifacts: (workspaceId: string) =>
 		["workspaceArtifacts", workspaceId] as const,

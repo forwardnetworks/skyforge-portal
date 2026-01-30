@@ -17,6 +17,7 @@ import {
 	Settings,
 	ShieldCheck,
 	Webhook,
+	Workflow,
 } from "lucide-react";
 import { useState } from "react";
 import { SKYFORGE_API } from "../lib/skyforge-api";
@@ -63,6 +64,7 @@ const items: NavItem[] = [
 		newTab: true,
 	},
 	{ label: "Collector (Forward)", href: "/dashboard/forward", icon: Radio },
+	{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
 	{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
 	{
 		label: "Tools",
