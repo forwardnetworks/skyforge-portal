@@ -6,6 +6,7 @@ import {
 	Cloud,
 	Database,
 	FolderKanban,
+	Sparkles,
 	GitBranch,
 	Hammer,
 	Inbox,
@@ -65,6 +66,7 @@ const items: NavItem[] = [
 	},
 	{ label: "Collector (Forward)", href: "/dashboard/forward", icon: Radio },
 	{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
+	{ label: "Gemini", href: "/dashboard/gemini", icon: Sparkles },
 	{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
 	{
 		label: "Tools",

@@ -20,6 +20,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
+import { Route as DashboardGeminiRouteImport } from './routes/dashboard/gemini'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
@@ -87,6 +88,11 @@ const DashboardServicenowRoute = DashboardServicenowRouteImport.update({
 const DashboardS3Route = DashboardS3RouteImport.update({
   id: '/dashboard/s3',
   path: '/dashboard/s3',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardGeminiRoute = DashboardGeminiRouteImport.update({
+  id: '/dashboard/gemini',
+  path: '/dashboard/gemini',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardForwardRoute = DashboardForwardRouteImport.update({
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRoute
+  '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/admin': typeof AdminIndexRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRoute
+  '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/admin': typeof AdminIndexRoute
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRoute
+  '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/admin/': typeof AdminIndexRoute
@@ -252,6 +261,7 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/forward'
+    | '/dashboard/gemini'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/admin'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/forward'
+    | '/dashboard/gemini'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/admin'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/forward'
+    | '/dashboard/gemini'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/admin/'
@@ -331,6 +343,7 @@ export interface RootRouteChildren {
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardForwardRoute: typeof DashboardForwardRoute
+  DashboardGeminiRoute: typeof DashboardGeminiRoute
   DashboardS3Route: typeof DashboardS3Route
   DashboardServicenowRoute: typeof DashboardServicenowRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -424,6 +437,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/s3'
       fullPath: '/dashboard/s3'
       preLoaderRoute: typeof DashboardS3RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/gemini': {
+      id: '/dashboard/gemini'
+      path: '/dashboard/gemini'
+      fullPath: '/dashboard/gemini'
+      preLoaderRoute: typeof DashboardGeminiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/forward': {
@@ -531,6 +551,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   DashboardForwardRoute: DashboardForwardRoute,
+  DashboardGeminiRoute: DashboardGeminiRoute,
   DashboardS3Route: DashboardS3Route,
   DashboardServicenowRoute: DashboardServicenowRoute,
   AdminIndexRoute: AdminIndexRoute,

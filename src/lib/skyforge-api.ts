@@ -73,6 +73,16 @@ export type ServiceNowSchemaStatusResponse = {
 	checkedAt?: ISO8601;
 };
 
+export type UserGeminiConfigResponse = {
+	enabled: boolean;
+	configured: boolean;
+	email?: string;
+	scopes?: string;
+	hasToken: boolean;
+	updatedAt?: ISO8601;
+	redirectUrl?: string;
+};
+
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
 // This type reflects the fields Skyforge currently emits in the dashboard snapshot and related APIs.
 export type WorkspaceDeployment = {
@@ -511,6 +521,17 @@ export async function configureForwardServiceNowTicketing(): Promise<ConfigureFo
 		"/api/user/integrations/servicenow/configureForwardTicketing",
 		{ method: "POST", body: "{}" },
 	);
+}
+
+export async function getUserGeminiConfig(): Promise<UserGeminiConfigResponse> {
+	return apiFetch<UserGeminiConfigResponse>("/api/user/integrations/gemini");
+}
+
+export async function disconnectUserGemini(): Promise<void> {
+	await apiFetch<void>("/api/user/integrations/gemini/disconnect", {
+		method: "POST",
+		body: "{}",
+	});
 }
 
 export type UserGitCredentialsResponse = {
