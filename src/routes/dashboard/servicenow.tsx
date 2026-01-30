@@ -63,7 +63,15 @@ function ServiceNowPage() {
 		setInstanceUrl(cfg.instanceUrl ?? "");
 		setAdminUsername(cfg.adminUsername ?? "");
 		setForwardCollectorConfigId(cfg.forwardCollectorConfigId ?? "");
-		setForwardCredSource(cfg.forwardCollectorConfigId ? "collector" : "custom");
+		// Prefer using an existing collector by default; fall back to custom only
+		// when the user previously configured custom creds.
+		setForwardCredSource(
+			cfg.forwardCollectorConfigId
+				? "collector"
+				: cfg.forwardUsername
+					? "custom"
+					: "collector",
+		);
 		setForwardUsername(cfg.forwardUsername ?? "");
 	}, [cfg]);
 
@@ -80,7 +88,6 @@ function ServiceNowPage() {
 
 	useEffect(() => {
 		// Prefer using an existing collector by default (recommended path).
-		if (cfg) return;
 		if (forwardCredSource !== "collector") return;
 		if (forwardCollectorConfigId) return;
 		const preferred =
@@ -114,16 +121,6 @@ function ServiceNowPage() {
 		onError: (e) =>
 			toast.error("Failed to wake PDI", { description: (e as Error).message }),
 	});
-
-	const effectiveAdminPassword = useMemo(() => {
-		if (adminPassword.trim()) return adminPassword;
-		return cfg?.hasAdminPassword ? "(stored)" : "";
-	}, [adminPassword, cfg?.hasAdminPassword]);
-
-	const effectiveForwardPassword = useMemo(() => {
-		if (forwardPassword.trim()) return forwardPassword;
-		return cfg?.hasForwardPassword ? "(stored)" : "";
-	}, [forwardPassword, cfg?.hasForwardPassword]);
 
 	const saveMutation = useMutation({
 		mutationFn: async () => {
@@ -312,11 +309,6 @@ function ServiceNowPage() {
 									cfg?.hasAdminPassword ? "(leave blank to keep stored)" : ""
 								}
 							/>
-							{effectiveAdminPassword ? (
-								<div className="text-xs text-muted-foreground">
-									Current: {effectiveAdminPassword}
-								</div>
-							) : null}
 						</div>
 					</div>
 
@@ -378,11 +370,6 @@ function ServiceNowPage() {
 											: ""
 									}
 								/>
-								{effectiveForwardPassword ? (
-									<div className="text-xs text-muted-foreground">
-										Current: {effectiveForwardPassword}
-									</div>
-								) : null}
 							</div>
 						</div>
 					) : null}
