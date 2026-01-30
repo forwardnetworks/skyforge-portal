@@ -36,7 +36,7 @@ export const NETLAB_DEVICE_PRESETS: EnvValueOption[] = [
 	{ label: "Cisco CSR1000v (csr)", value: "csr" },
 	{ label: "Cisco ASA (asav)", value: "asav" },
 	{ label: "Cisco NX-OSv9k (nxos)", value: "nxos" },
-	{ label: "Juniper SRX (vsrx)", value: "vsrx" },
+	{ label: "Juniper SRX", value: "vsrx" },
 	{ label: "Juniper vMX (vmx)", value: "vmx" },
 	{ label: "Juniper vJunos Router (vjunos-router)", value: "vjunos-router" },
 	{ label: "Juniper vJunos Switch (vjunos-switch)", value: "vjunos-switch" },

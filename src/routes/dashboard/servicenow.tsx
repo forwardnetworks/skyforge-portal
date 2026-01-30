@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
+import { Checkbox } from "../../components/ui/checkbox";
 import {
 	Card,
 	CardContent,
@@ -24,6 +25,7 @@ import {
 	configureForwardServiceNowTicketing,
 	getUserServiceNowConfig,
 	getUserServiceNowPdiStatus,
+	getUserServiceNowSchemaStatus,
 	installUserServiceNowDemo,
 	listUserForwardCollectorConfigs,
 	putUserServiceNowConfig,
@@ -38,6 +40,7 @@ function ServiceNowPage() {
 	const qc = useQueryClient();
 	const cfgKey = queryKeys.userServiceNowConfig();
 	const pdiKey = queryKeys.userServiceNowPdiStatus();
+	const schemaKey = queryKeys.userServiceNowSchemaStatus();
 	const collectorsKey = queryKeys.userForwardCollectorConfigs();
 
 	const cfgQ = useQuery({
@@ -57,6 +60,8 @@ function ServiceNowPage() {
 	>("collector");
 	const [forwardUsername, setForwardUsername] = useState(""); // custom
 	const [forwardPassword, setForwardPassword] = useState(""); // custom
+	const [configureForwardTicketingOnSave, setConfigureForwardTicketingOnSave] =
+		useState(true);
 
 	useEffect(() => {
 		if (!cfg) return;
@@ -112,6 +117,15 @@ function ServiceNowPage() {
 		},
 	});
 
+	const schemaQ = useQuery({
+		queryKey: schemaKey,
+		queryFn: getUserServiceNowSchemaStatus,
+		enabled: Boolean(cfg?.configured),
+		retry: false,
+		refetchOnWindowFocus: true,
+		staleTime: 0,
+	});
+
 	const wakeMutation = useMutation({
 		mutationFn: async () => wakeUserServiceNowPdi(),
 		onSuccess: async () => {
@@ -154,6 +168,10 @@ function ServiceNowPage() {
 			setForwardPassword("");
 			await qc.invalidateQueries({ queryKey: cfgKey });
 			await qc.invalidateQueries({ queryKey: pdiKey });
+			await qc.invalidateQueries({ queryKey: schemaKey });
+			if (configureForwardTicketingOnSave) {
+				configureForwardTicketingMutation.mutate();
+			}
 		},
 		onError: (e) =>
 			toast.error("Failed to save ServiceNow settings", {
@@ -274,6 +292,69 @@ function ServiceNowPage() {
 
 			<Card>
 				<CardHeader>
+					<CardTitle>Schema status</CardTitle>
+					<CardDescription>
+						The demo requires two custom tables and fields. ServiceNow does not
+						allow Skyforge to create these via Table API, so you create them
+						once in the PDI and Skyforge installs everything else.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<div className="text-sm">
+						{cfg?.configured ? (
+							<>
+								Status:{" "}
+								<span className="font-medium">
+									{schemaQ.data?.status ??
+										(schemaQ.isFetching ? "checking…" : "unknown")}
+								</span>
+								{schemaQ.data?.checkedAt
+									? ` (checked ${schemaQ.data.checkedAt})`
+									: ""}
+								{schemaQ.data?.detail ? ` — ${schemaQ.data.detail}` : ""}
+							</>
+						) : (
+							<span className="text-muted-foreground">
+								Save configuration first.
+							</span>
+						)}
+					</div>
+
+					{schemaQ.data?.status === "missing" && schemaQ.data.missing?.length ? (
+						<div className="rounded-md border p-3 bg-muted/30">
+							<div className="text-xs text-muted-foreground mb-2">
+								Missing items:
+							</div>
+							<ul className="text-xs font-mono space-y-1">
+								{schemaQ.data.missing.map((m) => (
+									<li key={m}>- {m}</li>
+								))}
+							</ul>
+						</div>
+					) : null}
+
+					<div className="flex items-center gap-2">
+						<Button
+							variant="secondary"
+							onClick={() => void schemaQ.refetch()}
+							disabled={!cfg?.configured || schemaQ.isFetching}
+						>
+							Check schema
+						</Button>
+						<a
+							className="text-sm underline text-muted-foreground"
+							href="/docs/servicenow.html"
+							target="_blank"
+							rel="noreferrer"
+						>
+							Docs
+						</a>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
 					<CardTitle>Configuration</CardTitle>
 					<CardDescription>
 						Skyforge uses ServiceNow admin creds to install/configure. Forward
@@ -374,6 +455,29 @@ function ServiceNowPage() {
 						</div>
 					) : null}
 
+					<div className="space-y-2">
+						<Label>Forward integration</Label>
+						<div className="flex items-center gap-2">
+							<Checkbox
+								id="snow-configure-ticketing-on-save"
+								checked={configureForwardTicketingOnSave}
+								onCheckedChange={(v) =>
+									setConfigureForwardTicketingOnSave(Boolean(v))
+								}
+							/>
+							<Label
+								htmlFor="snow-configure-ticketing-on-save"
+								className="font-normal text-sm"
+							>
+								Configure Forward ticketing integration on save
+							</Label>
+						</div>
+						<div className="text-xs text-muted-foreground">
+							Configures Forward SaaS to auto-create and auto-update incidents in
+							this ServiceNow instance.
+						</div>
+					</div>
+
 					<div className="flex items-center gap-2">
 						<Button
 							onClick={() => saveMutation.mutate()}
@@ -387,7 +491,8 @@ function ServiceNowPage() {
 							disabled={
 								installMutation.isPending ||
 								saveMutation.isPending ||
-								!cfg?.configured
+								!cfg?.configured ||
+								schemaQ.data?.status === "missing"
 							}
 						>
 							Install demo app
@@ -405,7 +510,7 @@ function ServiceNowPage() {
 						</Button>
 						<a
 							className="text-sm underline text-muted-foreground ml-2"
-							href="/assets/skyforge/docs/servicenow.html"
+							href="/docs/servicenow.html"
 							target="_blank"
 							rel="noreferrer"
 						>
