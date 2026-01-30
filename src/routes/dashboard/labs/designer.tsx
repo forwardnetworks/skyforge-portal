@@ -217,14 +217,19 @@ function inferPaletteItemFromRepo(repo: string): PaletteItem {
 			role: "switch",
 		});
 	}
-	if (lower.includes("vrnetlab/juniper_vsrx") || lower.includes("vsrx")) {
+	if (
+		lower.includes("vrnetlab/juniper_vsrx") ||
+		lower.includes("vr-vsrx") ||
+		lower.includes("vsrx") ||
+		lower.includes("/srx")
+	) {
 		return mk({
-			label: "Firewall · Juniper vSRX",
+			label: "Firewall · Juniper SRX",
 			category: "Firewalls",
-			kind: "juniper_vsrx",
+			kind: "vr-vsrx",
 			repo: clean,
 			vendor: "Juniper",
-			model: "vSRX",
+			model: "SRX",
 			role: "firewall",
 		});
 	}
@@ -255,8 +260,7 @@ function inferPaletteItemFromRepo(repo: string): PaletteItem {
 		(lower.includes("asa") ||
 			lower.includes("pan") ||
 			lower.includes("palo") ||
-			lower.includes("checkpoint") ||
-			lower.includes("srx"))
+			lower.includes("checkpoint"))
 	) {
 		return mk({
 			label: `Firewall · ${base}`,
