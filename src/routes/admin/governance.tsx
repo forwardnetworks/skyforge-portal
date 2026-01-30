@@ -93,8 +93,8 @@ export const Route = createFileRoute("/admin/governance")({
 				queryFn: () => listGovernanceCosts({ limit: "50" }),
 			}),
 			queryClient.ensureQueryData({
-				queryKey: queryKeys.governanceUsage("50"),
-				queryFn: () => listGovernanceUsage({ limit: "50" }),
+				queryKey: queryKeys.governanceUsage("500"),
+				queryFn: () => listGovernanceUsage({ limit: "500" }),
 			}),
 		]);
 	},
@@ -140,11 +140,96 @@ function GovernancePage() {
 		enabled: isAdmin,
 	});
 	const usage = useQuery({
-		queryKey: queryKeys.governanceUsage("50"),
-		queryFn: () => listGovernanceUsage({ limit: "50" }),
+		queryKey: queryKeys.governanceUsage("500"),
+		queryFn: () => listGovernanceUsage({ limit: "500" }),
 		staleTime: 30_000,
 		enabled: isAdmin,
 	});
+
+	const usageSnapshots = usage.data?.usage ?? [];
+	const clusterUsage = useMemo(() => {
+		const byMetric = new Map<
+			string,
+			NonNullable<typeof usage.data>["usage"][number]
+		>();
+		for (const snap of usageSnapshots) {
+			if (snap.scopeType !== "cluster") continue;
+			const metric = String(snap.metric ?? "");
+			if (!metric) continue;
+			const prev = byMetric.get(metric);
+			if (!prev) {
+				byMetric.set(metric, snap);
+				continue;
+			}
+			if (
+				new Date(String(snap.collectedAt)).getTime() >
+				new Date(String(prev.collectedAt)).getTime()
+			) {
+				byMetric.set(metric, snap);
+			}
+		}
+		return byMetric;
+	}, [usageSnapshots]);
+
+	const topUsers = useMemo(() => {
+		type Row = {
+			user: string;
+			deploymentsActive: number;
+			deploymentsTotal: number;
+			collectorsTotal: number;
+			tasksRunning: number;
+			lastSeenAt: string;
+		};
+		const rows = new Map<string, Row>();
+		for (const snap of usageSnapshots) {
+			if (snap.scopeType !== "user") continue;
+			const user = String(snap.scopeId ?? "").trim();
+			if (!user) continue;
+			const metric = String(snap.metric ?? "").trim();
+			if (!metric) continue;
+			const value = Number(snap.value ?? 0);
+			const collectedAt = String(snap.collectedAt ?? "");
+			const row =
+				rows.get(user) ??
+				({
+					user,
+					deploymentsActive: 0,
+					deploymentsTotal: 0,
+					collectorsTotal: 0,
+					tasksRunning: 0,
+					lastSeenAt: collectedAt,
+				} satisfies Row);
+			switch (metric) {
+				case "deployments.active":
+					row.deploymentsActive = value;
+					break;
+				case "deployments.total":
+					row.deploymentsTotal = value;
+					break;
+				case "collectors.total":
+					row.collectorsTotal = value;
+					break;
+				case "tasks.running":
+					row.tasksRunning = value;
+					break;
+				default:
+					break;
+			}
+			if (
+				new Date(collectedAt).getTime() > new Date(row.lastSeenAt).getTime()
+			) {
+				row.lastSeenAt = collectedAt;
+			}
+			rows.set(user, row);
+		}
+		return Array.from(rows.values()).sort((a, b) => {
+			if (b.deploymentsActive !== a.deploymentsActive)
+				return b.deploymentsActive - a.deploymentsActive;
+			if (b.tasksRunning !== a.tasksRunning)
+				return b.tasksRunning - a.tasksRunning;
+			return a.user.localeCompare(b.user);
+		});
+	}, [usageSnapshots]);
 
 	const filteredResources = useMemo(() => {
 		const list = resources.data?.resources ?? [];
@@ -185,7 +270,7 @@ function GovernancePage() {
 					queryKey: queryKeys.governanceCosts("50"),
 				}),
 				queryClient.invalidateQueries({
-					queryKey: queryKeys.governanceUsage("50"),
+					queryKey: queryKeys.governanceUsage("500"),
 				}),
 			]);
 		},
@@ -608,7 +693,8 @@ function GovernancePage() {
 						<CardHeader>
 							<CardTitle>Usage Telemetry</CardTitle>
 							<CardDescription>
-								System usage metrics and limits.
+								Lightweight snapshots of cluster load and user activity (no
+								Prometheus).
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -624,46 +710,176 @@ function GovernancePage() {
 									description="No telemetry snapshots available."
 								/>
 							) : (
-								<DataTable
-									columns={
-										[
-											{
-												id: "provider",
-												header: "Provider",
-												width: 180,
-												cell: (u) => (
-													<span className="font-medium">{u.provider}</span>
-												),
-											},
-											{ id: "metric", header: "Metric", cell: (u) => u.metric },
-											{
-												id: "value",
-												header: "Value",
-												width: 200,
-												cell: (u) => u.value,
-											},
-											{
-												id: "collectedAt",
-												header: "Collected At",
-												width: 220,
-												align: "right",
-												cell: (u) => (
-													<span className="text-muted-foreground">
-														{u.collectedAt}
-													</span>
-												),
-											},
-										] satisfies Array<
-											DataTableColumn<
-												NonNullable<typeof usage.data>["usage"][number]
-											>
-										>
-									}
-									rows={(usage.data?.usage ?? []).slice(0, 50)}
-									getRowId={(u) => `${u.provider}:${u.metric}:${u.collectedAt}`}
-									maxHeightClassName="max-h-[50vh]"
-									minWidthClassName="min-w-[900px]"
-								/>
+								<div className="space-y-6">
+									<BentoGrid>
+										<BentoStatCard
+											title="CPU p95"
+											value={
+												clusterUsage.get("node.cpu_active.p95")?.value ?? "—"
+											}
+											subtitle="Last snapshot"
+											icon={<Activity className="h-4 w-4" />}
+										/>
+										<BentoStatCard
+											title="Mem p95"
+											value={
+												clusterUsage.get("node.mem_used.p95")?.value ?? "—"
+											}
+											subtitle="Last snapshot"
+											icon={<Layers className="h-4 w-4" />}
+										/>
+										<BentoStatCard
+											title="Disk p95"
+											value={
+												clusterUsage.get("node.disk_used.p95")?.value ?? "—"
+											}
+											subtitle="Last snapshot"
+											icon={<Database className="h-4 w-4" />}
+										/>
+										<BentoStatCard
+											title="Active users (24h)"
+											value={clusterUsage.get("users.active_24h")?.value ?? "—"}
+											subtitle="Distinct users"
+											icon={<Inbox className="h-4 w-4" />}
+										/>
+									</BentoGrid>
+
+									<Card variant="glass">
+										<CardHeader>
+											<CardTitle className="text-base">Top Users</CardTitle>
+											<CardDescription>
+												Latest per-user activity snapshots (sorted by active
+												deployments).
+											</CardDescription>
+										</CardHeader>
+										<CardContent>
+											{topUsers.length === 0 ? (
+												<EmptyState
+													icon={BarChart3}
+													title="No user activity"
+													description="No per-user snapshots available yet."
+												/>
+											) : (
+												<DataTable
+													columns={
+														[
+															{
+																id: "user",
+																header: "User",
+																width: 240,
+																cell: (r) => (
+																	<span className="font-medium">{r.user}</span>
+																),
+															},
+															{
+																id: "deploymentsActive",
+																header: "Active Deployments",
+																width: 180,
+																cell: (r) => r.deploymentsActive,
+															},
+															{
+																id: "tasksRunning",
+																header: "Running Tasks",
+																width: 160,
+																cell: (r) => r.tasksRunning,
+															},
+															{
+																id: "collectorsTotal",
+																header: "Collectors",
+																width: 140,
+																cell: (r) => r.collectorsTotal,
+															},
+															{
+																id: "deploymentsTotal",
+																header: "Total Deployments",
+																width: 170,
+																cell: (r) => r.deploymentsTotal,
+															},
+															{
+																id: "lastSeenAt",
+																header: "Last Updated",
+																align: "right",
+																width: 220,
+																cell: (r) => (
+																	<span className="text-muted-foreground">
+																		{r.lastSeenAt}
+																	</span>
+																),
+															},
+														] satisfies Array<
+															DataTableColumn<(typeof topUsers)[number]>
+														>
+													}
+													rows={topUsers.slice(0, 50)}
+													getRowId={(r) => r.user}
+													maxHeightClassName="max-h-[45vh]"
+													minWidthClassName="min-w-[1000px]"
+												/>
+											)}
+										</CardContent>
+									</Card>
+
+									<Card variant="glass">
+										<CardHeader>
+											<CardTitle className="text-base">Raw Snapshots</CardTitle>
+											<CardDescription>
+												Most recent usage snapshot records (for debugging).
+											</CardDescription>
+										</CardHeader>
+										<CardContent>
+											<DataTable
+												columns={
+													[
+														{
+															id: "scope",
+															header: "Scope",
+															width: 180,
+															cell: (u) =>
+																u.scopeType === "user"
+																	? `user:${u.scopeId ?? ""}`
+																	: u.scopeType,
+														},
+														{
+															id: "metric",
+															header: "Metric",
+															cell: (u) => u.metric,
+														},
+														{
+															id: "value",
+															header: "Value",
+															width: 160,
+															cell: (u) =>
+																typeof u.value === "number"
+																	? u.value
+																	: String(u.value),
+														},
+														{
+															id: "collectedAt",
+															header: "Collected At",
+															width: 220,
+															align: "right",
+															cell: (u) => (
+																<span className="text-muted-foreground">
+																	{u.collectedAt}
+																</span>
+															),
+														},
+													] satisfies Array<
+														DataTableColumn<
+															NonNullable<typeof usage.data>["usage"][number]
+														>
+													>
+												}
+												rows={(usage.data?.usage ?? []).slice(0, 200)}
+												getRowId={(u) =>
+													`${u.provider}:${u.scopeType}:${u.scopeId ?? ""}:${u.metric}:${u.collectedAt}`
+												}
+												maxHeightClassName="max-h-[50vh]"
+												minWidthClassName="min-w-[900px]"
+											/>
+										</CardContent>
+									</Card>
+								</div>
 							)}
 						</CardContent>
 					</Card>
