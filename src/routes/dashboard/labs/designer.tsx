@@ -49,6 +49,8 @@ import {
 	getWorkspaceContainerlabTemplate,
 	getWorkspaceContainerlabTemplates,
 	getWorkspaces,
+	listRegistryRepositories,
+	listRegistryTags,
 	listWorkspaceNetlabServers,
 	saveContainerlabTopologyYAML,
 } from "@/lib/skyforge-api";
@@ -66,6 +68,8 @@ import {
 	Rocket,
 	Save,
 	Server,
+	Shield,
+	Waypoints,
 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -88,6 +92,242 @@ type DesignNodeData = {
 
 type DesignNode = Node<DesignNodeData>;
 
+type PaletteCategory = "Hosts" | "Routers" | "Switches" | "Firewalls" | "Other";
+
+type PaletteItem = {
+	id: string;
+	label: string;
+	category: PaletteCategory;
+	kind: string;
+	repo?: string;
+	vendor?: string;
+	model?: string;
+	role?: "host" | "router" | "switch" | "firewall" | "other";
+};
+
+const paletteMimeType = "application/x-skyforge-palette-item";
+
+function inferPaletteItemFromRepo(repo: string): PaletteItem {
+	const clean = String(repo ?? "")
+		.trim()
+		.replace(/^\/+|\/+$/g, "");
+	const lower = clean.toLowerCase();
+	const base = clean.split("/").pop() ?? clean;
+
+	const mk = (opts: Omit<PaletteItem, "id">): PaletteItem => ({
+		id: `${opts.kind}:${opts.repo ?? ""}`,
+		...opts,
+	});
+
+	// Hosts
+	if (
+		lower.includes("endhost") ||
+		lower.includes("linux") ||
+		lower.includes("ubuntu") ||
+		lower.includes("alpine")
+	) {
+		return mk({
+			label: `Host · ${base}`,
+			category: "Hosts",
+			kind: "linux",
+			repo: clean,
+			vendor: "Linux",
+			model: base,
+			role: "host",
+		});
+	}
+
+	// Arista EOS
+	if (base === "ceos" || lower.endsWith("/ceos") || lower.includes("/ceos:")) {
+		return mk({
+			label: "Switch/Router · Arista cEOS",
+			category: "Switches",
+			kind: "ceos",
+			repo: clean,
+			vendor: "Arista",
+			model: "cEOS",
+			role: "switch",
+		});
+	}
+
+	// Cisco (vrnetlab)
+	if (lower.includes("vrnetlab/cisco_iol")) {
+		return mk({
+			label: "Router · Cisco IOL (IOS)",
+			category: "Routers",
+			kind: "cisco_iol",
+			repo: clean,
+			vendor: "Cisco",
+			model: "IOL",
+			role: "router",
+		});
+	}
+	if (lower.includes("vrnetlab/cisco_viosl2")) {
+		return mk({
+			label: "Switch · Cisco vIOS L2",
+			category: "Switches",
+			kind: "cisco_viosl2",
+			repo: clean,
+			vendor: "Cisco",
+			model: "vIOS L2",
+			role: "switch",
+		});
+	}
+	if (lower.includes("vrnetlab/vr-n9kv") || lower.includes("vrnetlab/nxos")) {
+		return mk({
+			label: "Switch · Cisco NX-OSv (N9Kv)",
+			category: "Switches",
+			kind: "vr-n9kv",
+			repo: clean,
+			vendor: "Cisco",
+			model: "NX-OSv9k",
+			role: "switch",
+		});
+	}
+	if (lower.includes("vrnetlab/vr-vmx") || lower.includes("/vr-vmx")) {
+		return mk({
+			label: "Router · Juniper vMX",
+			category: "Routers",
+			kind: "vr-vmx",
+			repo: clean,
+			vendor: "Juniper",
+			model: "vMX",
+			role: "router",
+		});
+	}
+	if (lower.includes("vrnetlab/juniper_vjunos-router")) {
+		return mk({
+			label: "Router · Juniper vJunos Router",
+			category: "Routers",
+			kind: "juniper_vjunos-router",
+			repo: clean,
+			vendor: "Juniper",
+			model: "vJunos-router",
+			role: "router",
+		});
+	}
+	if (lower.includes("vrnetlab/juniper_vjunos-switch")) {
+		return mk({
+			label: "Switch · Juniper vJunos Switch",
+			category: "Switches",
+			kind: "juniper_vjunos-switch",
+			repo: clean,
+			vendor: "Juniper",
+			model: "vJunos-switch",
+			role: "switch",
+		});
+	}
+	if (lower.includes("vrnetlab/juniper_vsrx") || lower.includes("vsrx")) {
+		return mk({
+			label: "Firewall · Juniper vSRX",
+			category: "Firewalls",
+			kind: "juniper_vsrx",
+			repo: clean,
+			vendor: "Juniper",
+			model: "vSRX",
+			role: "firewall",
+		});
+	}
+	if (lower.includes("vrnetlab/vr-fortios") || lower.includes("fortios")) {
+		return mk({
+			label: "Firewall · Fortinet FortiOS",
+			category: "Firewalls",
+			kind: "vr-fortios",
+			repo: clean,
+			vendor: "Fortinet",
+			model: "FortiOS",
+			role: "firewall",
+		});
+	}
+	if (lower.includes("vrnetlab/vr-ftosv") || lower.includes("os10")) {
+		return mk({
+			label: "Switch · Dell OS10",
+			category: "Switches",
+			kind: "vr-ftosv",
+			repo: clean,
+			vendor: "Dell",
+			model: "OS10",
+			role: "switch",
+		});
+	}
+	if (
+		lower.includes("vrnetlab/") &&
+		(lower.includes("asa") ||
+			lower.includes("pan") ||
+			lower.includes("palo") ||
+			lower.includes("checkpoint") ||
+			lower.includes("srx"))
+	) {
+		return mk({
+			label: `Firewall · ${base}`,
+			category: "Firewalls",
+			kind: base,
+			repo: clean,
+			role: "firewall",
+		});
+	}
+
+	// Fallback: show any registry repo as "Other" so the palette is extensible.
+	return mk({
+		label: `Node · ${base}`,
+		category: "Other",
+		kind: base,
+		repo: clean,
+		role: "other",
+	});
+}
+
+function PaletteDraggableItem(props: { item: PaletteItem }) {
+	const p = props.item;
+	const Icon =
+		p.role === "firewall" ? Shield : p.role === "host" ? Server : Waypoints;
+	return (
+		<div
+			className="cursor-grab select-none rounded-lg border bg-background px-3 py-2 text-sm hover:bg-accent"
+			draggable
+			onDragStart={(e) => {
+				e.dataTransfer.setData(paletteMimeType, JSON.stringify(p));
+				e.dataTransfer.effectAllowed = "copy";
+			}}
+			title={p.repo ? `${p.label}\n${p.repo}` : p.label}
+		>
+			<div className="flex items-start gap-2">
+				<Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+				<div className="min-w-0">
+					<div className="truncate">{p.label}</div>
+					<div className="truncate text-[11px] text-muted-foreground font-mono">
+						{p.repo ?? p.kind}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+async function resolveRepoTag(opts: {
+	repo: string;
+	queryClient: ReturnType<typeof useQueryClient>;
+}): Promise<string> {
+	const repo = String(opts.repo ?? "")
+		.trim()
+		.replace(/^\/+|\/+$/g, "");
+	if (!repo) return "latest";
+	try {
+		const resp = await opts.queryClient.fetchQuery({
+			queryKey: queryKeys.registryTags(repo, ""),
+			queryFn: async () => listRegistryTags(repo, { q: "" }),
+			retry: false,
+			staleTime: 30_000,
+		});
+		const tags = Array.isArray(resp?.tags) ? resp.tags : [];
+		if (tags.includes("latest")) return "latest";
+		if (tags.length > 0) return String(tags[tags.length - 1]);
+		return "latest";
+	} catch {
+		return "latest";
+	}
+}
+
 type SavedConfigRef = {
 	workspaceId: string;
 	templatesDir: string;
@@ -99,10 +339,20 @@ type SavedConfigRef = {
 function DesignerNode(props: NodeProps<DesignNode>) {
 	const kind = String(props.data?.kind ?? "");
 	const label = String(props.data?.label ?? props.id);
-	const isHost =
-		kind.toLowerCase().includes("linux") || kind.toLowerCase().includes("host");
-	const Icon = isHost ? Server : Cpu;
-	const accent = isHost ? "border-emerald-500/60" : "border-sky-500/60";
+	const kindLower = kind.toLowerCase();
+	const isFirewall =
+		kindLower.includes("forti") ||
+		kindLower.includes("vsrx") ||
+		kindLower.includes("srx") ||
+		kindLower.includes("asa") ||
+		kindLower.includes("pan");
+	const isHost = kindLower.includes("linux") || kindLower.includes("host");
+	const Icon = isFirewall ? Shield : isHost ? Server : Cpu;
+	const accent = isFirewall
+		? "border-amber-500/60"
+		: isHost
+			? "border-emerald-500/60"
+			: "border-sky-500/60";
 
 	return (
 		<div
@@ -165,6 +415,19 @@ function LabDesignerPage() {
 	const [importDir, setImportDir] = useState("containerlab");
 	const [importFile, setImportFile] = useState("");
 	const [openDeploymentOnCreate, setOpenDeploymentOnCreate] = useState(true);
+	const [nodeMenu, setNodeMenu] = useState<{
+		x: number;
+		y: number;
+		nodeId: string;
+	} | null>(null);
+	const [edgeMenu, setEdgeMenu] = useState<{
+		x: number;
+		y: number;
+		edgeId: string;
+	} | null>(null);
+	const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number } | null>(
+		null,
+	);
 
 	const [nodes, setNodes, onNodesChange] = useNodesState<DesignNode>([
 		{
@@ -291,6 +554,21 @@ function LabDesignerPage() {
 			rfInstance?.fitView({ padding: 0.15, duration: 300 }),
 		);
 	};
+
+	const closeMenus = () => {
+		setNodeMenu(null);
+		setEdgeMenu(null);
+		setCanvasMenu(null);
+	};
+
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") closeMenus();
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const exportYaml = () => {
 		const blob = new Blob([effectiveYaml], { type: "text/yaml" });
@@ -422,6 +700,13 @@ function LabDesignerPage() {
 		queryFn: getWorkspaces,
 		retry: false,
 		staleTime: 30_000,
+	});
+
+	const registryReposQ = useQuery({
+		queryKey: queryKeys.registryRepos(""),
+		queryFn: async () => listRegistryRepositories({ q: "", n: 2000 }),
+		retry: false,
+		staleTime: 60_000,
 	});
 
 	const netlabServersQ = useQuery({
@@ -611,10 +896,23 @@ function LabDesignerPage() {
 		event.dataTransfer.dropEffect = "move";
 	};
 
-	const onDrop = (event: DragEvent) => {
+	const onDrop = async (event: DragEvent) => {
 		event.preventDefault();
 		if (!rfRef.current || !rfInstance) return;
-		const kind = event.dataTransfer.getData("application/x-skyforge-kind");
+		const payload = event.dataTransfer.getData(paletteMimeType);
+		const legacyKind = event.dataTransfer.getData(
+			"application/x-skyforge-kind",
+		);
+		const parsed: PaletteItem | null = payload
+			? (() => {
+					try {
+						return JSON.parse(payload) as PaletteItem;
+					} catch {
+						return null;
+					}
+				})()
+			: null;
+		const kind = parsed?.kind || legacyKind;
 		if (!kind) return;
 
 		const rect = rfRef.current.getBoundingClientRect();
@@ -623,14 +921,19 @@ function LabDesignerPage() {
 			y: event.clientY - rect.top,
 		});
 
+		const role = parsed?.role;
 		const idBase =
-			kind === "linux"
+			role === "host"
 				? "h"
-				: kind === "cisco"
-					? "c"
-					: kind === "arista"
-						? "a"
-						: "n";
+				: role === "router"
+					? "r"
+					: role === "switch"
+						? "s"
+						: role === "firewall"
+							? "f"
+							: kind === "linux"
+								? "h"
+								: "n";
 		let i = nodes.length + 1;
 		let id = `${idBase}${i}`;
 		const used = new Set(nodes.map((n) => n.id));
@@ -638,10 +941,15 @@ function LabDesignerPage() {
 			i++;
 			id = `${idBase}${i}`;
 		}
+
+		const repo = String(parsed?.repo ?? "").trim();
+		const tag = repo ? await resolveRepoTag({ repo, queryClient }) : "";
+		const image = repo ? `${repo}:${tag}` : "";
+
 		const next: Node<DesignNodeData> = {
 			id,
 			position,
-			data: { label: id, kind, image: "" },
+			data: { label: id, kind, image },
 			type: "designerNode",
 		};
 		setNodes((prev) => [...prev, next]);
@@ -691,6 +999,10 @@ function LabDesignerPage() {
 		const tag = target?.tagName?.toUpperCase?.() ?? "";
 		if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable)
 			return;
+		if (event.key === "Escape") {
+			closeMenus();
+			return;
+		}
 		if (event.key !== "Delete" && event.key !== "Backspace") return;
 		const selectedNodeIds = new Set(
 			nodes.filter((n) => (n as any).selected).map((n) => String(n.id)),
@@ -715,6 +1027,33 @@ function LabDesignerPage() {
 	};
 
 	const nodeTypes = useMemo(() => ({ designerNode: DesignerNode }), []);
+
+	const paletteItems = useMemo(() => {
+		const repos = registryReposQ.data?.repositories ?? [];
+		const base: PaletteItem[] = repos.map(inferPaletteItemFromRepo);
+		const q = paletteSearch.trim().toLowerCase();
+		const filtered = q
+			? base.filter((p) =>
+					`${p.label} ${p.kind} ${p.category} ${p.repo ?? ""}`
+						.toLowerCase()
+						.includes(q),
+				)
+			: base;
+
+		const order: Record<PaletteCategory, number> = {
+			Hosts: 0,
+			Routers: 1,
+			Switches: 2,
+			Firewalls: 3,
+			Other: 4,
+		};
+		return filtered.sort((a, b) => {
+			const oa = order[a.category] ?? 99;
+			const ob = order[b.category] ?? 99;
+			if (oa !== ob) return oa - ob;
+			return a.label.localeCompare(b.label);
+		});
+	}, [paletteSearch, registryReposQ.data?.repositories]);
 
 	return (
 		<div className="h-full w-full p-4 flex flex-col gap-4 min-h-0">
@@ -816,42 +1155,48 @@ function LabDesignerPage() {
 									/>
 								</div>
 								<div className="mt-3 space-y-2">
-									{[
-										{ kind: "linux", label: "Linux host", category: "Hosts" },
-										{
-											kind: "cisco",
-											label: "Cisco device",
-											category: "Network",
-										},
-										{
-											kind: "arista",
-											label: "Arista device",
-											category: "Network",
-										},
-									]
-										.filter((p) => {
-											const q = paletteSearch.trim().toLowerCase();
-											if (!q) return true;
-											return `${p.label} ${p.kind} ${p.category}`
-												.toLowerCase()
-												.includes(q);
-										})
-										.map((p) => (
-											<div
-												key={p.kind}
-												className="cursor-grab select-none rounded-lg border bg-background px-3 py-2 text-sm hover:bg-accent"
-												draggable
-												onDragStart={(e) =>
-													e.dataTransfer.setData(
-														"application/x-skyforge-kind",
-														p.kind,
-													)
-												}
-												title="Drag onto canvas"
-											>
-												{p.label}
-											</div>
-										))}
+									{registryReposQ.isError ? (
+										<div className="rounded-lg border bg-background px-3 py-2 text-xs text-destructive">
+											Registry not available.
+										</div>
+									) : registryReposQ.isLoading ? (
+										<div className="rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground">
+											Loading images…
+										</div>
+									) : paletteItems.length === 0 ? (
+										<div className="rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground">
+											No images found.
+										</div>
+									) : (
+										<div className="space-y-3">
+											{(
+												[
+													"Hosts",
+													"Routers",
+													"Switches",
+													"Firewalls",
+													"Other",
+												] as const
+											)
+												.map((cat) => ({
+													category: cat,
+													items: paletteItems.filter((p) => p.category === cat),
+												}))
+												.filter((g) => g.items.length > 0)
+												.map((g) => (
+													<div key={g.category} className="space-y-1">
+														<div className="text-[11px] font-semibold text-muted-foreground">
+															{g.category}
+														</div>
+														<div className="space-y-2">
+															{g.items.slice(0, 60).map((p) => (
+																<PaletteDraggableItem key={p.id} item={p} />
+															))}
+														</div>
+													</div>
+												))}
+										</div>
+									)}
 								</div>
 							</div>
 
@@ -862,7 +1207,11 @@ function LabDesignerPage() {
 								onDragOver={onDragOver}
 								tabIndex={0}
 								onKeyDown={onCanvasKeyDown}
-								onMouseDown={(e) => (e.currentTarget as HTMLDivElement).focus()}
+								onMouseDown={(e) => {
+									(e.currentTarget as HTMLDivElement).focus();
+									closeMenus();
+								}}
+								onContextMenu={(e) => e.preventDefault()}
 							>
 								{linkMode ? (
 									<div className="absolute z-10 m-3 rounded-lg border bg-background/80 px-3 py-2 text-xs text-muted-foreground backdrop-blur">
@@ -921,6 +1270,33 @@ function LabDesignerPage() {
 										}
 										setSelectedNodeId(id);
 									}}
+									onNodeContextMenu={(event, node) => {
+										event.preventDefault();
+										const rect = rfRef.current?.getBoundingClientRect();
+										const x = rect ? event.clientX - rect.left : event.clientX;
+										const y = rect ? event.clientY - rect.top : event.clientY;
+										setNodeMenu({ x, y, nodeId: String(node.id) });
+										setEdgeMenu(null);
+										setCanvasMenu(null);
+									}}
+									onEdgeContextMenu={(event, edge) => {
+										event.preventDefault();
+										const rect = rfRef.current?.getBoundingClientRect();
+										const x = rect ? event.clientX - rect.left : event.clientX;
+										const y = rect ? event.clientY - rect.top : event.clientY;
+										setEdgeMenu({ x, y, edgeId: String(edge.id) });
+										setNodeMenu(null);
+										setCanvasMenu(null);
+									}}
+									onPaneContextMenu={(event) => {
+										event.preventDefault();
+										const rect = rfRef.current?.getBoundingClientRect();
+										const x = rect ? event.clientX - rect.left : event.clientX;
+										const y = rect ? event.clientY - rect.top : event.clientY;
+										setCanvasMenu({ x, y });
+										setNodeMenu(null);
+										setEdgeMenu(null);
+									}}
 									onInit={setRfInstance}
 									snapToGrid={snapToGrid}
 									snapGrid={[12, 12]}
@@ -934,6 +1310,236 @@ function LabDesignerPage() {
 									/>
 									<Background gap={12} size={1} />
 								</ReactFlow>
+
+								{nodeMenu ? (
+									<div
+										className="absolute z-50"
+										style={{ left: nodeMenu.x, top: nodeMenu.y }}
+										onContextMenu={(e) => e.preventDefault()}
+									>
+										<Card className="w-64 shadow-lg border bg-background/95 backdrop-blur">
+											<CardHeader className="p-3 pb-2">
+												<CardTitle className="text-sm">Node</CardTitle>
+												<div className="text-xs text-muted-foreground font-mono truncate">
+													{String(
+														nodes.find((n) => String(n.id) === nodeMenu.nodeId)
+															?.data?.label ?? nodeMenu.nodeId,
+													)}
+												</div>
+											</CardHeader>
+											<CardContent className="p-3 pt-0 space-y-2">
+												<Button
+													size="sm"
+													className="w-full"
+													onClick={() => {
+														setSelectedNodeId(nodeMenu.nodeId);
+														closeMenus();
+													}}
+												>
+													Edit…
+												</Button>
+												<Button
+													size="sm"
+													variant="outline"
+													className="w-full"
+													onClick={() => {
+														const n = nodes.find(
+															(x) => String(x.id) === nodeMenu.nodeId,
+														);
+														if (!n) return;
+														const used = new Set(
+															nodes.map((x) => String(x.id)),
+														);
+														let i = nodes.length + 1;
+														let nextId = `${String(n.id)}-${i}`;
+														while (used.has(nextId)) {
+															i++;
+															nextId = `${String(n.id)}-${i}`;
+														}
+														const clone: Node<DesignNodeData> = {
+															...n,
+															id: nextId,
+															position: {
+																x: n.position.x + 32,
+																y: n.position.y + 32,
+															},
+															data: { ...n.data, label: nextId },
+														};
+														setNodes((prev) => [...prev, clone]);
+														setSelectedNodeId(nextId);
+														closeMenus();
+													}}
+												>
+													Duplicate
+												</Button>
+												<Button
+													size="sm"
+													variant="outline"
+													className="w-full"
+													onClick={() => {
+														setLinkMode(true);
+														setPendingLinkSource(nodeMenu.nodeId);
+														closeMenus();
+													}}
+												>
+													Start link
+												</Button>
+												<Button
+													size="sm"
+													variant="secondary"
+													className="w-full"
+													onClick={() => {
+														const label =
+															nodes.find(
+																(n) => String(n.id) === nodeMenu.nodeId,
+															)?.data?.label ?? nodeMenu.nodeId;
+														void navigator.clipboard?.writeText(String(label));
+														toast.success("Copied");
+														closeMenus();
+													}}
+												>
+													Copy name
+												</Button>
+												<Button
+													size="sm"
+													variant="destructive"
+													className="w-full"
+													onClick={() => {
+														const id = nodeMenu.nodeId;
+														setNodes((prev) =>
+															prev.filter((n) => String(n.id) !== id),
+														);
+														setEdges((prev) =>
+															prev.filter(
+																(e) =>
+																	String(e.source) !== id &&
+																	String(e.target) !== id,
+															),
+														);
+														if (selectedNodeId === id) setSelectedNodeId("");
+														closeMenus();
+													}}
+												>
+													Delete
+												</Button>
+											</CardContent>
+										</Card>
+									</div>
+								) : null}
+
+								{edgeMenu ? (
+									<div
+										className="absolute z-50"
+										style={{ left: edgeMenu.x, top: edgeMenu.y }}
+										onContextMenu={(e) => e.preventDefault()}
+									>
+										<Card className="w-60 shadow-lg border bg-background/95 backdrop-blur">
+											<CardHeader className="p-3 pb-2">
+												<CardTitle className="text-sm">Link</CardTitle>
+												<div className="text-xs text-muted-foreground font-mono truncate">
+													{edges.find((e) => String(e.id) === edgeMenu.edgeId)
+														?.label ?? edgeMenu.edgeId}
+												</div>
+											</CardHeader>
+											<CardContent className="p-3 pt-0 space-y-2">
+												<Button
+													size="sm"
+													variant="outline"
+													className="w-full"
+													onClick={() => {
+														const e = edges.find(
+															(x) => String(x.id) === edgeMenu.edgeId,
+														);
+														if (!e) return;
+														const next = window.prompt(
+															"Link label",
+															String(e.label ?? ""),
+														);
+														if (next == null) return;
+														setEdges((prev) =>
+															prev.map((x) =>
+																String(x.id) === edgeMenu.edgeId
+																	? { ...x, label: next }
+																	: x,
+															),
+														);
+														closeMenus();
+													}}
+												>
+													Rename…
+												</Button>
+												<Button
+													size="sm"
+													variant="destructive"
+													className="w-full"
+													onClick={() => {
+														setEdges((prev) =>
+															prev.filter(
+																(e) => String(e.id) !== edgeMenu.edgeId,
+															),
+														);
+														closeMenus();
+													}}
+												>
+													Delete
+												</Button>
+											</CardContent>
+										</Card>
+									</div>
+								) : null}
+
+								{canvasMenu ? (
+									<div
+										className="absolute z-50"
+										style={{ left: canvasMenu.x, top: canvasMenu.y }}
+										onContextMenu={(e) => e.preventDefault()}
+									>
+										<Card className="w-60 shadow-lg border bg-background/95 backdrop-blur">
+											<CardHeader className="p-3 pb-2">
+												<CardTitle className="text-sm">Canvas</CardTitle>
+											</CardHeader>
+											<CardContent className="p-3 pt-0 space-y-2">
+												<Button
+													size="sm"
+													className="w-full"
+													onClick={() => {
+														addNode();
+														closeMenus();
+													}}
+												>
+													Add node
+												</Button>
+												<Button
+													size="sm"
+													variant="outline"
+													className="w-full"
+													onClick={() => {
+														autoLayout();
+														closeMenus();
+													}}
+													disabled={nodes.length < 2}
+												>
+													Auto-layout
+												</Button>
+												<Button
+													size="sm"
+													variant="outline"
+													className="w-full"
+													onClick={() => {
+														rfInstance?.fitView({
+															padding: 0.15,
+															duration: 250,
+														});
+														closeMenus();
+													}}
+													disabled={!rfInstance}
+												>
+													Fit view
+												</Button>
+											</CardContent>
+										</Card>
+									</div>
+								) : null}
 							</div>
 						</div>
 					</CardContent>
