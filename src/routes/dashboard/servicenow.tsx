@@ -236,6 +236,14 @@ function ServiceNowPage() {
 					>
 						Create a Personal Developer Instance (PDI)
 					</a>
+					<a
+						className="text-sm underline"
+						href="/docs/servicenow.html"
+						target="_blank"
+						rel="noreferrer"
+					>
+						Open Skyforge ServiceNow docs
+					</a>
 					<div className="text-xs text-muted-foreground">
 						Create and wake your PDI in the ServiceNow portal; then paste the
 						instance URL and admin creds below.
