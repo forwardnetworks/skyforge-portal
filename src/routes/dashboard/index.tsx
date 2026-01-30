@@ -8,7 +8,7 @@ export const Route = createFileRoute("/dashboard/")({
 function DashboardIndex() {
 	const navigate = useNavigate();
 	useEffect(() => {
-		void navigate({ to: "/dashboard/deployments", replace: true });
+		void navigate({ to: "/status", replace: true });
 	}, [navigate]);
 	return null;
 }
