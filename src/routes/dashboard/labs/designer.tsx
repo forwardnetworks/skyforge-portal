@@ -53,6 +53,7 @@ import {
 	listRegistryTags,
 	listWorkspaceNetlabServers,
 	saveContainerlabTopologyYAML,
+	validateUserAITemplate,
 } from "@/lib/skyforge-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactFlowInstance } from "@xyflow/react";
@@ -140,7 +141,7 @@ function inferPaletteItemFromRepo(repo: string): PaletteItem {
 	// Arista EOS
 	if (base === "ceos" || lower.endsWith("/ceos") || lower.includes("/ceos:")) {
 		return mk({
-			label: "Switch/Router · Arista cEOS",
+			label: "Switch · Arista cEOS",
 			category: "Switches",
 			kind: "ceos",
 			repo: clean,
@@ -505,6 +506,35 @@ function LabDesignerPage() {
 		return yaml;
 	}, [customYaml, yaml, yamlMode]);
 
+	const validateYaml = useMutation({
+		mutationFn: async () => {
+			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
+			return validateUserAITemplate({
+				kind: "containerlab",
+				content: effectiveYaml,
+			});
+		},
+	});
+
+	const yamlValidation = useMemo(() => {
+		const task = (validateYaml.data as any)?.task;
+		const ok = task?.ok === true;
+		const rawErrs = task?.errors;
+		const errs: string[] = [];
+		if (Array.isArray(rawErrs)) {
+			for (const e of rawErrs) errs.push(String(e));
+		} else if (typeof rawErrs === "string") {
+			errs.push(rawErrs);
+		} else if (rawErrs != null) {
+			try {
+				errs.push(JSON.stringify(rawErrs));
+			} catch {
+				errs.push(String(rawErrs));
+			}
+		}
+		return { ok, errs };
+	}, [validateYaml.data]);
+
 	const effectiveTemplatesDir = useMemo(() => {
 		const d = String(templatesDir ?? "")
 			.trim()
@@ -652,7 +682,7 @@ function LabDesignerPage() {
 				description: "Pick images per-node (or use defaults) before deploying.",
 			});
 		} else {
-			toast.success("Quickstart created");
+			toast.success("Starter topology created");
 		}
 	};
 
@@ -1272,7 +1302,7 @@ function LabDesignerPage() {
 						onClick={() => setQuickstartOpen(true)}
 					>
 						<Waypoints className="mr-2 h-4 w-4" />
-						Quickstart
+						Get started
 					</Button>
 					<Button
 						variant="outline"
@@ -2088,6 +2118,14 @@ function LabDesignerPage() {
 									<Button
 										size="sm"
 										variant="outline"
+										onClick={() => validateYaml.mutate()}
+										disabled={validateYaml.isPending}
+									>
+										{validateYaml.isPending ? "Validating…" : "Validate"}
+									</Button>
+									<Button
+										size="sm"
+										variant="outline"
 										onClick={() => {
 											void navigator.clipboard?.writeText(effectiveYaml);
 											toast.success("Copied YAML");
@@ -2124,6 +2162,27 @@ function LabDesignerPage() {
 									{warnings.slice(0, 6).map((w) => (
 										<div key={w}>{w}</div>
 									))}
+								</div>
+							) : null}
+							{validateYaml.isError ? (
+								<div className="rounded-md border bg-red-500/10 text-red-900 dark:text-red-200 px-3 py-2 text-xs">
+									Validation failed: {(validateYaml.error as Error).message}
+								</div>
+							) : validateYaml.isSuccess && yamlValidation.ok ? (
+								<div className="rounded-md border bg-emerald-500/10 text-emerald-900 dark:text-emerald-200 px-3 py-2 text-xs">
+									Valid Containerlab YAML
+								</div>
+							) : validateYaml.isSuccess && yamlValidation.errs.length ? (
+								<div className="rounded-md border bg-red-500/10 text-red-900 dark:text-red-200 px-3 py-2 text-xs space-y-1">
+									<div className="font-medium">Invalid Containerlab YAML</div>
+									{yamlValidation.errs.slice(0, 8).map((e) => (
+										<div key={e}>{e}</div>
+									))}
+									{yamlValidation.errs.length > 8 ? (
+										<div className="text-muted-foreground">
+											+{yamlValidation.errs.length - 8} more…
+										</div>
+									) : null}
 								</div>
 							) : null}
 							<Textarea
