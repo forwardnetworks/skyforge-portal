@@ -43,9 +43,9 @@ import {
 } from "@/lib/containerlab-yaml";
 import { queryKeys } from "@/lib/query-keys";
 import {
+	autofixUserAITemplate,
 	createClabernetesDeploymentFromTemplate,
 	createContainerlabDeploymentFromTemplate,
-	autofixUserAITemplate,
 	getDeploymentTopology,
 	getWorkspaceContainerlabTemplate,
 	getWorkspaceContainerlabTemplates,
@@ -631,8 +631,14 @@ function LabDesignerPage() {
 	};
 
 	const applyQuickstartClos = () => {
-		const spines = Math.max(1, Math.min(16, Number.isFinite(qsSpines) ? qsSpines : 2));
-		const leaves = Math.max(1, Math.min(64, Number.isFinite(qsLeaves) ? qsLeaves : 4));
+		const spines = Math.max(
+			1,
+			Math.min(16, Number.isFinite(qsSpines) ? qsSpines : 2),
+		);
+		const leaves = Math.max(
+			1,
+			Math.min(64, Number.isFinite(qsLeaves) ? qsLeaves : 4),
+		);
 		const hostsPerLeaf = Math.max(
 			0,
 			Math.min(16, Number.isFinite(qsHostsPerLeaf) ? qsHostsPerLeaf : 1),
@@ -641,7 +647,13 @@ function LabDesignerPage() {
 		const name = (qsName || "clos").trim() || "clos";
 		setLabName(name);
 
-		const mkNode = (id: string, x: number, y: number, kind: string, image: string): DesignNode => ({
+		const mkNode = (
+			id: string,
+			x: number,
+			y: number,
+			kind: string,
+			image: string,
+		): DesignNode => ({
 			id,
 			position: { x, y },
 			data: { label: id, kind, image },
@@ -690,9 +702,7 @@ function LabDesignerPage() {
 			for (let hi = 0; hi < hostsPerLeaf; hi++) {
 				const hostId = `h${hostCounter++}`;
 				const hostX = x0 + li * dx + hi * 70;
-				nextNodes.push(
-					mkNode(hostId, hostX, yHost, qsHostKind, qsHostImage),
-				);
+				nextNodes.push(mkNode(hostId, hostX, yHost, qsHostKind, qsHostImage));
 				nextEdges.push({
 					id: `e-${hostId}-${leafId}`,
 					source: hostId,
@@ -707,9 +717,13 @@ function LabDesignerPage() {
 		setCustomYaml("");
 		setSelectedNodeId("");
 		setQuickstartOpen(false);
-		requestAnimationFrame(() => rfInstance?.fitView({ padding: 0.15, duration: 250 }));
+		requestAnimationFrame(() =>
+			rfInstance?.fitView({ padding: 0.15, duration: 250 }),
+		);
 
-		const missingImages = nextNodes.filter((n) => !String((n.data as any)?.image ?? "").trim());
+		const missingImages = nextNodes.filter(
+			(n) => !String((n.data as any)?.image ?? "").trim(),
+		);
 		if (missingImages.length) {
 			toast.message("Quickstart created (missing images)", {
 				description: "Pick images per-node (or use defaults) before deploying.",
@@ -2230,7 +2244,9 @@ function LabDesignerPage() {
 								<div className="rounded-md border bg-red-500/10 text-red-900 dark:text-red-200 px-3 py-2 text-xs">
 									Auto-fix failed: {(autofixYaml.error as Error).message}
 								</div>
-							) : autofixYaml.isSuccess && !yamlAutofix.ok && yamlAutofix.errs.length ? (
+							) : autofixYaml.isSuccess &&
+								!yamlAutofix.ok &&
+								yamlAutofix.errs.length ? (
 								<div className="rounded-md border bg-amber-500/10 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs space-y-1">
 									<div className="font-medium">
 										Auto-fix incomplete (still failing schema)
@@ -2372,7 +2388,10 @@ function LabDesignerPage() {
 					<div className="space-y-4">
 						<div className="space-y-1">
 							<Label>Lab name</Label>
-							<Input value={qsName} onChange={(e) => setQsName(e.target.value)} />
+							<Input
+								value={qsName}
+								onChange={(e) => setQsName(e.target.value)}
+							/>
 						</div>
 						<div className="grid grid-cols-3 gap-3">
 							<div className="space-y-1">
