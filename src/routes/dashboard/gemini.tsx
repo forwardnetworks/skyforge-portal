@@ -1,12 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SKYFORGE_API } from "@/lib/skyforge-config";
 import { queryKeys } from "@/lib/query-keys";
 import { disconnectUserGemini, getUserGeminiConfig } from "@/lib/skyforge-api";
+import { SKYFORGE_API } from "@/lib/skyforge-config";
 
 export const Route = createFileRoute("/dashboard/gemini")({
 	component: GeminiPage,
@@ -14,13 +15,30 @@ export const Route = createFileRoute("/dashboard/gemini")({
 
 function GeminiPage() {
 	const qc = useQueryClient();
+	const navigate = useNavigate();
 	const cfgKey = queryKeys.userGeminiConfig();
+	const search = Route.useSearch() as any;
 
 	const cfg = useQuery({
 		queryKey: cfgKey,
 		queryFn: getUserGeminiConfig,
 		refetchInterval: 10_000,
 	});
+
+	useEffect(() => {
+		const err = String(search?.error ?? "");
+		if (!err) return;
+		const msg =
+			err === "oauth_denied"
+				? "Gemini authorization denied"
+				: err === "oauth_failed"
+					? "Gemini authorization failed"
+					: err === "store_failed"
+						? "Failed to store Gemini tokens"
+						: "Gemini connect failed";
+		toast.error(msg);
+		void navigate({ to: "/dashboard/gemini", replace: true });
+	}, [navigate, search?.error]);
 
 	const disconnect = useMutation({
 		mutationFn: async () => disconnectUserGemini(),
@@ -44,8 +62,9 @@ function GeminiPage() {
 				<div>
 					<h1 className="text-2xl font-bold">Gemini</h1>
 					<p className="text-sm text-muted-foreground">
-						Connect your Google account so Skyforge can call Gemini/Vertex on your
-						behalf (future workflows: template generation, validation helpers).
+						Connect your Google account so Skyforge can call Gemini/Vertex on
+						your behalf (future workflows: template generation, validation
+						helpers).
 					</p>
 				</div>
 			</div>
@@ -102,7 +121,9 @@ function GeminiPage() {
 							</div>
 							<p className="text-xs text-muted-foreground">
 								Redirect URL (configure this in your Google Cloud OAuth client):{" "}
-								<span className="font-mono">{cfg.data?.redirectUrl ?? "—"}</span>
+								<span className="font-mono">
+									{cfg.data?.redirectUrl ?? "—"}
+								</span>
 							</p>
 						</>
 					)}
@@ -111,4 +132,3 @@ function GeminiPage() {
 		</div>
 	);
 }
-

@@ -6,7 +6,6 @@ import {
 	Cloud,
 	Database,
 	FolderKanban,
-	Sparkles,
 	GitBranch,
 	Hammer,
 	Inbox,
@@ -17,6 +16,7 @@ import {
 	Server,
 	Settings,
 	ShieldCheck,
+	Sparkles,
 	Webhook,
 	Workflow,
 } from "lucide-react";

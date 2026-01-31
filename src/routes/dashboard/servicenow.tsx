@@ -337,12 +337,43 @@ function ServiceNowPage() {
 						<div className="text-sm text-muted-foreground">
 							Portal page:{" "}
 							<a
-									className="underline"
-									href={`${instanceUrl.replace(/\/+$/, "")}/sp?id=connectivity_ticket`}
-									target="_blank"
-									rel="noreferrer"
-								>
+								className="underline"
+								href={`${instanceUrl.replace(/\/+$/, "")}/sp?id=connectivity_ticket`}
+								target="_blank"
+								rel="noreferrer"
+							>
 								/sp?id=connectivity_ticket
+							</a>
+						</div>
+					) : null}
+					{cfg?.configured && instanceUrl ? (
+						<div className="text-sm text-muted-foreground">
+							Find records:{" "}
+							<a
+								className="underline"
+								href={`${instanceUrl.replace(/\/+$/, "")}/sp_widget_list.do?sysparm_query=name=Connectivity%20Ticket%20Analyzer`}
+								target="_blank"
+								rel="noreferrer"
+							>
+								widget
+							</a>
+							{" · "}
+							<a
+								className="underline"
+								href={`${instanceUrl.replace(/\/+$/, "")}/sp_page_list.do?sysparm_query=id=connectivity_ticket`}
+								target="_blank"
+								rel="noreferrer"
+							>
+								page
+							</a>
+							{" · "}
+							<a
+								className="underline"
+								href={`${instanceUrl.replace(/\/+$/, "")}/sys_rest_message_list.do?sysparm_query=name=Forward%20API`}
+								target="_blank"
+								rel="noreferrer"
+							>
+								REST message
 							</a>
 						</div>
 					) : null}
@@ -356,10 +387,9 @@ function ServiceNowPage() {
 							{schemaMissingTables ? (
 								<div className="text-xs text-muted-foreground mb-2">
 									Create the missing <span className="font-medium">tables</span>{" "}
-									in ServiceNow first; then click <span className="font-medium">
-										Install demo app
-									</span>{" "}
-									to let Skyforge auto-create the rest.
+									in ServiceNow first; then click{" "}
+									<span className="font-medium">Install demo app</span> to let
+									Skyforge auto-create the rest.
 								</div>
 							) : (
 								<div className="text-xs text-muted-foreground mb-2">
