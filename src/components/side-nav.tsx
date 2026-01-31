@@ -66,7 +66,16 @@ const items: NavItem[] = [
 	},
 	{ label: "Collector (Forward)", href: "/dashboard/forward", icon: Radio },
 	{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
-	{ label: "Gemini", href: "/dashboard/gemini", icon: Sparkles },
+	{
+		label: "Connect AI",
+		href: "",
+		icon: Sparkles,
+		children: [
+			{ label: "Gemini", href: "/dashboard/gemini", icon: Sparkles },
+			{ label: "ChatGPT", href: "/dashboard/chatgpt", icon: Sparkles },
+			{ label: "Claude", href: "/dashboard/claude", icon: Sparkles },
+		],
+	},
 	{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
 	{
 		label: "Tools",

@@ -131,6 +131,12 @@ function ServiceNowPage() {
 		return missing.some((m) => m.startsWith("table:"));
 	}, [schemaQ.data?.missing]);
 
+	const servicePortalURL = useMemo(() => {
+		const base = (instanceUrl || cfg?.instanceUrl || "").trim().replace(/\/+$/, "");
+		if (!base) return "";
+		return `${base}/sp?id=connectivity_ticket`;
+	}, [cfg?.instanceUrl, instanceUrl]);
+
 	const wakeMutation = useMutation({
 		mutationFn: async () => wakeUserServiceNowPdi(),
 		onSuccess: async () => {
@@ -253,6 +259,16 @@ function ServiceNowPage() {
 						Create and wake your PDI in the ServiceNow portal; then paste the
 						instance URL and admin creds below.
 					</div>
+					{servicePortalURL ? (
+						<a
+							className="text-sm underline"
+							href={servicePortalURL}
+							target="_blank"
+							rel="noreferrer"
+						>
+							Open the demo portal page (after install)
+						</a>
+					) : null}
 				</CardContent>
 			</Card>
 
@@ -569,6 +585,17 @@ function ServiceNowPage() {
 						>
 							Install demo app
 						</Button>
+						{servicePortalURL ? (
+							<Button
+								variant="outline"
+								asChild
+								disabled={!cfg?.configured || schemaMissingTables}
+							>
+								<a href={servicePortalURL} target="_blank" rel="noreferrer">
+									Open in ServiceNow
+								</a>
+							</Button>
+						) : null}
 						<Button
 							variant="secondary"
 							onClick={() => configureForwardTicketingMutation.mutate()}
