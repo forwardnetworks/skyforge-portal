@@ -71,10 +71,9 @@ import {
 	getWorkspaceTerraformTemplates,
 	getWorkspaces,
 	listUserContainerlabServers,
+	listUserEveServers,
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
-	listWorkspaceEveServers,
-	listWorkspaceNetlabServers,
 	listWorkspaceVariableGroups,
 	validateWorkspaceNetlabTemplate,
 } from "../../../lib/skyforge-api";
@@ -286,18 +285,6 @@ function CreateDeploymentPage() {
 		setValue("name", generated);
 	}, [watchTemplate, watchKind, setValue]);
 
-	const selectedWorkspace = useMemo(
-		() => workspaces.find((w) => w.id === watchWorkspaceId) ?? null,
-		[watchWorkspaceId, workspaces],
-	);
-
-	const netlabServersQ = useQuery({
-		queryKey: queryKeys.workspaceNetlabServers(watchWorkspaceId),
-		queryFn: async () => listWorkspaceNetlabServers(watchWorkspaceId),
-		enabled: !!watchWorkspaceId,
-		staleTime: 30_000,
-	});
-
 	const userNetlabServersQ = useQuery({
 		queryKey: queryKeys.userNetlabServers(),
 		queryFn: listUserNetlabServers,
@@ -312,11 +299,11 @@ function CreateDeploymentPage() {
 		retry: false,
 	});
 
-	const eveServersQ = useQuery({
-		queryKey: ["workspaceEveServers", watchWorkspaceId],
-		queryFn: async () => listWorkspaceEveServers(watchWorkspaceId),
-		enabled: !!watchWorkspaceId,
+	const userEveServersQ = useQuery({
+		queryKey: queryKeys.userEveServers(),
+		queryFn: listUserEveServers,
 		staleTime: 30_000,
+		retry: false,
 	});
 
 	const variableGroupsQ = useQuery({
@@ -504,8 +491,7 @@ function CreateDeploymentPage() {
 	).filter(
 		(r) => !!r && typeof r.id === "string" && typeof r.repo === "string",
 	);
-	const externalAllowed =
-		!!selectedWorkspace?.allowExternalTemplateRepos && externalRepos.length > 0;
+	const externalAllowed = externalRepos.length > 0;
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof formSchema>) => {
@@ -536,12 +522,8 @@ function CreateDeploymentPage() {
 			}
 
 			if (values.kind === "netlab" || values.kind === "containerlab") {
-				const v = (
-					values.netlabServer ||
-					selectedWorkspace?.netlabServer ||
-					""
-				).trim();
-				if (!v) throw new Error("netlab server is required");
+				const v = (values.netlabServer || "").trim();
+				if (!v) throw new Error("BYOS server is required");
 				config.netlabServer = v;
 				config.templateSource = effectiveSource;
 				if (effectiveSource === "external" && values.templateRepoId)
@@ -658,52 +640,36 @@ function CreateDeploymentPage() {
 		mutation.mutate(values);
 	}
 
-	const netlabOptions = netlabServersQ.data?.servers ?? [];
 	const userNetlabOptions = userNetlabServersQ.data?.servers ?? [];
 	const userContainerlabOptions = userContainerlabServersQ.data?.servers ?? [];
-	const eveOptions = eveServersQ.data?.servers ?? [];
+	const eveOptions = userEveServersQ.data?.servers ?? [];
 	const variableGroups = (variableGroupsQ.data?.groups ??
 		[]) as WorkspaceVariableGroup[];
-	const byosNetlabEnabled =
-		netlabOptions.length > 0 ||
-		(!!selectedWorkspace?.allowCustomNetlabServers &&
-			userNetlabOptions.length > 0) ||
-		(!!selectedWorkspace?.allowCustomContainerlabServers &&
-			userContainerlabOptions.length > 0);
+	const byosNetlabEnabled = userNetlabOptions.length > 0;
+	const byosContainerlabEnabled = userContainerlabOptions.length > 0;
 	const byosEveEnabled = eveOptions.length > 0;
-	const netlabServerRefs = (() => {
-		const out: Array<{ value: string; label: string }> = [];
-		for (const s of netlabOptions) {
-			out.push({
-				value: `ws:${s.id}`,
+	const byosNetlabServerRefs = useMemo(() => {
+		return userNetlabOptions
+			.filter((s) => !!s?.id)
+			.map((s) => ({
+				value: `user:${s.id}`,
 				label: hostLabelFromURL(s.apiUrl) || s.name,
-			});
-		}
-		if (selectedWorkspace?.allowCustomNetlabServers) {
-			for (const s of userNetlabOptions) {
-				if (!s?.id) continue;
-				out.push({
-					value: `user:${s.id}`,
-					label: `${hostLabelFromURL(s.apiUrl) || s.name} (user)`,
-				});
-			}
-		}
-		if (selectedWorkspace?.allowCustomContainerlabServers) {
-			for (const s of userContainerlabOptions) {
-				if (!s?.id) continue;
-				out.push({
-					value: `user:${s.id}`,
-					label: `${hostLabelFromURL(s.apiUrl) || s.name} (user)`,
-				});
-			}
-		}
-		const seen = new Set<string>();
-		return out.filter((it) => {
-			if (seen.has(it.value)) return false;
-			seen.add(it.value);
-			return true;
-		});
-	})();
+			}));
+	}, [userNetlabOptions]);
+	const byosContainerlabServerRefs = useMemo(() => {
+		return userContainerlabOptions
+			.filter((s) => !!s?.id)
+			.map((s) => ({
+				value: `user:${s.id}`,
+				label: hostLabelFromURL(s.apiUrl) || s.name,
+			}));
+	}, [userContainerlabOptions]);
+	const byosServerRefs =
+		watchKind === "netlab"
+			? byosNetlabServerRefs
+			: watchKind === "containerlab"
+				? byosContainerlabServerRefs
+				: [];
 
 	return (
 		<div className="space-y-6 p-6">
@@ -821,7 +787,7 @@ function CreateDeploymentPage() {
 													{byosEveEnabled && (
 														<SelectItem value="labpp">LabPP</SelectItem>
 													)}
-													{byosNetlabEnabled && (
+													{byosContainerlabEnabled && (
 														<SelectItem value="containerlab">
 															Containerlab (BYOS)
 														</SelectItem>
@@ -849,9 +815,7 @@ function CreateDeploymentPage() {
 												<FormDescription>
 													Optional. Select a per-user in-cluster Collector.
 													Configure collectors under{" "}
-													<code className="font-mono">
-														Dashboard → Collector
-													</code>
+													<code className="font-mono">Dashboard → Forward</code>
 													.
 												</FormDescription>
 												{forwardCollectorsQ.isError ? (
@@ -947,8 +911,7 @@ function CreateDeploymentPage() {
 													watchKind === "clabernetes" ||
 													watchKind === "terraform") && (
 													<FormDescription>
-														External repos disabled or not configured for this
-														workspace.
+														No external repos configured in My Settings.
 													</FormDescription>
 												)}
 											<FormMessage />
@@ -995,15 +958,11 @@ function CreateDeploymentPage() {
 										name="netlabServer"
 										render={({ field }) => (
 											<FormItem>
-												<FormLabel>Netlab server</FormLabel>
+												<FormLabel>BYOS server</FormLabel>
 												<Select
 													onValueChange={field.onChange}
-													defaultValue={
-														field.value || selectedWorkspace?.netlabServer || ""
-													}
-													value={
-														field.value || selectedWorkspace?.netlabServer || ""
-													}
+													defaultValue={field.value || ""}
+													value={field.value || ""}
 												>
 													<FormControl>
 														<SelectTrigger>
@@ -1011,16 +970,24 @@ function CreateDeploymentPage() {
 														</SelectTrigger>
 													</FormControl>
 													<SelectContent>
-														{netlabServerRefs.map((s) => (
+														{byosServerRefs.map((s) => (
 															<SelectItem key={s.value} value={s.value}>
 																{s.label}
 															</SelectItem>
 														))}
 													</SelectContent>
 												</Select>
-												{netlabServersQ.isLoading && (
+												{(userNetlabServersQ.isLoading ||
+													userContainerlabServersQ.isLoading) && (
 													<FormDescription>Loading servers…</FormDescription>
 												)}
+												<FormDescription>
+													Configure servers under{" "}
+													<code className="font-mono">
+														Dashboard → Settings
+													</code>
+													.
+												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)}
@@ -1046,15 +1013,22 @@ function CreateDeploymentPage() {
 													</FormControl>
 													<SelectContent>
 														{eveOptions.map((s) => (
-															<SelectItem key={s.id} value={`ws:${s.id}`}>
+															<SelectItem key={s.id} value={`user:${s.id}`}>
 																{hostLabelFromURL(s.apiUrl) || s.name}
 															</SelectItem>
 														))}
 													</SelectContent>
 												</Select>
-												{eveServersQ.isLoading && (
+												{userEveServersQ.isLoading && (
 													<FormDescription>Loading servers…</FormDescription>
 												)}
+												<FormDescription>
+													Configure servers under{" "}
+													<code className="font-mono">
+														Dashboard → Settings
+													</code>
+													.
+												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)}
