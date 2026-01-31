@@ -31,11 +31,23 @@ function GeminiPage() {
 		const msg =
 			err === "oauth_denied"
 				? "Gemini authorization denied"
-				: err === "oauth_failed"
-					? "Gemini authorization failed"
-					: err === "store_failed"
-						? "Failed to store Gemini tokens"
-						: "Gemini connect failed";
+				: err === "oauth_immediate_failed"
+					? "Gemini authorization failed (try reconnecting in a new tab, and make sure third-party cookies are allowed)"
+					: err === "oauth_failed"
+						? "Gemini authorization failed"
+						: err === "invalid_state"
+							? "Gemini connect failed (invalid state). Try reconnecting."
+							: err === "missing_code"
+								? "Gemini connect failed (missing code). Try reconnecting."
+								: err === "exchange_failed"
+									? "Gemini connect failed (exchange failed). Try reconnecting."
+									: err === "missing_refresh_token"
+										? "Gemini connect failed (missing refresh token). Try reconnecting and approve offline access."
+										: err === "db_migrations_pending"
+											? "Gemini connect failed (server migrations pending). Ask an admin to run DB migrations."
+											: err === "store_failed"
+												? "Failed to store Gemini tokens"
+												: "Gemini connect failed";
 		toast.error(msg);
 		void navigate({ to: "/dashboard/gemini", replace: true });
 	}, [navigate, search?.error]);

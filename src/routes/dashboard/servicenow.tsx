@@ -199,6 +199,8 @@ function ServiceNowPage() {
 			else
 				toast.error("ServiceNow install failed", { description: resp.message });
 			await qc.invalidateQueries({ queryKey: cfgKey });
+			await qc.invalidateQueries({ queryKey: pdiKey });
+			await qc.invalidateQueries({ queryKey: schemaKey });
 		},
 		onError: (e) =>
 			toast.error("Failed to install ServiceNow demo", {
@@ -269,6 +271,16 @@ function ServiceNowPage() {
 							rel="noreferrer"
 						>
 							Open the demo portal page (after install)
+						</a>
+					) : null}
+					{cfg?.configured && (instanceUrl || cfg?.instanceUrl) ? (
+						<a
+							className="text-sm underline"
+							href={`${(instanceUrl || cfg?.instanceUrl || "").replace(/\/+$/, "")}/sys_app_application_list.do?sysparm_query=title=Forward%20Connectivity%20Ticket`}
+							target="_blank"
+							rel="noreferrer"
+						>
+							Find the demo app menu in ServiceNow (after install)
 						</a>
 					) : null}
 				</CardContent>

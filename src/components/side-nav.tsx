@@ -72,20 +72,19 @@ const items: NavItem[] = [
 		href: "",
 		icon: Workflow,
 		children: [
+			{ label: "Overview", href: "/dashboard/integrations", icon: Workflow },
 			{ label: "Collector (Forward)", href: "/dashboard/forward", icon: Radio },
 			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
 			{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
 		],
 	},
 	{
-		label: "Connect AI",
+		label: "AI",
 		href: "",
 		icon: Sparkles,
 		children: [
 			{ label: "AI Templates", href: "/dashboard/ai", icon: Sparkles },
 			{ label: "Gemini", href: "/dashboard/gemini", icon: Sparkles },
-			{ label: "ChatGPT", href: "/dashboard/chatgpt", icon: Sparkles },
-			{ label: "Claude", href: "/dashboard/claude", icon: Sparkles },
 		],
 	},
 	{ label: "My Settings", href: "/dashboard/settings", icon: Settings },

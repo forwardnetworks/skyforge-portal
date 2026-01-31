@@ -108,7 +108,7 @@ function AITemplatesPage() {
 					{!canGenerate && (geminiCfg.data?.enabled ?? false) ? (
 						<div className="text-xs text-muted-foreground">
 							Connect Gemini first on{" "}
-							<span className="font-mono">Connect AI → Gemini</span>.
+							<span className="font-mono">AI → Gemini</span>.
 						</div>
 					) : null}
 				</CardContent>

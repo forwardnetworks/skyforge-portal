@@ -12,6 +12,28 @@ export class ApiError extends Error {
 	}
 }
 
+function extractErrorMessage(bodyText: string): string {
+	const raw = (bodyText ?? "").trim();
+	if (!raw) return "";
+	try {
+		const parsed = JSON.parse(raw) as any;
+		// Encore errs shape: { code, message, details }
+		if (typeof parsed?.message === "string" && parsed.message.trim()) {
+			return parsed.message.trim();
+		}
+		// Google/others: { error: { message } }
+		if (
+			typeof parsed?.error?.message === "string" &&
+			parsed.error.message.trim()
+		) {
+			return parsed.error.message.trim();
+		}
+	} catch {
+		// ignore
+	}
+	return raw;
+}
+
 export async function apiFetch<T>(
 	path: string,
 	init?: RequestInit,
@@ -42,12 +64,24 @@ export async function apiFetch<T>(
 	}
 	if (resp.status === 403) {
 		const text = await resp.text().catch(() => "");
-		throw new ApiError("forbidden", resp.status, text);
+		const detail = extractErrorMessage(text);
+		throw new ApiError(
+			detail ? `forbidden: ${detail}` : "forbidden",
+			resp.status,
+			text,
+		);
 	}
 
 	if (!resp.ok) {
 		const text = await resp.text().catch(() => "");
-		throw new ApiError(`request failed (${resp.status})`, resp.status, text);
+		const detail = extractErrorMessage(text);
+		throw new ApiError(
+			detail
+				? `request failed (${resp.status}): ${detail}`
+				: `request failed (${resp.status})`,
+			resp.status,
+			text,
+		);
 	}
 
 	// Handle 204 No Content
