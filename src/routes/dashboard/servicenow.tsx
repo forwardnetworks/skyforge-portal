@@ -333,6 +333,20 @@ function ServiceNowPage() {
 						)}
 					</div>
 
+					{cfg?.configured && instanceUrl ? (
+						<div className="text-sm text-muted-foreground">
+							Portal page:{" "}
+							<a
+									className="underline"
+									href={`${instanceUrl.replace(/\/+$/, "")}/sp?id=connectivity_ticket`}
+									target="_blank"
+									rel="noreferrer"
+								>
+								/sp?id=connectivity_ticket
+							</a>
+						</div>
+					) : null}
+
 					{schemaQ.data?.status === "missing" &&
 					schemaQ.data.missing?.length ? (
 						<div className="rounded-md border p-3 bg-muted/30">
