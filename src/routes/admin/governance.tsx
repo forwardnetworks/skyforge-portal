@@ -3,6 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	Activity,
 	BarChart3,
+	Boxes,
+	Clock,
 	CreditCard,
 	Database,
 	DollarSign,
@@ -52,6 +54,18 @@ import {
 	syncGovernanceSources,
 	updateGovernancePolicy,
 } from "../../lib/skyforge-api";
+
+function formatSeconds(seconds: unknown): string {
+	const n = Number(seconds);
+	if (!Number.isFinite(n) || n <= 0) return "—";
+	if (n < 60) return `${Math.round(n)}s`;
+	const mins = Math.round(n / 60);
+	if (mins < 60) return `${mins}m`;
+	const hours = Math.round(mins / 60);
+	if (hours < 48) return `${hours}h`;
+	const days = Math.round(hours / 24);
+	return `${days}d`;
+}
 
 // Search Params Schema
 const governanceSearchSchema = z.object({
@@ -741,6 +755,56 @@ function GovernancePage() {
 											value={clusterUsage.get("users.active_24h")?.value ?? "—"}
 											subtitle="Distinct users"
 											icon={<Inbox className="h-4 w-4" />}
+										/>
+										<BentoStatCard
+											title="Active deployments"
+											value={
+												clusterUsage.get("deployments.active")?.value ?? "—"
+											}
+											subtitle="Last snapshot"
+											icon={<Activity className="h-4 w-4" />}
+											gradient="green"
+										/>
+										<BentoStatCard
+											title="Queued tasks"
+											value={clusterUsage.get("tasks.queued")?.value ?? "—"}
+											subtitle={`Oldest: ${formatSeconds(
+												clusterUsage.get("tasks.oldest_queued_age_seconds")
+													?.value,
+											)}`}
+											icon={<Clock className="h-4 w-4" />}
+											gradient="orange"
+										/>
+										<BentoStatCard
+											title="Pods"
+											value={clusterUsage.get("k8s.pods.total")?.value ?? "—"}
+											subtitle={`Pending: ${
+												clusterUsage.get("k8s.pods.pending")?.value ?? "—"
+											}`}
+											icon={<Boxes className="h-4 w-4" />}
+											gradient="purple"
+										/>
+										<BentoStatCard
+											title="Workspace pods"
+											value={
+												clusterUsage.get("k8s.pods.ws.total")?.value ?? "—"
+											}
+											subtitle={`Pending: ${
+												clusterUsage.get("k8s.pods.ws.pending")?.value ?? "—"
+											}`}
+											icon={<Boxes className="h-4 w-4" />}
+											gradient="purple"
+										/>
+										<BentoStatCard
+											title="Workspace namespaces"
+											value={
+												clusterUsage.get("k8s.namespaces.ws")?.value ?? "—"
+											}
+											subtitle={`All namespaces: ${
+												clusterUsage.get("k8s.namespaces.total")?.value ?? "—"
+											}`}
+											icon={<Boxes className="h-4 w-4" />}
+											gradient="purple"
 										/>
 									</BentoGrid>
 
