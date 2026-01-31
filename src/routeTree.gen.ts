@@ -16,8 +16,10 @@ import { Route as SnmpRouteImport } from './routes/snmp'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as DesignRouteImport } from './routes/design'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
@@ -25,6 +27,7 @@ import { Route as DashboardGeminiRouteImport } from './routes/dashboard/gemini'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as DashboardClaudeRouteImport } from './routes/dashboard/claude'
 import { Route as DashboardChatgptRouteImport } from './routes/dashboard/chatgpt'
+import { Route as DashboardAiRouteImport } from './routes/dashboard/ai'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
 import { Route as DashboardWorkspacesIndexRouteImport } from './routes/dashboard/workspaces/index'
@@ -76,6 +79,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/docs/',
+  path: '/docs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
@@ -84,6 +92,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsSlugRoute = DocsSlugRouteImport.update({
+  id: '/docs/$slug',
+  path: '/docs/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
@@ -119,6 +132,11 @@ const DashboardClaudeRoute = DashboardClaudeRouteImport.update({
 const DashboardChatgptRoute = DashboardChatgptRouteImport.update({
   id: '/dashboard/chatgpt',
   path: '/dashboard/chatgpt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardAiRoute = DashboardAiRouteImport.update({
+  id: '/dashboard/ai',
+  path: '/dashboard/ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
@@ -212,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/ai': typeof DashboardAiRoute
   '/dashboard/chatgpt': typeof DashboardChatgptRoute
   '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
@@ -219,8 +238,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/docs': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
@@ -245,6 +266,7 @@ export interface FileRoutesByTo {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/ai': typeof DashboardAiRoute
   '/dashboard/chatgpt': typeof DashboardChatgptRoute
   '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
@@ -252,8 +274,10 @@ export interface FileRoutesByTo {
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/docs': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
@@ -279,6 +303,7 @@ export interface FileRoutesById {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/ai': typeof DashboardAiRoute
   '/dashboard/chatgpt': typeof DashboardChatgptRoute
   '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
@@ -286,8 +311,10 @@ export interface FileRoutesById {
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
@@ -314,6 +341,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
+    | '/dashboard/ai'
     | '/dashboard/chatgpt'
     | '/dashboard/claude'
     | '/dashboard/forward'
@@ -321,8 +349,10 @@ export interface FileRouteTypes {
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
+    | '/docs/$slug'
     | '/admin'
     | '/dashboard'
+    | '/docs'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
     | '/dashboard/labs/designer'
@@ -347,6 +377,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
+    | '/dashboard/ai'
     | '/dashboard/chatgpt'
     | '/dashboard/claude'
     | '/dashboard/forward'
@@ -354,8 +385,10 @@ export interface FileRouteTypes {
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
+    | '/docs/$slug'
     | '/admin'
     | '/dashboard'
+    | '/docs'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
     | '/dashboard/labs/designer'
@@ -380,6 +413,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
+    | '/dashboard/ai'
     | '/dashboard/chatgpt'
     | '/dashboard/claude'
     | '/dashboard/forward'
@@ -387,8 +421,10 @@ export interface FileRouteTypes {
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
+    | '/docs/$slug'
     | '/admin/'
     | '/dashboard/'
+    | '/docs/'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
     | '/dashboard/labs/designer'
@@ -414,6 +450,7 @@ export interface RootRouteChildren {
   WebhooksRoute: typeof WebhooksRoute
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  DashboardAiRoute: typeof DashboardAiRoute
   DashboardChatgptRoute: typeof DashboardChatgptRoute
   DashboardClaudeRoute: typeof DashboardClaudeRoute
   DashboardForwardRoute: typeof DashboardForwardRoute
@@ -421,8 +458,10 @@ export interface RootRouteChildren {
   DashboardS3Route: typeof DashboardS3Route
   DashboardServicenowRoute: typeof DashboardServicenowRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DocsSlugRoute: typeof DocsSlugRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DocsIndexRoute: typeof DocsIndexRoute
   DashboardDeploymentsNewRoute: typeof DashboardDeploymentsNewRoute
   DashboardDocsSlugRoute: typeof DashboardDocsSlugRoute
   DashboardLabsDesignerRoute: typeof DashboardLabsDesignerRoute
@@ -489,6 +528,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/': {
       id: '/dashboard/'
       path: '/dashboard'
@@ -501,6 +547,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/$slug': {
+      id: '/docs/$slug'
+      path: '/docs/$slug'
+      fullPath: '/docs/$slug'
+      preLoaderRoute: typeof DocsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/settings': {
@@ -550,6 +603,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/chatgpt'
       fullPath: '/dashboard/chatgpt'
       preLoaderRoute: typeof DashboardChatgptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/ai': {
+      id: '/dashboard/ai'
+      path: '/dashboard/ai'
+      fullPath: '/dashboard/ai'
+      preLoaderRoute: typeof DashboardAiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/settings': {
@@ -670,6 +730,7 @@ const rootRouteChildren: RootRouteChildren = {
   WebhooksRoute: WebhooksRoute,
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  DashboardAiRoute: DashboardAiRoute,
   DashboardChatgptRoute: DashboardChatgptRoute,
   DashboardClaudeRoute: DashboardClaudeRoute,
   DashboardForwardRoute: DashboardForwardRoute,
@@ -677,8 +738,10 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardS3Route: DashboardS3Route,
   DashboardServicenowRoute: DashboardServicenowRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  DocsSlugRoute: DocsSlugRoute,
   AdminIndexRoute: AdminIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DocsIndexRoute: DocsIndexRoute,
   DashboardDeploymentsNewRoute: DashboardDeploymentsNewRoute,
   DashboardDocsSlugRoute: DashboardDocsSlugRoute,
   DashboardLabsDesignerRoute: DashboardLabsDesignerRoute,

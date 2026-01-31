@@ -534,6 +534,49 @@ export async function disconnectUserGemini(): Promise<void> {
 	});
 }
 
+export type UserAIGenerateRequest = {
+	provider?: "gemini";
+	kind: "netlab" | "containerlab";
+	prompt: string;
+	constraints?: string[];
+	seedTemplate?: string;
+	maxOutputTokens?: number;
+	temperature?: number;
+};
+
+export type UserAIGenerateResponse = {
+	id: string;
+	provider: string;
+	kind: string;
+	filename: string;
+	content: string;
+	warnings?: string[];
+	createdAt: string;
+};
+
+export type UserAIHistoryResponse = {
+	items: Array<{
+		id: string;
+		provider: string;
+		kind: string;
+		filename: string;
+		createdAt: string;
+	}>;
+};
+
+export async function generateUserAITemplate(
+	payload: UserAIGenerateRequest,
+): Promise<UserAIGenerateResponse> {
+	return apiFetch<UserAIGenerateResponse>("/api/user/ai/generate", {
+		method: "POST",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function getUserAIHistory(): Promise<UserAIHistoryResponse> {
+	return apiFetch<UserAIHistoryResponse>("/api/user/ai/history");
+}
+
 export type UserGitCredentialsResponse = {
 	username: string;
 	sshPublicKey: string;

@@ -82,6 +82,7 @@ const items: NavItem[] = [
 		href: "",
 		icon: Sparkles,
 		children: [
+			{ label: "AI Templates", href: "/dashboard/ai", icon: Sparkles },
 			{ label: "Gemini", href: "/dashboard/gemini", icon: Sparkles },
 			{ label: "ChatGPT", href: "/dashboard/chatgpt", icon: Sparkles },
 			{ label: "Claude", href: "/dashboard/claude", icon: Sparkles },

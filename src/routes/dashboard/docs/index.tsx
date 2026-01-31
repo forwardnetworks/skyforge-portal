@@ -45,6 +45,13 @@ const DOCS: DocEntry[] = [
 			"Install and configure the Forward Connectivity Ticket demo into a ServiceNow PDI.",
 		tags: ["servicenow", "forward", "workflow"],
 	},
+	{
+		slug: "ai-templates",
+		title: "AI templates (Gemini)",
+		description:
+			"Generate Netlab/Containerlab templates from a prompt using your connected Gemini account.",
+		tags: ["ai", "gemini", "netlab", "containerlab"],
+	},
 ];
 
 export const Route = createFileRoute("/dashboard/docs/")({

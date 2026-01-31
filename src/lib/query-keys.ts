@@ -36,6 +36,7 @@ export const queryKeys = {
 	userServiceNowPdiStatus: () => ["userServiceNowPdiStatus"] as const,
 	userServiceNowSchemaStatus: () => ["userServiceNowSchemaStatus"] as const,
 	userGeminiConfig: () => ["userGeminiConfig"] as const,
+	userAIHistory: () => ["userAIHistory"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	workspaceArtifacts: (workspaceId: string) =>
 		["workspaceArtifacts", workspaceId] as const,

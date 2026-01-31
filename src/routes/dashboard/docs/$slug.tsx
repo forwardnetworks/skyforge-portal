@@ -138,6 +138,44 @@ const DOC_PAGES: DocPage[] = [
 			</div>
 		),
 	},
+	{
+		slug: "ai-templates",
+		title: "AI templates (Gemini)",
+		content: (
+			<div className="space-y-4 text-sm">
+				<p>
+					Skyforge can generate Netlab and Containerlab templates using your
+					connected Gemini account. The workflow is intended to be safe and
+					iterative: generate → validate → deploy.
+				</p>
+				<ol className="list-decimal pl-5 space-y-2">
+					<li>
+						Connect Gemini from{" "}
+						<Link className="underline" to="/dashboard/gemini">
+							Connect AI → Gemini
+						</Link>
+						.
+					</li>
+					<li>
+						Open{" "}
+						<Link className="underline" to="/dashboard/ai">
+							AI Templates
+						</Link>{" "}
+						and generate a template from a prompt.
+					</li>
+					<li>
+						Copy/download the YAML and use it as a starting point for real
+						deployments.
+					</li>
+				</ol>
+				<p className="text-xs text-muted-foreground">
+					Note: The AI feature can be disabled by the instance admin. If the
+					generate button is disabled, verify Gemini is connected and AI is
+					enabled on the server.
+				</p>
+			</div>
+		),
+	},
 ];
 
 export const Route = createFileRoute("/dashboard/docs/$slug")({
