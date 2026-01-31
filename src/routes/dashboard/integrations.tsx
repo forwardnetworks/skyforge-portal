@@ -88,7 +88,12 @@ function IntegrationsPage() {
 								<Link to="/dashboard/servicenow">Open</Link>
 							</Button>
 							<Button asChild size="sm" variant="secondary">
-								<Link to="/dashboard/docs/servicenow">Docs</Link>
+								<Link
+									to="/dashboard/docs/$slug"
+									params={{ slug: "servicenow" }}
+								>
+									Docs
+								</Link>
 							</Button>
 						</div>
 					</CardContent>
@@ -116,7 +121,12 @@ function IntegrationsPage() {
 								<Link to="/dashboard/ai">AI Templates</Link>
 							</Button>
 							<Button asChild size="sm" variant="secondary">
-								<Link to="/dashboard/docs/ai-templates">Docs</Link>
+								<Link
+									to="/dashboard/docs/$slug"
+									params={{ slug: "ai-templates" }}
+								>
+									Docs
+								</Link>
 							</Button>
 						</div>
 					</CardContent>

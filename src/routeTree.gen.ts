@@ -23,6 +23,7 @@ import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
+import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
 import { Route as DashboardGeminiRouteImport } from './routes/dashboard/gemini'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as DashboardClaudeRouteImport } from './routes/dashboard/claude'
@@ -112,6 +113,11 @@ const DashboardServicenowRoute = DashboardServicenowRouteImport.update({
 const DashboardS3Route = DashboardS3RouteImport.update({
   id: '/dashboard/s3',
   path: '/dashboard/s3',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
+  id: '/dashboard/integrations',
+  path: '/dashboard/integrations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardGeminiRoute = DashboardGeminiRouteImport.update({
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -308,6 +316,7 @@ export interface FileRoutesById {
   '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -346,6 +355,7 @@ export interface FileRouteTypes {
     | '/dashboard/claude'
     | '/dashboard/forward'
     | '/dashboard/gemini'
+    | '/dashboard/integrations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
@@ -382,6 +392,7 @@ export interface FileRouteTypes {
     | '/dashboard/claude'
     | '/dashboard/forward'
     | '/dashboard/gemini'
+    | '/dashboard/integrations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/dashboard/claude'
     | '/dashboard/forward'
     | '/dashboard/gemini'
+    | '/dashboard/integrations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
@@ -455,6 +467,7 @@ export interface RootRouteChildren {
   DashboardClaudeRoute: typeof DashboardClaudeRoute
   DashboardForwardRoute: typeof DashboardForwardRoute
   DashboardGeminiRoute: typeof DashboardGeminiRoute
+  DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
   DashboardS3Route: typeof DashboardS3Route
   DashboardServicenowRoute: typeof DashboardServicenowRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
@@ -575,6 +588,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/s3'
       fullPath: '/dashboard/s3'
       preLoaderRoute: typeof DashboardS3RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/integrations': {
+      id: '/dashboard/integrations'
+      path: '/dashboard/integrations'
+      fullPath: '/dashboard/integrations'
+      preLoaderRoute: typeof DashboardIntegrationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/gemini': {
@@ -735,6 +755,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardClaudeRoute: DashboardClaudeRoute,
   DashboardForwardRoute: DashboardForwardRoute,
   DashboardGeminiRoute: DashboardGeminiRoute,
+  DashboardIntegrationsRoute: DashboardIntegrationsRoute,
   DashboardS3Route: DashboardS3Route,
   DashboardServicenowRoute: DashboardServicenowRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
