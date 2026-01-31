@@ -439,6 +439,15 @@ function LabDesignerPage() {
 	);
 	const [importDir, setImportDir] = useState("containerlab");
 	const [importFile, setImportFile] = useState("");
+	const [quickstartOpen, setQuickstartOpen] = useState(false);
+	const [qsName, setQsName] = useState("clos");
+	const [qsSpines, setQsSpines] = useState(2);
+	const [qsLeaves, setQsLeaves] = useState(4);
+	const [qsHostsPerLeaf, setQsHostsPerLeaf] = useState(1);
+	const [qsSwitchKind, setQsSwitchKind] = useState("ceos");
+	const [qsSwitchImage, setQsSwitchImage] = useState("");
+	const [qsHostKind, setQsHostKind] = useState("linux");
+	const [qsHostImage, setQsHostImage] = useState("");
 	const [openDeploymentOnCreate, setOpenDeploymentOnCreate] = useState(true);
 	const [nodeMenu, setNodeMenu] = useState<{
 		x: number;
@@ -556,6 +565,95 @@ function LabDesignerPage() {
 		};
 		setNodes((prev) => [...prev, next]);
 		setSelectedNodeId(id);
+	};
+
+	const applyQuickstartClos = () => {
+		const spines = Math.max(1, Math.min(16, Number.isFinite(qsSpines) ? qsSpines : 2));
+		const leaves = Math.max(1, Math.min(64, Number.isFinite(qsLeaves) ? qsLeaves : 4));
+		const hostsPerLeaf = Math.max(
+			0,
+			Math.min(16, Number.isFinite(qsHostsPerLeaf) ? qsHostsPerLeaf : 1),
+		);
+
+		const name = (qsName || "clos").trim() || "clos";
+		setLabName(name);
+
+		const mkNode = (id: string, x: number, y: number, kind: string, image: string): DesignNode => ({
+			id,
+			position: { x, y },
+			data: { label: id, kind, image },
+			type: "designerNode",
+		});
+
+		const nextNodes: DesignNode[] = [];
+		const nextEdges: Edge[] = [];
+
+		const x0 = 120;
+		const dx = 260;
+		const ySpine = 120;
+		const yLeaf = 320;
+		const yHost = 520;
+
+		const spineIds = Array.from({ length: spines }, (_, i) => `s${i + 1}`);
+		const leafIds = Array.from({ length: leaves }, (_, i) => `l${i + 1}`);
+
+		for (let i = 0; i < spineIds.length; i++) {
+			nextNodes.push(
+				mkNode(spineIds[i], x0 + i * dx, ySpine, qsSwitchKind, qsSwitchImage),
+			);
+		}
+
+		for (let i = 0; i < leafIds.length; i++) {
+			nextNodes.push(
+				mkNode(leafIds[i], x0 + i * dx, yLeaf, qsSwitchKind, qsSwitchImage),
+			);
+		}
+
+		// Full-mesh leaf<->spine
+		for (const l of leafIds) {
+			for (const s of spineIds) {
+				nextEdges.push({
+					id: `e-${l}-${s}`,
+					source: l,
+					target: s,
+				});
+			}
+		}
+
+		// Hosts per leaf (host -> leaf)
+		let hostCounter = 1;
+		for (let li = 0; li < leafIds.length; li++) {
+			const leafId = leafIds[li];
+			for (let hi = 0; hi < hostsPerLeaf; hi++) {
+				const hostId = `h${hostCounter++}`;
+				const hostX = x0 + li * dx + hi * 70;
+				nextNodes.push(
+					mkNode(hostId, hostX, yHost, qsHostKind, qsHostImage),
+				);
+				nextEdges.push({
+					id: `e-${hostId}-${leafId}`,
+					source: hostId,
+					target: leafId,
+				});
+			}
+		}
+
+		setNodes(nextNodes);
+		setEdges(nextEdges);
+		setYamlMode("generated");
+		setCustomYaml("");
+		setSelectedNodeId("");
+		setQuickstartOpen(false);
+		requestAnimationFrame(() => rfInstance?.fitView({ padding: 0.15, duration: 250 }));
+
+		const missingImages = nextNodes.filter((n) => !String((n.data as any)?.image ?? "").trim());
+		if (missingImages.length) {
+			toast.message("Quickstart created (missing images)", {
+				description: "Pick images per-node (or use defaults) before deploying.",
+			});
+		} else {
+			toast.success("Quickstart created");
+		}
 	};
 
 	const autoLayout = () => {
@@ -1168,6 +1266,14 @@ function LabDesignerPage() {
 					</div>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setQuickstartOpen(true)}
+					>
+						<Waypoints className="mr-2 h-4 w-4" />
+						Quickstart
+					</Button>
 					<Button
 						variant="outline"
 						size="sm"
@@ -2130,6 +2236,96 @@ function LabDesignerPage() {
 						>
 							Import
 						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={quickstartOpen} onOpenChange={(v) => setQuickstartOpen(v)}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Quickstart: Generate CLOS</DialogTitle>
+						<DialogDescription>
+							Generate a simple leaf/spine fabric (inspired by `clab generate`).
+							This populates the designer canvas; you can edit nodes and YAML
+							afterwards.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4">
+						<div className="space-y-1">
+							<Label>Lab name</Label>
+							<Input value={qsName} onChange={(e) => setQsName(e.target.value)} />
+						</div>
+						<div className="grid grid-cols-3 gap-3">
+							<div className="space-y-1">
+								<Label>Spines</Label>
+								<Input
+									type="number"
+									min={1}
+									max={16}
+									value={qsSpines}
+									onChange={(e) => setQsSpines(Number(e.target.value || 0))}
+								/>
+							</div>
+							<div className="space-y-1">
+								<Label>Leaves</Label>
+								<Input
+									type="number"
+									min={1}
+									max={64}
+									value={qsLeaves}
+									onChange={(e) => setQsLeaves(Number(e.target.value || 0))}
+								/>
+							</div>
+							<div className="space-y-1">
+								<Label>Hosts/leaf</Label>
+								<Input
+									type="number"
+									min={0}
+									max={16}
+									value={qsHostsPerLeaf}
+									onChange={(e) =>
+										setQsHostsPerLeaf(Number(e.target.value || 0))
+									}
+								/>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="space-y-3">
+								<div className="space-y-1">
+									<Label>Switch kind</Label>
+									<Input
+										value={qsSwitchKind}
+										onChange={(e) => setQsSwitchKind(e.target.value)}
+										placeholder="ceos"
+									/>
+								</div>
+								<RegistryImagePicker
+									value={qsSwitchImage}
+									onChange={setQsSwitchImage}
+								/>
+							</div>
+							<div className="space-y-3">
+								<div className="space-y-1">
+									<Label>Host kind</Label>
+									<Input
+										value={qsHostKind}
+										onChange={(e) => setQsHostKind(e.target.value)}
+										placeholder="linux"
+									/>
+								</div>
+								<RegistryImagePicker
+									value={qsHostImage}
+									onChange={setQsHostImage}
+								/>
+							</div>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setQuickstartOpen(false)}>
+							Cancel
+						</Button>
+						<Button onClick={applyQuickstartClos}>Generate</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
