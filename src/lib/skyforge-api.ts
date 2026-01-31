@@ -567,6 +567,279 @@ export async function rotateUserGitDeployKey(): Promise<UserGitCredentialsRespon
 	);
 }
 
+export type UserSettingsResponse = {
+	defaultForwardCollectorConfigId?: string;
+	defaultEnv?: Array<{ key: string; value: string }>;
+	externalTemplateRepos?: ExternalTemplateRepo[];
+	updatedAt?: string;
+};
+
+export async function getUserSettings(): Promise<UserSettingsResponse> {
+	return apiFetch<UserSettingsResponse>("/api/user/settings");
+}
+
+export async function putUserSettings(payload: {
+	defaultForwardCollectorConfigId?: string;
+	defaultEnv?: Array<{ key: string; value: string }>;
+	externalTemplateRepos?: ExternalTemplateRepo[];
+}): Promise<UserSettingsResponse> {
+	return apiFetch<UserSettingsResponse>("/api/user/settings", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export type UserAWSStaticCredentialsGetResponse = {
+	configured: boolean;
+	accessKeyLast4?: string;
+	updatedAt?: ISO8601;
+};
+
+export async function getUserAWSStaticCredentials(): Promise<UserAWSStaticCredentialsGetResponse> {
+	return apiFetch<UserAWSStaticCredentialsGetResponse>(
+		"/api/user/cloud/aws-static",
+	);
+}
+
+export async function putUserAWSStaticCredentials(payload: {
+	accessKeyId: string;
+	secretAccessKey: string;
+}): Promise<UserAWSStaticCredentialsGetResponse> {
+	return apiFetch<UserAWSStaticCredentialsGetResponse>(
+		"/api/user/cloud/aws-static",
+		{
+			method: "PUT",
+			body: JSON.stringify(payload),
+		},
+	);
+}
+
+export async function deleteUserAWSStaticCredentials(): Promise<void> {
+	await apiFetch<void>("/api/user/cloud/aws-static", { method: "DELETE" });
+}
+
+export type UserAWSSSOCredentialsResponse = {
+	configured: boolean;
+	startUrl?: string;
+	region?: string;
+	accountId?: string;
+	roleName?: string;
+	updatedAt?: ISO8601;
+};
+
+export async function getUserAWSSSOCredentials(): Promise<UserAWSSSOCredentialsResponse> {
+	return apiFetch<UserAWSSSOCredentialsResponse>("/api/user/cloud/aws-sso");
+}
+
+export async function putUserAWSSSOCredentials(payload: {
+	startUrl: string;
+	region: string;
+	accountId: string;
+	roleName: string;
+}): Promise<UserAWSSSOCredentialsResponse> {
+	return apiFetch<UserAWSSSOCredentialsResponse>("/api/user/cloud/aws-sso", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function deleteUserAWSSSOCredentials(): Promise<void> {
+	await apiFetch<void>("/api/user/cloud/aws-sso", { method: "DELETE" });
+}
+
+export type UserAzureCredentialsResponse = {
+	configured: boolean;
+	tenantId?: string;
+	clientId?: string;
+	subscriptionId?: string;
+	hasClientSecret: boolean;
+	updatedAt?: ISO8601;
+};
+
+export async function getUserAzureCredentials(): Promise<UserAzureCredentialsResponse> {
+	return apiFetch<UserAzureCredentialsResponse>("/api/user/cloud/azure");
+}
+
+export async function putUserAzureCredentials(payload: {
+	tenantId: string;
+	clientId: string;
+	clientSecret: string;
+	subscriptionId?: string;
+}): Promise<UserAzureCredentialsResponse> {
+	return apiFetch<UserAzureCredentialsResponse>("/api/user/cloud/azure", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function deleteUserAzureCredentials(): Promise<void> {
+	await apiFetch<void>("/api/user/cloud/azure", { method: "DELETE" });
+}
+
+export type UserGCPCredentialsResponse = {
+	configured: boolean;
+	projectId?: string;
+	hasServiceAccountJSON: boolean;
+	updatedAt?: ISO8601;
+};
+
+export async function getUserGCPCredentials(): Promise<UserGCPCredentialsResponse> {
+	return apiFetch<UserGCPCredentialsResponse>("/api/user/cloud/gcp");
+}
+
+export async function putUserGCPCredentials(payload: {
+	projectId: string;
+	serviceAccountJSON: string;
+}): Promise<UserGCPCredentialsResponse> {
+	return apiFetch<UserGCPCredentialsResponse>("/api/user/cloud/gcp", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function deleteUserGCPCredentials(): Promise<void> {
+	await apiFetch<void>("/api/user/cloud/gcp", { method: "DELETE" });
+}
+
+export type UserIBMCredentialsResponse = {
+	configured: boolean;
+	region?: string;
+	resourceGroupId?: string;
+	hasApiKey: boolean;
+	updatedAt?: ISO8601;
+};
+
+export async function getUserIBMCredentials(): Promise<UserIBMCredentialsResponse> {
+	return apiFetch<UserIBMCredentialsResponse>("/api/user/cloud/ibm");
+}
+
+export async function putUserIBMCredentials(payload: {
+	apiKey: string;
+	region: string;
+	resourceGroupId?: string;
+}): Promise<UserIBMCredentialsResponse> {
+	return apiFetch<UserIBMCredentialsResponse>("/api/user/cloud/ibm", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function deleteUserIBMCredentials(): Promise<void> {
+	await apiFetch<void>("/api/user/cloud/ibm", { method: "DELETE" });
+}
+
+export type UserNetlabServerConfig = {
+	id?: string;
+	name: string;
+	apiUrl: string;
+	apiInsecure: boolean;
+	apiUser?: string;
+	apiPassword?: string;
+	apiToken?: string;
+	hasPassword?: boolean;
+};
+export type UserNetlabServersResponse = { servers: UserNetlabServerConfig[] };
+
+export async function listUserNetlabServers(): Promise<UserNetlabServersResponse> {
+	return apiFetch<UserNetlabServersResponse>("/api/user/netlab/servers");
+}
+
+export async function upsertUserNetlabServer(
+	payload: UserNetlabServerConfig,
+): Promise<UserNetlabServerConfig> {
+	return apiFetch<UserNetlabServerConfig>("/api/user/netlab/servers", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function deleteUserNetlabServer(serverId: string): Promise<void> {
+	await apiFetch<void>(
+		`/api/user/netlab/servers/${encodeURIComponent(serverId)}`,
+		{
+			method: "DELETE",
+		},
+	);
+}
+
+export type UserEveServerConfig = {
+	id?: string;
+	name: string;
+	apiUrl: string;
+	webUrl?: string;
+	skipTlsVerify: boolean;
+	apiUser?: string;
+	apiPassword?: string;
+	sshHost?: string;
+	sshUser?: string;
+	sshKey?: string;
+	hasPassword?: boolean;
+};
+export type UserEveServersResponse = { servers: UserEveServerConfig[] };
+
+export async function listUserEveServers(): Promise<UserEveServersResponse> {
+	return apiFetch<UserEveServersResponse>("/api/user/eve/servers");
+}
+
+export async function upsertUserEveServer(
+	payload: UserEveServerConfig,
+): Promise<UserEveServerConfig> {
+	return apiFetch<UserEveServerConfig>("/api/user/eve/servers", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function deleteUserEveServer(serverId: string): Promise<void> {
+	await apiFetch<void>(
+		`/api/user/eve/servers/${encodeURIComponent(serverId)}`,
+		{
+			method: "DELETE",
+		},
+	);
+}
+
+export type UserContainerlabServerConfig = {
+	id?: string;
+	name: string;
+	apiUrl: string;
+	apiInsecure: boolean;
+	apiUser?: string;
+	apiPassword?: string;
+	apiToken?: string;
+	hasPassword?: boolean;
+};
+export type UserContainerlabServersResponse = {
+	servers: UserContainerlabServerConfig[];
+};
+
+export async function listUserContainerlabServers(): Promise<UserContainerlabServersResponse> {
+	return apiFetch<UserContainerlabServersResponse>(
+		"/api/user/containerlab/servers",
+	);
+}
+
+export async function upsertUserContainerlabServer(
+	payload: UserContainerlabServerConfig,
+): Promise<UserContainerlabServerConfig> {
+	return apiFetch<UserContainerlabServerConfig>(
+		"/api/user/containerlab/servers",
+		{
+			method: "PUT",
+			body: JSON.stringify(payload),
+		},
+	);
+}
+
+export async function deleteUserContainerlabServer(
+	serverId: string,
+): Promise<void> {
+	await apiFetch<void>(
+		`/api/user/containerlab/servers/${encodeURIComponent(serverId)}`,
+		{ method: "DELETE" },
+	);
+}
+
 export type UpdateDeploymentForwardConfigRequest = {
 	enabled: boolean;
 	collectorConfigId?: string;

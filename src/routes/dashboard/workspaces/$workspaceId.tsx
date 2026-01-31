@@ -107,6 +107,13 @@ function WorkspaceSettingsPage() {
 	const [editorsCSV, setEditorsCSV] = useState("");
 
 	const [externalRepos, setExternalRepos] = useState<ExternalRepoDraft[]>([]);
+	const [allowExternalTemplateRepos, setAllowExternalTemplateRepos] =
+		useState(false);
+	const [allowCustomNetlabServers, setAllowCustomNetlabServers] =
+		useState(false);
+	const [allowCustomEveServers, setAllowCustomEveServers] = useState(false);
+	const [allowCustomContainerlabServers, setAllowCustomContainerlabServers] =
+		useState(false);
 	const [deleteConfirm, setDeleteConfirm] = useState("");
 	const [httpsUsername, setHttpsUsername] = useState("");
 	const [httpsToken, setHttpsToken] = useState("");
@@ -141,6 +148,12 @@ function WorkspaceSettingsPage() {
 		setOwnersCSV((workspace.owners ?? []).join(","));
 		setEditorsCSV((workspace.editors ?? []).join(","));
 		setViewersCSV((workspace.viewers ?? []).join(","));
+		setAllowExternalTemplateRepos(!!workspace.allowExternalTemplateRepos);
+		setAllowCustomNetlabServers(!!workspace.allowCustomNetlabServers);
+		setAllowCustomEveServers(!!workspace.allowCustomEveServers);
+		setAllowCustomContainerlabServers(
+			!!workspace.allowCustomContainerlabServers,
+		);
 		const next = (workspace.externalTemplateRepos ?? []) as ExternalRepoDraft[];
 		setExternalRepos(
 			next
@@ -233,12 +246,10 @@ function WorkspaceSettingsPage() {
 	const settingsMutation = useMutation({
 		mutationFn: async (next: { externalTemplateRepos: unknown }) => {
 			return updateWorkspaceSettings(workspaceId, {
-				allowExternalTemplateRepos:
-					((next.externalTemplateRepos as any[]) ?? []).length > 0,
-				// These legacy flags are intentionally always enabled; BYOS availability is
-				// determined by whether servers are configured (and shown in the UI).
-				allowCustomEveServers: true,
-				allowCustomNetlabServers: true,
+				allowExternalTemplateRepos,
+				allowCustomEveServers,
+				allowCustomNetlabServers,
+				allowCustomContainerlabServers,
 				externalTemplateRepos: (next.externalTemplateRepos as any[]) ?? [],
 			});
 		},
@@ -515,17 +526,103 @@ function WorkspaceSettingsPage() {
 						<CardHeader>
 							<CardTitle>Workspace features</CardTitle>
 							<CardDescription>
-								Configure external template sources and BYOS servers for this
-								workspace.
+								Workspaces are primarily for access control and shared
+								resources. Most deployment-time defaults live in{" "}
+								<Link className="underline" to="/dashboard/settings">
+									My Settings
+								</Link>
+								.
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div className="rounded-md border p-3 space-y-3">
-								<div className="text-sm font-medium">BYOS Netlab servers</div>
+								<div className="text-sm font-medium">Feature gates</div>
 								<div className="text-xs text-muted-foreground">
-									Add one or more Netlab API endpoints. When at least one is
-									configured, <span className="font-mono">Netlab (BYOS)</span>{" "}
-									becomes available in Create deployment.
+									These toggles control what members are allowed to use. BYOL
+									and external repo configuration lives in user settings; these
+									gates only enable/disable usage per workspace.
+								</div>
+								<div className="space-y-2">
+									<div className="flex items-center justify-between rounded-md border p-3">
+										<div className="space-y-1">
+											<div className="text-sm font-medium">
+												Allow external template repos
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Enables template source = External.
+											</div>
+										</div>
+										<Switch
+											checked={allowExternalTemplateRepos}
+											onCheckedChange={setAllowExternalTemplateRepos}
+											disabled={!allowEdit}
+										/>
+									</div>
+
+									<div className="flex items-center justify-between rounded-md border p-3">
+										<div className="space-y-1">
+											<div className="text-sm font-medium">
+												Allow custom Netlab servers
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Allows members to select user-scoped Netlab BYOL
+												servers.
+											</div>
+										</div>
+										<Switch
+											checked={allowCustomNetlabServers}
+											onCheckedChange={setAllowCustomNetlabServers}
+											disabled={!allowEdit}
+										/>
+									</div>
+
+									<div className="flex items-center justify-between rounded-md border p-3">
+										<div className="space-y-1">
+											<div className="text-sm font-medium">
+												Allow custom Containerlab servers
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Allows members to select user-scoped Containerlab BYOL
+												servers.
+											</div>
+										</div>
+										<Switch
+											checked={allowCustomContainerlabServers}
+											onCheckedChange={setAllowCustomContainerlabServers}
+											disabled={!allowEdit}
+										/>
+									</div>
+
+									<div className="flex items-center justify-between rounded-md border p-3">
+										<div className="space-y-1">
+											<div className="text-sm font-medium">
+												Allow custom EVE-NG servers
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Allows members to select user-scoped EVE-NG (LabPP)
+												servers.
+											</div>
+										</div>
+										<Switch
+											checked={allowCustomEveServers}
+											onCheckedChange={setAllowCustomEveServers}
+											disabled={!allowEdit}
+										/>
+									</div>
+								</div>
+							</div>
+
+							<div className="rounded-md border p-3 space-y-3">
+								<div className="text-sm font-medium">
+									Legacy: workspace-scoped Netlab servers (deprecated)
+								</div>
+								<div className="text-xs text-muted-foreground">
+									Prefer configuring user-scoped Netlab servers in{" "}
+									<Link className="underline" to="/dashboard/settings">
+										My Settings
+									</Link>
+									. These workspace-scoped servers remain for legacy workflows
+									and will be removed once migration is complete.
 								</div>
 								<div className="space-y-2">
 									{(netlabServersQ.data?.servers ?? []).length === 0 ? (
@@ -634,12 +731,15 @@ function WorkspaceSettingsPage() {
 
 							<div className="rounded-md border p-3 space-y-3">
 								<div className="text-sm font-medium">
-									BYOS EVE-NG servers (LabPP)
+									Legacy: workspace-scoped EVE-NG servers (deprecated)
 								</div>
 								<div className="text-xs text-muted-foreground">
-									Add one or more EVE-NG API endpoints. When at least one is
-									configured, <span className="font-mono">LabPP</span> becomes
-									available in Create deployment.
+									Prefer configuring user-scoped EVE-NG servers in{" "}
+									<Link className="underline" to="/dashboard/settings">
+										My Settings
+									</Link>
+									. These workspace-scoped servers remain for legacy workflows
+									and will be removed once migration is complete.
 								</div>
 								<div className="space-y-2">
 									{(eveServersQ.data?.servers ?? []).length === 0 ? (
@@ -750,11 +850,12 @@ function WorkspaceSettingsPage() {
 									<div>
 										<Label>External template repos</Label>
 										<div className="text-xs text-muted-foreground">
-											Repos are either{" "}
-											<span className="font-mono">owner/repo</span> (Gitea) or a
-											git URL (https://… or git@host:repo.git). Used by the
-											deployment UI when Template source is set to External
-											repo.
+											Prefer configuring external repos in{" "}
+											<Link className="underline" to="/dashboard/settings">
+												My Settings
+											</Link>
+											. This workspace-scoped list remains for legacy workflows
+											and will be removed once migration is complete.
 										</div>
 									</div>
 									<Button

@@ -17,6 +17,7 @@ import {
 	Settings,
 	ShieldCheck,
 	Sparkles,
+	Users,
 	Webhook,
 	Workflow,
 } from "lucide-react";
@@ -58,14 +59,24 @@ type Features = {
 const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
+	{ label: "Runs", href: "/dashboard/runs", icon: PanelTop },
+	{ label: "Workspaces", href: "/dashboard/workspaces", icon: Users },
 	{
 		label: "Designer",
 		href: "/dashboard/labs/designer",
 		icon: Hammer,
 		newTab: true,
 	},
-	{ label: "Collector (Forward)", href: "/dashboard/forward", icon: Radio },
-	{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
+	{
+		label: "Integrations",
+		href: "",
+		icon: Workflow,
+		children: [
+			{ label: "Collector (Forward)", href: "/dashboard/forward", icon: Radio },
+			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
+			{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
+		],
+	},
 	{
 		label: "Connect AI",
 		href: "",
@@ -76,7 +87,7 @@ const items: NavItem[] = [
 			{ label: "Claude", href: "/dashboard/claude", icon: Sparkles },
 		],
 	},
-	{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
+	{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
 	{
 		label: "Tools",
 		href: "",
@@ -112,9 +123,9 @@ const items: NavItem[] = [
 		icon: PanelTop,
 		external: true,
 	},
-	{ label: "Docs", href: "/docs/", icon: BookOpen, external: true },
+	{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 	{
-		label: "Settings",
+		label: "Admin Settings",
 		href: "/admin/settings",
 		icon: Settings,
 		adminOnly: true,
@@ -174,6 +185,19 @@ export function SideNav(props: {
 							if (item.label === "API Testing" && !f.yaadeEnabled) return [];
 							if (item.label === "Collector (Forward)" && !f.forwardEnabled)
 								return [];
+							if (item.label === "Artifacts" && !f.minioEnabled) return [];
+
+							if (item.label === "Integrations") {
+								const children =
+									item.children?.filter((child) => {
+										if (child.label === "Collector (Forward)")
+											return !!f.forwardEnabled;
+										if (child.label === "Artifacts") return !!f.minioEnabled;
+										return true;
+									}) ?? [];
+								if (children.length === 0) return [];
+								return [{ ...item, children }];
+							}
 
 							if (item.label === "Tools") {
 								const children =

@@ -43,10 +43,6 @@ const formSchema = z.object({
 	isPublic: z.boolean().default(false),
 	blueprint: z.string().optional(),
 	sharedUsers: z.string().optional(),
-	awsAccountId: z.string().optional(),
-	awsRoleName: z.string().optional(),
-	awsRegion: z.string().optional(),
-	awsAuthMethod: z.string().optional(),
 });
 
 type FormInputValues = z.input<typeof formSchema>;
@@ -68,10 +64,6 @@ function NewWorkspacePage() {
 			isPublic: false,
 			blueprint: "skyforge/blueprints",
 			sharedUsers: "",
-			awsAccountId: "",
-			awsRoleName: "",
-			awsRegion: "us-east-1",
-			awsAuthMethod: "sso",
 		},
 	});
 
@@ -87,12 +79,10 @@ function NewWorkspacePage() {
 				slug: data.slug,
 				description: data.description || "",
 				isPublic: !!data.isPublic,
+				allowCustomEveServers: false,
 				allowCustomNetlabServers: false,
+				allowCustomContainerlabServers: false,
 				allowExternalTemplateRepos: false,
-				awsAccountId: (data.awsAccountId || "").trim(),
-				awsAuthMethod: (data.awsAuthMethod || "").trim(),
-				awsRegion: (data.awsRegion || "").trim(),
-				awsRoleName: (data.awsRoleName || "").trim(),
 				blueprint: (data.blueprint || "").trim(),
 				externalTemplateRepos: [],
 				sharedUsers: (data.sharedUsers || "")
@@ -108,10 +98,7 @@ function NewWorkspacePage() {
 				description: `Workspace "${data.name}" has been created successfully.`,
 			});
 			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
-			await navigate({
-				to: "/dashboard/deployments",
-				search: { workspace: data.id },
-			});
+			await navigate({ to: `/dashboard/workspaces/${data.id}` });
 		},
 		onError: (error) => {
 			toast.error("Failed to create workspace", {
@@ -147,7 +134,8 @@ function NewWorkspacePage() {
 				<CardHeader>
 					<CardTitle>Workspace Details</CardTitle>
 					<CardDescription>
-						Workspaces organize your deployments and resources.
+						Workspaces organize deployments and shared resources for a team. You
+						can set per-user defaults under “My Settings”.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -271,61 +259,6 @@ function NewWorkspacePage() {
 									</FormItem>
 								)}
 							/>
-
-							<div className="grid gap-4 md:grid-cols-2">
-								<FormField
-									control={form.control}
-									name="awsAccountId"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>AWS account ID (optional)</FormLabel>
-											<FormControl>
-												<Input placeholder="123456789012" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-								<FormField
-									control={form.control}
-									name="awsRoleName"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>AWS role name (optional)</FormLabel>
-											<FormControl>
-												<Input placeholder="MyRole" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-								<FormField
-									control={form.control}
-									name="awsRegion"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>AWS region</FormLabel>
-											<FormControl>
-												<Input placeholder="us-east-1" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-								<FormField
-									control={form.control}
-									name="awsAuthMethod"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>AWS auth method</FormLabel>
-											<FormControl>
-												<Input placeholder="sso" {...field} />
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
 
 							<div className="flex justify-end gap-4">
 								<Button

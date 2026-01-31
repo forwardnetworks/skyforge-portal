@@ -132,7 +132,9 @@ function ServiceNowPage() {
 	}, [schemaQ.data?.missing]);
 
 	const servicePortalURL = useMemo(() => {
-		const base = (instanceUrl || cfg?.instanceUrl || "").trim().replace(/\/+$/, "");
+		const base = (instanceUrl || cfg?.instanceUrl || "")
+			.trim()
+			.replace(/\/+$/, "");
 		if (!base) return "";
 		return `${base}/sp?id=connectivity_ticket`;
 	}, [cfg?.instanceUrl, instanceUrl]);
@@ -249,7 +251,7 @@ function ServiceNowPage() {
 					</a>
 					<a
 						className="text-sm underline"
-						href="/docs/servicenow.html"
+						href="/dashboard/docs/servicenow"
 						target="_blank"
 						rel="noreferrer"
 					>
@@ -431,7 +433,7 @@ function ServiceNowPage() {
 						</Button>
 						<a
 							className="text-sm underline text-muted-foreground"
-							href="/docs/servicenow.html"
+							href="/dashboard/docs/servicenow"
 							target="_blank"
 							rel="noreferrer"
 						>
@@ -609,7 +611,7 @@ function ServiceNowPage() {
 						</Button>
 						<a
 							className="text-sm underline text-muted-foreground ml-2"
-							href="/docs/servicenow.html"
+							href="/dashboard/docs/servicenow"
 							target="_blank"
 							rel="noreferrer"
 						>

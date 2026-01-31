@@ -12,8 +12,8 @@ function ClaudePage() {
 			<div>
 				<h1 className="text-2xl font-bold">Claude</h1>
 				<p className="text-sm text-muted-foreground">
-					Connector placeholder. This will support bringing your own Anthropic API
-					key for template generation workflows.
+					Connector placeholder. This will support bringing your own Anthropic
+					API key for template generation workflows.
 				</p>
 			</div>
 
@@ -28,4 +28,3 @@ function ClaudePage() {
 		</div>
 	);
 }
-

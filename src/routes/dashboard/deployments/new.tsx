@@ -62,6 +62,7 @@ import {
 	type WorkspaceVariableGroup,
 	createWorkspaceDeployment,
 	getDashboardSnapshot,
+	getUserSettings,
 	getWorkspaceContainerlabTemplate,
 	getWorkspaceContainerlabTemplates,
 	getWorkspaceLabppTemplates,
@@ -69,7 +70,9 @@ import {
 	getWorkspaceNetlabTemplates,
 	getWorkspaceTerraformTemplates,
 	getWorkspaces,
+	listUserContainerlabServers,
 	listUserForwardCollectorConfigs,
+	listUserNetlabServers,
 	listWorkspaceEveServers,
 	listWorkspaceNetlabServers,
 	listWorkspaceVariableGroups,
@@ -134,6 +137,7 @@ function CreateDeploymentPage() {
 	const [netlabHelpOpen, setNetlabHelpOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
 		useState<string>("all");
+	const [step, setStep] = useState<0 | 1 | 2>(0);
 
 	useDashboardEvents(true);
 	const dash = useQuery<DashboardSnapshot | null>({
@@ -145,6 +149,13 @@ function CreateDeploymentPage() {
 				| undefined) ?? null,
 		retry: false,
 		staleTime: Number.POSITIVE_INFINITY,
+	});
+
+	const userSettingsQ = useQuery({
+		queryKey: queryKeys.userSettings(),
+		queryFn: getUserSettings,
+		staleTime: 30_000,
+		retry: false,
 	});
 
 	const workspacesQ = useQuery({
@@ -178,6 +189,31 @@ function CreateDeploymentPage() {
 		name: "env",
 	});
 
+	useEffect(() => {
+		const id =
+			step === 0
+				? "deploy-step-template"
+				: step === 1
+					? "deploy-step-params"
+					: "deploy-step-review";
+		document
+			.getElementById(id)
+			?.scrollIntoView({ behavior: "smooth", block: "start" });
+	}, [step]);
+
+	// Apply per-user default env vars exactly once, as a pre-fill.
+	useEffect(() => {
+		const defaults = userSettingsQ.data?.defaultEnv ?? [];
+		if (!defaults.length) return;
+		const current = form.getValues("env") ?? [];
+		if (current.length) return;
+		setValue("env", defaults, {
+			shouldDirty: false,
+			shouldTouch: false,
+			shouldValidate: true,
+		});
+	}, [userSettingsQ.data?.defaultEnv, form, setValue]);
+
 	const upsertEnvVar = (key: string, value: string) => {
 		const k = key.trim();
 		const v = value;
@@ -201,6 +237,7 @@ function CreateDeploymentPage() {
 	const watchSource = watch("source");
 	const watchTemplateRepoId = watch("templateRepoId");
 	const watchTemplate = watch("template");
+	const watchName = watch("name");
 	const watchForwardCollectorId = watch("forwardCollectorId");
 	const watchEnv = watch("env");
 	const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
@@ -261,6 +298,20 @@ function CreateDeploymentPage() {
 		staleTime: 30_000,
 	});
 
+	const userNetlabServersQ = useQuery({
+		queryKey: queryKeys.userNetlabServers(),
+		queryFn: listUserNetlabServers,
+		staleTime: 30_000,
+		retry: false,
+	});
+
+	const userContainerlabServersQ = useQuery({
+		queryKey: queryKeys.userContainerlabServers(),
+		queryFn: listUserContainerlabServers,
+		staleTime: 30_000,
+		retry: false,
+	});
+
 	const eveServersQ = useQuery({
 		queryKey: ["workspaceEveServers", watchWorkspaceId],
 		queryFn: async () => listWorkspaceEveServers(watchWorkspaceId),
@@ -298,11 +349,23 @@ function CreateDeploymentPage() {
 			return;
 		}
 		if ((watchForwardCollectorId ?? "none") !== "none") return;
+		const preferred = String(
+			userSettingsQ.data?.defaultForwardCollectorConfigId ?? "",
+		).trim();
 		const def =
+			(preferred
+				? selectableCollectors.find((c: any) => c.id === preferred)
+				: null) ??
 			selectableCollectors.find((c: any) => c.isDefault) ??
 			selectableCollectors[0];
 		if (def?.id) setValue("forwardCollectorId", String(def.id));
-	}, [watchKind, watchForwardCollectorId, selectableCollectors, setValue]);
+	}, [
+		watchKind,
+		watchForwardCollectorId,
+		selectableCollectors,
+		setValue,
+		userSettingsQ.data?.defaultForwardCollectorConfigId,
+	]);
 
 	const effectiveSource: TemplateSource = useMemo(() => {
 		if (watchKind === "netlab" || watchKind === "netlab-c9s")
@@ -437,7 +500,7 @@ function CreateDeploymentPage() {
 	});
 
 	const externalRepos = (
-		(selectedWorkspace?.externalTemplateRepos ?? []) as ExternalTemplateRepo[]
+		(userSettingsQ.data?.externalTemplateRepos ?? []) as ExternalTemplateRepo[]
 	).filter(
 		(r) => !!r && typeof r.id === "string" && typeof r.repo === "string",
 	);
@@ -596,15 +659,51 @@ function CreateDeploymentPage() {
 	}
 
 	const netlabOptions = netlabServersQ.data?.servers ?? [];
+	const userNetlabOptions = userNetlabServersQ.data?.servers ?? [];
+	const userContainerlabOptions = userContainerlabServersQ.data?.servers ?? [];
 	const eveOptions = eveServersQ.data?.servers ?? [];
 	const variableGroups = (variableGroupsQ.data?.groups ??
 		[]) as WorkspaceVariableGroup[];
-	const byosNetlabEnabled = netlabOptions.length > 0;
+	const byosNetlabEnabled =
+		netlabOptions.length > 0 ||
+		(!!selectedWorkspace?.allowCustomNetlabServers &&
+			userNetlabOptions.length > 0) ||
+		(!!selectedWorkspace?.allowCustomContainerlabServers &&
+			userContainerlabOptions.length > 0);
 	const byosEveEnabled = eveOptions.length > 0;
-	const netlabServerRefs = netlabOptions.map((s) => ({
-		value: `ws:${s.id}`,
-		label: hostLabelFromURL(s.apiUrl) || s.name,
-	}));
+	const netlabServerRefs = (() => {
+		const out: Array<{ value: string; label: string }> = [];
+		for (const s of netlabOptions) {
+			out.push({
+				value: `ws:${s.id}`,
+				label: hostLabelFromURL(s.apiUrl) || s.name,
+			});
+		}
+		if (selectedWorkspace?.allowCustomNetlabServers) {
+			for (const s of userNetlabOptions) {
+				if (!s?.id) continue;
+				out.push({
+					value: `user:${s.id}`,
+					label: `${hostLabelFromURL(s.apiUrl) || s.name} (user)`,
+				});
+			}
+		}
+		if (selectedWorkspace?.allowCustomContainerlabServers) {
+			for (const s of userContainerlabOptions) {
+				if (!s?.id) continue;
+				out.push({
+					value: `user:${s.id}`,
+					label: `${hostLabelFromURL(s.apiUrl) || s.name} (user)`,
+				});
+			}
+		}
+		const seen = new Set<string>();
+		return out.filter((it) => {
+			if (seen.has(it.value)) return false;
+			seen.add(it.value);
+			return true;
+		});
+	})();
 
 	return (
 		<div className="space-y-6 p-6">
@@ -636,6 +735,34 @@ function CreateDeploymentPage() {
 				<CardContent className="pt-6">
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+							<div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/20 p-2">
+								<Button
+									type="button"
+									variant={step === 0 ? "default" : "ghost"}
+									size="sm"
+									onClick={() => setStep(0)}
+								>
+									1. Template
+								</Button>
+								<Button
+									type="button"
+									variant={step === 1 ? "default" : "ghost"}
+									size="sm"
+									onClick={() => setStep(1)}
+								>
+									2. Parameters
+								</Button>
+								<Button
+									type="button"
+									variant={step === 2 ? "default" : "ghost"}
+									size="sm"
+									onClick={() => setStep(2)}
+								>
+									3. Review
+								</Button>
+							</div>
+
+							<div id="deploy-step-template" className="scroll-mt-24" />
 							<div className="grid gap-6 md:grid-cols-2">
 								<FormField
 									control={form.control}
@@ -1069,6 +1196,7 @@ function CreateDeploymentPage() {
 								/>
 							</div>
 
+							<div id="deploy-step-params" className="scroll-mt-24" />
 							<div className="rounded-md border p-4 space-y-4">
 								<div className="flex items-center justify-between">
 									<FormLabel>Environment Variables</FormLabel>
@@ -1346,6 +1474,50 @@ function CreateDeploymentPage() {
 								</DialogContent>
 							</Dialog>
 
+							<div id="deploy-step-review" className="scroll-mt-24" />
+							<Card variant="glass">
+								<CardHeader>
+									<CardTitle className="text-base">Review</CardTitle>
+									<CardDescription>
+										Confirm your selections before creating the deployment.
+									</CardDescription>
+								</CardHeader>
+								<CardContent className="grid gap-2 text-sm">
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-muted-foreground">Workspace</div>
+										<div className="font-mono text-xs">
+											{watchWorkspaceId || "—"}
+										</div>
+									</div>
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-muted-foreground">Provider</div>
+										<div className="font-mono text-xs">{watchKind}</div>
+									</div>
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-muted-foreground">Template source</div>
+										<div className="font-mono text-xs">{effectiveSource}</div>
+									</div>
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-muted-foreground">Template</div>
+										<div className="font-mono text-xs">
+											{watchTemplate || "—"}
+										</div>
+									</div>
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-muted-foreground">Name</div>
+										<div className="font-mono text-xs">{watchName || "—"}</div>
+									</div>
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-muted-foreground">Env vars</div>
+										<div className="font-mono text-xs">
+											{(form.getValues("env") ?? []).filter((e) =>
+												e.key?.trim(),
+											).length || 0}
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+
 							{mutation.isError && (
 								<div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive border border-destructive/20">
 									{(mutation.error as Error)?.message || "Create failed."}
@@ -1353,24 +1525,58 @@ function CreateDeploymentPage() {
 							)}
 
 							<div className="flex gap-3">
-								<Button type="submit" disabled={mutation.isPending}>
-									{mutation.isPending && (
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									)}
-									{mutation.isPending ? "Creating…" : "Create Deployment"}
-								</Button>
+								{step === 2 ? (
+									<Button type="submit" disabled={mutation.isPending}>
+										{mutation.isPending && (
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										)}
+										{mutation.isPending ? "Creating…" : "Create Deployment"}
+									</Button>
+								) : (
+									<Button
+										type="button"
+										onClick={async () => {
+											if (step === 0) {
+												const ok = await form.trigger([
+													"workspaceId",
+													"kind",
+													"source",
+													"template",
+													"name",
+												]);
+												if (!ok) return;
+											}
+											setStep((s) => (s < 2 ? ((s + 1) as 0 | 1 | 2) : s));
+										}}
+										disabled={mutation.isPending}
+									>
+										Next
+									</Button>
+								)}
 								<Button
 									type="button"
 									variant="secondary"
-									onClick={() =>
+									onClick={() => {
+										if (step > 0) {
+											setStep((s) => (s > 0 ? ((s - 1) as 0 | 1 | 2) : s));
+											return;
+										}
 										navigate({
 											to: "/dashboard/deployments",
 											search: { workspace: watchWorkspaceId },
-										})
-									}
+										});
+									}}
 									disabled={mutation.isPending}
 								>
 									Back
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setStep(2)}
+									disabled={mutation.isPending}
+								>
+									Review
 								</Button>
 							</div>
 						</form>
