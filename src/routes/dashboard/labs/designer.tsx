@@ -45,6 +45,7 @@ import { queryKeys } from "@/lib/query-keys";
 import {
 	createClabernetesDeploymentFromTemplate,
 	createContainerlabDeploymentFromTemplate,
+	autofixUserAITemplate,
 	getDeploymentTopology,
 	getWorkspaceContainerlabTemplate,
 	getWorkspaceContainerlabTemplates,
@@ -516,6 +517,30 @@ function LabDesignerPage() {
 		},
 	});
 
+	const autofixYaml = useMutation({
+		mutationFn: async () => {
+			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
+			return autofixUserAITemplate({
+				kind: "containerlab",
+				content: effectiveYaml,
+				maxIterations: 5,
+			});
+		},
+		onSuccess: (res) => {
+			setYamlMode("custom");
+			setCustomYaml(res.content ?? "");
+			if (res.ok) {
+				toast.success("Auto-fix succeeded", {
+					description: `Iterations: ${res.iterations}`,
+				});
+			} else {
+				toast.error("Auto-fix still has errors", {
+					description: `Iterations: ${res.iterations}`,
+				});
+			}
+		},
+	});
+
 	const yamlValidation = useMemo(() => {
 		const task = (validateYaml.data as any)?.task;
 		const ok = task?.ok === true;
@@ -534,6 +559,14 @@ function LabDesignerPage() {
 		}
 		return { ok, errs };
 	}, [validateYaml.data]);
+
+	const yamlAutofix = useMemo(() => {
+		const ok = autofixYaml.data?.ok === true;
+		const errs = Array.isArray(autofixYaml.data?.errors)
+			? (autofixYaml.data?.errors ?? []).map((e) => String(e))
+			: [];
+		return { ok, errs };
+	}, [autofixYaml.data]);
 
 	const effectiveTemplatesDir = useMemo(() => {
 		const d = String(templatesDir ?? "")
@@ -2118,6 +2151,14 @@ function LabDesignerPage() {
 									<Button
 										size="sm"
 										variant="outline"
+										onClick={() => autofixYaml.mutate()}
+										disabled={autofixYaml.isPending}
+									>
+										{autofixYaml.isPending ? "Auto-fixing…" : "Auto-fix"}
+									</Button>
+									<Button
+										size="sm"
+										variant="outline"
 										onClick={() => validateYaml.mutate()}
 										disabled={validateYaml.isPending}
 									>
@@ -2181,6 +2222,25 @@ function LabDesignerPage() {
 									{yamlValidation.errs.length > 8 ? (
 										<div className="text-muted-foreground">
 											+{yamlValidation.errs.length - 8} more…
+										</div>
+									) : null}
+								</div>
+							) : null}
+							{autofixYaml.isError ? (
+								<div className="rounded-md border bg-red-500/10 text-red-900 dark:text-red-200 px-3 py-2 text-xs">
+									Auto-fix failed: {(autofixYaml.error as Error).message}
+								</div>
+							) : autofixYaml.isSuccess && !yamlAutofix.ok && yamlAutofix.errs.length ? (
+								<div className="rounded-md border bg-amber-500/10 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs space-y-1">
+									<div className="font-medium">
+										Auto-fix incomplete (still failing schema)
+									</div>
+									{yamlAutofix.errs.slice(0, 6).map((e) => (
+										<div key={e}>{e}</div>
+									))}
+									{yamlAutofix.errs.length > 6 ? (
+										<div className="text-muted-foreground">
+											+{yamlAutofix.errs.length - 6} more…
 										</div>
 									) : null}
 								</div>
