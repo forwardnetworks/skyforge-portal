@@ -601,7 +601,7 @@ export async function saveUserAITemplate(
 }
 
 export type UserAIValidateRequest = {
-	kind: "netlab";
+	kind: "netlab" | "containerlab";
 	content: string;
 	environment?: Record<string, unknown>;
 	setOverrides?: string[];
@@ -611,6 +611,8 @@ export type UserAIValidateResponse = {
 	workspaceId: string;
 	task: {
 		id?: number;
+		ok?: boolean;
+		errors?: unknown;
 	} & Record<string, unknown>;
 };
 
@@ -618,6 +620,31 @@ export async function validateUserAITemplate(
 	payload: UserAIValidateRequest,
 ): Promise<UserAIValidateResponse> {
 	return apiFetch<UserAIValidateResponse>("/api/user/ai/validate", {
+		method: "POST",
+		body: JSON.stringify(payload),
+	});
+}
+
+export type UserAIAutofixRequest = {
+	kind: "containerlab";
+	content: string;
+	maxIterations?: number;
+};
+
+export type UserAIAutofixResponse = {
+	kind: string;
+	content: string;
+	ok: boolean;
+	errors?: string[];
+	iterations: number;
+	warnings?: string[];
+	lastValidated: string;
+};
+
+export async function autofixUserAITemplate(
+	payload: UserAIAutofixRequest,
+): Promise<UserAIAutofixResponse> {
+	return apiFetch<UserAIAutofixResponse>("/api/user/ai/autofix", {
 		method: "POST",
 		body: JSON.stringify(payload),
 	});

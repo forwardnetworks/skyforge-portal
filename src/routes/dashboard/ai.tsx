@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/query-keys";
 import {
 	type UserAIGenerateRequest,
+	autofixUserAITemplate,
 	generateUserAITemplate,
 	getUserAIHistory,
 	getUserGeminiConfig,
@@ -111,27 +112,80 @@ function AITemplatesPage() {
 
 	const validate = useMutation({
 		mutationFn: async () => {
-			if (kind !== "netlab") {
-				throw new Error("Only netlab validation is supported right now");
-			}
 			if (!output.trim()) throw new Error("No output to validate");
 			return validateUserAITemplate({
-				kind: "netlab",
+				kind,
 				content: output,
 			});
 		},
 		onSuccess: (res) => {
 			setLastError("");
-			const runId = res.task?.id != null ? String(res.task.id) : "";
-			setLastValidateRunId(runId);
-			toast.success("Validation started", {
-				description: runId ? `Run: ${runId}` : "Run created",
+			if (kind === "netlab") {
+				const runId = res.task?.id != null ? String(res.task.id) : "";
+				setLastValidateRunId(runId);
+				toast.success("Validation started", {
+					description: runId ? `Run: ${runId}` : "Run created",
+				});
+				return;
+			}
+
+			const ok = res.task?.ok === true;
+			const errs =
+				Array.isArray(res.task?.errors) && res.task.errors.length > 0
+					? (res.task.errors as unknown[])
+							.map((e) => (typeof e === "string" ? e : JSON.stringify(e)))
+							.join("\n")
+					: "";
+
+			if (ok) {
+				toast.success("Containerlab template is valid");
+				setLastValidateRunId("");
+				return;
+			}
+
+			setLastError(errs || "Containerlab template is invalid");
+			toast.error("Containerlab template is invalid", {
+				description: errs ? errs.split("\n")[0] : "Schema validation failed",
 			});
 		},
 		onError: (e) => {
 			const msg = e instanceof Error ? e.message : String(e);
 			setLastError(msg);
 			toast.error("Failed to validate template", { description: msg });
+		},
+	});
+
+	const autofix = useMutation({
+		mutationFn: async () => {
+			if (kind !== "containerlab") {
+				throw new Error("Autofix is only supported for containerlab templates");
+			}
+			if (!output.trim()) throw new Error("No output to autofix");
+			return autofixUserAITemplate({
+				kind: "containerlab",
+				content: output,
+				maxIterations: 3,
+			});
+		},
+		onSuccess: (res) => {
+			setOutput(res.content ?? "");
+			if (res.ok) {
+				setLastError("");
+				toast.success("Autofix succeeded", {
+					description: `Iterations: ${res.iterations}`,
+				});
+				return;
+			}
+			const errs = (res.errors ?? []).slice(0, 10).join("\n");
+			setLastError(errs || "Autofix failed");
+			toast.error("Autofix did not converge", {
+				description: errs ? errs.split("\n")[0] : "Schema validation failed",
+			});
+		},
+		onError: (e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			setLastError(msg);
+			toast.error("Failed to autofix template", { description: msg });
 		},
 	});
 
@@ -255,12 +309,19 @@ function AITemplatesPage() {
 							</Button>
 							<Button
 								variant="outline"
-								disabled={
-									kind !== "netlab" || !output.trim() || validate.isPending
-								}
+								disabled={!output.trim() || validate.isPending}
 								onClick={() => validate.mutate()}
 							>
-								Validate (Netlab)
+								Validate
+							</Button>
+							<Button
+								variant="outline"
+								disabled={
+									kind !== "containerlab" || !output.trim() || autofix.isPending
+								}
+								onClick={() => autofix.mutate()}
+							>
+								Auto-fix
 							</Button>
 							{lastValidateRunId ? (
 								<Button variant="outline" asChild>
@@ -298,8 +359,9 @@ function AITemplatesPage() {
 							className="min-h-[420px] font-mono text-xs"
 						/>
 						<div className="text-xs text-muted-foreground">
-							For Netlab templates, use Validate to run Skyforge’s netlab
-							validation job against the generated YAML.
+							Validate runs an in-cluster netlab validation job (netlab
+							templates) or containerlab schema validation (containerlab
+							templates).
 						</div>
 					</CardContent>
 				</Card>
