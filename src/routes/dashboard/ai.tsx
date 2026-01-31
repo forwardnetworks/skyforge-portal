@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -20,17 +20,28 @@ import {
 	generateUserAITemplate,
 	getUserAIHistory,
 	getUserGeminiConfig,
+	saveUserAITemplate,
+	validateUserAITemplate,
 } from "@/lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/ai")({
 	component: AITemplatesPage,
 });
 
+function vertexEnableLink(err: string): string | null {
+	const m = err.match(
+		/(https:\/\/console\.cloud\.google\.com\/apis\/library\/aiplatform\.googleapis\.com\?project=[^)\s]+)/,
+	);
+	return m?.[1] ?? null;
+}
+
 function AITemplatesPage() {
 	const [kind, setKind] = useState<"netlab" | "containerlab">("netlab");
 	const [prompt, setPrompt] = useState("");
 	const [seed, setSeed] = useState("");
 	const [output, setOutput] = useState("");
+	const [lastError, setLastError] = useState<string>("");
+	const [lastValidateRunId, setLastValidateRunId] = useState<string>("");
 
 	const geminiCfg = useQuery({
 		queryKey: queryKeys.userGeminiConfig(),
@@ -64,12 +75,63 @@ function AITemplatesPage() {
 		},
 		onSuccess: (res) => {
 			setOutput(res.content ?? "");
+			setLastError("");
 			toast.success("Template generated", { description: res.filename });
 		},
 		onError: (e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			setLastError(msg);
 			toast.error("Failed to generate template", {
-				description: e instanceof Error ? e.message : String(e),
+				description: msg,
 			});
+		},
+	});
+
+	const save = useMutation({
+		mutationFn: async () => {
+			if (!output.trim()) throw new Error("No output to save");
+			return saveUserAITemplate({
+				kind,
+				content: output,
+				pathHint: "ai/generated",
+			});
+		},
+		onSuccess: (res) => {
+			setLastError("");
+			toast.success("Saved to repo", {
+				description: `${res.repo}:${res.path}@${res.branch}`,
+			});
+		},
+		onError: (e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			setLastError(msg);
+			toast.error("Failed to save template", { description: msg });
+		},
+	});
+
+	const validate = useMutation({
+		mutationFn: async () => {
+			if (kind !== "netlab") {
+				throw new Error("Only netlab validation is supported right now");
+			}
+			if (!output.trim()) throw new Error("No output to validate");
+			return validateUserAITemplate({
+				kind: "netlab",
+				content: output,
+			});
+		},
+		onSuccess: (res) => {
+			setLastError("");
+			const runId = res.task?.id != null ? String(res.task.id) : "";
+			setLastValidateRunId(runId);
+			toast.success("Validation started", {
+				description: runId ? `Run: ${runId}` : "Run created",
+			});
+		},
+		onError: (e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			setLastError(msg);
+			toast.error("Failed to validate template", { description: msg });
 		},
 	});
 
@@ -111,6 +173,26 @@ function AITemplatesPage() {
 							<span className="font-mono">AI → Gemini</span>.
 						</div>
 					) : null}
+					{lastError ? (
+						<div className="rounded-md border bg-muted/40 p-3 text-xs">
+							<div className="font-medium">Last error</div>
+							<div className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">
+								{lastError}
+							</div>
+							{vertexEnableLink(lastError) ? (
+								<div className="mt-2">
+									<a
+										className="underline"
+										href={vertexEnableLink(lastError) ?? "#"}
+										target="_blank"
+										rel="noreferrer noopener"
+									>
+										Enable Vertex AI API
+									</a>
+								</div>
+							) : null}
+						</div>
+					) : null}
 				</CardContent>
 			</Card>
 
@@ -122,7 +204,10 @@ function AITemplatesPage() {
 					<CardContent className="space-y-3">
 						<div className="space-y-2">
 							<Label>Template kind</Label>
-							<Select value={kind} onValueChange={(v) => setKind(v as any)}>
+							<Select
+								value={kind}
+								onValueChange={(v) => setKind(v as "netlab" | "containerlab")}
+							>
 								<SelectTrigger>
 									<SelectValue placeholder="Select kind" />
 								</SelectTrigger>
@@ -162,6 +247,32 @@ function AITemplatesPage() {
 								Generate
 							</Button>
 							<Button
+								variant="outline"
+								disabled={!output.trim() || save.isPending}
+								onClick={() => save.mutate()}
+							>
+								Save to Repo
+							</Button>
+							<Button
+								variant="outline"
+								disabled={
+									kind !== "netlab" || !output.trim() || validate.isPending
+								}
+								onClick={() => validate.mutate()}
+							>
+								Validate (Netlab)
+							</Button>
+							{lastValidateRunId ? (
+								<Button variant="outline" asChild>
+									<Link
+										to="/dashboard/runs/$runId"
+										params={{ runId: lastValidateRunId }}
+									>
+										Open run
+									</Link>
+								</Button>
+							) : null}
+							<Button
 								variant="secondary"
 								disabled={output.trim().length === 0}
 								onClick={() => {
@@ -187,8 +298,8 @@ function AITemplatesPage() {
 							className="min-h-[420px] font-mono text-xs"
 						/>
 						<div className="text-xs text-muted-foreground">
-							Validation is coming next; for now Skyforge checks that the output
-							is valid YAML.
+							For Netlab templates, use Validate to run Skyforge’s netlab
+							validation job against the generated YAML.
 						</div>
 					</CardContent>
 				</Card>

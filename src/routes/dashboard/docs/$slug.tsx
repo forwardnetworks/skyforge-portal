@@ -211,7 +211,7 @@ const DOC_PAGES: DocPage[] = [
 				<p>
 					Skyforge can generate Netlab and Containerlab templates using your
 					connected Gemini account. The workflow is intended to be safe and
-					iterative: generate → validate → deploy.
+					iterative: generate → save → validate → deploy.
 				</p>
 				<ol className="list-decimal pl-5 space-y-2">
 					<li>
@@ -229,8 +229,12 @@ const DOC_PAGES: DocPage[] = [
 						and generate a template from a prompt.
 					</li>
 					<li>
-						Copy/download the YAML and use it as a starting point for real
-						deployments.
+						Click <strong>Save to Repo</strong> to store the generated file into
+						your default workspace under <span className="font-mono">ai/</span>.
+					</li>
+					<li>
+						For Netlab templates, click <strong>Validate (Netlab)</strong> and
+						open the resulting run to see the netlab validation output.
 					</li>
 				</ol>
 				<p className="text-xs text-muted-foreground">
@@ -246,7 +250,8 @@ const DOC_PAGES: DocPage[] = [
 							<span className="font-mono">Vertex AI API</span> being disabled,
 							an admin must enable{" "}
 							<span className="font-mono">aiplatform.googleapis.com</span> for
-							the configured project.
+							the configured project. Skyforge often includes a direct “Enable
+							API” link in the error.
 						</li>
 						<li>
 							If you see a permissions error, an admin must grant you Vertex AI

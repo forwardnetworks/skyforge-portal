@@ -577,6 +577,52 @@ export async function getUserAIHistory(): Promise<UserAIHistoryResponse> {
 	return apiFetch<UserAIHistoryResponse>("/api/user/ai/history");
 }
 
+export type UserAISaveRequest = {
+	kind: "netlab" | "containerlab";
+	content: string;
+	pathHint?: string;
+	message?: string;
+};
+
+export type UserAISaveResponse = {
+	workspaceId: string;
+	repo: string;
+	branch: string;
+	path: string;
+};
+
+export async function saveUserAITemplate(
+	payload: UserAISaveRequest,
+): Promise<UserAISaveResponse> {
+	return apiFetch<UserAISaveResponse>("/api/user/ai/save", {
+		method: "POST",
+		body: JSON.stringify(payload),
+	});
+}
+
+export type UserAIValidateRequest = {
+	kind: "netlab";
+	content: string;
+	environment?: Record<string, unknown>;
+	setOverrides?: string[];
+};
+
+export type UserAIValidateResponse = {
+	workspaceId: string;
+	task: {
+		id?: number;
+	} & Record<string, unknown>;
+};
+
+export async function validateUserAITemplate(
+	payload: UserAIValidateRequest,
+): Promise<UserAIValidateResponse> {
+	return apiFetch<UserAIValidateResponse>("/api/user/ai/validate", {
+		method: "POST",
+		body: JSON.stringify(payload),
+	});
+}
+
 export type UserGitCredentialsResponse = {
 	username: string;
 	sshPublicKey: string;
