@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -18,12 +18,14 @@ import { queryKeys } from "@/lib/query-keys";
 import {
 	type UserAIGenerateRequest,
 	autofixUserAITemplate,
+	disconnectUserGemini,
 	generateUserAITemplate,
 	getUserAIHistory,
 	getUserGeminiConfig,
 	saveUserAITemplate,
 	validateUserAITemplate,
 } from "@/lib/skyforge-api";
+import { SKYFORGE_API } from "@/lib/skyforge-config";
 
 export const Route = createFileRoute("/dashboard/ai")({
 	component: AITemplatesPage,
@@ -37,6 +39,7 @@ function vertexEnableLink(err: string): string | null {
 }
 
 function AITemplatesPage() {
+	const qc = useQueryClient();
 	const [kind, setKind] = useState<"netlab" | "containerlab">("netlab");
 	const [prompt, setPrompt] = useState("");
 	const [seed, setSeed] = useState("");
@@ -58,6 +61,18 @@ function AITemplatesPage() {
 
 	const canGenerate =
 		(geminiCfg.data?.enabled ?? false) && (geminiCfg.data?.configured ?? false);
+
+	const disconnect = useMutation({
+		mutationFn: async () => disconnectUserGemini(),
+		onSuccess: async () => {
+			toast.success("Disconnected Gemini");
+			await qc.invalidateQueries({ queryKey: queryKeys.userGeminiConfig() });
+		},
+		onError: (e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			toast.error("Failed to disconnect Gemini", { description: msg });
+		},
+	});
 
 	const generate = useMutation({
 		mutationFn: async () => {
@@ -197,36 +212,73 @@ function AITemplatesPage() {
 	return (
 		<div className="mx-auto w-full max-w-5xl space-y-4 p-4">
 			<div>
-				<h1 className="text-2xl font-bold">AI Templates</h1>
+				<h1 className="text-2xl font-bold">AI</h1>
 				<p className="text-sm text-muted-foreground">
-					Generate Netlab or Containerlab templates using your connected Gemini
-					account.
+					Connect Gemini and generate Netlab or Containerlab templates.
 				</p>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Provider</CardTitle>
+					<CardTitle>Gemini Connection</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-2 text-sm">
-					<div className="flex items-center justify-between">
-						<span className="text-muted-foreground">Gemini</span>
-						<span>
-							{geminiCfg.isLoading
-								? "Loading…"
-								: !geminiCfg.data?.enabled
-									? "Disabled"
-									: geminiCfg.data?.configured
-										? `Connected (${geminiCfg.data?.email ?? "—"})`
-										: "Not connected"}
-						</span>
-					</div>
-					{!canGenerate && (geminiCfg.data?.enabled ?? false) ? (
-						<div className="text-xs text-muted-foreground">
-							Connect Gemini first on{" "}
-							<span className="font-mono">AI → Gemini</span>.
+					{geminiCfg.isLoading ? (
+						<div className="text-sm text-muted-foreground">Loading…</div>
+					) : !geminiCfg.data?.enabled ? (
+						<div className="text-sm text-muted-foreground">
+							Gemini integration is disabled on this Skyforge instance.
 						</div>
-					) : null}
+					) : (
+						<>
+							<dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2">
+								<dt className="text-muted-foreground">Status</dt>
+								<dd className="text-right">
+									{geminiCfg.data?.configured ? "Connected" : "Not connected"}
+								</dd>
+
+								<dt className="text-muted-foreground">Email</dt>
+								<dd className="text-right break-all">
+									{geminiCfg.data?.email ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Scopes</dt>
+								<dd className="text-right break-words">
+									{geminiCfg.data?.scopes ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Updated</dt>
+								<dd className="text-right">{geminiCfg.data?.updatedAt ?? "—"}</dd>
+							</dl>
+
+							<div className="flex items-center gap-2 pt-1">
+								<Button
+									disabled={!geminiCfg.data?.enabled}
+									onClick={() => {
+										window.location.assign(
+											`${SKYFORGE_API}/user/integrations/gemini/connect`,
+										);
+									}}
+								>
+									{geminiCfg.data?.configured ? "Reconnect" : "Connect"}
+								</Button>
+								<Button
+									variant="secondary"
+									disabled={!geminiCfg.data?.configured || disconnect.isPending}
+									onClick={() => disconnect.mutate()}
+								>
+									Disconnect
+								</Button>
+							</div>
+
+							<div className="text-xs text-muted-foreground">
+								Redirect URL:{" "}
+								<span className="font-mono break-all">
+									{geminiCfg.data?.redirectUrl ?? "—"}
+								</span>
+							</div>
+						</>
+					)}
 					{lastError ? (
 						<div className="rounded-md border bg-muted/40 p-3 text-xs">
 							<div className="font-medium">Last error</div>
@@ -252,17 +304,17 @@ function AITemplatesPage() {
 
 			<div className="grid gap-4 md:grid-cols-2">
 				<Card>
-					<CardHeader>
-						<CardTitle>Generate</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3">
+				<CardHeader>
+					<CardTitle>Generate</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-3">
 						<div className="space-y-2">
-							<Label>Template kind</Label>
+							<Label htmlFor="ai-kind">Template kind</Label>
 							<Select
 								value={kind}
 								onValueChange={(v) => setKind(v as "netlab" | "containerlab")}
 							>
-								<SelectTrigger>
+								<SelectTrigger id="ai-kind" aria-label="Template kind">
 									<SelectValue placeholder="Select kind" />
 								</SelectTrigger>
 								<SelectContent>
@@ -272,8 +324,10 @@ function AITemplatesPage() {
 							</Select>
 						</div>
 						<div className="space-y-2">
-							<Label>Prompt</Label>
+							<Label htmlFor="ai-prompt">Prompt</Label>
 							<Textarea
+								id="ai-prompt"
+								name="ai-prompt"
 								value={prompt}
 								onChange={(e) => setPrompt(e.target.value)}
 								placeholder="Describe the topology you want (nodes, links, protocols, constraints)…"
@@ -281,8 +335,10 @@ function AITemplatesPage() {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label>Seed template (optional)</Label>
+							<Label htmlFor="ai-seed">Seed template (optional)</Label>
 							<Textarea
+								id="ai-seed"
+								name="ai-seed"
 								value={seed}
 								onChange={(e) => setSeed(e.target.value)}
 								placeholder="Paste a starting YAML file here to modify…"
@@ -348,15 +404,20 @@ function AITemplatesPage() {
 				</Card>
 
 				<Card>
-					<CardHeader>
-						<CardTitle>Output</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3">
-						<Textarea
-							value={output}
-							readOnly
-							placeholder="Generated YAML will appear here…"
-							className="min-h-[420px] font-mono text-xs"
+				<CardHeader>
+					<CardTitle>Output</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<Label className="sr-only" htmlFor="ai-output">
+						Generated template output
+					</Label>
+					<Textarea
+						id="ai-output"
+						name="ai-output"
+						value={output}
+						readOnly
+						placeholder="Generated YAML will appear here…"
+						className="min-h-[420px] font-mono text-xs"
 						/>
 						<div className="text-xs text-muted-foreground">
 							Validate runs an in-cluster netlab validation job (netlab

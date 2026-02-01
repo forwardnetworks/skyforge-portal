@@ -73,18 +73,26 @@ const items: NavItem[] = [
 		icon: Workflow,
 		children: [
 			{ label: "Overview", href: "/dashboard/integrations", icon: Workflow },
-			{ label: "Collector (Forward)", href: "/dashboard/forward", icon: Radio },
+			{ label: "Forward Collector", href: "/dashboard/forward", icon: Radio },
 			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
 			{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
-		],
-	},
-	{
-		label: "AI",
-		href: "",
-		icon: Sparkles,
-		children: [
-			{ label: "AI Templates", href: "/dashboard/ai", icon: Sparkles },
-			{ label: "Gemini", href: "/dashboard/gemini", icon: Sparkles },
+			{ label: "Git", href: "/git/", icon: GitBranch, external: true },
+			{
+				label: "DNS",
+				href: `${SKYFORGE_API}/dns/sso?next=/dns/`,
+				icon: Network,
+				external: true,
+			},
+			// Default UX: send users directly to the VS Code app inside Coder.
+			{ label: "Coder", href: "/coder/launch", icon: Cloud, external: true },
+			// Admins can still access the full Coder UI for management.
+			{
+				label: "Coder Admin",
+				href: "/coder/",
+				icon: Cloud,
+				external: true,
+				adminOnly: true,
+			},
 		],
 	},
 	{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
@@ -93,37 +101,21 @@ const items: NavItem[] = [
 		href: "",
 		icon: Database,
 		children: [
+			{ label: "AI", href: "/dashboard/ai", icon: Sparkles },
+			{ label: "Webhooks", href: "/webhooks", icon: Webhook },
+			{ label: "Syslog", href: "/syslog", icon: Inbox },
+			{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
+			{
+				label: "API Testing",
+				href: `${SKYFORGE_API}/yaade/sso`,
+				icon: PanelTop,
+				external: true,
+			},
 			{ label: "NetBox", href: "/netbox/", icon: Network, external: true },
 			{ label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
+			{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 		],
 	},
-	{ label: "Webhooks", href: "/webhooks", icon: Webhook },
-	{ label: "Syslog", href: "/syslog", icon: Inbox },
-	{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
-	{ label: "Git", href: "/git/", icon: GitBranch, external: true },
-	{
-		label: "DNS",
-		href: `${SKYFORGE_API}/dns/sso?next=/dns/`,
-		icon: Network,
-		external: true,
-	},
-	// Default UX: send users directly to the VS Code app inside Coder.
-	{ label: "Coder", href: "/coder/launch", icon: Cloud, external: true },
-	// Admins can still access the full Coder UI for management.
-	{
-		label: "Coder Admin",
-		href: "/coder/",
-		icon: Cloud,
-		external: true,
-		adminOnly: true,
-	},
-	{
-		label: "API Testing",
-		href: `${SKYFORGE_API}/yaade/sso`,
-		icon: PanelTop,
-		external: true,
-	},
-	{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 	{
 		label: "Admin Settings",
 		href: "/admin/settings",
@@ -178,21 +170,17 @@ export function SideNav(props: {
 							const f = props.features;
 							if (!f) return [item];
 
-							if (item.label === "Git" && !f.giteaEnabled) return [];
-							if (item.label === "DNS" && !f.dnsEnabled) return [];
-							if (item.label === "Coder" && !f.coderEnabled) return [];
-							if (item.label === "Coder Admin" && !f.coderEnabled) return [];
-							if (item.label === "API Testing" && !f.yaadeEnabled) return [];
-							if (item.label === "Collector (Forward)" && !f.forwardEnabled)
-								return [];
-							if (item.label === "Artifacts" && !f.minioEnabled) return [];
-
 							if (item.label === "Integrations") {
 								const children =
 									item.children?.filter((child) => {
-										if (child.label === "Collector (Forward)")
+										if (child.label === "Forward Collector")
 											return !!f.forwardEnabled;
 										if (child.label === "Artifacts") return !!f.minioEnabled;
+										if (child.label === "Git") return !!f.giteaEnabled;
+										if (child.label === "DNS") return !!f.dnsEnabled;
+										if (child.label === "Coder") return !!f.coderEnabled;
+										if (child.label === "Coder Admin") return !!f.coderEnabled;
+										if (child.adminOnly) return !!props.isAdmin;
 										return true;
 									}) ?? [];
 								if (children.length === 0) return [];
@@ -202,6 +190,7 @@ export function SideNav(props: {
 							if (item.label === "Tools") {
 								const children =
 									item.children?.filter((child) => {
+										if (child.label === "API Testing") return !!f.yaadeEnabled;
 										if (child.label === "NetBox") return !!f.netboxEnabled;
 										if (child.label === "Nautobot") return !!f.nautobotEnabled;
 										return true;
