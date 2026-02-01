@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
 const BASE_URL = (process.env.SKYFORGE_UI_E2E_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
@@ -7,6 +8,9 @@ const ADMIN_TOKEN = (process.env.SKYFORGE_UI_E2E_ADMIN_TOKEN || "").trim();
 const HEADLESS = envBool("SKYFORGE_UI_E2E_HEADLESS", true);
 const TIMEOUT_MS = envInt("SKYFORGE_UI_E2E_TIMEOUT_MS", 15000);
 const SSE_TIMEOUT_MS = envInt("SKYFORGE_UI_E2E_SSE_TIMEOUT_MS", 10000);
+const SCREENSHOTS = envBool("SKYFORGE_UI_E2E_SCREENSHOTS", true);
+const SCREENSHOT_DIR =
+	(process.env.SKYFORGE_UI_E2E_SCREENSHOT_DIR || "e2e-artifacts").trim();
 
 if (!ADMIN_TOKEN) {
 	console.error("Missing SKYFORGE_UI_E2E_ADMIN_TOKEN.");
@@ -24,6 +28,9 @@ const browser = await chromium.launch({ headless: HEADLESS });
 const context = await browser.newContext({
 	viewport: { width: 1440, height: 900 },
 });
+if (SCREENSHOTS) {
+	mkdirSync(SCREENSHOT_DIR, { recursive: true });
+}
 await context.addCookies([{ name: cookie.name, value: cookie.value, url: BASE_URL }]);
 const page = await context.newPage();
 page.setDefaultTimeout(TIMEOUT_MS);
@@ -50,29 +57,44 @@ page.on("response", (resp) => {
 });
 
 try {
-	await visit(page, "/dashboard/deployments", { role: "heading", name: /Deployments/i });
-	await visit(page, "/dashboard/deployments/new", /Create deployment/i);
-	await visit(page, "/dashboard/runs", { placeholder: /Filter runs/i });
-	await visit(page, "/dashboard/workspaces", { role: "heading", name: /Workspaces/i });
-	await visit(page, "/dashboard/workspaces/new", /Create Workspace/i);
+	await visit(page, "/dashboard/deployments", { role: "heading", name: /Deployments/i }, "deployments");
+	await visit(page, "/dashboard/deployments/new", /Create deployment/i, "deployments-new");
+	await visit(page, "/dashboard/runs", { placeholder: /Filter runs/i }, "runs");
+	await visit(page, "/dashboard/workspaces", { role: "heading", name: /Workspaces/i }, "workspaces");
+	await visit(page, "/dashboard/workspaces/new", /Create Workspace/i, "workspaces-new");
 	if (workspaceId) {
-		await visit(page, `/dashboard/workspaces/${encodeURIComponent(workspaceId)}`, { role: "heading", name: /Workspace/i });
+		await visit(
+			page,
+			`/dashboard/workspaces/${encodeURIComponent(workspaceId)}`,
+			{ role: "heading", name: /Workspace/i },
+			"workspace-detail",
+		);
 	}
-	await visit(page, "/dashboard/settings", { role: "heading", name: /My Settings/i });
-	await visit(page, "/dashboard/integrations", { role: "heading", name: /Integrations/i });
-	await visit(page, "/dashboard/forward", { role: "heading", name: /Collector/i });
-	await visit(page, "/dashboard/s3", /S3/i);
-	await visit(page, "/dashboard/labs/designer", /Lab Designer/i);
-	await visit(page, "/dashboard/labs/map", /Lab map/i);
-	await visit(page, "/dashboard/docs", /Docs/i);
-	await visit(page, "/dashboard/ai", { role: "heading", name: /^AI$/i });
-	await visit(page, "/dashboard/claude", { role: "heading", name: /Claude/i });
-	await visit(page, "/dashboard/chatgpt", { role: "heading", name: /ChatGPT/i });
-	await visit(page, "/dashboard/servicenow", { role: "heading", name: /ServiceNow/i });
+	await visit(page, "/dashboard/settings", { role: "heading", name: /My Settings/i }, "settings");
+	await visit(page, "/dashboard/integrations", { role: "heading", name: /Integrations/i }, "integrations");
+	await visit(page, "/dashboard/forward", { role: "heading", name: /Collector/i }, "forward");
+	await visit(page, "/dashboard/s3", /S3/i, "s3");
+	await visit(page, "/dashboard/labs/designer", /Lab Designer/i, "designer");
+	await visit(page, "/dashboard/labs/map", /Lab map/i, "lab-map");
+	await visit(page, "/dashboard/docs", /Docs/i, "docs");
+	await visit(page, "/dashboard/ai", { role: "heading", name: /^AI$/i }, "ai");
+	await visit(page, "/dashboard/claude", { role: "heading", name: /Claude/i }, "claude");
+	await visit(page, "/dashboard/chatgpt", { role: "heading", name: /ChatGPT/i }, "chatgpt");
+	await visit(page, "/dashboard/servicenow", { role: "heading", name: /ServiceNow/i }, "servicenow");
 	if (deploymentIds.length > 0) {
 		const deploymentId = deploymentIds[0];
-		await visit(page, `/dashboard/deployments/${encodeURIComponent(deploymentId)}`, /Deployment/i);
-		await visit(page, `/dashboard/deployments/${encodeURIComponent(deploymentId)}/map`, /Topology|Map|Designer/i);
+		await visit(
+			page,
+			`/dashboard/deployments/${encodeURIComponent(deploymentId)}`,
+			/Deployment/i,
+			"deployment-detail",
+		);
+		await visit(
+			page,
+			`/dashboard/deployments/${encodeURIComponent(deploymentId)}/map`,
+			/Topology|Map|Designer/i,
+			"deployment-map",
+		);
 	}
 } finally {
 	await browser.close();
@@ -106,11 +128,16 @@ if (errors.length > 0 || filteredNetworkErrors.length > 0) {
 
 console.log("UI E2E checks passed.");
 
-async function visit(page, path, expected) {
+let screenshotCounter = 0;
+
+async function visit(page, path, expected, name) {
 	const url = `${BASE_URL}${path}`;
 	await page.goto(url, { waitUntil: "domcontentloaded" });
 	if (expected) {
 		await waitForExpected(page, expected);
+	}
+	if (SCREENSHOTS) {
+		await takeScreenshot(page, name || path);
 	}
 }
 
@@ -134,6 +161,20 @@ async function waitForExpected(page, expected) {
 		}
 	}
 	throw new Error(`Unsupported expected matcher: ${JSON.stringify(expected)}`);
+}
+
+async function takeScreenshot(page, name) {
+	const safeName =
+		String(name || "page")
+			.replace(/[^a-zA-Z0-9_-]+/g, "-")
+			.replace(/^-+|-+$/g, "")
+			.toLowerCase() || "page";
+	screenshotCounter += 1;
+	const filename = `${String(screenshotCounter).padStart(2, "0")}-${safeName}.png`;
+	await page.screenshot({
+		path: `${SCREENSHOT_DIR}/${filename}`,
+		fullPage: true,
+	});
 }
 
 async function seedSession() {
