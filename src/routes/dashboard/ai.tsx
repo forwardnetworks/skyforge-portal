@@ -248,7 +248,9 @@ function AITemplatesPage() {
 								</dd>
 
 								<dt className="text-muted-foreground">Updated</dt>
-								<dd className="text-right">{geminiCfg.data?.updatedAt ?? "—"}</dd>
+								<dd className="text-right">
+									{geminiCfg.data?.updatedAt ?? "—"}
+								</dd>
 							</dl>
 
 							<div className="flex items-center gap-2 pt-1">
@@ -304,10 +306,10 @@ function AITemplatesPage() {
 
 			<div className="grid gap-4 md:grid-cols-2">
 				<Card>
-				<CardHeader>
-					<CardTitle>Generate</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-3">
+					<CardHeader>
+						<CardTitle>Generate</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-3">
 						<div className="space-y-2">
 							<Label htmlFor="ai-kind">Template kind</Label>
 							<Select
@@ -404,20 +406,20 @@ function AITemplatesPage() {
 				</Card>
 
 				<Card>
-				<CardHeader>
-					<CardTitle>Output</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-3">
-					<Label className="sr-only" htmlFor="ai-output">
-						Generated template output
-					</Label>
-					<Textarea
-						id="ai-output"
-						name="ai-output"
-						value={output}
-						readOnly
-						placeholder="Generated YAML will appear here…"
-						className="min-h-[420px] font-mono text-xs"
+					<CardHeader>
+						<CardTitle>Output</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-3">
+						<Label className="sr-only" htmlFor="ai-output">
+							Generated template output
+						</Label>
+						<Textarea
+							id="ai-output"
+							name="ai-output"
+							value={output}
+							readOnly
+							placeholder="Generated YAML will appear here…"
+							className="min-h-[420px] font-mono text-xs"
 						/>
 						<div className="text-xs text-muted-foreground">
 							Validate runs an in-cluster netlab validation job (netlab
