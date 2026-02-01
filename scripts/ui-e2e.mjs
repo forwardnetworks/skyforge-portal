@@ -11,6 +11,7 @@ const SSE_TIMEOUT_MS = envInt("SKYFORGE_UI_E2E_SSE_TIMEOUT_MS", 10000);
 const SCREENSHOTS = envBool("SKYFORGE_UI_E2E_SCREENSHOTS", true);
 const SCREENSHOT_DIR =
 	(process.env.SKYFORGE_UI_E2E_SCREENSHOT_DIR || "e2e-artifacts").trim();
+let screenshotCounter = 0;
 
 if (!ADMIN_TOKEN) {
 	console.error("Missing SKYFORGE_UI_E2E_ADMIN_TOKEN.");
@@ -127,8 +128,6 @@ if (errors.length > 0 || filteredNetworkErrors.length > 0) {
 }
 
 console.log("UI E2E checks passed.");
-
-let screenshotCounter = 0;
 
 async function visit(page, path, expected, name) {
 	const url = `${BASE_URL}${path}`;
