@@ -705,6 +705,75 @@ export async function putUserSettings(payload: {
 	});
 }
 
+export type AwsSsoConfigResponse = {
+	configured: boolean;
+	startUrl?: string;
+	region?: string;
+	accountId?: string;
+	roleName?: string;
+	user: string;
+};
+
+export type AwsSsoStatusResponse = {
+	configured: boolean;
+	connected: boolean;
+	user: string;
+	expiresAt?: ISO8601;
+	lastAuthenticatedAt?: ISO8601;
+};
+
+export type AwsSsoStartResponse = {
+	requestId: string;
+	verificationUriComplete: string;
+	userCode: string;
+	expiresAt: ISO8601;
+	intervalSeconds: number;
+};
+
+export type AwsSsoPollResponse = {
+	status: string;
+	connected?: boolean;
+	expiresAt?: ISO8601;
+	startUrl?: string;
+	region?: string;
+	user?: string;
+};
+
+export type AwsSsoLogoutResponse = {
+	status: string;
+};
+
+export async function getAwsSsoConfig(): Promise<AwsSsoConfigResponse> {
+	return apiFetch<AwsSsoConfigResponse>("/api/aws/sso/config");
+}
+
+export async function getAwsSsoStatus(): Promise<AwsSsoStatusResponse> {
+	return apiFetch<AwsSsoStatusResponse>("/api/aws/sso/status");
+}
+
+export async function startAwsSso(): Promise<AwsSsoStartResponse> {
+	return apiFetch<AwsSsoStartResponse>("/api/aws/sso/start", {
+		method: "POST",
+		body: "{}",
+	});
+}
+
+export async function pollAwsSso(payload: {
+	requestId: string;
+}): Promise<AwsSsoPollResponse> {
+	return apiFetch<AwsSsoPollResponse>("/api/aws/sso/poll", {
+		method: "POST",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function logoutAwsSso(): Promise<AwsSsoLogoutResponse> {
+	return apiFetch<AwsSsoLogoutResponse>("/api/aws/sso/logout", {
+		method: "POST",
+		body: "{}",
+	});
+}
+
 export type UserAWSStaticCredentialsGetResponse = {
 	configured: boolean;
 	accessKeyLast4?: string;
@@ -1331,7 +1400,7 @@ export async function getWorkspaceContainerlabTemplate(
 	);
 }
 
-export async function getWorkspaceLabppTemplates(
+export async function getWorkspaceEveNgTemplates(
 	workspaceId: string,
 	query?: TemplatesQuery,
 ): Promise<WorkspaceTemplatesResponse> {
@@ -1341,7 +1410,7 @@ export async function getWorkspaceLabppTemplates(
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
 	return apiFetch<WorkspaceTemplatesResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/labpp/templates${qs ? `?${qs}` : ""}`,
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve-ng/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
@@ -2399,6 +2468,58 @@ export async function deleteWorkspaceVariableGroup(
 ): Promise<WorkspaceVariableGroupListResponse> {
 	return apiFetch<WorkspaceVariableGroupListResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`,
+		{
+			method: "DELETE",
+		},
+	);
+}
+
+export type UserVariableGroup = {
+	id: number;
+	name: string;
+	variables: Record<string, string>;
+};
+
+export type UserVariableGroupListResponse = {
+	groups: UserVariableGroup[];
+};
+
+export type UserVariableGroupUpsertRequest = {
+	name: string;
+	variables: Record<string, string>;
+};
+
+export async function listUserVariableGroups(): Promise<UserVariableGroupListResponse> {
+	return apiFetch<UserVariableGroupListResponse>("/api/user/variable-groups");
+}
+
+export async function createUserVariableGroup(
+	body: UserVariableGroupUpsertRequest,
+): Promise<UserVariableGroup> {
+	return apiFetch<UserVariableGroup>("/api/user/variable-groups", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function updateUserVariableGroup(
+	groupId: number,
+	body: UserVariableGroupUpsertRequest,
+): Promise<UserVariableGroup> {
+	return apiFetch<UserVariableGroup>(
+		`/api/user/variable-groups/${encodeURIComponent(groupId)}`,
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function deleteUserVariableGroup(
+	groupId: number,
+): Promise<UserVariableGroupListResponse> {
+	return apiFetch<UserVariableGroupListResponse>(
+		`/api/user/variable-groups/${encodeURIComponent(groupId)}`,
 		{
 			method: "DELETE",
 		},

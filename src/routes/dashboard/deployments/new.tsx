@@ -59,13 +59,13 @@ import {
 	type ExternalTemplateRepo,
 	type SkyforgeWorkspace,
 	type WorkspaceTemplatesResponse,
-	type WorkspaceVariableGroup,
+	type UserVariableGroup,
 	createWorkspaceDeployment,
 	getDashboardSnapshot,
 	getUserSettings,
 	getWorkspaceContainerlabTemplate,
 	getWorkspaceContainerlabTemplates,
-	getWorkspaceLabppTemplates,
+	getWorkspaceEveNgTemplates,
 	getWorkspaceNetlabTemplate,
 	getWorkspaceNetlabTemplates,
 	getWorkspaceTerraformTemplates,
@@ -74,7 +74,7 @@ import {
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
-	listWorkspaceVariableGroups,
+	listUserVariableGroups,
 	validateWorkspaceNetlabTemplate,
 } from "../../../lib/skyforge-api";
 
@@ -90,7 +90,7 @@ export const Route = createFileRoute("/dashboard/deployments/new")({
 type DeploymentKind =
 	| "netlab-c9s"
 	| "netlab"
-	| "labpp"
+	| "eve-ng"
 	| "containerlab"
 	| "clabernetes"
 	| "terraform";
@@ -105,7 +105,7 @@ const formSchema = z.object({
 		"containerlab",
 		"clabernetes",
 		"terraform",
-		"labpp",
+		"eve-ng",
 	]),
 	source: z.enum(["workspace", "blueprints", "external"]),
 	templateRepoId: z.string().optional(),
@@ -307,9 +307,8 @@ function CreateDeploymentPage() {
 	});
 
 	const variableGroupsQ = useQuery({
-		queryKey: ["workspaceVariableGroups", watchWorkspaceId],
-		queryFn: async () => listWorkspaceVariableGroups(watchWorkspaceId),
-		enabled: !!watchWorkspaceId,
+		queryKey: queryKeys.userVariableGroups(),
+		queryFn: listUserVariableGroups,
 		staleTime: 30_000,
 	});
 
@@ -357,7 +356,7 @@ function CreateDeploymentPage() {
 	const effectiveSource: TemplateSource = useMemo(() => {
 		if (watchKind === "netlab" || watchKind === "netlab-c9s")
 			return watchSource === "workspace" ? "workspace" : "blueprints";
-		if (watchKind === "labpp") return "blueprints";
+		if (watchKind === "eve-ng") return "blueprints";
 		if (watchKind === "containerlab" || watchKind === "clabernetes")
 			return watchSource;
 		if (watchKind === "terraform") return watchSource;
@@ -384,8 +383,8 @@ function CreateDeploymentPage() {
 				case "netlab":
 				case "netlab-c9s":
 					return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
-				case "labpp":
-					return getWorkspaceLabppTemplates(watchWorkspaceId, query);
+				case "eve-ng":
+					return getWorkspaceEveNgTemplates(watchWorkspaceId, query);
 				case "containerlab":
 				case "clabernetes":
 					return getWorkspaceContainerlabTemplates(watchWorkspaceId, query);
@@ -501,6 +500,7 @@ function CreateDeploymentPage() {
 
 			if (values.variableGroupId && values.variableGroupId !== "none") {
 				config.envGroupIds = [Number.parseInt(values.variableGroupId, 10)];
+				config.envGroupScope = "user";
 			}
 
 			if (values.env && values.env.length > 0) {
@@ -552,7 +552,7 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "labpp") {
+			if (values.kind === "eve-ng") {
 				config.templateSource = "blueprints";
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 				const eve = (values.eveServer || "").trim();
@@ -600,7 +600,7 @@ function CreateDeploymentPage() {
 			const groupIdRaw = String(form.getValues("variableGroupId") ?? "none");
 			const groupId = groupIdRaw !== "none" ? Number(groupIdRaw) : null;
 			const groupVars = groupId
-				? variableGroups.find((g: WorkspaceVariableGroup) => g.id === groupId)
+				? variableGroups.find((g: UserVariableGroup) => g.id === groupId)
 						?.variables
 				: undefined;
 			const env: Record<string, string> = {
@@ -644,7 +644,7 @@ function CreateDeploymentPage() {
 	const userContainerlabOptions = userContainerlabServersQ.data?.servers ?? [];
 	const eveOptions = userEveServersQ.data?.servers ?? [];
 	const variableGroups = (variableGroupsQ.data?.groups ??
-		[]) as WorkspaceVariableGroup[];
+		[]) as UserVariableGroup[];
 	const byosNetlabEnabled = userNetlabOptions.length > 0;
 	const byosContainerlabEnabled = userContainerlabOptions.length > 0;
 	const byosEveEnabled = eveOptions.length > 0;
@@ -785,7 +785,7 @@ function CreateDeploymentPage() {
 														</SelectItem>
 													)}
 													{byosEveEnabled && (
-														<SelectItem value="labpp">LabPP</SelectItem>
+														<SelectItem value="eve-ng">EVE-NG</SelectItem>
 													)}
 													{byosContainerlabEnabled && (
 														<SelectItem value="containerlab">
@@ -994,7 +994,7 @@ function CreateDeploymentPage() {
 									/>
 								)}
 
-								{watchKind === "labpp" && (
+								{watchKind === "eve-ng" && (
 									<FormField
 										control={form.control}
 										name="eveServer"

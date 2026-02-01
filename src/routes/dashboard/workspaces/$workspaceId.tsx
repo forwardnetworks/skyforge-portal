@@ -22,7 +22,6 @@ import {
 	TabsTrigger,
 } from "../../../components/ui/tabs";
 import { Textarea } from "../../../components/ui/textarea";
-import { WorkspaceVariableGroups } from "../../../components/workspace-variable-groups";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type SkyforgeWorkspace,
@@ -400,7 +399,6 @@ function WorkspaceSettingsPage() {
 			<Tabs defaultValue="access" className="space-y-6">
 				<TabsList>
 					<TabsTrigger value="access">Access</TabsTrigger>
-					<TabsTrigger value="variables">Variables</TabsTrigger>
 					<TabsTrigger value="features">Features</TabsTrigger>
 					{allowDelete && <TabsTrigger value="danger">Danger</TabsTrigger>}
 				</TabsList>
@@ -500,13 +498,6 @@ function WorkspaceSettingsPage() {
 							</div>
 						</CardContent>
 					</Card>
-				</TabsContent>
-
-				<TabsContent value="variables" className="space-y-6">
-					<WorkspaceVariableGroups
-						workspaceId={workspaceId}
-						allowEdit={allowEdit}
-					/>
 				</TabsContent>
 
 				<TabsContent value="features" className="space-y-6">

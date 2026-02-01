@@ -52,7 +52,7 @@ import {
 	getWorkspaces,
 	listRegistryRepositories,
 	listRegistryTags,
-	listWorkspaceNetlabServers,
+	listUserContainerlabServers,
 	saveContainerlabTopologyYAML,
 	validateUserAITemplate,
 } from "@/lib/skyforge-api";
@@ -108,6 +108,17 @@ type PaletteItem = {
 };
 
 const paletteMimeType = "application/x-skyforge-palette-item";
+
+function hostLabelFromURL(raw: string): string {
+	const s = String(raw ?? "").trim();
+	if (!s) return "";
+	try {
+		const u = new URL(s);
+		return u.hostname || s;
+	} catch {
+		return s.replace(/^https?:\/\//, "").split("/")[0] ?? s;
+	}
+}
 
 function inferPaletteItemFromRepo(repo: string): PaletteItem {
 	const clean = String(repo ?? "")
@@ -417,7 +428,7 @@ function LabDesignerPage() {
 	const [runtime, setRuntime] = useState<"clabernetes" | "containerlab">(
 		"clabernetes",
 	);
-	const [netlabServer, setNetlabServer] = useState("");
+	const [containerlabServer, setContainerlabServer] = useState("");
 	const [useSavedConfig, setUseSavedConfig] = useState(true);
 	const [lastSaved, setLastSaved] = useState<SavedConfigRef | null>(null);
 	const [templatesDir, setTemplatesDir] = useState("containerlab/designer");
@@ -903,7 +914,7 @@ function LabDesignerPage() {
 				labName,
 				workspaceId,
 				runtime,
-				netlabServer,
+				containerlabServer,
 				useSavedConfig,
 				lastSaved,
 				nodes,
@@ -934,8 +945,10 @@ function LabDesignerPage() {
 				parsed?.runtime === "containerlab"
 			)
 				setRuntime(parsed.runtime);
-			if (typeof parsed?.netlabServer === "string")
-				setNetlabServer(parsed.netlabServer);
+			if (typeof parsed?.containerlabServer === "string")
+				setContainerlabServer(parsed.containerlabServer);
+			else if (typeof parsed?.netlabServer === "string")
+				setContainerlabServer(parsed.netlabServer);
 			if (typeof parsed?.useSavedConfig === "boolean")
 				setUseSavedConfig(parsed.useSavedConfig);
 			if (parsed?.lastSaved && typeof parsed.lastSaved === "object")
@@ -964,12 +977,10 @@ function LabDesignerPage() {
 		staleTime: 60_000,
 	});
 
-	const netlabServersQ = useQuery({
-		queryKey: workspaceId
-			? queryKeys.workspaceNetlabServers(workspaceId)
-			: ["workspaceNetlabServers", "none"],
-		queryFn: async () => listWorkspaceNetlabServers(workspaceId),
-		enabled: Boolean(workspaceId) && runtime === "containerlab",
+	const containerlabServersQ = useQuery({
+		queryKey: queryKeys.userContainerlabServers(),
+		queryFn: listUserContainerlabServers,
+		enabled: runtime === "containerlab",
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -1048,10 +1059,11 @@ function LabDesignerPage() {
 					});
 
 			if (runtime === "containerlab") {
-				if (!netlabServer) throw new Error("Select a netlab server");
+				if (!containerlabServer)
+					throw new Error("Select a containerlab server");
 				return createContainerlabDeploymentFromTemplate(workspaceId, {
 					name: labName,
-					netlabServer,
+					netlabServer: containerlabServer,
 					templateSource: "workspace",
 					templatesDir: saved.templatesDir,
 					template: saved.template,
@@ -1284,9 +1296,11 @@ function LabDesignerPage() {
 	const nodeTypes = useMemo(() => ({ designerNode: DesignerNode }), []);
 
 	const paletteBaseItems = useMemo(() => {
-		const repos = registryReposQ.data?.repositories ?? [];
+		const repos = registryReposQ.isError
+			? []
+			: registryReposQ.data?.repositories ?? [];
 		return repos.map(inferPaletteItemFromRepo);
-	}, [registryReposQ.data?.repositories]);
+	}, [registryReposQ.data?.repositories, registryReposQ.isError]);
 
 	const paletteVendors = useMemo(() => {
 		const set = new Set<string>();
@@ -1472,11 +1486,7 @@ function LabDesignerPage() {
 									</Select>
 								</div>
 								<div className="mt-3 space-y-2">
-									{registryReposQ.isError ? (
-										<div className="rounded-lg border bg-background px-3 py-2 text-xs text-destructive">
-											Registry not available.
-										</div>
-									) : registryReposQ.isLoading ? (
+									{registryReposQ.isLoading ? (
 										<div className="rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground">
 											Loading images…
 										</div>
@@ -2034,10 +2044,10 @@ function LabDesignerPage() {
 								/>
 							</div>
 							<div className="space-y-1">
-								<Label>Netlab server</Label>
+								<Label>Containerlab server</Label>
 								<Select
-									value={netlabServer}
-									onValueChange={(v) => setNetlabServer(v)}
+									value={containerlabServer}
+									onValueChange={(v) => setContainerlabServer(v)}
 									disabled={!workspaceId || runtime !== "containerlab"}
 								>
 									<SelectTrigger>
@@ -2047,19 +2057,19 @@ function LabDesignerPage() {
 													? "Not required for clabernetes…"
 													: !workspaceId
 														? "Select workspace first…"
-														: netlabServersQ.isLoading
+														: containerlabServersQ.isLoading
 															? "Loading…"
 															: "Select server…"
 											}
 										/>
 									</SelectTrigger>
 									<SelectContent>
-										{(netlabServersQ.data?.servers ?? []).map((s: any) => (
+										{(containerlabServersQ.data?.servers ?? []).map((s: any) => (
 											<SelectItem
 												key={String(s.id)}
-												value={`ws:${String(s.id)}`}
+												value={`user:${String(s.id)}`}
 											>
-												{String(s.name)}
+												{hostLabelFromURL(s.apiUrl) || s.name}
 											</SelectItem>
 										))}
 									</SelectContent>

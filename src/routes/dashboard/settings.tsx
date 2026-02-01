@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Loader2, Save, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -21,6 +21,7 @@ import {
 	FormMessage,
 } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
+import { UserVariableGroups } from "../../components/user-variable-groups";
 import {
 	Select,
 	SelectContent,
@@ -36,7 +37,6 @@ import {
 } from "../../lib/netlab-env";
 import { queryKeys } from "../../lib/query-keys";
 import {
-	deleteUserAWSSSOCredentials,
 	deleteUserAWSStaticCredentials,
 	deleteUserAzureCredentials,
 	deleteUserContainerlabServer,
@@ -44,7 +44,8 @@ import {
 	deleteUserGCPCredentials,
 	deleteUserIBMCredentials,
 	deleteUserNetlabServer,
-	getUserAWSSSOCredentials,
+	getAwsSsoConfig,
+	getAwsSsoStatus,
 	getUserAWSStaticCredentials,
 	getUserAzureCredentials,
 	getUserGCPCredentials,
@@ -56,7 +57,9 @@ import {
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
-	putUserAWSSSOCredentials,
+	logoutAwsSso,
+	pollAwsSso,
+	startAwsSso,
 	putUserAWSStaticCredentials,
 	putUserAzureCredentials,
 	putUserGCPCredentials,
@@ -176,9 +179,15 @@ function UserSettingsPage() {
 		staleTime: 10_000,
 		retry: false,
 	});
-	const awsSsoQ = useQuery({
-		queryKey: queryKeys.userAwsSsoCredentials(),
-		queryFn: getUserAWSSSOCredentials,
+	const awsSsoConfigQ = useQuery({
+		queryKey: queryKeys.awsSsoConfig(),
+		queryFn: getAwsSsoConfig,
+		staleTime: 10_000,
+		retry: false,
+	});
+	const awsSsoStatusQ = useQuery({
+		queryKey: queryKeys.awsSsoStatus(),
+		queryFn: getAwsSsoStatus,
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -236,11 +245,6 @@ function UserSettingsPage() {
 
 	const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
 	const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
-
-	const [awsSsoStartUrl, setAwsSsoStartUrl] = useState("");
-	const [awsSsoRegion, setAwsSsoRegion] = useState("");
-	const [awsSsoAccountId, setAwsSsoAccountId] = useState("");
-	const [awsSsoRoleName, setAwsSsoRoleName] = useState("");
 
 	const [azureTenantId, setAzureTenantId] = useState("");
 	const [azureClientId, setAzureClientId] = useState("");
@@ -313,43 +317,94 @@ function UserSettingsPage() {
 			}),
 	});
 
-	const saveAwsSsoM = useMutation({
-		mutationFn: async () =>
-			putUserAWSSSOCredentials({
-				startUrl: awsSsoStartUrl.trim(),
-				region: awsSsoRegion.trim(),
-				accountId: awsSsoAccountId.trim(),
-				roleName: awsSsoRoleName.trim(),
-			}),
-		onSuccess: async () => {
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.userAwsSsoCredentials(),
-			});
-			toast.success("AWS SSO config saved");
+	const [awsSsoSession, setAwsSsoSession] = useState<{
+		requestId: string;
+		verificationUriComplete: string;
+		userCode: string;
+		expiresAt: string;
+		intervalSeconds: number;
+	} | null>(null);
+	const [awsSsoPollStatus, setAwsSsoPollStatus] = useState<string>("");
+
+	const startAwsSsoM = useMutation({
+		mutationFn: startAwsSso,
+		onSuccess: (resp) => {
+			setAwsSsoSession(resp);
+			setAwsSsoPollStatus("pending");
+			window.open(resp.verificationUriComplete, "_blank", "noopener,noreferrer");
 		},
 		onError: (err: unknown) =>
-			toast.error("Failed to save AWS SSO config", {
+			toast.error("Failed to start AWS SSO", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
 
-	const deleteAwsSsoM = useMutation({
-		mutationFn: async () => deleteUserAWSSSOCredentials(),
+	const logoutAwsSsoM = useMutation({
+		mutationFn: logoutAwsSso,
 		onSuccess: async () => {
-			setAwsSsoStartUrl("");
-			setAwsSsoRegion("");
-			setAwsSsoAccountId("");
-			setAwsSsoRoleName("");
+			setAwsSsoSession(null);
+			setAwsSsoPollStatus("");
 			await queryClient.invalidateQueries({
-				queryKey: queryKeys.userAwsSsoCredentials(),
+				queryKey: queryKeys.awsSsoStatus(),
 			});
-			toast.success("AWS SSO config deleted");
+			toast.success("AWS SSO disconnected");
 		},
 		onError: (err: unknown) =>
-			toast.error("Failed to delete AWS SSO config", {
+			toast.error("Failed to disconnect AWS SSO", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
+
+	useEffect(() => {
+		if (!awsSsoSession || !awsSsoSession.requestId) return;
+		let cancelled = false;
+		let timeout: ReturnType<typeof setTimeout> | null = null;
+
+		const pollOnce = async () => {
+			try {
+				const resp = await pollAwsSso({
+					requestId: awsSsoSession.requestId,
+				});
+				if (cancelled) return;
+				setAwsSsoPollStatus(resp.status);
+				if (resp.status === "ok") {
+					setAwsSsoSession(null);
+					await queryClient.invalidateQueries({
+						queryKey: queryKeys.awsSsoStatus(),
+					});
+					toast.success("AWS SSO connected");
+					return;
+				}
+				if (resp.status === "pending") {
+					timeout = setTimeout(
+						pollOnce,
+						Math.max(1, awsSsoSession.intervalSeconds) * 1000,
+					);
+					return;
+				}
+				setAwsSsoSession(null);
+				toast.error("AWS SSO authorization did not complete", {
+					description: resp.status,
+				});
+			} catch (err) {
+				if (cancelled) return;
+				setAwsSsoSession(null);
+				toast.error("AWS SSO polling failed", {
+					description: err instanceof Error ? err.message : String(err),
+				});
+			}
+		};
+
+		timeout = setTimeout(
+			pollOnce,
+			Math.max(1, awsSsoSession.intervalSeconds) * 1000,
+		);
+
+		return () => {
+			cancelled = true;
+			if (timeout) clearTimeout(timeout);
+		};
+	}, [awsSsoSession, queryClient]);
 
 	const saveAzureM = useMutation({
 		mutationFn: async () =>
@@ -943,6 +998,8 @@ function UserSettingsPage() {
 				</form>
 			</Form>
 
+			<UserVariableGroups allowEdit={true} />
+
 			<Card>
 				<CardHeader>
 					<CardTitle>Cloud Credentials</CardTitle>
@@ -990,46 +1047,73 @@ function UserSettingsPage() {
 
 						<div className="rounded border p-4 space-y-3">
 							<div className="flex items-center justify-between">
-								<div className="text-sm font-medium">AWS (SSO config)</div>
+								<div className="text-sm font-medium">AWS (SSO)</div>
 								<div className="text-xs text-muted-foreground">
-									{awsSsoQ.data?.configured ? "Configured" : "Not configured"}
+									{awsSsoConfigQ.data?.configured
+										? awsSsoStatusQ.data?.connected
+											? "Connected"
+											: "Not connected"
+										: "Not configured"}
 								</div>
 							</div>
-							<Input
-								placeholder="Start URL"
-								value={awsSsoStartUrl}
-								onChange={(e) => setAwsSsoStartUrl(e.target.value)}
-							/>
-							<Input
-								placeholder="Region"
-								value={awsSsoRegion}
-								onChange={(e) => setAwsSsoRegion(e.target.value)}
-							/>
-							<Input
-								placeholder="Account ID"
-								value={awsSsoAccountId}
-								onChange={(e) => setAwsSsoAccountId(e.target.value)}
-							/>
-							<Input
-								placeholder="Role name"
-								value={awsSsoRoleName}
-								onChange={(e) => setAwsSsoRoleName(e.target.value)}
-							/>
+							{awsSsoStatusQ.data?.lastAuthenticatedAt ? (
+								<div className="text-xs text-muted-foreground">
+									Last authenticated:{" "}
+									<span className="font-mono">
+										{awsSsoStatusQ.data.lastAuthenticatedAt}
+									</span>
+								</div>
+							) : null}
+							{awsSsoStatusQ.data?.expiresAt ? (
+								<div className="text-xs text-muted-foreground">
+									Expires:{" "}
+									<span className="font-mono">
+										{awsSsoStatusQ.data.expiresAt}
+									</span>
+								</div>
+							) : null}
+							{awsSsoSession ? (
+								<div className="rounded border bg-muted/30 p-3 text-xs space-y-1">
+									<div className="font-medium">Complete sign-in</div>
+									<div>
+										Code:{" "}
+										<span className="font-mono">{awsSsoSession.userCode}</span>
+									</div>
+									<div className="text-muted-foreground">
+										Open:{" "}
+										<span className="font-mono break-all">
+											{awsSsoSession.verificationUriComplete}
+										</span>
+									</div>
+									{awsSsoPollStatus ? (
+										<div className="text-muted-foreground">
+											Status: {awsSsoPollStatus}
+										</div>
+									) : null}
+								</div>
+							) : null}
 							<div className="flex gap-2">
 								<Button
 									type="button"
-									onClick={() => saveAwsSsoM.mutate()}
-									disabled={saveAwsSsoM.isPending}
+									onClick={() => startAwsSsoM.mutate()}
+									disabled={
+										!awsSsoConfigQ.data?.configured ||
+										startAwsSsoM.isPending ||
+										!!awsSsoSession
+									}
 								>
-									Save
+									Connect
 								</Button>
 								<Button
 									type="button"
 									variant="outline"
-									onClick={() => deleteAwsSsoM.mutate()}
-									disabled={deleteAwsSsoM.isPending}
+									onClick={() => logoutAwsSsoM.mutate()}
+									disabled={
+										!awsSsoStatusQ.data?.connected ||
+										logoutAwsSsoM.isPending
+									}
 								>
-									Delete
+									Disconnect
 								</Button>
 							</div>
 						</div>
