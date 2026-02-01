@@ -475,6 +475,7 @@ function LabDesignerPage() {
 	const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number } | null>(
 		null,
 	);
+	const [showWarnings, setShowWarnings] = useState(false);
 
 	const [nodes, setNodes, onNodesChange] = useNodesState<DesignNode>([
 		{
@@ -485,6 +486,23 @@ function LabDesignerPage() {
 		},
 	]);
 	const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+	const markWarningsVisible = useCallback(() => {
+		setShowWarnings(true);
+	}, []);
+	const onNodesChangeWithWarnings = useCallback(
+		(changes: any[]) => {
+			if (changes.some((c) => c.type !== "select")) markWarningsVisible();
+			onNodesChange(changes);
+		},
+		[markWarningsVisible, onNodesChange],
+	);
+	const onEdgesChangeWithWarnings = useCallback(
+		(changes: any[]) => {
+			if (changes.some((c) => c.type !== "select")) markWarningsVisible();
+			onEdgesChange(changes);
+		},
+		[markWarningsVisible, onEdgesChange],
+	);
 
 	const selectedNode = useMemo(
 		() => nodes.find((n) => n.id === selectedNodeId) ?? null,
@@ -512,6 +530,14 @@ function LabDesignerPage() {
 	const { yaml, warnings } = useMemo(
 		() => designToContainerlabYaml(design),
 		[design],
+	);
+	const missingImageWarnings = useMemo(
+		() => warnings.filter((w) => w.toLowerCase().includes("missing image")),
+		[warnings],
+	);
+	const otherWarnings = useMemo(
+		() => warnings.filter((w) => !w.toLowerCase().includes("missing image")),
+		[warnings],
 	);
 	const effectiveYaml = useMemo(() => {
 		if (yamlMode === "custom") return String(customYaml ?? "");
@@ -1219,6 +1245,7 @@ function LabDesignerPage() {
 			data: { label: id, kind, image },
 			type: "designerNode",
 		};
+		markWarningsVisible();
 		setNodes((prev) => [...prev, next]);
 		setSelectedNodeId(id);
 	};
@@ -1344,6 +1371,11 @@ function LabDesignerPage() {
 			return a.label.localeCompare(b.label);
 		});
 	}, [paletteBaseItems, paletteRole, paletteSearch, paletteVendor]);
+	const paletteHasBaseItems = paletteBaseItems.length > 0;
+	const paletteIsFilteredEmpty = paletteHasBaseItems && paletteItems.length === 0;
+	const registryError = registryReposQ.isError
+		? (registryReposQ.error as Error)?.message || "Registry unavailable."
+		: "";
 
 	return (
 		<div className="h-full w-full p-4 flex flex-col gap-4 min-h-0">
@@ -1492,7 +1524,35 @@ function LabDesignerPage() {
 										</div>
 									) : paletteItems.length === 0 ? (
 										<div className="rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground">
-											No images found.
+											{registryReposQ.isError ? (
+												<div className="space-y-1">
+													<div className="font-medium text-foreground">
+														Registry not available
+													</div>
+													<div>{registryError}</div>
+													<div>
+														Set SKYFORGE_REGISTRY_URL (e.g.
+														https://ghcr.io) and optional credentials.
+													</div>
+												</div>
+											) : paletteIsFilteredEmpty ? (
+												<div className="space-y-1">
+													<div className="font-medium text-foreground">
+														No matches
+													</div>
+													<div>Try clearing filters or search terms.</div>
+												</div>
+											) : (
+												<div className="space-y-1">
+													<div className="font-medium text-foreground">
+														No images yet
+													</div>
+													<div>
+														Add container images to your registry (e.g.
+														GHCR) or adjust registry repo prefixes.
+													</div>
+												</div>
+											)}
 										</div>
 									) : (
 										<div className="space-y-3">
@@ -1559,8 +1619,8 @@ function LabDesignerPage() {
 								<ReactFlow<Node<DesignNodeData>, Edge>
 									nodes={nodes}
 									edges={edges}
-									onNodesChange={onNodesChange}
-									onEdgesChange={onEdgesChange}
+								onNodesChange={onNodesChangeWithWarnings}
+								onEdgesChange={onEdgesChangeWithWarnings}
 									onConnect={(c) => {
 										const label =
 											c.source && c.target
@@ -2076,6 +2136,10 @@ function LabDesignerPage() {
 										)}
 									</SelectContent>
 								</Select>
+								<div className="text-xs text-muted-foreground">
+									Only required for Containerlab (BYOS). Configure in My Settings
+									-> BYOL Servers.
+								</div>
 							</div>
 							<div>
 								<Button
@@ -2125,6 +2189,7 @@ function LabDesignerPage() {
 											)}
 											onChange={(e) => {
 												const v = e.target.value;
+												markWarningsVisible();
 												setNodes((prev) =>
 													prev.map((n) =>
 														n.id === selectedNode.id
@@ -2155,6 +2220,7 @@ function LabDesignerPage() {
 									<RegistryImagePicker
 										value={String((selectedNode.data as any)?.image ?? "")}
 										onChange={(image) => {
+											markWarningsVisible();
 											setNodes((prev) =>
 												prev.map((n) =>
 													n.id === selectedNode.id
@@ -2224,11 +2290,17 @@ function LabDesignerPage() {
 									Custom
 								</Button>
 							</div>
-							{warnings.length ? (
+							{otherWarnings.length ||
+							(showWarnings && missingImageWarnings.length) ? (
 								<div className="rounded-md border bg-amber-500/10 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
-									{warnings.slice(0, 6).map((w) => (
+									{otherWarnings.slice(0, 6).map((w) => (
 										<div key={w}>{w}</div>
 									))}
+									{showWarnings
+										? missingImageWarnings.slice(0, 6).map((w) => (
+												<div key={w}>{w}</div>
+											))
+										: null}
 								</div>
 							) : null}
 							{validateYaml.isError ? (
