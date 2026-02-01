@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Info, Loader2, Plus, Trash2 } from "lucide-react";
+import { Download, Info, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -75,6 +75,9 @@ import {
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
 	listUserVariableGroups,
+	listWorkspaceEveLabs,
+	importWorkspaceEveLab,
+	convertWorkspaceEveLab,
 	validateWorkspaceNetlabTemplate,
 } from "../../../lib/skyforge-api";
 
@@ -90,7 +93,7 @@ export const Route = createFileRoute("/dashboard/deployments/new")({
 type DeploymentKind =
 	| "netlab-c9s"
 	| "netlab"
-	| "eve-ng"
+	| "eve_ng"
 	| "containerlab"
 	| "clabernetes"
 	| "terraform";
@@ -105,7 +108,7 @@ const formSchema = z.object({
 		"containerlab",
 		"clabernetes",
 		"terraform",
-		"eve-ng",
+		"eve_ng",
 	]),
 	source: z.enum(["workspace", "blueprints", "external"]),
 	templateRepoId: z.string().optional(),
@@ -137,6 +140,13 @@ function CreateDeploymentPage() {
 	const [terraformProviderFilter, setTerraformProviderFilter] =
 		useState<string>("all");
 	const [step, setStep] = useState<0 | 1 | 2>(0);
+	const [importOpen, setImportOpen] = useState(false);
+	const [importServer, setImportServer] = useState("");
+	const [importLabPath, setImportLabPath] = useState("");
+	const [importDeploymentName, setImportDeploymentName] = useState("");
+	const [importCreateContainerlab, setImportCreateContainerlab] =
+		useState(false);
+	const [importContainerlabServer, setImportContainerlabServer] = useState("");
 
 	useDashboardEvents(true);
 	const dash = useQuery<DashboardSnapshot | null>({
@@ -306,6 +316,23 @@ function CreateDeploymentPage() {
 		retry: false,
 	});
 
+	const eveLabsQ = useQuery({
+		queryKey: queryKeys.workspaceEveLabs(
+			watchWorkspaceId,
+			importServer,
+			"",
+			true,
+		),
+		queryFn: () =>
+			listWorkspaceEveLabs(watchWorkspaceId, {
+				server: importServer,
+				recursive: true,
+			}),
+		enabled: Boolean(importOpen && watchWorkspaceId && importServer),
+		staleTime: 30_000,
+		retry: false,
+	});
+
 	const variableGroupsQ = useQuery({
 		queryKey: queryKeys.userVariableGroups(),
 		queryFn: listUserVariableGroups,
@@ -356,7 +383,7 @@ function CreateDeploymentPage() {
 	const effectiveSource: TemplateSource = useMemo(() => {
 		if (watchKind === "netlab" || watchKind === "netlab-c9s")
 			return watchSource === "workspace" ? "workspace" : "blueprints";
-		if (watchKind === "eve-ng") return "blueprints";
+		if (watchKind === "eve_ng") return "blueprints";
 		if (watchKind === "containerlab" || watchKind === "clabernetes")
 			return watchSource;
 		if (watchKind === "terraform") return watchSource;
@@ -383,7 +410,7 @@ function CreateDeploymentPage() {
 				case "netlab":
 				case "netlab-c9s":
 					return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
-				case "eve-ng":
+				case "eve_ng":
 					return getWorkspaceEveNgTemplates(watchWorkspaceId, query);
 				case "containerlab":
 				case "clabernetes":
@@ -552,7 +579,7 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "eve-ng") {
+			if (values.kind === "eve_ng") {
 				config.templateSource = "blueprints";
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 				const eve = (values.eveServer || "").trim();
@@ -581,6 +608,86 @@ function CreateDeploymentPage() {
 		},
 		onError: (error) => {
 			toast.error("Failed to create deployment", {
+				description: (error as Error).message,
+			});
+		},
+	});
+
+	const importEveLab = useMutation({
+		mutationFn: async () => {
+			if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+			const server = importServer.trim();
+			if (!server) throw new Error("Select an EVE-NG server.");
+			const labPath = importLabPath.trim();
+			if (!labPath) throw new Error("Select an EVE-NG lab.");
+			return importWorkspaceEveLab(watchWorkspaceId, {
+				server,
+				labPath,
+				deploymentName: importDeploymentName.trim() || undefined,
+			});
+		},
+		onSuccess: async (deployment) => {
+			toast.success("EVE-NG lab imported", {
+				description: deployment?.name ?? "Deployment created.",
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.dashboardSnapshot(),
+			});
+			setImportOpen(false);
+			await navigate({
+				to: "/dashboard/deployments",
+				search: { workspace: watchWorkspaceId },
+			});
+		},
+		onError: (error) => {
+			toast.error("Failed to import EVE-NG lab", {
+				description: (error as Error).message,
+			});
+		},
+	});
+
+	const convertEveLab = useMutation({
+		mutationFn: async () => {
+			if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+			const server = importServer.trim();
+			if (!server) throw new Error("Select an EVE-NG server.");
+			const labPath = importLabPath.trim();
+			if (!labPath) throw new Error("Select an EVE-NG lab.");
+			const createDeployment = importCreateContainerlab;
+			const containerlabServer = importContainerlabServer.trim();
+			if (createDeployment && !containerlabServer) {
+				throw new Error("Select a Containerlab server.");
+			}
+			return convertWorkspaceEveLab(watchWorkspaceId, {
+				server,
+				labPath,
+				createDeployment,
+				containerlabServer: createDeployment ? containerlabServer : undefined,
+			});
+		},
+		onSuccess: async (resp) => {
+			const warnings = resp?.warnings ?? [];
+			toast.success("Containerlab template created", {
+				description: resp?.path ?? "Template saved.",
+			});
+			if (warnings.length > 0) {
+				toast.message("Conversion warnings", {
+					description: warnings.slice(0, 3).join(" | "),
+				});
+			}
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.dashboardSnapshot(),
+			});
+			setImportOpen(false);
+			if (resp?.deployment) {
+				await navigate({
+					to: "/dashboard/deployments",
+					search: { workspace: watchWorkspaceId },
+				});
+			}
+		},
+		onError: (error) => {
+			toast.error("Failed to convert EVE-NG lab", {
 				description: (error as Error).message,
 			});
 		},
@@ -648,6 +755,29 @@ function CreateDeploymentPage() {
 	const byosNetlabEnabled = userNetlabOptions.length > 0;
 	const byosContainerlabEnabled = userContainerlabOptions.length > 0;
 	const byosEveEnabled = eveOptions.length > 0;
+	useEffect(() => {
+		if (!importOpen) return;
+		if (!importServer && eveOptions.length > 0) {
+			setImportServer(`user:${eveOptions[0].id}`);
+		}
+	}, [importOpen, importServer, eveOptions]);
+
+	useEffect(() => {
+		if (!importOpen) return;
+		setImportLabPath("");
+	}, [importOpen, importServer]);
+
+	useEffect(() => {
+		if (!importOpen || !importCreateContainerlab) return;
+		if (!importContainerlabServer && userContainerlabOptions.length > 0) {
+			setImportContainerlabServer(`user:${userContainerlabOptions[0].id}`);
+		}
+	}, [
+		importOpen,
+		importCreateContainerlab,
+		importContainerlabServer,
+		userContainerlabOptions,
+	]);
 	const byosNetlabServerRefs = useMemo(() => {
 		return userNetlabOptions
 			.filter((s) => !!s?.id)
@@ -664,6 +794,15 @@ function CreateDeploymentPage() {
 				label: hostLabelFromURL(s.apiUrl) || s.name,
 			}));
 	}, [userContainerlabOptions]);
+	const eveLabOptions = useMemo(() => {
+		const labs = eveLabsQ.data?.labs ?? [];
+		return labs
+			.map((lab) => ({
+				value: lab.path,
+				label: lab.folder ? `${lab.folder}/${lab.name}` : lab.name,
+			}))
+			.sort((a, b) => a.label.localeCompare(b.label));
+	}, [eveLabsQ.data?.labs]);
 	const byosServerRefs =
 		watchKind === "netlab"
 			? byosNetlabServerRefs
@@ -696,6 +835,28 @@ function CreateDeploymentPage() {
 					</div>
 				</CardHeader>
 			</Card>
+
+			{byosEveEnabled && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Import from EVE-NG</CardTitle>
+						<CardDescription>
+							Register an existing EVE-NG lab as a deployment or convert it into
+							a Containerlab template.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="flex flex-wrap items-center justify-between gap-3">
+						<div className="text-sm text-muted-foreground">
+							Select an EVE-NG lab and import it into Skyforge without
+							rebuilding the topology.
+						</div>
+						<Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
+							<Download className="mr-2 h-4 w-4" />
+							Import EVE-NG lab
+						</Button>
+					</CardContent>
+				</Card>
+			)}
 
 			<Card>
 				<CardContent className="pt-6">
@@ -785,7 +946,7 @@ function CreateDeploymentPage() {
 														</SelectItem>
 													)}
 													{byosEveEnabled && (
-														<SelectItem value="eve-ng">EVE-NG</SelectItem>
+														<SelectItem value="eve_ng">EVE-NG</SelectItem>
 													)}
 													{byosContainerlabEnabled && (
 														<SelectItem value="containerlab">
@@ -994,7 +1155,7 @@ function CreateDeploymentPage() {
 									/>
 								)}
 
-								{watchKind === "eve-ng" && (
+								{watchKind === "eve_ng" && (
 									<FormField
 										control={form.control}
 										name="eveServer"
@@ -1557,6 +1718,150 @@ function CreateDeploymentPage() {
 					</Form>
 				</CardContent>
 			</Card>
+
+			<Dialog open={importOpen} onOpenChange={setImportOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>Import EVE-NG lab</DialogTitle>
+						<DialogDescription>
+							Pull an existing EVE-NG lab into Skyforge or convert it into a
+							Containerlab template.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="grid gap-4">
+						<div className="grid gap-2">
+							<FormLabel>EVE-NG server</FormLabel>
+							<Select value={importServer} onValueChange={setImportServer}>
+								<SelectTrigger>
+									<SelectValue placeholder="Select EVE-NG server" />
+								</SelectTrigger>
+								<SelectContent>
+									{eveOptions.map((s) => (
+										<SelectItem key={s.id} value={`user:${s.id}`}>
+											{hostLabelFromURL(s.apiUrl) || s.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<FormDescription>
+								Configure EVE-NG servers in Settings if none appear.
+							</FormDescription>
+						</div>
+
+						<div className="grid gap-2">
+							<FormLabel>EVE-NG lab</FormLabel>
+							<Select value={importLabPath} onValueChange={setImportLabPath}>
+								<SelectTrigger>
+									<SelectValue placeholder="Select lab" />
+								</SelectTrigger>
+								<SelectContent>
+									{eveLabsQ.isLoading && (
+										<div className="px-3 py-2 text-xs text-muted-foreground">
+											Loading labs…
+										</div>
+									)}
+									{!eveLabsQ.isLoading && eveLabOptions.length === 0 && (
+										<div className="px-3 py-2 text-xs text-muted-foreground">
+											No labs found.
+										</div>
+									)}
+									{eveLabOptions.map((lab) => (
+										<SelectItem key={lab.value} value={lab.value}>
+											{lab.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							{eveLabsQ.isError && (
+								<div className="text-xs text-destructive">
+									Failed to load labs.
+								</div>
+							)}
+						</div>
+
+						<div className="grid gap-2">
+							<FormLabel>Deployment name</FormLabel>
+							<Input
+								value={importDeploymentName}
+								onChange={(e) => setImportDeploymentName(e.target.value)}
+								placeholder="Optional override"
+							/>
+							<FormDescription>
+								Defaults to the EVE-NG lab name if left empty.
+							</FormDescription>
+						</div>
+
+						<div className="flex items-start justify-between gap-3 rounded-md border p-3">
+							<div className="space-y-1">
+								<FormLabel className="text-sm">Create Containerlab deployment</FormLabel>
+								<FormDescription>
+									Generate a Containerlab template and optionally create a
+									deployment.
+								</FormDescription>
+							</div>
+							<Switch
+								checked={importCreateContainerlab}
+								onCheckedChange={setImportCreateContainerlab}
+							/>
+						</div>
+
+						{importCreateContainerlab && (
+							<div className="grid gap-2">
+								<FormLabel>Containerlab server</FormLabel>
+								<Select
+									value={importContainerlabServer}
+									onValueChange={setImportContainerlabServer}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select Containerlab server" />
+									</SelectTrigger>
+									<SelectContent>
+										{byosContainerlabServerRefs.map((s) => (
+											<SelectItem key={s.value} value={s.value}>
+												{s.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<FormDescription>
+									Required to create a Containerlab deployment.
+								</FormDescription>
+							</div>
+						)}
+					</div>
+
+					<div className="flex flex-wrap justify-end gap-2 pt-2">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setImportOpen(false)}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="button"
+							variant="secondary"
+							onClick={() => importEveLab.mutate()}
+							disabled={importEveLab.isPending || convertEveLab.isPending}
+						>
+							{importEveLab.isPending && (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							)}
+							Import EVE-NG
+						</Button>
+						<Button
+							type="button"
+							onClick={() => convertEveLab.mutate()}
+							disabled={importEveLab.isPending || convertEveLab.isPending}
+						>
+							{convertEveLab.isPending && (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							)}
+							Convert to Containerlab
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 
 			<Dialog open={templatePreviewOpen} onOpenChange={setTemplatePreviewOpen}>
 				<DialogContent className="max-w-4xl">

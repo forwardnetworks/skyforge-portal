@@ -45,6 +45,14 @@ export const queryKeys = {
 		["workspaceArtifacts", workspaceId] as const,
 	workspaceEveServers: (workspaceId: string) =>
 		["workspaceEveServers", workspaceId] as const,
+	workspaceEveLabs: (workspaceId: string, server: string, path: string, recursive: boolean) =>
+		[
+			"workspaceEveLabs",
+			workspaceId,
+			server,
+			path,
+			recursive ? "1" : "0",
+		] as const,
 	workspaceNetlabServers: (workspaceId: string) =>
 		["workspaceNetlabServers", workspaceId] as const,
 	notifications: (includeRead?: boolean, limit?: string) =>

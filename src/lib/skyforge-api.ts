@@ -93,6 +93,7 @@ export type WorkspaceDeployment = {
 		| "terraform"
 		| "netlab"
 		| "netlab-c9s"
+		| "eve_ng"
 		| "containerlab"
 		| "clabernetes"
 		| string;
@@ -425,11 +426,90 @@ export type WorkspaceEveServersResponse = {
 	servers: WorkspaceEveServerConfig[];
 };
 
+export type EveLabSummary = {
+	name: string;
+	path: string;
+	folder?: string;
+	mtime?: string;
+	umtime?: number;
+	shared?: number;
+	lock?: boolean;
+};
+
+export type EveFolderInfo = {
+	name: string;
+	path: string;
+	mtime?: string;
+};
+
+export type WorkspaceEveLabsResponse = {
+	workspaceId: string;
+	server: string;
+	labs: EveLabSummary[];
+	folders?: EveFolderInfo[];
+};
+
+export type WorkspaceEveImportRequest = {
+	server?: string;
+	labPath: string;
+	deploymentName?: string;
+};
+
+export type WorkspaceEveConvertRequest = {
+	server?: string;
+	labPath: string;
+	outputDir?: string;
+	outputFile?: string;
+	createDeployment?: boolean;
+	containerlabServer?: string;
+};
+
+export type WorkspaceEveConvertResponse = {
+	workspaceId: string;
+	path: string;
+	deployment?: WorkspaceDeployment;
+	warnings?: string[];
+};
+
 export async function listWorkspaceEveServers(
 	workspaceId: string,
 ): Promise<WorkspaceEveServersResponse> {
 	return apiFetch<WorkspaceEveServersResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/servers`,
+	);
+}
+
+export async function listWorkspaceEveLabs(
+	workspaceId: string,
+	params?: { server?: string; path?: string; recursive?: boolean },
+): Promise<WorkspaceEveLabsResponse> {
+	const qs = new URLSearchParams();
+	if (params?.server) qs.set("server", params.server);
+	if (params?.path) qs.set("path", params.path);
+	if (params?.recursive) qs.set("recursive", "true");
+	const suffix = qs.toString();
+	return apiFetch<WorkspaceEveLabsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/labs${suffix ? `?${suffix}` : ""}`,
+	);
+}
+
+export async function importWorkspaceEveLab(
+	workspaceId: string,
+	payload: WorkspaceEveImportRequest,
+): Promise<WorkspaceDeployment> {
+	return apiFetch<WorkspaceDeployment>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/import`,
+		{ method: "POST", body: JSON.stringify(payload) },
+	);
+}
+
+export async function convertWorkspaceEveLab(
+	workspaceId: string,
+	payload: WorkspaceEveConvertRequest,
+): Promise<WorkspaceEveConvertResponse> {
+	return apiFetch<WorkspaceEveConvertResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/convert`,
+		{ method: "POST", body: JSON.stringify(payload) },
 	);
 }
 
