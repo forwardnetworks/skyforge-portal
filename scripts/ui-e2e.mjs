@@ -37,26 +37,26 @@ page.on("console", (msg) => {
 });
 
 try {
-	await visit(page, "/dashboard", /Dashboard/i);
-	await visit(page, "/dashboard/deployments", /Deployments/i);
+	await visit(page, "/dashboard", { role: "heading", name: /Dashboard/i });
+	await visit(page, "/dashboard/deployments", { role: "heading", name: /Deployments/i });
 	await visit(page, "/dashboard/deployments/new", /Create deployment/i);
-	await visit(page, "/dashboard/runs", /Runs/i);
-	await visit(page, "/dashboard/workspaces", /Workspaces/i);
+	await visit(page, "/dashboard/runs", { placeholder: /Filter runs/i });
+	await visit(page, "/dashboard/workspaces", { role: "heading", name: /Workspaces/i });
 	await visit(page, "/dashboard/workspaces/new", /Create Workspace/i);
 	if (workspaceId) {
-		await visit(page, `/dashboard/workspaces/${encodeURIComponent(workspaceId)}`, /Workspace/i);
+		await visit(page, `/dashboard/workspaces/${encodeURIComponent(workspaceId)}`, { role: "heading", name: /Workspace/i });
 	}
-	await visit(page, "/dashboard/settings", /My Settings/i);
-	await visit(page, "/dashboard/integrations", /Integrations/i);
-	await visit(page, "/dashboard/forward", /Collector/i);
+	await visit(page, "/dashboard/settings", { role: "heading", name: /My Settings/i });
+	await visit(page, "/dashboard/integrations", { role: "heading", name: /Integrations/i });
+	await visit(page, "/dashboard/forward", { role: "heading", name: /Collector/i });
 	await visit(page, "/dashboard/s3", /S3/i);
 	await visit(page, "/dashboard/labs/designer", /Lab Designer/i);
 	await visit(page, "/dashboard/labs/map", /Lab map/i);
 	await visit(page, "/dashboard/docs", /Docs/i);
-	await visit(page, "/dashboard/ai", /^AI$/i);
-	await visit(page, "/dashboard/claude", /Claude/i);
-	await visit(page, "/dashboard/chatgpt", /ChatGPT/i);
-	await visit(page, "/dashboard/servicenow", /ServiceNow/i);
+	await visit(page, "/dashboard/ai", { role: "heading", name: /^AI$/i });
+	await visit(page, "/dashboard/claude", { role: "heading", name: /Claude/i });
+	await visit(page, "/dashboard/chatgpt", { role: "heading", name: /ChatGPT/i });
+	await visit(page, "/dashboard/servicenow", { role: "heading", name: /ServiceNow/i });
 	if (deploymentIds.length > 0) {
 		const deploymentId = deploymentIds[0];
 		await visit(page, `/dashboard/deployments/${encodeURIComponent(deploymentId)}`, /Deployment/i);
@@ -80,8 +80,30 @@ async function visit(page, path, expected) {
 	const url = `${BASE_URL}${path}`;
 	await page.goto(url, { waitUntil: "domcontentloaded" });
 	if (expected) {
-		await page.getByText(expected, { exact: false }).first().waitFor();
+		await waitForExpected(page, expected);
 	}
+}
+
+async function waitForExpected(page, expected) {
+	if (typeof expected === "string" || expected instanceof RegExp) {
+		await page.getByText(expected, { exact: false }).first().waitFor();
+		return;
+	}
+	if (expected && typeof expected === "object") {
+		if (expected.placeholder) {
+			await page.getByPlaceholder(expected.placeholder).first().waitFor();
+			return;
+		}
+		if (expected.role && expected.name) {
+			await page.getByRole(expected.role, { name: expected.name }).first().waitFor();
+			return;
+		}
+		if (expected.text) {
+			await page.getByText(expected.text, { exact: false }).first().waitFor();
+			return;
+		}
+	}
+	throw new Error(`Unsupported expected matcher: ${JSON.stringify(expected)}`);
 }
 
 async function seedSession() {
