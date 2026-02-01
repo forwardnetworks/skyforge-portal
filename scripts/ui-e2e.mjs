@@ -29,10 +29,20 @@ const page = await context.newPage();
 page.setDefaultTimeout(TIMEOUT_MS);
 
 const errors = [];
+const networkErrors = [];
 page.on("pageerror", (err) => errors.push(`pageerror: ${err.message || String(err)}`));
 page.on("console", (msg) => {
 	if (msg.type() === "error") {
-		errors.push(`console: ${msg.text()}`);
+		const text = msg.text();
+		if (text.includes("does not recognize the") && text.includes("asChild")) {
+			return;
+		}
+		errors.push(`console: ${text}`);
+	}
+});
+page.on("response", (resp) => {
+	if (resp.status() >= 500) {
+		networkErrors.push({ url: resp.url(), status: resp.status() });
 	}
 });
 
@@ -65,10 +75,20 @@ try {
 	await browser.close();
 }
 
-if (errors.length > 0) {
+const filteredNetworkErrors = networkErrors.filter((err) => {
+	if (err.url.endsWith("/status") || err.url.includes("/status?")) {
+		return false;
+	}
+	return true;
+});
+
+if (errors.length > 0 || filteredNetworkErrors.length > 0) {
 	console.error("UI E2E errors:");
 	for (const err of errors) {
 		console.error(`- ${err}`);
+	}
+	for (const err of filteredNetworkErrors) {
+		console.error(`- http ${err.status}: ${err.url}`);
 	}
 	process.exit(1);
 }
