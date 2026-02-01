@@ -107,13 +107,6 @@ function WorkspaceSettingsPage() {
 	const [editorsCSV, setEditorsCSV] = useState("");
 
 	const [externalRepos, setExternalRepos] = useState<ExternalRepoDraft[]>([]);
-	const [allowExternalTemplateRepos, setAllowExternalTemplateRepos] =
-		useState(false);
-	const [allowCustomNetlabServers, setAllowCustomNetlabServers] =
-		useState(false);
-	const [allowCustomEveServers, setAllowCustomEveServers] = useState(false);
-	const [allowCustomContainerlabServers, setAllowCustomContainerlabServers] =
-		useState(false);
 	const [deleteConfirm, setDeleteConfirm] = useState("");
 	const [httpsUsername, setHttpsUsername] = useState("");
 	const [httpsToken, setHttpsToken] = useState("");
@@ -148,12 +141,6 @@ function WorkspaceSettingsPage() {
 		setOwnersCSV((workspace.owners ?? []).join(","));
 		setEditorsCSV((workspace.editors ?? []).join(","));
 		setViewersCSV((workspace.viewers ?? []).join(","));
-		setAllowExternalTemplateRepos(!!workspace.allowExternalTemplateRepos);
-		setAllowCustomNetlabServers(!!workspace.allowCustomNetlabServers);
-		setAllowCustomEveServers(!!workspace.allowCustomEveServers);
-		setAllowCustomContainerlabServers(
-			!!workspace.allowCustomContainerlabServers,
-		);
 		const next = (workspace.externalTemplateRepos ?? []) as ExternalRepoDraft[];
 		setExternalRepos(
 			next
@@ -246,15 +233,16 @@ function WorkspaceSettingsPage() {
 	const settingsMutation = useMutation({
 		mutationFn: async (next: { externalTemplateRepos: unknown }) => {
 			return updateWorkspaceSettings(workspaceId, {
-				allowExternalTemplateRepos,
-				allowCustomEveServers,
-				allowCustomNetlabServers,
-				allowCustomContainerlabServers,
+				allowExternalTemplateRepos: !!workspace?.allowExternalTemplateRepos,
+				allowCustomEveServers: !!workspace?.allowCustomEveServers,
+				allowCustomNetlabServers: !!workspace?.allowCustomNetlabServers,
+				allowCustomContainerlabServers:
+					!!workspace?.allowCustomContainerlabServers,
 				externalTemplateRepos: (next.externalTemplateRepos as any[]) ?? [],
 			});
 		},
 		onSuccess: async () => {
-			toast.success("Workspace feature flags updated");
+			toast.success("Workspace settings updated");
 			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
 		},
 		onError: (e) =>
@@ -535,83 +523,6 @@ function WorkspaceSettingsPage() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							<div className="rounded-md border p-3 space-y-3">
-								<div className="text-sm font-medium">Feature gates</div>
-								<div className="text-xs text-muted-foreground">
-									These toggles control what members are allowed to use. BYOL
-									and external repo configuration lives in user settings; these
-									gates only enable/disable usage per workspace.
-								</div>
-								<div className="space-y-2">
-									<div className="flex items-center justify-between rounded-md border p-3">
-										<div className="space-y-1">
-											<div className="text-sm font-medium">
-												Allow external template repos
-											</div>
-											<div className="text-xs text-muted-foreground">
-												Enables template source = External.
-											</div>
-										</div>
-										<Switch
-											checked={allowExternalTemplateRepos}
-											onCheckedChange={setAllowExternalTemplateRepos}
-											disabled={!allowEdit}
-										/>
-									</div>
-
-									<div className="flex items-center justify-between rounded-md border p-3">
-										<div className="space-y-1">
-											<div className="text-sm font-medium">
-												Allow custom Netlab servers
-											</div>
-											<div className="text-xs text-muted-foreground">
-												Allows members to select user-scoped Netlab BYOL
-												servers.
-											</div>
-										</div>
-										<Switch
-											checked={allowCustomNetlabServers}
-											onCheckedChange={setAllowCustomNetlabServers}
-											disabled={!allowEdit}
-										/>
-									</div>
-
-									<div className="flex items-center justify-between rounded-md border p-3">
-										<div className="space-y-1">
-											<div className="text-sm font-medium">
-												Allow custom Containerlab servers
-											</div>
-											<div className="text-xs text-muted-foreground">
-												Allows members to select user-scoped Containerlab BYOL
-												servers.
-											</div>
-										</div>
-										<Switch
-											checked={allowCustomContainerlabServers}
-											onCheckedChange={setAllowCustomContainerlabServers}
-											disabled={!allowEdit}
-										/>
-									</div>
-
-									<div className="flex items-center justify-between rounded-md border p-3">
-										<div className="space-y-1">
-											<div className="text-sm font-medium">
-												Allow custom EVE-NG servers
-											</div>
-											<div className="text-xs text-muted-foreground">
-												Allows members to select user-scoped EVE-NG (LabPP)
-												servers.
-											</div>
-										</div>
-										<Switch
-											checked={allowCustomEveServers}
-											onCheckedChange={setAllowCustomEveServers}
-											disabled={!allowEdit}
-										/>
-									</div>
-								</div>
-							</div>
-
 							<div className="rounded-md border p-3 space-y-3">
 								<div className="text-sm font-medium">
 									Legacy: workspace-scoped Netlab servers (deprecated)

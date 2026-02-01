@@ -37,6 +37,7 @@ import {
 import { EmptyState } from "../../components/ui/empty-state";
 import { Input } from "../../components/ui/input";
 import { Skeleton } from "../../components/ui/skeleton";
+import { Switch } from "../../components/ui/switch";
 import {
 	Tabs,
 	TabsContent,
@@ -298,16 +299,32 @@ function GovernancePage() {
 	const [policyDraft, setPolicyDraft] = useState({
 		maxDeploymentsPerUser: 0,
 		maxCollectorsPerUser: 0,
+		allowUserByosNetlabServers: true,
+		allowUserByosContainerlabServers: true,
+		allowUserExternalTemplateRepos: true,
+		allowCustomTemplateRepos: true,
 	});
 	useEffect(() => {
 		if (!policy.data?.policy) return;
 		setPolicyDraft({
 			maxDeploymentsPerUser: policy.data.policy.maxDeploymentsPerUser ?? 0,
 			maxCollectorsPerUser: policy.data.policy.maxCollectorsPerUser ?? 0,
+			allowUserByosNetlabServers:
+				policy.data.policy.allowUserByosNetlabServers ?? true,
+			allowUserByosContainerlabServers:
+				policy.data.policy.allowUserByosContainerlabServers ?? true,
+			allowUserExternalTemplateRepos:
+				policy.data.policy.allowUserExternalTemplateRepos ?? true,
+			allowCustomTemplateRepos:
+				policy.data.policy.allowCustomTemplateRepos ?? true,
 		});
 	}, [
 		policy.data?.policy?.maxDeploymentsPerUser,
 		policy.data?.policy?.maxCollectorsPerUser,
+		policy.data?.policy?.allowUserByosNetlabServers,
+		policy.data?.policy?.allowUserByosContainerlabServers,
+		policy.data?.policy?.allowUserExternalTemplateRepos,
+		policy.data?.policy?.allowCustomTemplateRepos,
 	]);
 
 	const savePolicy = useMutation({
@@ -316,6 +333,12 @@ function GovernancePage() {
 				policy: {
 					maxDeploymentsPerUser: Math.max(0, policyDraft.maxDeploymentsPerUser),
 					maxCollectorsPerUser: Math.max(0, policyDraft.maxCollectorsPerUser),
+					allowUserByosNetlabServers: !!policyDraft.allowUserByosNetlabServers,
+					allowUserByosContainerlabServers:
+						!!policyDraft.allowUserByosContainerlabServers,
+					allowUserExternalTemplateRepos:
+						!!policyDraft.allowUserExternalTemplateRepos,
+					allowCustomTemplateRepos: !!policyDraft.allowCustomTemplateRepos,
 				},
 			}),
 		onSuccess: async () => {
@@ -508,6 +531,103 @@ function GovernancePage() {
 									<p className="text-xs text-muted-foreground">
 										Applies when creating in-cluster Forward collectors.
 									</p>
+								</div>
+							</div>
+
+							<div className="rounded-md border p-3 space-y-3">
+								<div className="text-sm font-medium">Feature access</div>
+								<div className="text-xs text-muted-foreground">
+									Global toggles for user-scoped integrations. Admin users are
+									not restricted by these flags.
+								</div>
+								<div className="space-y-2">
+									<div className="flex items-center justify-between rounded-md border p-3">
+										<div className="space-y-1">
+											<div className="text-sm font-medium">
+												User BYOS Netlab servers
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Allows using user-scoped Netlab BYOS servers (serverRef
+												= `user:...`).
+											</div>
+										</div>
+										<Switch
+											checked={policyDraft.allowUserByosNetlabServers}
+											onCheckedChange={(v) =>
+												setPolicyDraft((prev) => ({
+													...prev,
+													allowUserByosNetlabServers: !!v,
+												}))
+											}
+											disabled={!isAdmin}
+										/>
+									</div>
+
+									<div className="flex items-center justify-between rounded-md border p-3">
+										<div className="space-y-1">
+											<div className="text-sm font-medium">
+												User BYOS Containerlab servers
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Allows using user-scoped Containerlab BYOS servers
+												(serverRef = `user:...`).
+											</div>
+										</div>
+										<Switch
+											checked={policyDraft.allowUserByosContainerlabServers}
+											onCheckedChange={(v) =>
+												setPolicyDraft((prev) => ({
+													...prev,
+													allowUserByosContainerlabServers: !!v,
+												}))
+											}
+											disabled={!isAdmin}
+										/>
+									</div>
+
+									<div className="flex items-center justify-between rounded-md border p-3">
+										<div className="space-y-1">
+											<div className="text-sm font-medium">
+												User external template repos
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Allows `templateSource=external` using repos configured
+												in user settings.
+											</div>
+										</div>
+										<Switch
+											checked={policyDraft.allowUserExternalTemplateRepos}
+											onCheckedChange={(v) =>
+												setPolicyDraft((prev) => ({
+													...prev,
+													allowUserExternalTemplateRepos: !!v,
+												}))
+											}
+											disabled={!isAdmin}
+										/>
+									</div>
+
+									<div className="flex items-center justify-between rounded-md border p-3">
+										<div className="space-y-1">
+											<div className="text-sm font-medium">
+												Custom template repos
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Allows `templateSource=custom`. Keep disabled unless you
+												trust users to reference safe repos.
+											</div>
+										</div>
+										<Switch
+											checked={policyDraft.allowCustomTemplateRepos}
+											onCheckedChange={(v) =>
+												setPolicyDraft((prev) => ({
+													...prev,
+													allowCustomTemplateRepos: !!v,
+												}))
+											}
+											disabled={!isAdmin}
+										/>
+									</div>
 								</div>
 							</div>
 

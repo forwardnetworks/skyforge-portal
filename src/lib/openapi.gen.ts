@@ -1694,6 +1694,104 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/api/user/ai/autofix": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * AutofixUserAITemplate runs a short validate→regenerate loop for containerlab
+		 *     templates.
+		 * @description This is intentionally synchronous and bounded so it can be used from the UI without spawning jobs.
+		 */
+		post: operations["POST:skyforge.AutofixUserAITemplate"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/user/ai/generate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * GenerateUserAITemplate generates a single-file template using the user's
+		 *     configured AI provider.
+		 */
+		post: operations["POST:skyforge.GenerateUserAITemplate"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/user/ai/history": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** GetUserAITemplateHistory lists recent AI generations for the current user. */
+		get: operations["GET:skyforge.GetUserAITemplateHistory"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/user/ai/save": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * SaveUserAITemplate writes generated template content into the user's default
+		 *     workspace repo.
+		 */
+		post: operations["POST:skyforge.SaveUserAITemplate"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/user/ai/validate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * ValidateUserAITemplate persists a generated netlab template and enqueues a
+		 *     netlab validation task.
+		 */
+		post: operations["POST:skyforge.ValidateUserAITemplate"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/api/user/cloud/aws-sso": {
 		parameters: {
 			query?: never;
@@ -4729,6 +4827,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
 	schemas: {
+		"skyforge.AITemplateKind": string;
+		"skyforge.AITemplateProvider": string;
 		"skyforge.AssignableUser": {
 			display: string;
 			email: string;
@@ -4883,6 +4983,27 @@ export interface components {
 		 * @description All limits are optional. A value of 0 means "unlimited/disabled".
 		 */
 		"skyforge.GovernancePolicy": {
+			/**
+			 * AllowCustomTemplateRepos controls whether non-admin users may use template
+			 *     source = custom.
+			 * @description This is distinct from "external" because "custom" can reference arbitrary repos and is therefore riskier.
+			 */
+			allowCustomTemplateRepos: boolean;
+			/**
+			 * AllowUserByosContainerlabServers controls whether non-admin users may use
+			 *     user-scoped Containerlab BYOS servers (user:... refs).
+			 */
+			allowUserByosContainerlabServers: boolean;
+			/**
+			 * AllowUserByosNetlabServers controls whether non-admin users may use user-scoped
+			 *     Netlab BYOS servers (user:... refs).
+			 */
+			allowUserByosNetlabServers: boolean;
+			/**
+			 * AllowUserExternalTemplateRepos controls whether non-admin users may use template
+			 *     source = external (user-scoped external repos).
+			 */
+			allowUserExternalTemplateRepos: boolean;
 			/**
 			 * MaxCollectorsPerUser caps the number of in-cluster Forward collectors a user can
 			 *     create.
@@ -5208,6 +5329,13 @@ export interface components {
 			label: string;
 			mgmtIp: string;
 			status: string;
+		};
+		"skyforge.UserAIHistoryItem": {
+			createdAt: string;
+			filename: string;
+			id: string;
+			kind: string;
+			provider: string;
 		};
 		"skyforge.UserContainerlabServerConfig": {
 			apiInsecure: boolean;
@@ -8234,6 +8362,181 @@ export interface operations {
 						supportText: string;
 						supportUrl: string;
 						themeDefault: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.AutofixUserAITemplate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					content: string;
+					kind: components["schemas"]["skyforge.AITemplateKind"];
+					/** Format: int64 */
+					maxIterations: number;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						content: string;
+						errors: string[];
+						/** Format: int64 */
+						iterations: number;
+						kind: string;
+						lastValidated: string;
+						ok: boolean;
+						warnings: string[];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.GenerateUserAITemplate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					constraints: string[];
+					kind: components["schemas"]["skyforge.AITemplateKind"];
+					/**
+					 * Optional model controls.
+					 * Format: int64
+					 */
+					maxOutputTokens: number;
+					prompt: string;
+					provider: components["schemas"]["skyforge.AITemplateProvider"];
+					seedTemplate: string;
+					temperature: number;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						content: string;
+						createdAt: string;
+						filename: string;
+						id: string;
+						kind: string;
+						provider: string;
+						warnings: string[];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetUserAITemplateHistory": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						items: components["schemas"]["skyforge.UserAIHistoryItem"][];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.SaveUserAITemplate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					content: string;
+					kind: components["schemas"]["skyforge.AITemplateKind"];
+					message: string;
+					pathHint: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						branch: string;
+						path: string;
+						repo: string;
+						workspaceId: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.ValidateUserAITemplate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					content: string;
+					environment: components["schemas"]["skyforge.JSONMap"];
+					kind: components["schemas"]["skyforge.AITemplateKind"];
+					setOverrides: string[];
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						task: components["schemas"]["skyforge.JSONMap"];
+						workspaceId: string;
 					};
 				};
 			};

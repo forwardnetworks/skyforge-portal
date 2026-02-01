@@ -2226,6 +2226,10 @@ export async function adminPurgeUser(
 export type GovernancePolicy = {
 	maxDeploymentsPerUser: number;
 	maxCollectorsPerUser: number;
+	allowUserByosNetlabServers?: boolean;
+	allowUserByosContainerlabServers?: boolean;
+	allowUserExternalTemplateRepos?: boolean;
+	allowCustomTemplateRepos?: boolean;
 };
 
 export type AdminGovernancePolicyResponse = {
