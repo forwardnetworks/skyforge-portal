@@ -1,0 +1,223 @@
+import { chromium } from "playwright";
+
+const BASE_URL = (process.env.SKYFORGE_UI_E2E_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
+const API_URL = (process.env.SKYFORGE_UI_E2E_API_URL || "http://localhost:8085").replace(/\/$/, "");
+const USERNAME = (process.env.SKYFORGE_UI_E2E_USERNAME || "skyforge").trim();
+const ADMIN_TOKEN = (process.env.SKYFORGE_UI_E2E_ADMIN_TOKEN || "").trim();
+const HEADLESS = envBool("SKYFORGE_UI_E2E_HEADLESS", true);
+const TIMEOUT_MS = envInt("SKYFORGE_UI_E2E_TIMEOUT_MS", 15000);
+const SSE_TIMEOUT_MS = envInt("SKYFORGE_UI_E2E_SSE_TIMEOUT_MS", 10000);
+
+if (!ADMIN_TOKEN) {
+	console.error("Missing SKYFORGE_UI_E2E_ADMIN_TOKEN.");
+	process.exit(1);
+}
+
+const cookie = await seedSession();
+const cookieHeader = `${cookie.name}=${cookie.value}`;
+await assertSSE(cookieHeader);
+
+const workspaceId = await ensureWorkspace(cookieHeader);
+const deploymentIds = await listDeploymentIds(cookieHeader);
+
+const browser = await chromium.launch({ headless: HEADLESS });
+const context = await browser.newContext({
+	viewport: { width: 1440, height: 900 },
+});
+await context.addCookies([{ name: cookie.name, value: cookie.value, url: BASE_URL }]);
+const page = await context.newPage();
+page.setDefaultTimeout(TIMEOUT_MS);
+
+const errors = [];
+page.on("pageerror", (err) => errors.push(`pageerror: ${err.message || String(err)}`));
+page.on("console", (msg) => {
+	if (msg.type() === "error") {
+		errors.push(`console: ${msg.text()}`);
+	}
+});
+
+try {
+	await visit(page, "/dashboard", /Dashboard/i);
+	await visit(page, "/dashboard/deployments", /Deployments/i);
+	await visit(page, "/dashboard/deployments/new", /Create deployment/i);
+	await visit(page, "/dashboard/runs", /Runs/i);
+	await visit(page, "/dashboard/workspaces", /Workspaces/i);
+	await visit(page, "/dashboard/workspaces/new", /Create Workspace/i);
+	if (workspaceId) {
+		await visit(page, `/dashboard/workspaces/${encodeURIComponent(workspaceId)}`, /Workspace/i);
+	}
+	await visit(page, "/dashboard/settings", /My Settings/i);
+	await visit(page, "/dashboard/integrations", /Integrations/i);
+	await visit(page, "/dashboard/forward", /Collector/i);
+	await visit(page, "/dashboard/s3", /S3/i);
+	await visit(page, "/dashboard/labs/designer", /Lab Designer/i);
+	await visit(page, "/dashboard/labs/map", /Lab map/i);
+	await visit(page, "/dashboard/docs", /Docs/i);
+	await visit(page, "/dashboard/ai", /^AI$/i);
+	await visit(page, "/dashboard/claude", /Claude/i);
+	await visit(page, "/dashboard/chatgpt", /ChatGPT/i);
+	await visit(page, "/dashboard/servicenow", /ServiceNow/i);
+	if (deploymentIds.length > 0) {
+		const deploymentId = deploymentIds[0];
+		await visit(page, `/dashboard/deployments/${encodeURIComponent(deploymentId)}`, /Deployment/i);
+		await visit(page, `/dashboard/deployments/${encodeURIComponent(deploymentId)}/map`, /Topology|Map|Designer/i);
+	}
+} finally {
+	await browser.close();
+}
+
+if (errors.length > 0) {
+	console.error("UI E2E errors:");
+	for (const err of errors) {
+		console.error(`- ${err}`);
+	}
+	process.exit(1);
+}
+
+console.log("UI E2E checks passed.");
+
+async function visit(page, path, expected) {
+	const url = `${BASE_URL}${path}`;
+	await page.goto(url, { waitUntil: "domcontentloaded" });
+	if (expected) {
+		await page.getByText(expected, { exact: false }).first().waitFor();
+	}
+}
+
+async function seedSession() {
+	const resp = await fetch(`${API_URL}/api/admin/e2e/session`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"X-Skyforge-E2E-Token": ADMIN_TOKEN,
+		},
+		body: JSON.stringify({ username: USERNAME }),
+	});
+
+	const setCookieHeader = resp.headers.get("set-cookie") || "";
+	const bodyText = await resp.text();
+	let body = null;
+	if (bodyText) {
+		try {
+			body = JSON.parse(bodyText);
+		} catch {
+			body = null;
+		}
+	}
+
+	if (!resp.ok) {
+		const detail = body?.message || body?.error || bodyText || resp.statusText;
+		throw new Error(`E2E session seed failed (${resp.status}): ${detail}`);
+	}
+
+	const cookieStr = setCookieHeader || body?.cookie || "";
+	if (!cookieStr) {
+		throw new Error("E2E session seed did not return a cookie");
+	}
+	return parseCookie(cookieStr);
+}
+
+async function assertSSE(cookieHeader) {
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), SSE_TIMEOUT_MS);
+	try {
+		const resp = await fetch(`${API_URL}/api/dashboard/events`, {
+			headers: { Cookie: cookieHeader },
+			signal: controller.signal,
+		});
+		if (!resp.ok || !resp.body) {
+			throw new Error(`SSE failed (${resp.status})`);
+		}
+		const decoder = new TextDecoder();
+		const reader = resp.body.getReader();
+		let buffer = "";
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			if (buffer.includes("data:") || buffer.includes("\n:")) {
+				await reader.cancel();
+				return;
+			}
+		}
+		throw new Error("SSE stream ended without data");
+	} finally {
+		clearTimeout(timeout);
+	}
+}
+
+async function ensureWorkspace(cookieHeader) {
+	const listResp = await fetch(`${API_URL}/api/workspaces`, {
+		headers: { Cookie: cookieHeader },
+	});
+	if (!listResp.ok) {
+		throw new Error(`Failed to list workspaces (${listResp.status})`);
+	}
+	const listBody = await listResp.json();
+	const workspaces = Array.isArray(listBody?.workspaces) ? listBody.workspaces : [];
+	if (workspaces.length > 0) {
+		return String(workspaces[0].id || "");
+	}
+
+	const slug = `e2e-${Date.now()}`;
+	const createResp = await fetch(`${API_URL}/api/workspaces`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Cookie: cookieHeader,
+		},
+		body: JSON.stringify({
+			name: "E2E Workspace",
+			slug,
+			description: "UI E2E seed workspace",
+			isPublic: false,
+		}),
+	});
+	if (!createResp.ok) {
+		const detail = await createResp.text();
+		throw new Error(`Failed to create workspace (${createResp.status}): ${detail}`);
+	}
+	const created = await createResp.json();
+	return String(created?.id || "");
+}
+
+async function listDeploymentIds(cookieHeader) {
+	const resp = await fetch(`${API_URL}/api/dashboard/snapshot`, {
+		headers: { Cookie: cookieHeader },
+	});
+	if (!resp.ok) {
+		return [];
+	}
+	const body = await resp.json();
+	const deployments = Array.isArray(body?.deployments) ? body.deployments : [];
+	return deployments.map((d) => String(d?.id || "")).filter(Boolean);
+}
+
+function parseCookie(cookieStr) {
+	const parts = cookieStr.split(";");
+	if (parts.length === 0) {
+		throw new Error("Invalid cookie string");
+	}
+	const pair = parts[0].trim();
+	const idx = pair.indexOf("=");
+	if (idx <= 0) {
+		throw new Error("Invalid cookie pair");
+	}
+	return {
+		name: pair.slice(0, idx).trim(),
+		value: pair.slice(idx + 1).trim(),
+	};
+}
+
+function envBool(key, fallback) {
+	const raw = (process.env[key] || "").trim().toLowerCase();
+	if (!raw) return fallback;
+	return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
+}
+
+function envInt(key, fallback) {
+	const raw = (process.env[key] || "").trim();
+	if (!raw) return fallback;
+	const parsed = Number.parseInt(raw, 10);
+	return Number.isFinite(parsed) ? parsed : fallback;
+}

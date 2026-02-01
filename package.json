@@ -13,6 +13,7 @@
 		"lint": "biome check .",
 		"format": "biome format --write .",
 		"test": "vitest",
+		"e2e:ui": "node scripts/ui-e2e.mjs",
 		"gen:openapi": "openapi-typescript ../charts/skyforge/files/swagger-openapi.json -o src/lib/openapi.gen.ts"
 	},
 	"dependencies": {
@@ -68,6 +69,7 @@
 		"eslint": "9.19.0",
 		"jsdom": "^27.4.0",
 		"openapi-typescript": "^7.10.1",
+		"playwright": "^1.50.0",
 		"postcss": "8.4.49",
 		"tailwindcss": "3.4.17",
 		"tailwindcss-animate": "^1.0.7",
