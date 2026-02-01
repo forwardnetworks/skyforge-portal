@@ -37,7 +37,7 @@ page.on("console", (msg) => {
 });
 
 try {
-	await visit(page, "/status", /Active Deployments/i);
+	await visit(page, "/status", { role: "link", name: /Deployments/i });
 	await visit(page, "/dashboard/deployments", { role: "heading", name: /Deployments/i });
 	await visit(page, "/dashboard/deployments/new", /Create deployment/i);
 	await visit(page, "/dashboard/runs", { placeholder: /Filter runs/i });
