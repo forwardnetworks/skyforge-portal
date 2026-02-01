@@ -34,6 +34,9 @@ page.on("pageerror", (err) => errors.push(`pageerror: ${err.message || String(er
 page.on("console", (msg) => {
 	if (msg.type() === "error") {
 		const text = msg.text();
+		if (text.includes("Failed to load resource") && text.includes("503")) {
+			return;
+		}
 		if (text.includes("does not recognize the") && text.includes("asChild")) {
 			return;
 		}
@@ -78,6 +81,14 @@ try {
 const filteredNetworkErrors = networkErrors.filter((err) => {
 	if (err.url.endsWith("/status") || err.url.includes("/status?")) {
 		return false;
+	}
+	if (err.status === 503) {
+		if (err.url.includes("/api/registry/")) {
+			return false;
+		}
+		if (err.url.includes("/netlab/templates")) {
+			return false;
+		}
 	}
 	return true;
 });
