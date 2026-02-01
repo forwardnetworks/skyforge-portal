@@ -44,6 +44,7 @@ function AITemplatesPage() {
 	const [prompt, setPrompt] = useState("");
 	const [seed, setSeed] = useState("");
 	const [output, setOutput] = useState("");
+	const [rawOutput, setRawOutput] = useState("");
 	const [lastError, setLastError] = useState<string>("");
 	const [lastValidateRunId, setLastValidateRunId] = useState<string>("");
 
@@ -89,19 +90,38 @@ function AITemplatesPage() {
 			};
 			return generateUserAITemplate(payload);
 		},
-		onSuccess: (res) => {
-			setOutput(res.content ?? "");
-			setLastError("");
-			toast.success("Template generated", { description: res.filename });
-		},
-		onError: (e) => {
-			const msg = e instanceof Error ? e.message : String(e);
-			setLastError(msg);
-			toast.error("Failed to generate template", {
-				description: msg,
-			});
-		},
-	});
+	onSuccess: (res) => {
+		setOutput(res.content ?? "");
+		setRawOutput("");
+		setLastError("");
+		toast.success("Template generated", { description: res.filename });
+	},
+	onError: (e) => {
+		const msg = e instanceof Error ? e.message : String(e);
+		setLastError(msg);
+		setRawOutput("");
+		if (e instanceof Error && "bodyText" in e) {
+			const bodyText = (e as { bodyText?: string }).bodyText;
+			if (typeof bodyText === "string" && bodyText.trim()) {
+				try {
+					const parsed = JSON.parse(bodyText) as {
+						details?: { meta?: Record<string, unknown> };
+					};
+					const meta = parsed?.details?.meta ?? {};
+					const raw = meta.rawOutput;
+					if (typeof raw === "string" && raw.trim()) {
+						setRawOutput(raw);
+					}
+				} catch {
+					// ignore parse failures
+				}
+			}
+		}
+		toast.error("Failed to generate template", {
+			description: msg,
+		});
+	},
+});
 
 	const save = useMutation({
 		mutationFn: async () => {
@@ -112,12 +132,13 @@ function AITemplatesPage() {
 				pathHint: "ai/generated",
 			});
 		},
-		onSuccess: (res) => {
-			setLastError("");
-			toast.success("Saved to repo", {
-				description: `${res.repo}:${res.path}@${res.branch}`,
-			});
-		},
+	onSuccess: (res) => {
+		setLastError("");
+		setRawOutput("");
+		toast.success("Saved to repo", {
+			description: `${res.repo}:${res.path}@${res.branch}`,
+		});
+	},
 		onError: (e) => {
 			const msg = e instanceof Error ? e.message : String(e);
 			setLastError(msg);
@@ -133,11 +154,12 @@ function AITemplatesPage() {
 				content: output,
 			});
 		},
-		onSuccess: (res) => {
-			setLastError("");
-			if (kind === "netlab") {
-				const runId = res.task?.id != null ? String(res.task.id) : "";
-				setLastValidateRunId(runId);
+	onSuccess: (res) => {
+		setLastError("");
+		setRawOutput("");
+		if (kind === "netlab") {
+			const runId = res.task?.id != null ? String(res.task.id) : "";
+			setLastValidateRunId(runId);
 				toast.success("Validation started", {
 					description: runId ? `Run: ${runId}` : "Run created",
 				});
@@ -152,23 +174,25 @@ function AITemplatesPage() {
 							.join("\n")
 					: "";
 
-			if (ok) {
-				toast.success("Containerlab template is valid");
-				setLastValidateRunId("");
-				return;
-			}
+	if (ok) {
+		toast.success("Containerlab template is valid");
+		setLastValidateRunId("");
+		return;
+	}
 
-			setLastError(errs || "Containerlab template is invalid");
-			toast.error("Containerlab template is invalid", {
-				description: errs ? errs.split("\n")[0] : "Schema validation failed",
-			});
-		},
-		onError: (e) => {
-			const msg = e instanceof Error ? e.message : String(e);
-			setLastError(msg);
-			toast.error("Failed to validate template", { description: msg });
-		},
+	setLastError(errs || "Containerlab template is invalid");
+	setRawOutput("");
+	toast.error("Containerlab template is invalid", {
+		description: errs ? errs.split("\n")[0] : "Schema validation failed",
 	});
+},
+onError: (e) => {
+	const msg = e instanceof Error ? e.message : String(e);
+	setLastError(msg);
+	setRawOutput("");
+	toast.error("Failed to validate template", { description: msg });
+},
+});
 
 	const autofix = useMutation({
 		mutationFn: async () => {
@@ -182,27 +206,30 @@ function AITemplatesPage() {
 				maxIterations: 3,
 			});
 		},
-		onSuccess: (res) => {
-			setOutput(res.content ?? "");
-			if (res.ok) {
-				setLastError("");
-				toast.success("Autofix succeeded", {
-					description: `Iterations: ${res.iterations}`,
-				});
-				return;
-			}
-			const errs = (res.errors ?? []).slice(0, 10).join("\n");
-			setLastError(errs || "Autofix failed");
-			toast.error("Autofix did not converge", {
-				description: errs ? errs.split("\n")[0] : "Schema validation failed",
+	onSuccess: (res) => {
+		setOutput(res.content ?? "");
+		if (res.ok) {
+			setLastError("");
+			setRawOutput("");
+			toast.success("Autofix succeeded", {
+				description: `Iterations: ${res.iterations}`,
 			});
-		},
-		onError: (e) => {
-			const msg = e instanceof Error ? e.message : String(e);
-			setLastError(msg);
-			toast.error("Failed to autofix template", { description: msg });
-		},
-	});
+			return;
+		}
+		const errs = (res.errors ?? []).slice(0, 10).join("\n");
+		setLastError(errs || "Autofix failed");
+		setRawOutput("");
+		toast.error("Autofix did not converge", {
+			description: errs ? errs.split("\n")[0] : "Schema validation failed",
+		});
+	},
+	onError: (e) => {
+		const msg = e instanceof Error ? e.message : String(e);
+		setLastError(msg);
+		setRawOutput("");
+		toast.error("Failed to autofix template", { description: msg });
+	},
+});
 
 	const historyItems = useMemo(
 		() => history.data?.items ?? [],
@@ -421,6 +448,18 @@ function AITemplatesPage() {
 							placeholder="Generated YAML will appear here…"
 							className="min-h-[420px] font-mono text-xs"
 						/>
+						{rawOutput ? (
+							<div className="space-y-2">
+								<Label htmlFor="ai-raw-output">Raw AI output</Label>
+								<Textarea
+									id="ai-raw-output"
+									name="ai-raw-output"
+									value={rawOutput}
+									readOnly
+									className="min-h-[160px] font-mono text-xs"
+								/>
+							</div>
+						) : null}
 						<div className="text-xs text-muted-foreground">
 							Validate runs an in-cluster netlab validation job (netlab
 							templates) or containerlab schema validation (containerlab
