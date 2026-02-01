@@ -79,8 +79,6 @@ try {
 	await visit(page, "/dashboard/labs/map", /Lab map/i, "lab-map");
 	await visit(page, "/dashboard/docs", /Docs/i, "docs");
 	await visit(page, "/dashboard/ai", { role: "heading", name: /^AI$/i }, "ai");
-	await visit(page, "/dashboard/claude", { role: "heading", name: /Claude/i }, "claude");
-	await visit(page, "/dashboard/chatgpt", { role: "heading", name: /ChatGPT/i }, "chatgpt");
 	await visit(page, "/dashboard/servicenow", { role: "heading", name: /ServiceNow/i }, "servicenow");
 	if (deploymentIds.length > 0) {
 		const deploymentId = deploymentIds[0];

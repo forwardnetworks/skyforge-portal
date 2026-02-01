@@ -26,8 +26,6 @@ import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
 import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
 import { Route as DashboardGeminiRouteImport } from './routes/dashboard/gemini'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
-import { Route as DashboardClaudeRouteImport } from './routes/dashboard/claude'
-import { Route as DashboardChatgptRouteImport } from './routes/dashboard/chatgpt'
 import { Route as DashboardAiRouteImport } from './routes/dashboard/ai'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
@@ -130,16 +128,6 @@ const DashboardForwardRoute = DashboardForwardRouteImport.update({
   path: '/dashboard/forward',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardClaudeRoute = DashboardClaudeRouteImport.update({
-  id: '/dashboard/claude',
-  path: '/dashboard/claude',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardChatgptRoute = DashboardChatgptRouteImport.update({
-  id: '/dashboard/chatgpt',
-  path: '/dashboard/chatgpt',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardAiRoute = DashboardAiRouteImport.update({
   id: '/dashboard/ai',
   path: '/dashboard/ai',
@@ -237,8 +225,6 @@ export interface FileRoutesByFullPath {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/ai': typeof DashboardAiRoute
-  '/dashboard/chatgpt': typeof DashboardChatgptRoute
-  '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -274,8 +260,6 @@ export interface FileRoutesByTo {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/ai': typeof DashboardAiRoute
-  '/dashboard/chatgpt': typeof DashboardChatgptRoute
-  '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -312,8 +296,6 @@ export interface FileRoutesById {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/ai': typeof DashboardAiRoute
-  '/dashboard/chatgpt': typeof DashboardChatgptRoute
-  '/dashboard/claude': typeof DashboardClaudeRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -351,8 +333,6 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/ai'
-    | '/dashboard/chatgpt'
-    | '/dashboard/claude'
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
@@ -388,8 +368,6 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/ai'
-    | '/dashboard/chatgpt'
-    | '/dashboard/claude'
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
@@ -425,8 +403,6 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/ai'
-    | '/dashboard/chatgpt'
-    | '/dashboard/claude'
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
@@ -463,8 +439,6 @@ export interface RootRouteChildren {
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardAiRoute: typeof DashboardAiRoute
-  DashboardChatgptRoute: typeof DashboardChatgptRoute
-  DashboardClaudeRoute: typeof DashboardClaudeRoute
   DashboardForwardRoute: typeof DashboardForwardRoute
   DashboardGeminiRoute: typeof DashboardGeminiRoute
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
@@ -611,20 +585,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardForwardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/claude': {
-      id: '/dashboard/claude'
-      path: '/dashboard/claude'
-      fullPath: '/dashboard/claude'
-      preLoaderRoute: typeof DashboardClaudeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/chatgpt': {
-      id: '/dashboard/chatgpt'
-      path: '/dashboard/chatgpt'
-      fullPath: '/dashboard/chatgpt'
-      preLoaderRoute: typeof DashboardChatgptRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/ai': {
       id: '/dashboard/ai'
       path: '/dashboard/ai'
@@ -751,8 +711,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   DashboardAiRoute: DashboardAiRoute,
-  DashboardChatgptRoute: DashboardChatgptRoute,
-  DashboardClaudeRoute: DashboardClaudeRoute,
   DashboardForwardRoute: DashboardForwardRoute,
   DashboardGeminiRoute: DashboardGeminiRoute,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
