@@ -21,7 +21,6 @@ import {
 	FormMessage,
 } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
-import { UserVariableGroups } from "../../components/user-variable-groups";
 import {
 	Select,
 	SelectContent,
@@ -30,6 +29,7 @@ import {
 	SelectValue,
 } from "../../components/ui/select";
 import { Textarea } from "../../components/ui/textarea";
+import { UserVariableGroups } from "../../components/user-variable-groups";
 import {
 	NETLAB_ENV_KEYS,
 	isNetlabMultilineKey,
@@ -59,12 +59,12 @@ import {
 	listUserNetlabServers,
 	logoutAwsSso,
 	pollAwsSso,
-	startAwsSso,
 	putUserAWSStaticCredentials,
 	putUserAzureCredentials,
 	putUserGCPCredentials,
 	putUserIBMCredentials,
 	putUserSettings,
+	startAwsSso,
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
 	upsertUserNetlabServer,
@@ -331,7 +331,11 @@ function UserSettingsPage() {
 		onSuccess: (resp) => {
 			setAwsSsoSession(resp);
 			setAwsSsoPollStatus("pending");
-			window.open(resp.verificationUriComplete, "_blank", "noopener,noreferrer");
+			window.open(
+				resp.verificationUriComplete,
+				"_blank",
+				"noopener,noreferrer",
+			);
 		},
 		onError: (err: unknown) =>
 			toast.error("Failed to start AWS SSO", {
@@ -1109,8 +1113,7 @@ function UserSettingsPage() {
 									variant="outline"
 									onClick={() => logoutAwsSsoM.mutate()}
 									disabled={
-										!awsSsoStatusQ.data?.connected ||
-										logoutAwsSsoM.isPending
+										!awsSsoStatusQ.data?.connected || logoutAwsSsoM.isPending
 									}
 								>
 									Disconnect

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { queryKeys } from "../lib/query-keys";
 import {
 	type UserVariableGroup,
 	type UserVariableGroupListResponse,
@@ -11,7 +12,6 @@ import {
 	listUserVariableGroups,
 	updateUserVariableGroup,
 } from "../lib/skyforge-api";
-import { queryKeys } from "../lib/query-keys";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -326,7 +326,11 @@ function VariableGroupDialog({
 					</div>
 				</div>
 				<DialogFooter>
-					<Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+					<Button
+						type="button"
+						variant="outline"
+						onClick={() => onOpenChange(false)}
+					>
 						Cancel
 					</Button>
 					<Button

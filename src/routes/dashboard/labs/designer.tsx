@@ -1298,7 +1298,7 @@ function LabDesignerPage() {
 	const paletteBaseItems = useMemo(() => {
 		const repos = registryReposQ.isError
 			? []
-			: registryReposQ.data?.repositories ?? [];
+			: (registryReposQ.data?.repositories ?? []);
 		return repos.map(inferPaletteItemFromRepo);
 	}, [registryReposQ.data?.repositories, registryReposQ.isError]);
 
@@ -2064,14 +2064,16 @@ function LabDesignerPage() {
 										/>
 									</SelectTrigger>
 									<SelectContent>
-										{(containerlabServersQ.data?.servers ?? []).map((s: any) => (
-											<SelectItem
-												key={String(s.id)}
-												value={`user:${String(s.id)}`}
-											>
-												{hostLabelFromURL(s.apiUrl) || s.name}
-											</SelectItem>
-										))}
+										{(containerlabServersQ.data?.servers ?? []).map(
+											(s: any) => (
+												<SelectItem
+													key={String(s.id)}
+													value={`user:${String(s.id)}`}
+												>
+													{hostLabelFromURL(s.apiUrl) || s.name}
+												</SelectItem>
+											),
+										)}
 									</SelectContent>
 								</Select>
 							</div>

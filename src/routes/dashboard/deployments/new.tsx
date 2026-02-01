@@ -58,8 +58,9 @@ import {
 	type DashboardSnapshot,
 	type ExternalTemplateRepo,
 	type SkyforgeWorkspace,
-	type WorkspaceTemplatesResponse,
 	type UserVariableGroup,
+	type WorkspaceTemplatesResponse,
+	convertWorkspaceEveLab,
 	createWorkspaceDeployment,
 	getDashboardSnapshot,
 	getUserSettings,
@@ -70,14 +71,13 @@ import {
 	getWorkspaceNetlabTemplates,
 	getWorkspaceTerraformTemplates,
 	getWorkspaces,
+	importWorkspaceEveLab,
 	listUserContainerlabServers,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
 	listUserVariableGroups,
 	listWorkspaceEveLabs,
-	importWorkspaceEveLab,
-	convertWorkspaceEveLab,
 	validateWorkspaceNetlabTemplate,
 } from "../../../lib/skyforge-api";
 
@@ -850,7 +850,11 @@ function CreateDeploymentPage() {
 							Select an EVE-NG lab and import it into Skyforge without
 							rebuilding the topology.
 						</div>
-						<Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setImportOpen(true)}
+						>
 							<Download className="mr-2 h-4 w-4" />
 							Import EVE-NG lab
 						</Button>
@@ -1793,7 +1797,9 @@ function CreateDeploymentPage() {
 
 						<div className="flex items-start justify-between gap-3 rounded-md border p-3">
 							<div className="space-y-1">
-								<FormLabel className="text-sm">Create Containerlab deployment</FormLabel>
+								<FormLabel className="text-sm">
+									Create Containerlab deployment
+								</FormLabel>
 								<FormDescription>
 									Generate a Containerlab template and optionally create a
 									deployment.

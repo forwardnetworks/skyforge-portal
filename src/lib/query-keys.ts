@@ -45,7 +45,12 @@ export const queryKeys = {
 		["workspaceArtifacts", workspaceId] as const,
 	workspaceEveServers: (workspaceId: string) =>
 		["workspaceEveServers", workspaceId] as const,
-	workspaceEveLabs: (workspaceId: string, server: string, path: string, recursive: boolean) =>
+	workspaceEveLabs: (
+		workspaceId: string,
+		server: string,
+		path: string,
+		recursive: boolean,
+	) =>
 		[
 			"workspaceEveLabs",
 			workspaceId,
