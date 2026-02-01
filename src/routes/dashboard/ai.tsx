@@ -374,7 +374,7 @@ onError: (e) => {
 								className="min-h-[120px] font-mono text-xs"
 							/>
 						</div>
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
 							<Button
 								disabled={
 									!canGenerate ||
