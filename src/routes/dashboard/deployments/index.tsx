@@ -14,6 +14,7 @@ import {
 	Search,
 	StopCircle,
 	Trash2,
+	Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -462,6 +463,18 @@ function DeploymentsPage() {
 							</SelectContent>
 						</Select>
 					</div>
+					<Link
+						to="/dashboard/workspaces/$workspaceId"
+						params={{ workspaceId: selectedWorkspaceId }}
+						className={cn(
+							buttonVariants({ variant: "outline", size: "sm" }),
+							"h-8",
+							!selectedWorkspaceId && "pointer-events-none opacity-50",
+						)}
+					>
+						<Users className="mr-2 h-4 w-4" />
+						Workspace access
+					</Link>
 				</div>
 			</div>
 
