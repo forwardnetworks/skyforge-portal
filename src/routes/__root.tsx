@@ -394,12 +394,15 @@ function RootLayout() {
 													</BreadcrumbLink>
 												</BreadcrumbItem>{" "}
 												{(() => {
-													const raw = location.pathname.split("/").filter(Boolean);
+													const raw = location.pathname
+														.split("/")
+														.filter(Boolean);
 													// Most app routes live under /dashboard/*, but the breadcrumb root
 													// is a link to /status. Avoid "Dashboard -> dashboard -> ...".
 													const segments =
 														raw[0] === "dashboard" ? raw.slice(1) : raw;
-													const prefix = raw[0] === "dashboard" ? "/dashboard" : "";
+													const prefix =
+														raw[0] === "dashboard" ? "/dashboard" : "";
 
 													return segments.map((segment, index, array) => {
 														const path = `${prefix}/${array.slice(0, index + 1).join("/")}`;
