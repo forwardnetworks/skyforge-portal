@@ -58,7 +58,6 @@ type Features = {
 const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
-	{ label: "Runs", href: "/dashboard/runs", icon: PanelTop },
 	{
 		label: "Designer",
 		href: "/dashboard/labs/designer",
