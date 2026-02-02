@@ -22,6 +22,7 @@ type DataTableProps<T> = {
 	getRowAriaSelected?: (row: T, index: number) => boolean | undefined;
 	isLoading?: boolean;
 	emptyText?: string;
+	scrollable?: boolean;
 	maxHeightClassName?: string;
 	minWidthClassName?: string;
 	estimateRowHeight?: number;
@@ -42,6 +43,7 @@ export function DataTable<T>({
 	getRowAriaSelected,
 	isLoading,
 	emptyText = "No results.",
+	scrollable = true,
 	maxHeightClassName = "max-h-[70vh]",
 	minWidthClassName = "min-w-[900px]",
 	estimateRowHeight = 34,
@@ -54,7 +56,7 @@ export function DataTable<T>({
 
 	const rowVirtualizer = useVirtualizer({
 		count: rows.length,
-		getScrollElement: () => parentRef.current,
+		getScrollElement: () => (scrollable ? parentRef.current : null),
 		estimateSize: () => estimateRowHeight,
 		overscan: 10,
 	});
@@ -62,7 +64,7 @@ export function DataTable<T>({
 	const virtualRows = rowVirtualizer.getVirtualItems();
 
 	return (
-		<div className="w-full overflow-x-auto rounded-md border">
+		<div className="w-full overflow-x-auto overflow-y-hidden rounded-md border">
 			<div className={cn(minWidthClassName)}>
 				<div
 					role="table"
@@ -93,9 +95,13 @@ export function DataTable<T>({
 					</div>
 
 					<div
-						ref={parentRef}
 						role="rowgroup"
-						className={cn("relative overflow-auto", maxHeightClassName)}
+						ref={scrollable ? parentRef : undefined}
+						className={cn(
+							"relative",
+							scrollable && "overflow-auto",
+							scrollable && maxHeightClassName,
+						)}
 					>
 						{isLoading ? (
 							<div className="p-4 text-sm text-muted-foreground">Loading…</div>
@@ -103,7 +109,7 @@ export function DataTable<T>({
 							<div className="p-4 text-sm text-muted-foreground">
 								{emptyText}
 							</div>
-						) : (
+						) : scrollable ? (
 							<div
 								className="relative"
 								style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
@@ -135,6 +141,47 @@ export function DataTable<T>({
 												gridTemplateColumns,
 												transform: `translateY(${virtualRow.start}px)`,
 											}}
+											onClick={clickable ? () => onRowClick?.(row) : undefined}
+										>
+											{columns.map((col) => (
+												<div
+													key={col.id}
+													role="cell"
+													className={cn(
+														"px-3 py-2 align-middle",
+														col.align === "center" && "text-center",
+														col.align === "right" && "text-right",
+														col.className,
+													)}
+												>
+													{col.cell(row)}
+												</div>
+											))}
+										</div>
+									);
+								})}
+							</div>
+						) : (
+							<div className="relative">
+								{rows.map((row, index) => {
+									const rowId = getRowId(row);
+									const clickable = Boolean(onRowClick);
+									const rowClassName = getRowClassName?.(row, index);
+									const ariaSelected = getRowAriaSelected?.(row, index);
+									return (
+										<div
+											key={rowId}
+											role="row"
+											aria-rowindex={index + 1}
+											aria-selected={ariaSelected}
+											className={cn(
+												"grid border-b last:border-b-0",
+												index % 2 === 0 && "bg-background",
+												index % 2 === 1 && "bg-muted/20",
+												clickable && "cursor-pointer hover:bg-muted/40",
+												rowClassName,
+											)}
+											style={{ gridTemplateColumns }}
 											onClick={clickable ? () => onRowClick?.(row) : undefined}
 										>
 											{columns.map((col) => (

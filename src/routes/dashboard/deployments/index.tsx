@@ -795,8 +795,8 @@ function DeploymentsPage() {
 									columns={deploymentColumns}
 									rows={deployments}
 									getRowId={(d) => d.id}
-									maxHeightClassName="max-h-[60vh]"
 									minWidthClassName="min-w-0"
+									scrollable={false}
 								/>
 							)}
 						</CardContent>

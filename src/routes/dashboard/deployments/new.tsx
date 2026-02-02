@@ -139,7 +139,6 @@ function CreateDeploymentPage() {
 	const [netlabHelpOpen, setNetlabHelpOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
 		useState<string>("all");
-	const [step, setStep] = useState<0 | 1 | 2>(0);
 	const [importOpen, setImportOpen] = useState(false);
 	const [importServer, setImportServer] = useState("");
 	const [importLabPath, setImportLabPath] = useState("");
@@ -197,18 +196,6 @@ function CreateDeploymentPage() {
 		control,
 		name: "env",
 	});
-
-	useEffect(() => {
-		const id =
-			step === 0
-				? "deploy-step-template"
-				: step === 1
-					? "deploy-step-params"
-					: "deploy-step-review";
-		document
-			.getElementById(id)
-			?.scrollIntoView({ behavior: "smooth", block: "start" });
-	}, [step]);
 
 	// Apply per-user default env vars exactly once, as a pre-fill.
 	useEffect(() => {
@@ -866,34 +853,6 @@ function CreateDeploymentPage() {
 				<CardContent className="pt-6">
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-							<div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/20 p-2">
-								<Button
-									type="button"
-									variant={step === 0 ? "default" : "ghost"}
-									size="sm"
-									onClick={() => setStep(0)}
-								>
-									1. Template
-								</Button>
-								<Button
-									type="button"
-									variant={step === 1 ? "default" : "ghost"}
-									size="sm"
-									onClick={() => setStep(1)}
-								>
-									2. Parameters
-								</Button>
-								<Button
-									type="button"
-									variant={step === 2 ? "default" : "ghost"}
-									size="sm"
-									onClick={() => setStep(2)}
-								>
-									3. Review
-								</Button>
-							</div>
-
-							<div id="deploy-step-template" className="scroll-mt-24" />
 							<div className="grid gap-6 md:grid-cols-2">
 								<FormField
 									control={form.control}
@@ -1335,7 +1294,6 @@ function CreateDeploymentPage() {
 								/>
 							</div>
 
-							<div id="deploy-step-params" className="scroll-mt-24" />
 							<div className="rounded-md border p-4 space-y-4">
 								<div className="flex items-center justify-between">
 									<FormLabel>Environment Variables</FormLabel>
@@ -1613,50 +1571,6 @@ function CreateDeploymentPage() {
 								</DialogContent>
 							</Dialog>
 
-							<div id="deploy-step-review" className="scroll-mt-24" />
-							<Card variant="glass">
-								<CardHeader>
-									<CardTitle className="text-base">Review</CardTitle>
-									<CardDescription>
-										Confirm your selections before creating the deployment.
-									</CardDescription>
-								</CardHeader>
-								<CardContent className="grid gap-2 text-sm">
-									<div className="flex items-center justify-between gap-3">
-										<div className="text-muted-foreground">Workspace</div>
-										<div className="font-mono text-xs">
-											{watchWorkspaceId || "—"}
-										</div>
-									</div>
-									<div className="flex items-center justify-between gap-3">
-										<div className="text-muted-foreground">Provider</div>
-										<div className="font-mono text-xs">{watchKind}</div>
-									</div>
-									<div className="flex items-center justify-between gap-3">
-										<div className="text-muted-foreground">Template source</div>
-										<div className="font-mono text-xs">{effectiveSource}</div>
-									</div>
-									<div className="flex items-center justify-between gap-3">
-										<div className="text-muted-foreground">Template</div>
-										<div className="font-mono text-xs">
-											{watchTemplate || "—"}
-										</div>
-									</div>
-									<div className="flex items-center justify-between gap-3">
-										<div className="text-muted-foreground">Name</div>
-										<div className="font-mono text-xs">{watchName || "—"}</div>
-									</div>
-									<div className="flex items-center justify-between gap-3">
-										<div className="text-muted-foreground">Env vars</div>
-										<div className="font-mono text-xs">
-											{(form.getValues("env") ?? []).filter((e) =>
-												e.key?.trim(),
-											).length || 0}
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-
 							{mutation.isError && (
 								<div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive border border-destructive/20">
 									{(mutation.error as Error)?.message || "Create failed."}
@@ -1664,42 +1578,16 @@ function CreateDeploymentPage() {
 							)}
 
 							<div className="flex gap-3">
-								{step === 2 ? (
-									<Button type="submit" disabled={mutation.isPending}>
-										{mutation.isPending && (
-											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										)}
-										{mutation.isPending ? "Creating…" : "Create Deployment"}
-									</Button>
-								) : (
-									<Button
-										type="button"
-										onClick={async () => {
-											if (step === 0) {
-												const ok = await form.trigger([
-													"workspaceId",
-													"kind",
-													"source",
-													"template",
-													"name",
-												]);
-												if (!ok) return;
-											}
-											setStep((s) => (s < 2 ? ((s + 1) as 0 | 1 | 2) : s));
-										}}
-										disabled={mutation.isPending}
-									>
-										Next
-									</Button>
-								)}
+								<Button type="submit" disabled={mutation.isPending}>
+									{mutation.isPending && (
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									)}
+									{mutation.isPending ? "Creating…" : "Create Deployment"}
+								</Button>
 								<Button
 									type="button"
 									variant="secondary"
 									onClick={() => {
-										if (step > 0) {
-											setStep((s) => (s > 0 ? ((s - 1) as 0 | 1 | 2) : s));
-											return;
-										}
 										navigate({
 											to: "/dashboard/deployments",
 											search: { workspace: watchWorkspaceId },
@@ -1708,14 +1596,6 @@ function CreateDeploymentPage() {
 									disabled={mutation.isPending}
 								>
 									Back
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => setStep(2)}
-									disabled={mutation.isPending}
-								>
-									Review
 								</Button>
 							</div>
 						</form>
