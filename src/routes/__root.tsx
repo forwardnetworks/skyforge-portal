@@ -393,11 +393,16 @@ function RootLayout() {
 														Dashboard
 													</BreadcrumbLink>
 												</BreadcrumbItem>{" "}
-												{location.pathname
-													.split("/")
-													.filter(Boolean)
-													.map((segment, index, array) => {
-														const path = `/${array.slice(0, index + 1).join("/")}`;
+												{(() => {
+													const raw = location.pathname.split("/").filter(Boolean);
+													// Most app routes live under /dashboard/*, but the breadcrumb root
+													// is a link to /status. Avoid "Dashboard -> dashboard -> ...".
+													const segments =
+														raw[0] === "dashboard" ? raw.slice(1) : raw;
+													const prefix = raw[0] === "dashboard" ? "/dashboard" : "";
+
+													return segments.map((segment, index, array) => {
+														const path = `${prefix}/${array.slice(0, index + 1).join("/")}`;
 														const isLast = index === array.length - 1;
 														return (
 															<React.Fragment key={path}>
@@ -418,7 +423,8 @@ function RootLayout() {
 																</BreadcrumbItem>
 															</React.Fragment>
 														);
-													})}
+													});
+												})()}
 											</BreadcrumbList>
 										</Breadcrumb>
 									</div>
