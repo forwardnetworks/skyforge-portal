@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	Activity,
@@ -12,6 +12,7 @@ import {
 	Play,
 	Plus,
 	Search,
+	Settings,
 	StopCircle,
 	Trash2,
 	Users,
@@ -44,6 +45,13 @@ import {
 	type DataTableColumn,
 } from "../../../components/ui/data-table";
 import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "../../../components/ui/dialog";
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -70,7 +78,9 @@ import {
 	type SkyforgeWorkspace,
 	type WorkspaceDeployment,
 	buildLoginUrl,
+	createWorkspace,
 	deleteDeployment,
+	deleteWorkspace,
 	destroyDeployment,
 	getDashboardSnapshot,
 	getSession,
@@ -136,6 +146,11 @@ function DeploymentsPage() {
 
 	// UI state
 	const [isFeedOpen, setIsFeedOpen] = useState(true);
+	const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+	const [createWorkspaceName, setCreateWorkspaceName] = useState("");
+	const [createWorkspaceSlug, setCreateWorkspaceSlug] = useState("");
+	const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false);
+	const [deleteWorkspaceConfirm, setDeleteWorkspaceConfirm] = useState("");
 
 	const workspacesQ = useQuery({
 		queryKey: queryKeys.workspaces(),
@@ -184,8 +199,63 @@ function DeploymentsPage() {
 		);
 	}, [workspaces, selectedWorkspaceId]);
 
+	const createWs = useMutation({
+		mutationFn: async () => {
+			const name = String(createWorkspaceName ?? "").trim();
+			if (!name) throw new Error("Workspace name is required");
+			return createWorkspace({
+				name,
+				slug: String(createWorkspaceSlug ?? "").trim() || undefined,
+			} as any);
+		},
+		onSuccess: async (created) => {
+			toast.success("Workspace created");
+			setCreateWorkspaceOpen(false);
+			setCreateWorkspaceName("");
+			setCreateWorkspaceSlug("");
+			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
+			if (created?.id) {
+				navigate({
+					search: { workspace: created.id } as any,
+					replace: true,
+				});
+			}
+		},
+		onError: (e) =>
+			toast.error("Failed to create workspace", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const delWs = useMutation({
+		mutationFn: async () => {
+			const confirm = String(deleteWorkspaceConfirm ?? "").trim();
+			if (!confirm) {
+				throw new Error(
+					`Type the workspace slug (“${selectedWorkspace?.slug ?? ""}”) to confirm`,
+				);
+			}
+			return deleteWorkspace(selectedWorkspaceId, { confirm });
+		},
+		onSuccess: async () => {
+			toast.success("Workspace deleted");
+			setDeleteWorkspaceOpen(false);
+			setDeleteWorkspaceConfirm("");
+			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
+			navigate({ search: { workspace: "" } as any, replace: true });
+		},
+		onError: (e) =>
+			toast.error("Failed to delete workspace", {
+				description: (e as Error).message,
+			}),
+	});
+
 	// Sync internal state selection to URL
 	const handleWorkspaceChange = (newId: string) => {
+		if (newId === "__create__") {
+			setCreateWorkspaceOpen(true);
+			return;
+		}
 		if (typeof window !== "undefined") {
 			window.localStorage.setItem(lastWorkspaceKey, newId);
 		}
@@ -449,7 +519,7 @@ function DeploymentsPage() {
 						<Select
 							value={selectedWorkspaceId}
 							onValueChange={handleWorkspaceChange}
-							disabled={workspaces.length === 0}
+							disabled={false}
 						>
 							<SelectTrigger className="w-[200px] h-8 bg-transparent border-0 focus:ring-0 shadow-none">
 								<SelectValue placeholder="Select workspace" />
@@ -460,23 +530,151 @@ function DeploymentsPage() {
 										{w.name} ({w.slug})
 									</SelectItem>
 								))}
+								<SelectItem value="__create__">
+									<span className="flex items-center gap-2">
+										<Plus className="h-4 w-4" />
+										Add workspace…
+									</span>
+								</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
-					<Link
-						to="/dashboard/workspaces/$workspaceId"
-						params={{ workspaceId: selectedWorkspaceId }}
-						className={cn(
-							buttonVariants({ variant: "outline", size: "sm" }),
-							"h-8",
-							!selectedWorkspaceId && "pointer-events-none opacity-50",
-						)}
-					>
-						<Users className="mr-2 h-4 w-4" />
-						Workspace access
-					</Link>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="outline"
+								size="icon"
+								className="h-8 w-8"
+								disabled={!selectedWorkspaceId}
+							>
+								<Settings className="h-4 w-4" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							<DropdownMenuLabel>Workspace</DropdownMenuLabel>
+							<DropdownMenuItem
+								onClick={() =>
+									navigate({
+										to: "/dashboard/workspaces/$workspaceId",
+										params: { workspaceId: selectedWorkspaceId },
+									})
+								}
+							>
+								<Users className="mr-2 h-4 w-4" />
+								Workspace access
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => navigate({ to: "/dashboard/workspaces" })}
+							>
+								<Inbox className="mr-2 h-4 w-4" />
+								All workspaces
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem
+								className="text-destructive focus:text-destructive"
+								onClick={() => {
+									setDeleteWorkspaceOpen(true);
+									setDeleteWorkspaceConfirm("");
+								}}
+							>
+								<Trash2 className="mr-2 h-4 w-4" />
+								Delete workspace…
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
 				</div>
 			</div>
+
+			<Dialog open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen}>
+				<DialogContent className="max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Create workspace</DialogTitle>
+						<DialogDescription>
+							Create a new workspace and its backing Git repo.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="space-y-1.5">
+							<div className="text-sm font-medium">Name</div>
+							<Input
+								value={createWorkspaceName}
+								onChange={(e) => setCreateWorkspaceName(e.target.value)}
+								placeholder="Customer demo"
+							/>
+						</div>
+						<div className="space-y-1.5">
+							<div className="text-sm font-medium">Slug (optional)</div>
+							<Input
+								value={createWorkspaceSlug}
+								onChange={(e) => setCreateWorkspaceSlug(e.target.value)}
+								placeholder="customer-demo"
+								className="font-mono"
+							/>
+							<p className="text-xs text-muted-foreground">
+								Leave blank to auto-generate from name.
+							</p>
+						</div>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setCreateWorkspaceOpen(false)}
+								disabled={createWs.isPending}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => createWs.mutate()}
+								disabled={createWs.isPending}
+							>
+								{createWs.isPending ? "Creating…" : "Create"}
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={deleteWorkspaceOpen} onOpenChange={setDeleteWorkspaceOpen}>
+				<DialogContent className="max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Delete workspace</DialogTitle>
+						<DialogDescription>
+							This deletes the workspace and its backing resources (Git repo,
+							artifacts, and state). This cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="text-sm">
+							Type{" "}
+							<span className="font-mono font-semibold">
+								{selectedWorkspace?.slug ?? ""}
+							</span>{" "}
+							to confirm.
+						</div>
+						<Input
+							value={deleteWorkspaceConfirm}
+							onChange={(e) => setDeleteWorkspaceConfirm(e.target.value)}
+							placeholder={selectedWorkspace?.slug ?? ""}
+							className="font-mono"
+						/>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setDeleteWorkspaceOpen(false)}
+								disabled={delWs.isPending}
+							>
+								Cancel
+							</Button>
+							<Button
+								variant="destructive"
+								onClick={() => delWs.mutate()}
+								disabled={delWs.isPending}
+							>
+								{delWs.isPending ? "Deleting…" : "Delete"}
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 
 			{!snap.data && (
 				<Card className="border-dashed">

@@ -11,10 +11,19 @@ import {
 	CardTitle,
 } from "../../../components/ui/card";
 import { Checkbox } from "../../../components/ui/checkbox";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "../../../components/ui/dialog";
+import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type UpdateWorkspaceMembersRequest,
+	deleteWorkspace,
 	getWorkspaces,
 	updateWorkspaceMembers,
 } from "../../../lib/skyforge-api";
@@ -34,6 +43,8 @@ function WorkspaceAccessPage() {
 	const { workspaceId } = Route.useParams();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [deleteConfirm, setDeleteConfirm] = useState("");
 
 	const ws = useQuery({
 		queryKey: queryKeys.workspaces(),
@@ -110,6 +121,29 @@ function WorkspaceAccessPage() {
 			}),
 	});
 
+	const del = useMutation({
+		mutationFn: async () => {
+			const confirm = String(deleteConfirm ?? "").trim();
+			if (!confirm) {
+				throw new Error(
+					`Type the workspace slug (“${workspace?.slug ?? ""}”) to confirm`,
+				);
+			}
+			return deleteWorkspace(workspaceId, { confirm });
+		},
+		onSuccess: async () => {
+			toast.success("Workspace deleted");
+			setDeleteOpen(false);
+			setDeleteConfirm("");
+			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
+			navigate({ to: "/dashboard/deployments" });
+		},
+		onError: (e) =>
+			toast.error("Failed to delete workspace", {
+				description: (e as Error).message,
+			}),
+	});
+
 	if (ws.isLoading) {
 		return (
 			<div className="space-y-6 p-6">
@@ -157,6 +191,13 @@ function WorkspaceAccessPage() {
 						onClick={() => navigate({ to: "/dashboard/deployments" })}
 					>
 						Back to deployments
+					</Button>
+					<Button
+						variant="destructive"
+						onClick={() => setDeleteOpen(true)}
+						disabled={save.isPending || del.isPending}
+					>
+						Delete workspace
 					</Button>
 					<Button onClick={() => save.mutate()} disabled={save.isPending}>
 						Save
@@ -229,6 +270,47 @@ function WorkspaceAccessPage() {
 					placeholder={"forwardnetworks.com:all"}
 				/>
 			</div>
+
+			<Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+				<DialogContent className="max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Delete workspace</DialogTitle>
+						<DialogDescription>
+							This deletes the workspace and its backing resources (Git repo,
+							artifacts, and state). This cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="text-sm">
+							Type{" "}
+							<span className="font-mono font-semibold">{workspace.slug}</span>{" "}
+							to confirm.
+						</div>
+						<Input
+							value={deleteConfirm}
+							onChange={(e) => setDeleteConfirm(e.target.value)}
+							placeholder={workspace.slug}
+							className="font-mono"
+						/>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setDeleteOpen(false)}
+								disabled={del.isPending}
+							>
+								Cancel
+							</Button>
+							<Button
+								variant="destructive"
+								onClick={() => del.mutate()}
+								disabled={del.isPending}
+							>
+								{del.isPending ? "Deleting…" : "Delete"}
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
