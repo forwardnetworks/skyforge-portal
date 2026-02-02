@@ -12,7 +12,6 @@ import {
 	Play,
 	Plus,
 	Search,
-	Settings,
 	StopCircle,
 	Trash2,
 } from "lucide-react";
@@ -79,10 +78,6 @@ import {
 	stopDeployment,
 } from "../../../lib/skyforge-api";
 import { cn } from "../../../lib/utils";
-import {
-	canEditWorkspace,
-	workspaceAccess,
-} from "../../../lib/workspace-access";
 
 // Search Schema
 const deploymentsSearchSchema = z.object({
@@ -187,9 +182,6 @@ function DeploymentsPage() {
 			null
 		);
 	}, [workspaces, selectedWorkspaceId]);
-	const canOpenWorkspaceSettings = useMemo(() => {
-		return canEditWorkspace(workspaceAccess(session.data, selectedWorkspace));
-	}, [session.data, selectedWorkspace]);
 
 	// Sync internal state selection to URL
 	const handleWorkspaceChange = (newId: string) => {
@@ -447,7 +439,7 @@ function DeploymentsPage() {
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight">Deployments</h1>
 					<p className="text-muted-foreground text-sm">
-						Manage deployments and monitor workspace activity.
+						Manage deployments and monitor activity.
 					</p>
 				</div>
 
@@ -469,31 +461,6 @@ function DeploymentsPage() {
 								))}
 							</SelectContent>
 						</Select>
-						<div className="h-4 w-px bg-border" />
-						<Link
-							to="/dashboard/workspaces/new"
-							title="Create workspace"
-							className={buttonVariants({
-								variant: "ghost",
-								size: "icon",
-								className: "h-8 w-8",
-							})}
-						>
-							<Plus className="h-4 w-4" />
-						</Link>
-						<Link
-							to="/dashboard/workspaces/$workspaceId"
-							params={{ workspaceId: selectedWorkspaceId }}
-							title="Workspace Settings"
-							className={buttonVariants({
-								variant: "ghost",
-								size: "icon",
-								className: "h-8 w-8",
-							})}
-							disabled={!selectedWorkspaceId || !canOpenWorkspaceSettings}
-						>
-							<Settings className="h-4 w-4" />
-						</Link>
 					</div>
 				</div>
 			</div>

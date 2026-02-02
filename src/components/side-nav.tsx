@@ -17,7 +17,6 @@ import {
 	Settings,
 	ShieldCheck,
 	Sparkles,
-	Users,
 	Webhook,
 	Workflow,
 } from "lucide-react";
@@ -60,7 +59,6 @@ const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
 	{ label: "Runs", href: "/dashboard/runs", icon: PanelTop },
-	{ label: "Workspaces", href: "/dashboard/workspaces", icon: Users },
 	{
 		label: "Designer",
 		href: "/dashboard/labs/designer",

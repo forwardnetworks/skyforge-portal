@@ -29,12 +29,9 @@ import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward
 import { Route as DashboardAiRouteImport } from './routes/dashboard/ai'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
-import { Route as DashboardWorkspacesIndexRouteImport } from './routes/dashboard/workspaces/index'
 import { Route as DashboardRunsIndexRouteImport } from './routes/dashboard/runs/index'
 import { Route as DashboardDocsIndexRouteImport } from './routes/dashboard/docs/index'
 import { Route as DashboardDeploymentsIndexRouteImport } from './routes/dashboard/deployments/index'
-import { Route as DashboardWorkspacesNewRouteImport } from './routes/dashboard/workspaces/new'
-import { Route as DashboardWorkspacesWorkspaceIdRouteImport } from './routes/dashboard/workspaces/$workspaceId'
 import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/$runId'
 import { Route as DashboardLabsMapRouteImport } from './routes/dashboard/labs/map'
 import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/labs/designer'
@@ -143,12 +140,6 @@ const AdminGovernanceRoute = AdminGovernanceRouteImport.update({
   path: '/admin/governance',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardWorkspacesIndexRoute =
-  DashboardWorkspacesIndexRouteImport.update({
-    id: '/dashboard/workspaces/',
-    path: '/dashboard/workspaces/',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const DashboardRunsIndexRoute = DashboardRunsIndexRouteImport.update({
   id: '/dashboard/runs/',
   path: '/dashboard/runs/',
@@ -163,17 +154,6 @@ const DashboardDeploymentsIndexRoute =
   DashboardDeploymentsIndexRouteImport.update({
     id: '/dashboard/deployments/',
     path: '/dashboard/deployments/',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const DashboardWorkspacesNewRoute = DashboardWorkspacesNewRouteImport.update({
-  id: '/dashboard/workspaces/new',
-  path: '/dashboard/workspaces/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardWorkspacesWorkspaceIdRoute =
-  DashboardWorkspacesWorkspaceIdRouteImport.update({
-    id: '/dashboard/workspaces/$workspaceId',
-    path: '/dashboard/workspaces/$workspaceId',
     getParentRoute: () => rootRouteImport,
   } as any)
 const DashboardRunsRunIdRoute = DashboardRunsRunIdRouteImport.update({
@@ -240,12 +220,9 @@ export interface FileRoutesByFullPath {
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
-  '/dashboard/workspaces/$workspaceId': typeof DashboardWorkspacesWorkspaceIdRoute
-  '/dashboard/workspaces/new': typeof DashboardWorkspacesNewRoute
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
-  '/dashboard/workspaces': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -275,12 +252,9 @@ export interface FileRoutesByTo {
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
-  '/dashboard/workspaces/$workspaceId': typeof DashboardWorkspacesWorkspaceIdRoute
-  '/dashboard/workspaces/new': typeof DashboardWorkspacesNewRoute
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
-  '/dashboard/workspaces': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -311,12 +285,9 @@ export interface FileRoutesById {
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
-  '/dashboard/workspaces/$workspaceId': typeof DashboardWorkspacesWorkspaceIdRoute
-  '/dashboard/workspaces/new': typeof DashboardWorkspacesNewRoute
   '/dashboard/deployments/': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
   '/dashboard/runs/': typeof DashboardRunsIndexRoute
-  '/dashboard/workspaces/': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -348,12 +319,9 @@ export interface FileRouteTypes {
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
-    | '/dashboard/workspaces/$workspaceId'
-    | '/dashboard/workspaces/new'
     | '/dashboard/deployments'
     | '/dashboard/docs'
     | '/dashboard/runs'
-    | '/dashboard/workspaces'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
@@ -383,12 +351,9 @@ export interface FileRouteTypes {
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
-    | '/dashboard/workspaces/$workspaceId'
-    | '/dashboard/workspaces/new'
     | '/dashboard/deployments'
     | '/dashboard/docs'
     | '/dashboard/runs'
-    | '/dashboard/workspaces'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/deployments/$deploymentId'
   id:
@@ -418,12 +383,9 @@ export interface FileRouteTypes {
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
-    | '/dashboard/workspaces/$workspaceId'
-    | '/dashboard/workspaces/new'
     | '/dashboard/deployments/'
     | '/dashboard/docs/'
     | '/dashboard/runs/'
-    | '/dashboard/workspaces/'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
@@ -454,12 +416,9 @@ export interface RootRouteChildren {
   DashboardLabsDesignerRoute: typeof DashboardLabsDesignerRoute
   DashboardLabsMapRoute: typeof DashboardLabsMapRoute
   DashboardRunsRunIdRoute: typeof DashboardRunsRunIdRoute
-  DashboardWorkspacesWorkspaceIdRoute: typeof DashboardWorkspacesWorkspaceIdRoute
-  DashboardWorkspacesNewRoute: typeof DashboardWorkspacesNewRoute
   DashboardDeploymentsIndexRoute: typeof DashboardDeploymentsIndexRoute
   DashboardDocsIndexRoute: typeof DashboardDocsIndexRoute
   DashboardRunsIndexRoute: typeof DashboardRunsIndexRoute
-  DashboardWorkspacesIndexRoute: typeof DashboardWorkspacesIndexRoute
   DashboardDeploymentsDeploymentIdMapRoute: typeof DashboardDeploymentsDeploymentIdMapRoute
   DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -606,13 +565,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminGovernanceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/workspaces/': {
-      id: '/dashboard/workspaces/'
-      path: '/dashboard/workspaces'
-      fullPath: '/dashboard/workspaces'
-      preLoaderRoute: typeof DashboardWorkspacesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/runs/': {
       id: '/dashboard/runs/'
       path: '/dashboard/runs'
@@ -632,20 +584,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/deployments'
       fullPath: '/dashboard/deployments'
       preLoaderRoute: typeof DashboardDeploymentsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/workspaces/new': {
-      id: '/dashboard/workspaces/new'
-      path: '/dashboard/workspaces/new'
-      fullPath: '/dashboard/workspaces/new'
-      preLoaderRoute: typeof DashboardWorkspacesNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/workspaces/$workspaceId': {
-      id: '/dashboard/workspaces/$workspaceId'
-      path: '/dashboard/workspaces/$workspaceId'
-      fullPath: '/dashboard/workspaces/$workspaceId'
-      preLoaderRoute: typeof DashboardWorkspacesWorkspaceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/runs/$runId': {
@@ -726,12 +664,9 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardLabsDesignerRoute: DashboardLabsDesignerRoute,
   DashboardLabsMapRoute: DashboardLabsMapRoute,
   DashboardRunsRunIdRoute: DashboardRunsRunIdRoute,
-  DashboardWorkspacesWorkspaceIdRoute: DashboardWorkspacesWorkspaceIdRoute,
-  DashboardWorkspacesNewRoute: DashboardWorkspacesNewRoute,
   DashboardDeploymentsIndexRoute: DashboardDeploymentsIndexRoute,
   DashboardDocsIndexRoute: DashboardDocsIndexRoute,
   DashboardRunsIndexRoute: DashboardRunsIndexRoute,
-  DashboardWorkspacesIndexRoute: DashboardWorkspacesIndexRoute,
   DashboardDeploymentsDeploymentIdMapRoute:
     DashboardDeploymentsDeploymentIdMapRoute,
   DashboardDeploymentsDeploymentIdIndexRoute:
