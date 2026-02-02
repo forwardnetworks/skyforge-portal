@@ -13,7 +13,14 @@ import {
 	useEdgesState,
 	useNodesState,
 } from "@xyflow/react";
-import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+	type DragEvent,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import "@xyflow/react/dist/style.css";
 import { RegistryImagePicker } from "@/components/registry-image-picker";
 import { Button } from "@/components/ui/button";
@@ -1372,7 +1379,8 @@ function LabDesignerPage() {
 		});
 	}, [paletteBaseItems, paletteRole, paletteSearch, paletteVendor]);
 	const paletteHasBaseItems = paletteBaseItems.length > 0;
-	const paletteIsFilteredEmpty = paletteHasBaseItems && paletteItems.length === 0;
+	const paletteIsFilteredEmpty =
+		paletteHasBaseItems && paletteItems.length === 0;
 	const registryError = registryReposQ.isError
 		? (registryReposQ.error as Error)?.message || "Registry unavailable."
 		: "";
@@ -1531,8 +1539,8 @@ function LabDesignerPage() {
 													</div>
 													<div>{registryError}</div>
 													<div>
-														Set SKYFORGE_REGISTRY_URL (e.g.
-														https://ghcr.io) and optional credentials.
+														Set SKYFORGE_REGISTRY_URL (e.g. https://ghcr.io) and
+														optional credentials.
 													</div>
 												</div>
 											) : paletteIsFilteredEmpty ? (
@@ -1548,8 +1556,8 @@ function LabDesignerPage() {
 														No images yet
 													</div>
 													<div>
-														Add container images to your registry (e.g.
-														GHCR) or adjust registry repo prefixes.
+														Add container images to your registry (e.g. GHCR) or
+														adjust registry repo prefixes.
 													</div>
 												</div>
 											)}
@@ -1619,8 +1627,8 @@ function LabDesignerPage() {
 								<ReactFlow<Node<DesignNodeData>, Edge>
 									nodes={nodes}
 									edges={edges}
-								onNodesChange={onNodesChangeWithWarnings}
-								onEdgesChange={onEdgesChangeWithWarnings}
+									onNodesChange={onNodesChangeWithWarnings}
+									onEdgesChange={onEdgesChangeWithWarnings}
 									onConnect={(c) => {
 										const label =
 											c.source && c.target
@@ -2137,8 +2145,8 @@ function LabDesignerPage() {
 									</SelectContent>
 								</Select>
 								<div className="text-xs text-muted-foreground">
-									Only required for Containerlab (BYOS). Configure in My Settings
-									-> BYOL Servers.
+									Only required for Containerlab (BYOS). Configure in My
+									Settings , then go to BYOL Servers.
 								</div>
 							</div>
 							<div>
@@ -2297,9 +2305,9 @@ function LabDesignerPage() {
 										<div key={w}>{w}</div>
 									))}
 									{showWarnings
-										? missingImageWarnings.slice(0, 6).map((w) => (
-												<div key={w}>{w}</div>
-											))
+										? missingImageWarnings
+												.slice(0, 6)
+												.map((w) => <div key={w}>{w}</div>)
 										: null}
 								</div>
 							) : null}

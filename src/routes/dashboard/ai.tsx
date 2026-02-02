@@ -90,38 +90,38 @@ function AITemplatesPage() {
 			};
 			return generateUserAITemplate(payload);
 		},
-	onSuccess: (res) => {
-		setOutput(res.content ?? "");
-		setRawOutput("");
-		setLastError("");
-		toast.success("Template generated", { description: res.filename });
-	},
-	onError: (e) => {
-		const msg = e instanceof Error ? e.message : String(e);
-		setLastError(msg);
-		setRawOutput("");
-		if (e instanceof Error && "bodyText" in e) {
-			const bodyText = (e as { bodyText?: string }).bodyText;
-			if (typeof bodyText === "string" && bodyText.trim()) {
-				try {
-					const parsed = JSON.parse(bodyText) as {
-						details?: { meta?: Record<string, unknown> };
-					};
-					const meta = parsed?.details?.meta ?? {};
-					const raw = meta.rawOutput;
-					if (typeof raw === "string" && raw.trim()) {
-						setRawOutput(raw);
+		onSuccess: (res) => {
+			setOutput(res.content ?? "");
+			setRawOutput("");
+			setLastError("");
+			toast.success("Template generated", { description: res.filename });
+		},
+		onError: (e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			setLastError(msg);
+			setRawOutput("");
+			if (e instanceof Error && "bodyText" in e) {
+				const bodyText = (e as { bodyText?: string }).bodyText;
+				if (typeof bodyText === "string" && bodyText.trim()) {
+					try {
+						const parsed = JSON.parse(bodyText) as {
+							details?: { meta?: Record<string, unknown> };
+						};
+						const meta = parsed?.details?.meta ?? {};
+						const raw = meta.rawOutput;
+						if (typeof raw === "string" && raw.trim()) {
+							setRawOutput(raw);
+						}
+					} catch {
+						// ignore parse failures
 					}
-				} catch {
-					// ignore parse failures
 				}
 			}
-		}
-		toast.error("Failed to generate template", {
-			description: msg,
-		});
-	},
-});
+			toast.error("Failed to generate template", {
+				description: msg,
+			});
+		},
+	});
 
 	const save = useMutation({
 		mutationFn: async () => {
@@ -132,13 +132,13 @@ function AITemplatesPage() {
 				pathHint: "ai/generated",
 			});
 		},
-	onSuccess: (res) => {
-		setLastError("");
-		setRawOutput("");
-		toast.success("Saved to repo", {
-			description: `${res.repo}:${res.path}@${res.branch}`,
-		});
-	},
+		onSuccess: (res) => {
+			setLastError("");
+			setRawOutput("");
+			toast.success("Saved to repo", {
+				description: `${res.repo}:${res.path}@${res.branch}`,
+			});
+		},
 		onError: (e) => {
 			const msg = e instanceof Error ? e.message : String(e);
 			setLastError(msg);
@@ -154,12 +154,12 @@ function AITemplatesPage() {
 				content: output,
 			});
 		},
-	onSuccess: (res) => {
-		setLastError("");
-		setRawOutput("");
-		if (kind === "netlab") {
-			const runId = res.task?.id != null ? String(res.task.id) : "";
-			setLastValidateRunId(runId);
+		onSuccess: (res) => {
+			setLastError("");
+			setRawOutput("");
+			if (kind === "netlab") {
+				const runId = res.task?.id != null ? String(res.task.id) : "";
+				setLastValidateRunId(runId);
 				toast.success("Validation started", {
 					description: runId ? `Run: ${runId}` : "Run created",
 				});
@@ -174,25 +174,25 @@ function AITemplatesPage() {
 							.join("\n")
 					: "";
 
-	if (ok) {
-		toast.success("Containerlab template is valid");
-		setLastValidateRunId("");
-		return;
-	}
+			if (ok) {
+				toast.success("Containerlab template is valid");
+				setLastValidateRunId("");
+				return;
+			}
 
-	setLastError(errs || "Containerlab template is invalid");
-	setRawOutput("");
-	toast.error("Containerlab template is invalid", {
-		description: errs ? errs.split("\n")[0] : "Schema validation failed",
+			setLastError(errs || "Containerlab template is invalid");
+			setRawOutput("");
+			toast.error("Containerlab template is invalid", {
+				description: errs ? errs.split("\n")[0] : "Schema validation failed",
+			});
+		},
+		onError: (e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			setLastError(msg);
+			setRawOutput("");
+			toast.error("Failed to validate template", { description: msg });
+		},
 	});
-},
-onError: (e) => {
-	const msg = e instanceof Error ? e.message : String(e);
-	setLastError(msg);
-	setRawOutput("");
-	toast.error("Failed to validate template", { description: msg });
-},
-});
 
 	const autofix = useMutation({
 		mutationFn: async () => {
@@ -206,30 +206,30 @@ onError: (e) => {
 				maxIterations: 3,
 			});
 		},
-	onSuccess: (res) => {
-		setOutput(res.content ?? "");
-		if (res.ok) {
-			setLastError("");
+		onSuccess: (res) => {
+			setOutput(res.content ?? "");
+			if (res.ok) {
+				setLastError("");
+				setRawOutput("");
+				toast.success("Autofix succeeded", {
+					description: `Iterations: ${res.iterations}`,
+				});
+				return;
+			}
+			const errs = (res.errors ?? []).slice(0, 10).join("\n");
+			setLastError(errs || "Autofix failed");
 			setRawOutput("");
-			toast.success("Autofix succeeded", {
-				description: `Iterations: ${res.iterations}`,
+			toast.error("Autofix did not converge", {
+				description: errs ? errs.split("\n")[0] : "Schema validation failed",
 			});
-			return;
-		}
-		const errs = (res.errors ?? []).slice(0, 10).join("\n");
-		setLastError(errs || "Autofix failed");
-		setRawOutput("");
-		toast.error("Autofix did not converge", {
-			description: errs ? errs.split("\n")[0] : "Schema validation failed",
-		});
-	},
-	onError: (e) => {
-		const msg = e instanceof Error ? e.message : String(e);
-		setLastError(msg);
-		setRawOutput("");
-		toast.error("Failed to autofix template", { description: msg });
-	},
-});
+		},
+		onError: (e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			setLastError(msg);
+			setRawOutput("");
+			toast.error("Failed to autofix template", { description: msg });
+		},
+	});
 
 	const historyItems = useMemo(
 		() => history.data?.items ?? [],

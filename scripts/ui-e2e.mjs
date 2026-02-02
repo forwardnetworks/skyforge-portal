@@ -1,16 +1,21 @@
 import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
-const BASE_URL = (process.env.SKYFORGE_UI_E2E_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
-const API_URL = (process.env.SKYFORGE_UI_E2E_API_URL || "http://localhost:8085").replace(/\/$/, "");
+const BASE_URL = (
+	process.env.SKYFORGE_UI_E2E_BASE_URL || "http://localhost:5173"
+).replace(/\/$/, "");
+const API_URL = (
+	process.env.SKYFORGE_UI_E2E_API_URL || "http://localhost:8085"
+).replace(/\/$/, "");
 const USERNAME = (process.env.SKYFORGE_UI_E2E_USERNAME || "skyforge").trim();
 const ADMIN_TOKEN = (process.env.SKYFORGE_UI_E2E_ADMIN_TOKEN || "").trim();
 const HEADLESS = envBool("SKYFORGE_UI_E2E_HEADLESS", true);
 const TIMEOUT_MS = envInt("SKYFORGE_UI_E2E_TIMEOUT_MS", 15000);
 const SSE_TIMEOUT_MS = envInt("SKYFORGE_UI_E2E_SSE_TIMEOUT_MS", 10000);
 const SCREENSHOTS = envBool("SKYFORGE_UI_E2E_SCREENSHOTS", true);
-const SCREENSHOT_DIR =
-	(process.env.SKYFORGE_UI_E2E_SCREENSHOT_DIR || "e2e-artifacts").trim();
+const SCREENSHOT_DIR = (
+	process.env.SKYFORGE_UI_E2E_SCREENSHOT_DIR || "e2e-artifacts"
+).trim();
 let screenshotCounter = 0;
 
 if (!ADMIN_TOKEN) {
@@ -32,13 +37,17 @@ const context = await browser.newContext({
 if (SCREENSHOTS) {
 	mkdirSync(SCREENSHOT_DIR, { recursive: true });
 }
-await context.addCookies([{ name: cookie.name, value: cookie.value, url: BASE_URL }]);
+await context.addCookies([
+	{ name: cookie.name, value: cookie.value, url: BASE_URL },
+]);
 const page = await context.newPage();
 page.setDefaultTimeout(TIMEOUT_MS);
 
 const errors = [];
 const networkErrors = [];
-page.on("pageerror", (err) => errors.push(`pageerror: ${err.message || String(err)}`));
+page.on("pageerror", (err) =>
+	errors.push(`pageerror: ${err.message || String(err)}`),
+);
 page.on("console", (msg) => {
 	if (msg.type() === "error") {
 		const text = msg.text();
@@ -58,11 +67,31 @@ page.on("response", (resp) => {
 });
 
 try {
-	await visit(page, "/dashboard/deployments", { role: "heading", name: /Deployments/i }, "deployments");
-	await visit(page, "/dashboard/deployments/new", /Create deployment/i, "deployments-new");
+	await visit(
+		page,
+		"/dashboard/deployments",
+		{ role: "heading", name: /Deployments/i },
+		"deployments",
+	);
+	await visit(
+		page,
+		"/dashboard/deployments/new",
+		/Create deployment/i,
+		"deployments-new",
+	);
 	await visit(page, "/dashboard/runs", { placeholder: /Filter runs/i }, "runs");
-	await visit(page, "/dashboard/workspaces", { role: "heading", name: /Workspaces/i }, "workspaces");
-	await visit(page, "/dashboard/workspaces/new", /Create Workspace/i, "workspaces-new");
+	await visit(
+		page,
+		"/dashboard/workspaces",
+		{ role: "heading", name: /Workspaces/i },
+		"workspaces",
+	);
+	await visit(
+		page,
+		"/dashboard/workspaces/new",
+		/Create Workspace/i,
+		"workspaces-new",
+	);
 	if (workspaceId) {
 		await visit(
 			page,
@@ -71,15 +100,35 @@ try {
 			"workspace-detail",
 		);
 	}
-	await visit(page, "/dashboard/settings", { role: "heading", name: /My Settings/i }, "settings");
-	await visit(page, "/dashboard/integrations", { role: "heading", name: /Integrations/i }, "integrations");
-	await visit(page, "/dashboard/forward", { role: "heading", name: /Collector/i }, "forward");
+	await visit(
+		page,
+		"/dashboard/settings",
+		{ role: "heading", name: /My Settings/i },
+		"settings",
+	);
+	await visit(
+		page,
+		"/dashboard/integrations",
+		{ role: "heading", name: /Integrations/i },
+		"integrations",
+	);
+	await visit(
+		page,
+		"/dashboard/forward",
+		{ role: "heading", name: /Collector/i },
+		"forward",
+	);
 	await visit(page, "/dashboard/s3", /S3/i, "s3");
 	await visit(page, "/dashboard/labs/designer", /Lab Designer/i, "designer");
 	await visit(page, "/dashboard/labs/map", /Lab map/i, "lab-map");
 	await visit(page, "/dashboard/docs", /Docs/i, "docs");
 	await visit(page, "/dashboard/ai", { role: "heading", name: /^AI$/i }, "ai");
-	await visit(page, "/dashboard/servicenow", { role: "heading", name: /ServiceNow/i }, "servicenow");
+	await visit(
+		page,
+		"/dashboard/servicenow",
+		{ role: "heading", name: /ServiceNow/i },
+		"servicenow",
+	);
 	if (deploymentIds.length > 0) {
 		const deploymentId = deploymentIds[0];
 		await visit(
@@ -149,7 +198,10 @@ async function waitForExpected(page, expected) {
 			return;
 		}
 		if (expected.role && expected.name) {
-			await page.getByRole(expected.role, { name: expected.name }).first().waitFor();
+			await page
+				.getByRole(expected.role, { name: expected.name })
+				.first()
+				.waitFor();
 			return;
 		}
 		if (expected.text) {
@@ -244,7 +296,9 @@ async function ensureWorkspace(cookieHeader) {
 		throw new Error(`Failed to list workspaces (${listResp.status})`);
 	}
 	const listBody = await listResp.json();
-	const workspaces = Array.isArray(listBody?.workspaces) ? listBody.workspaces : [];
+	const workspaces = Array.isArray(listBody?.workspaces)
+		? listBody.workspaces
+		: [];
 	if (workspaces.length > 0) {
 		return String(workspaces[0].id || "");
 	}
@@ -265,7 +319,9 @@ async function ensureWorkspace(cookieHeader) {
 	});
 	if (!createResp.ok) {
 		const detail = await createResp.text();
-		throw new Error(`Failed to create workspace (${createResp.status}): ${detail}`);
+		throw new Error(
+			`Failed to create workspace (${createResp.status}): ${detail}`,
+		);
 	}
 	const created = await createResp.json();
 	return String(created?.id || "");
