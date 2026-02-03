@@ -49,6 +49,7 @@ export function DataTable<T>({
 	estimateRowHeight = 34,
 }: DataTableProps<T>) {
 	const parentRef = React.useRef<HTMLDivElement | null>(null);
+	const enableHorizontalScroll = minWidthClassName !== "min-w-0";
 
 	const gridTemplateColumns = React.useMemo(() => {
 		return columns.map((c) => toColumnWidth(c.width)).join(" ");
@@ -64,7 +65,14 @@ export function DataTable<T>({
 	const virtualRows = rowVirtualizer.getVirtualItems();
 
 	return (
-		<div className="w-full overflow-x-auto overflow-y-hidden rounded-md border">
+		<div
+			className={cn(
+				"w-full rounded-md border",
+				enableHorizontalScroll
+					? "overflow-x-auto overflow-y-hidden"
+					: "overflow-hidden",
+			)}
+		>
 			<div className={cn(minWidthClassName)}>
 				<div
 					role="table"
