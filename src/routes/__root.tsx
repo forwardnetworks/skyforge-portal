@@ -399,8 +399,10 @@ function RootLayout() {
 														.filter(Boolean);
 													// Most app routes live under /dashboard/*, but the breadcrumb root
 													// is a link to /status. Avoid "Dashboard -> dashboard -> ...".
-													const segments =
-														raw[0] === "dashboard" ? raw.slice(1) : raw;
+													let segments = raw;
+													while (segments[0] === "dashboard") {
+														segments = segments.slice(1);
+													}
 													const prefix =
 														raw[0] === "dashboard" ? "/dashboard" : "";
 
