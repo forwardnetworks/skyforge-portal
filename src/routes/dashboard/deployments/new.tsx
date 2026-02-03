@@ -823,7 +823,7 @@ function CreateDeploymentPage() {
 				</CardHeader>
 			</Card>
 
-			{byosEveEnabled && (
+			{byosEveEnabled && watchKind === "eve_ng" && (
 				<Card>
 					<CardHeader>
 						<CardTitle>Import from EVE-NG</CardTitle>
