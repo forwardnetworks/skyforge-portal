@@ -34,9 +34,10 @@ export function TerminalView({
 		const k = String(nodeKind ?? "").toLowerCase();
 		// Server-side defaults to "sh"; for EOS/cEOS, "Cli" is more useful.
 		if (k.includes("eos") || k.includes("ceos")) return "Cli";
-		// For Junos (vMX / vJunos), land in the network OS CLI.
+		// For Junos (vMX / vJunos), land in the network OS console.
+		// vrnetlab exposes it over telnet on localhost:5000.
 		if (k.includes("junos") || k.includes("vmx") || k.includes("vjunos"))
-			return "cli";
+			return "telnet 127.0.0.1 5000";
 		return "sh";
 	}, [nodeKind]);
 
