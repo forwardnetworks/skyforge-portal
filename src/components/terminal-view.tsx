@@ -31,15 +31,10 @@ export function TerminalView({
 	const [status, setStatus] = useState<string>("disconnected");
 
 	const command = useMemo(() => {
-		const k = String(nodeKind ?? "").toLowerCase();
-		// Server-side defaults to "sh"; for EOS/cEOS, "Cli" is more useful.
-		if (k.includes("eos") || k.includes("ceos")) return "Cli";
-		// For Junos (vMX / vJunos), land in the network OS console.
-		// vrnetlab exposes it over telnet on localhost:5000.
-		if (k.includes("junos") || k.includes("vmx") || k.includes("vjunos"))
-			return "telnet 127.0.0.1 5000";
-		return "sh";
-	}, [nodeKind]);
+		// `cli` is a semantic default: the server will translate it into the
+		// correct in-container command (vrnetlab console, cEOS Cli, or shell fallback).
+		return "cli";
+	}, []);
 
 	const wsURL = useMemo(() => {
 		if (!workspaceId || !deploymentId || !nodeId) return "";

@@ -180,7 +180,7 @@ function CreateDeploymentPage() {
 			workspaceId: workspace || "",
 			name: "",
 			kind: "netlab-c9s",
-			source: "blueprints",
+			source: "workspace",
 			templateRepoId: "",
 			template: "",
 			netlabServer: "",
