@@ -132,12 +132,14 @@ function AITemplatesPage() {
 				pathHint: "ai/generated",
 			});
 		},
-		onSuccess: (res) => {
+		onSuccess: async (res) => {
 			setLastError("");
 			setRawOutput("");
 			toast.success("Saved to repo", {
 				description: `${res.repo}:${res.path}@${res.branch}`,
 			});
+			// Ensure create-deployment dropdowns pick up the new file immediately.
+			await qc.invalidateQueries({ queryKey: ["workspaceTemplates"] });
 		},
 		onError: (e) => {
 			const msg = e instanceof Error ? e.message : String(e);
