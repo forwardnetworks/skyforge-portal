@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.vite/
+.cache/
+coverage/
+playwright-report/
+.DS_Store
+

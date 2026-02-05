@@ -53,6 +53,7 @@ type Features = {
 	netboxEnabled?: boolean;
 	nautobotEnabled?: boolean;
 	dnsEnabled?: boolean;
+	elasticEnabled?: boolean;
 };
 
 const items: NavItem[] = [
@@ -110,6 +111,12 @@ const items: NavItem[] = [
 			},
 			{ label: "NetBox", href: "/netbox/", icon: Network, external: true },
 			{ label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
+			{
+				label: "Elastic (Kibana)",
+				href: "/kibana/",
+				icon: Database,
+				external: true,
+			},
 			{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 		],
 	},
@@ -190,6 +197,8 @@ export function SideNav(props: {
 										if (child.label === "API Testing") return !!f.yaadeEnabled;
 										if (child.label === "NetBox") return !!f.netboxEnabled;
 										if (child.label === "Nautobot") return !!f.nautobotEnabled;
+										if (child.label === "Elastic (Kibana)")
+											return !!f.elasticEnabled;
 										return true;
 									}) ?? [];
 								if (children.length === 0) return [];
