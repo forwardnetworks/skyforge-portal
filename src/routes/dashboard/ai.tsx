@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,58 @@ function vertexEnableLink(err: string): string | null {
 	return m?.[1] ?? null;
 }
 
+type ActionName = "generate" | "save" | "validate" | "autofix" | "disconnect";
+type ActionPhase = "idle" | "running" | "succeeded" | "failed";
+
+type ActionState = {
+	phase: ActionPhase;
+	startedAt?: number;
+	endedAt?: number;
+	durationMs?: number;
+	summary?: string;
+	detail?: string;
+	requestMeta?: Record<string, string>;
+};
+
+type ActivityEntry = {
+	action: ActionName;
+	phase: Exclude<ActionPhase, "idle">;
+	startedAt: number;
+	endedAt: number;
+	durationMs: number;
+	summary: string;
+	detail?: string;
+};
+
+const ACTION_LABEL: Record<ActionName, string> = {
+	generate: "Generate",
+	save: "Save",
+	validate: "Validate",
+	autofix: "Auto-fix",
+	disconnect: "Disconnect",
+};
+
+const INITIAL_ACTIONS: Record<ActionName, ActionState> = {
+	generate: { phase: "idle" },
+	save: { phase: "idle" },
+	validate: { phase: "idle" },
+	autofix: { phase: "idle" },
+	disconnect: { phase: "idle" },
+};
+
+function fmtDuration(ms?: number): string {
+	if (!ms || ms < 0) return "0s";
+	const total = Math.floor(ms / 1000);
+	const mins = Math.floor(total / 60);
+	const secs = total % 60;
+	if (mins === 0) return `${secs}s`;
+	return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+function firstLine(text: string): string {
+	return text.split(/\r?\n/)[0] || text;
+}
+
 function AITemplatesPage() {
 	const qc = useQueryClient();
 	const [kind, setKind] = useState<"netlab" | "containerlab">("netlab");
@@ -47,6 +100,80 @@ function AITemplatesPage() {
 	const [rawOutput, setRawOutput] = useState("");
 	const [lastError, setLastError] = useState<string>("");
 	const [lastValidateRunId, setLastValidateRunId] = useState<string>("");
+	const [actionState, setActionState] =
+		useState<Record<ActionName, ActionState>>(INITIAL_ACTIONS);
+	const [activeAction, setActiveAction] = useState<ActionName | null>(null);
+	const [activityLog, setActivityLog] = useState<ActivityEntry[]>([]);
+	const [showErrorDetails, setShowErrorDetails] = useState(false);
+	const [timerNow, setTimerNow] = useState(Date.now());
+	const [highlightHistoryId, setHighlightHistoryId] = useState("");
+
+	const pushActivity = (entry: ActivityEntry) => {
+		setActivityLog((prev) => [entry, ...prev].slice(0, 5));
+	};
+
+	const beginAction = (
+		action: ActionName,
+		summary: string,
+		requestMeta?: Record<string, string>,
+	) => {
+		const startedAt = Date.now();
+		setTimerNow(startedAt);
+		setActiveAction(action);
+		setShowErrorDetails(false);
+		setActionState((prev) => ({
+			...prev,
+			[action]: {
+				phase: "running",
+				startedAt,
+				summary,
+				requestMeta,
+			},
+		}));
+	};
+
+	const finishAction = (
+		action: ActionName,
+		phase: "succeeded" | "failed",
+		summary: string,
+		detail?: string,
+	) => {
+		let entry: ActivityEntry | null = null;
+		setActionState((prev) => {
+			const prevAction = prev[action];
+			const endedAt = Date.now();
+			const startedAt = prevAction.startedAt ?? endedAt;
+			const durationMs = Math.max(0, endedAt - startedAt);
+			entry = {
+				action,
+				phase,
+				startedAt,
+				endedAt,
+				durationMs,
+				summary,
+				detail,
+			};
+			return {
+				...prev,
+				[action]: {
+					...prevAction,
+					phase,
+					endedAt,
+					durationMs,
+					summary,
+					detail,
+				},
+			};
+		});
+		if (entry) pushActivity(entry);
+		setActiveAction((current) => (current === action ? null : current));
+	};
+
+	useEffect(() => {
+		if (!activeAction) return;
+		const int = window.setInterval(() => setTimerNow(Date.now()), 1000);
+		return () => window.clearInterval(int);
+	}, [activeAction]);
 
 	const geminiCfg = useQuery({
 		queryKey: queryKeys.userGeminiConfig(),
@@ -65,12 +192,22 @@ function AITemplatesPage() {
 
 	const disconnect = useMutation({
 		mutationFn: async () => disconnectUserGemini(),
+		onMutate: () => {
+			beginAction("disconnect", "Disconnecting Gemini integration…");
+		},
 		onSuccess: async () => {
+			finishAction("disconnect", "succeeded", "Gemini disconnected");
 			toast.success("Disconnected Gemini");
 			await qc.invalidateQueries({ queryKey: queryKeys.userGeminiConfig() });
 		},
 		onError: (e) => {
 			const msg = e instanceof Error ? e.message : String(e);
+			finishAction(
+				"disconnect",
+				"failed",
+				`Disconnect failed: ${firstLine(msg)}`,
+				msg,
+			);
 			toast.error("Failed to disconnect Gemini", { description: msg });
 		},
 	});
@@ -90,10 +227,24 @@ function AITemplatesPage() {
 			};
 			return generateUserAITemplate(payload);
 		},
+		onMutate: () => {
+			beginAction("generate", `Generating ${kind} template with Gemini…`, {
+				kind,
+				provider: "gemini",
+			});
+		},
 		onSuccess: (res) => {
 			setOutput(res.content ?? "");
 			setRawOutput("");
 			setLastError("");
+			setHighlightHistoryId(res.id);
+			finishAction(
+				"generate",
+				"succeeded",
+				`Template generated: ${res.filename}`,
+				(res.warnings ?? []).join("\n") || undefined,
+			);
+			void qc.invalidateQueries({ queryKey: queryKeys.userAIHistory() });
 			toast.success("Template generated", { description: res.filename });
 		},
 		onError: (e) => {
@@ -117,6 +268,12 @@ function AITemplatesPage() {
 					}
 				}
 			}
+			finishAction(
+				"generate",
+				"failed",
+				`Generation failed: ${firstLine(msg)}`,
+				msg,
+			);
 			toast.error("Failed to generate template", {
 				description: msg,
 			});
@@ -132,9 +289,21 @@ function AITemplatesPage() {
 				pathHint: "ai/generated",
 			});
 		},
+		onMutate: () => {
+			beginAction("save", "Saving template to repository…", {
+				kind,
+				pathHint: "ai/generated",
+			});
+		},
 		onSuccess: async (res) => {
 			setLastError("");
 			setRawOutput("");
+			finishAction(
+				"save",
+				"succeeded",
+				`Saved to repo: ${res.path}`,
+				`${res.repo}:${res.path}@${res.branch}`,
+			);
 			toast.success("Saved to repo", {
 				description: `${res.repo}:${res.path}@${res.branch}`,
 			});
@@ -144,6 +313,7 @@ function AITemplatesPage() {
 		onError: (e) => {
 			const msg = e instanceof Error ? e.message : String(e);
 			setLastError(msg);
+			finishAction("save", "failed", `Save failed: ${firstLine(msg)}`, msg);
 			toast.error("Failed to save template", { description: msg });
 		},
 	});
@@ -156,12 +326,27 @@ function AITemplatesPage() {
 				content: output,
 			});
 		},
+		onMutate: () => {
+			beginAction(
+				"validate",
+				kind === "netlab"
+					? "Starting netlab validation run…"
+					: "Validating containerlab template…",
+				{ kind },
+			);
+		},
 		onSuccess: (res) => {
 			setLastError("");
 			setRawOutput("");
 			if (kind === "netlab") {
 				const runId = res.task?.id != null ? String(res.task.id) : "";
 				setLastValidateRunId(runId);
+				finishAction(
+					"validate",
+					"succeeded",
+					runId ? `Validation run started: ${runId}` : "Validation run started",
+					undefined,
+				);
 				toast.success("Validation started", {
 					description: runId ? `Run: ${runId}` : "Run created",
 				});
@@ -177,6 +362,7 @@ function AITemplatesPage() {
 					: "";
 
 			if (ok) {
+				finishAction("validate", "succeeded", "Containerlab template is valid");
 				toast.success("Containerlab template is valid");
 				setLastValidateRunId("");
 				return;
@@ -184,6 +370,12 @@ function AITemplatesPage() {
 
 			setLastError(errs || "Containerlab template is invalid");
 			setRawOutput("");
+			finishAction(
+				"validate",
+				"failed",
+				`Containerlab validation failed: ${firstLine(errs || "schema error")}`,
+				errs || "Containerlab template is invalid",
+			);
 			toast.error("Containerlab template is invalid", {
 				description: errs ? errs.split("\n")[0] : "Schema validation failed",
 			});
@@ -192,6 +384,12 @@ function AITemplatesPage() {
 			const msg = e instanceof Error ? e.message : String(e);
 			setLastError(msg);
 			setRawOutput("");
+			finishAction(
+				"validate",
+				"failed",
+				`Validate failed: ${firstLine(msg)}`,
+				msg,
+			);
 			toast.error("Failed to validate template", { description: msg });
 		},
 	});
@@ -208,11 +406,21 @@ function AITemplatesPage() {
 				maxIterations: 3,
 			});
 		},
+		onMutate: () => {
+			beginAction("autofix", "Autofix iteration loop started (max 3)…", {
+				kind: "containerlab",
+			});
+		},
 		onSuccess: (res) => {
 			setOutput(res.content ?? "");
 			if (res.ok) {
 				setLastError("");
 				setRawOutput("");
+				finishAction(
+					"autofix",
+					"succeeded",
+					`Autofix succeeded in ${res.iterations} iteration(s)`,
+				);
 				toast.success("Autofix succeeded", {
 					description: `Iterations: ${res.iterations}`,
 				});
@@ -221,6 +429,12 @@ function AITemplatesPage() {
 			const errs = (res.errors ?? []).slice(0, 10).join("\n");
 			setLastError(errs || "Autofix failed");
 			setRawOutput("");
+			finishAction(
+				"autofix",
+				"failed",
+				`Autofix failed: ${firstLine(errs || "did not converge")}`,
+				errs || "Autofix failed",
+			);
 			toast.error("Autofix did not converge", {
 				description: errs ? errs.split("\n")[0] : "Schema validation failed",
 			});
@@ -229,6 +443,12 @@ function AITemplatesPage() {
 			const msg = e instanceof Error ? e.message : String(e);
 			setLastError(msg);
 			setRawOutput("");
+			finishAction(
+				"autofix",
+				"failed",
+				`Autofix failed: ${firstLine(msg)}`,
+				msg,
+			);
 			toast.error("Failed to autofix template", { description: msg });
 		},
 	});
@@ -237,6 +457,24 @@ function AITemplatesPage() {
 		() => history.data?.items ?? [],
 		[history.data?.items],
 	);
+	const isBusy =
+		generate.isPending ||
+		save.isPending ||
+		validate.isPending ||
+		autofix.isPending ||
+		disconnect.isPending;
+	const activeState = activeAction ? actionState[activeAction] : null;
+	const activeElapsed = activeState?.startedAt
+		? timerNow - activeState.startedAt
+		: 0;
+	const outputStatus = generate.isPending
+		? "Generating template…"
+		: output.trim()
+			? "Generated template output"
+			: "No output yet";
+	const outputPlaceholder = generate.isPending
+		? "Generating template..."
+		: "No output yet. Enter a prompt and click Generate.";
 
 	return (
 		<div className="mx-auto w-full max-w-5xl space-y-4 p-4">
@@ -333,6 +571,100 @@ function AITemplatesPage() {
 				</CardContent>
 			</Card>
 
+			<Card>
+				<CardHeader>
+					<CardTitle>Activity</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<div className="flex flex-wrap items-center gap-2">
+						{activeAction && activeState?.phase === "running" ? (
+							<>
+								<Badge>{ACTION_LABEL[activeAction]} running</Badge>
+								<div className="text-sm text-muted-foreground">
+									Elapsed: {fmtDuration(activeElapsed)}
+								</div>
+							</>
+						) : (
+							<Badge variant="secondary">Idle</Badge>
+						)}
+					</div>
+					{activeAction && activeState?.phase === "running" ? (
+						<div className="text-sm text-muted-foreground">
+							{activeState.summary}
+						</div>
+					) : null}
+					{activityLog.length > 0 ? (
+						<div className="space-y-2">
+							{activityLog.map((entry, index) => (
+								<div
+									key={`${entry.action}-${entry.endedAt}-${index}`}
+									className="rounded-md border p-2"
+								>
+									<div className="flex items-center justify-between gap-2 text-sm">
+										<div className="font-medium">
+											{ACTION_LABEL[entry.action]} · {entry.phase}
+										</div>
+										<div className="text-xs text-muted-foreground">
+											{fmtDuration(entry.durationMs)}
+										</div>
+									</div>
+									<div className="mt-1 text-xs text-muted-foreground">
+										{entry.summary}
+									</div>
+								</div>
+							))}
+						</div>
+					) : (
+						<div className="text-sm text-muted-foreground">
+							No activity yet.
+						</div>
+					)}
+					{lastError ? (
+						<div className="rounded-md border bg-muted/40 p-3 text-xs">
+							<div className="font-medium">Latest error</div>
+							<div className="mt-1 text-muted-foreground">
+								{firstLine(lastError)}
+							</div>
+							<div className="mt-2 flex flex-wrap gap-2">
+								<Button
+									size="sm"
+									variant="outline"
+									onClick={() => setShowErrorDetails((v) => !v)}
+								>
+									{showErrorDetails ? "Hide details" : "View details"}
+								</Button>
+								{vertexEnableLink(lastError) ? (
+									<Button size="sm" variant="outline" asChild>
+										<a
+											href={vertexEnableLink(lastError) ?? "#"}
+											target="_blank"
+											rel="noreferrer noopener"
+										>
+											Enable Vertex AI API
+										</a>
+									</Button>
+								) : null}
+							</div>
+							{showErrorDetails ? (
+								<div className="mt-2 space-y-2">
+									<div className="whitespace-pre-wrap break-words text-muted-foreground">
+										{lastError}
+									</div>
+									{rawOutput ? (
+										<div>
+											<div className="mb-1 font-medium">Raw AI output</div>
+											<div className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-muted-foreground">
+												{rawOutput}
+											</div>
+										</div>
+									) : null}
+								</div>
+							) : null}
+						</div>
+					) : null}
+				</CardContent>
+			</Card>
+
 			<div className="grid gap-4 md:grid-cols-2">
 				<Card>
 					<CardHeader>
@@ -381,6 +713,7 @@ function AITemplatesPage() {
 								disabled={
 									!canGenerate ||
 									generate.isPending ||
+									isBusy ||
 									prompt.trim().length === 0
 								}
 								onClick={() => generate.mutate()}
@@ -389,14 +722,14 @@ function AITemplatesPage() {
 							</Button>
 							<Button
 								variant="outline"
-								disabled={!output.trim() || save.isPending}
+								disabled={!output.trim() || save.isPending || isBusy}
 								onClick={() => save.mutate()}
 							>
 								Save to Repo
 							</Button>
 							<Button
 								variant="outline"
-								disabled={!output.trim() || validate.isPending}
+								disabled={!output.trim() || validate.isPending || isBusy}
 								onClick={() => validate.mutate()}
 							>
 								Validate
@@ -404,7 +737,10 @@ function AITemplatesPage() {
 							<Button
 								variant="outline"
 								disabled={
-									kind !== "containerlab" || !output.trim() || autofix.isPending
+									kind !== "containerlab" ||
+									!output.trim() ||
+									autofix.isPending ||
+									isBusy
 								}
 								onClick={() => autofix.mutate()}
 							>
@@ -439,6 +775,7 @@ function AITemplatesPage() {
 						<CardTitle>Output</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
+						<div className="text-xs text-muted-foreground">{outputStatus}</div>
 						<Label className="sr-only" htmlFor="ai-output">
 							Generated template output
 						</Label>
@@ -447,21 +784,9 @@ function AITemplatesPage() {
 							name="ai-output"
 							value={output}
 							readOnly
-							placeholder="Generated YAML will appear here…"
+							placeholder={outputPlaceholder}
 							className="min-h-[420px] font-mono text-xs"
 						/>
-						{rawOutput ? (
-							<div className="space-y-2">
-								<Label htmlFor="ai-raw-output">Raw AI output</Label>
-								<Textarea
-									id="ai-raw-output"
-									name="ai-raw-output"
-									value={rawOutput}
-									readOnly
-									className="min-h-[160px] font-mono text-xs"
-								/>
-							</div>
-						) : null}
 						<div className="text-xs text-muted-foreground">
 							Validate runs an in-cluster netlab validation job (netlab
 							templates) or containerlab schema validation (containerlab
@@ -476,6 +801,9 @@ function AITemplatesPage() {
 					<CardTitle>History</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-2 text-sm">
+					<div className="text-xs text-muted-foreground">
+						History updates every 15s and may lag active operations.
+					</div>
 					{history.isLoading ? (
 						<div className="text-sm text-muted-foreground">Loading…</div>
 					) : historyItems.length === 0 ? (
@@ -487,7 +815,7 @@ function AITemplatesPage() {
 							{historyItems.slice(0, 10).map((it) => (
 								<div
 									key={it.id}
-									className="flex items-center justify-between gap-2 rounded-md border px-3 py-2"
+									className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 ${it.id === highlightHistoryId ? "border-primary/60 bg-primary/5" : ""}`}
 								>
 									<div className="min-w-0">
 										<div className="font-medium">
