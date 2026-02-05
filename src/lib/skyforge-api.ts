@@ -81,6 +81,10 @@ export type UserGeminiConfigResponse = {
 	hasToken: boolean;
 	updatedAt?: ISO8601;
 	redirectUrl?: string;
+	projectId?: string;
+	location?: string;
+	model?: string;
+	fallbackModel?: string;
 };
 
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
@@ -661,6 +665,7 @@ export type UserAISaveRequest = {
 	kind: "netlab" | "containerlab";
 	content: string;
 	pathHint?: string;
+	filename?: string;
 	message?: string;
 };
 

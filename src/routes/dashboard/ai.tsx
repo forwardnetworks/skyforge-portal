@@ -6,7 +6,9 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
 	Select,
 	SelectContent,
@@ -14,6 +16,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/query-keys";
 import {
@@ -91,6 +94,10 @@ function firstLine(text: string): string {
 	return text.split(/\r?\n/)[0] || text;
 }
 
+function normalizeFilenameInput(value: string): string {
+	return value.trim().replace(/\s+/g, "-");
+}
+
 function AITemplatesPage() {
 	const qc = useQueryClient();
 	const [kind, setKind] = useState<"netlab" | "containerlab">("netlab");
@@ -98,6 +105,7 @@ function AITemplatesPage() {
 	const [seed, setSeed] = useState("");
 	const [output, setOutput] = useState("");
 	const [rawOutput, setRawOutput] = useState("");
+	const [saveName, setSaveName] = useState("");
 	const [lastError, setLastError] = useState<string>("");
 	const [lastValidateRunId, setLastValidateRunId] = useState<string>("");
 	const [actionState, setActionState] =
@@ -287,6 +295,7 @@ function AITemplatesPage() {
 				kind,
 				content: output,
 				pathHint: "ai/generated",
+				filename: saveName.trim() ? saveName.trim() : undefined,
 			});
 		},
 		onMutate: () => {
@@ -476,6 +485,15 @@ function AITemplatesPage() {
 		? "Generating template..."
 		: "No output yet. Enter a prompt and click Generate.";
 
+	const generatedExt = kind === "containerlab" ? ".clab.yml" : ".yml";
+	const saveNameHint = saveName.trim()
+		? `${normalizeFilenameInput(saveName)}${saveName.trim().endsWith(generatedExt) ? "" : generatedExt}`
+		: `generated-${kind}${generatedExt}`;
+	const activityProgressValue =
+		activeAction && activeState?.phase === "running"
+			? Math.min(95, Math.max(5, Math.floor((activeElapsed / 90_000) * 100)))
+			: 0;
+
 	return (
 		<div className="mx-auto w-full max-w-5xl space-y-4 p-4">
 			<div>
@@ -512,6 +530,21 @@ function AITemplatesPage() {
 								<dt className="text-muted-foreground">Scopes</dt>
 								<dd className="text-right break-words">
 									{geminiCfg.data?.scopes ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Model</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.model ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Fallback</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.fallbackModel ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Location</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.location ?? "—"}
 								</dd>
 
 								<dt className="text-muted-foreground">Updated</dt>
@@ -588,6 +621,9 @@ function AITemplatesPage() {
 							<Badge variant="secondary">Idle</Badge>
 						)}
 					</div>
+					{activeAction && activeState?.phase === "running" ? (
+						<Progress value={activityProgressValue} />
+					) : null}
 					{activeAction && activeState?.phase === "running" ? (
 						<div className="text-sm text-muted-foreground">
 							{activeState.summary}
@@ -722,13 +758,6 @@ function AITemplatesPage() {
 							</Button>
 							<Button
 								variant="outline"
-								disabled={!output.trim() || save.isPending || isBusy}
-								onClick={() => save.mutate()}
-							>
-								Save to Repo
-							</Button>
-							<Button
-								variant="outline"
 								disabled={!output.trim() || validate.isPending || isBusy}
 								onClick={() => validate.mutate()}
 							>
@@ -767,6 +796,32 @@ function AITemplatesPage() {
 								Copy
 							</Button>
 						</div>
+						<div className="space-y-2">
+							<Label htmlFor="ai-save-name">Save name (optional)</Label>
+							<Input
+								id="ai-save-name"
+								value={saveName}
+								onChange={(e) =>
+									setSaveName(normalizeFilenameInput(e.target.value))
+								}
+								placeholder={`e.g. bgp-5node${generatedExt}`}
+								disabled={isBusy}
+							/>
+							<div className="text-xs text-muted-foreground">
+								Saves to{" "}
+								<span className="font-mono">
+									blueprints/{kind}/ai/generated/
+								</span>{" "}
+								as <span className="font-mono">{saveNameHint}</span>.
+							</div>
+							<Button
+								variant="outline"
+								disabled={!output.trim() || save.isPending || isBusy}
+								onClick={() => save.mutate()}
+							>
+								Save to Repo
+							</Button>
+						</div>
 					</CardContent>
 				</Card>
 
@@ -775,18 +830,65 @@ function AITemplatesPage() {
 						<CardTitle>Output</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
-						<div className="text-xs text-muted-foreground">{outputStatus}</div>
-						<Label className="sr-only" htmlFor="ai-output">
-							Generated template output
-						</Label>
-						<Textarea
-							id="ai-output"
-							name="ai-output"
-							value={output}
-							readOnly
-							placeholder={outputPlaceholder}
-							className="min-h-[420px] font-mono text-xs"
-						/>
+						<Tabs defaultValue="template">
+							<TabsList>
+								<TabsTrigger value="template">Template</TabsTrigger>
+								<TabsTrigger value="request">Request</TabsTrigger>
+							</TabsList>
+							<TabsContent value="template" className="space-y-2">
+								<div className="text-xs text-muted-foreground">
+									{outputStatus}
+								</div>
+								<Label className="sr-only" htmlFor="ai-output">
+									Generated template output
+								</Label>
+								<Textarea
+									id="ai-output"
+									name="ai-output"
+									value={output}
+									readOnly
+									placeholder={outputPlaceholder}
+									className="min-h-[420px] font-mono text-xs"
+								/>
+							</TabsContent>
+							<TabsContent value="request" className="space-y-3">
+								<div className="rounded-md border p-3 text-xs">
+									<div className="font-medium">Current request</div>
+									<dl className="mt-2 grid grid-cols-[96px_1fr] gap-x-3 gap-y-2">
+										<dt className="text-muted-foreground">Kind</dt>
+										<dd className="text-right font-mono">{kind}</dd>
+										<dt className="text-muted-foreground">Provider</dt>
+										<dd className="text-right font-mono">gemini</dd>
+										<dt className="text-muted-foreground">Model</dt>
+										<dd className="text-right break-all font-mono">
+											{geminiCfg.data?.model ?? "—"}
+										</dd>
+										<dt className="text-muted-foreground">Fallback</dt>
+										<dd className="text-right break-all font-mono">
+											{geminiCfg.data?.fallbackModel ?? "—"}
+										</dd>
+									</dl>
+								</div>
+								<div className="space-y-2">
+									<Label>Prompt</Label>
+									<Textarea
+										readOnly
+										value={prompt}
+										placeholder="Prompt will appear here…"
+										className="min-h-[140px]"
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label>Seed (optional)</Label>
+									<Textarea
+										readOnly
+										value={seed}
+										placeholder="Seed template will appear here…"
+										className="min-h-[140px] font-mono text-xs"
+									/>
+								</div>
+							</TabsContent>
+						</Tabs>
 						<div className="text-xs text-muted-foreground">
 							Validate runs an in-cluster netlab validation job (netlab
 							templates) or containerlab schema validation (containerlab
