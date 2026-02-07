@@ -98,4 +98,10 @@ export const queryKeys = {
 	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,
 	registryRepos: (q: string) => ["registryRepos", q] as const,
 	registryTags: (repo: string, q: string) => ["registryTags", repo, q] as const,
+	secureTrackChecks: (workspaceId: string) =>
+		["secureTrackChecks", workspaceId] as const,
+	secureTrackPacks: (workspaceId: string) =>
+		["secureTrackPacks", workspaceId] as const,
+	secureTrackSnapshots: (workspaceId: string, networkId: string) =>
+		["secureTrackSnapshots", workspaceId, networkId] as const,
 };

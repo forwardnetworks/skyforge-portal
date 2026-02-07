@@ -2610,3 +2610,150 @@ export async function deleteUserVariableGroup(
 		},
 	);
 }
+
+export type SecureTrackCatalogParam = {
+	name: string;
+	type: string;
+	default?: unknown;
+	description?: string;
+	required?: boolean;
+};
+
+export type SecureTrackCatalogCheck = {
+	id: string;
+	title?: string;
+	category?: string;
+	severity?: string;
+	description?: string;
+	params?: SecureTrackCatalogParam[];
+};
+
+export type SecureTrackCatalog = {
+	version?: string;
+	checks?: SecureTrackCatalogCheck[];
+};
+
+export type SecureTrackPackCheck = {
+	id: string;
+	parameters?: JSONMap;
+};
+
+export type SecureTrackPack = {
+	id: string;
+	title?: string;
+	description?: string;
+	checks?: SecureTrackPackCheck[];
+};
+
+export type SecureTrackPacks = {
+	version?: string;
+	packs?: SecureTrackPack[];
+};
+
+export type SecureTrackChecksResponse = {
+	catalog?: SecureTrackCatalog;
+	checks: SecureTrackCatalogCheck[];
+	files: string[];
+};
+
+export type SecureTrackCheckResponse = {
+	check?: SecureTrackCatalogCheck;
+	content: string;
+};
+
+export type SecureTrackNQEResponse = {
+	snapshotId?: string;
+	total: number;
+	results: unknown;
+};
+
+export type SecureTrackSnapshotsResponse = {
+	body: unknown;
+};
+
+export type SecureTrackRunCheckRequest = {
+	networkId: string;
+	snapshotId?: string;
+	checkId: string;
+	parameters?: JSONMap;
+	queryOptions?: JSONMap;
+};
+
+export type SecureTrackRunPackRequest = {
+	networkId: string;
+	snapshotId?: string;
+	packId: string;
+};
+
+export type SecureTrackRunPackResponse = {
+	packId: string;
+	networkId: string;
+	snapshotId?: string;
+	results: Record<string, SecureTrackNQEResponse>;
+};
+
+export async function getWorkspaceSecureTrackChecks(
+	workspaceId: string,
+): Promise<SecureTrackChecksResponse> {
+	return apiFetch<SecureTrackChecksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/checks`,
+	);
+}
+
+export async function getWorkspaceSecureTrackCheck(
+	workspaceId: string,
+	checkId: string,
+): Promise<SecureTrackCheckResponse> {
+	return apiFetch<SecureTrackCheckResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/checks/${encodeURIComponent(checkId)}`,
+	);
+}
+
+export async function getWorkspaceSecureTrackPacks(
+	workspaceId: string,
+): Promise<SecureTrackPacks> {
+	return apiFetch<SecureTrackPacks>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/packs`,
+	);
+}
+
+export async function getWorkspaceSecureTrackSnapshots(
+	workspaceId: string,
+	networkId: string,
+	maxResults?: number,
+): Promise<SecureTrackSnapshotsResponse> {
+	const qs = new URLSearchParams();
+	qs.set("networkId", networkId);
+	if (typeof maxResults === "number") {
+		qs.set("maxResults", String(maxResults));
+	}
+	return apiFetch<SecureTrackSnapshotsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/snapshots?${qs.toString()}`,
+	);
+}
+
+export async function runWorkspaceSecureTrackCheck(
+	workspaceId: string,
+	body: SecureTrackRunCheckRequest,
+): Promise<SecureTrackNQEResponse> {
+	return apiFetch<SecureTrackNQEResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/checks/run`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function runWorkspaceSecureTrackPack(
+	workspaceId: string,
+	body: SecureTrackRunPackRequest,
+): Promise<SecureTrackRunPackResponse> {
+	return apiFetch<SecureTrackRunPackResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/packs/run`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
