@@ -25,27 +25,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryKeys } from "@/lib/query-keys";
 import {
 	type CapacityRollupRow,
-	type DashboardSnapshot,
-	type DeploymentCapacityInventoryResponse,
-	type WorkspaceDeployment,
-	getDeploymentCapacityGrowth,
-	getDeploymentCapacityInventory,
-	getDeploymentCapacitySummary,
-	getDeploymentCapacityUnhealthyDevices,
-	postDeploymentCapacityDeviceMetricsHistory,
-	postDeploymentCapacityInterfaceMetricsHistory,
-	refreshDeploymentCapacityRollups,
+	type ForwardNetworkCapacityInventoryResponse,
+	getForwardNetworkCapacityGrowth,
+	getForwardNetworkCapacityInventory,
+	getForwardNetworkCapacitySummary,
+	getForwardNetworkCapacityUnhealthyDevices,
+	listWorkspaceForwardNetworks,
+	postForwardNetworkCapacityDeviceMetricsHistory,
+	postForwardNetworkCapacityInterfaceMetricsHistory,
+	refreshForwardNetworkCapacityRollups,
 } from "@/lib/skyforge-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const searchSchema = z.object({
+	workspace: z.string().optional().catch(""),
+});
 
 export const Route = createFileRoute(
-	"/dashboard/deployments/$deploymentId/capacity",
+	"/dashboard/forward-networks/$networkRef/capacity",
 )({
-	component: DeploymentCapacityPage,
+	validateSearch: (search) => searchSchema.parse(search),
+	component: ForwardNetworkCapacityPage,
 });
 
 function jsonPretty(value: unknown): string {
@@ -257,8 +262,9 @@ type VrfSummaryRow = {
 	soonestForecast?: string;
 };
 
-function DeploymentCapacityPage() {
-	const { deploymentId } = Route.useParams();
+function ForwardNetworkCapacityPage() {
+	const { networkRef } = Route.useParams();
+	const { workspace } = Route.useSearch();
 	const qc = useQueryClient();
 	const [windowLabel, setWindowLabel] = useState<"24h" | "7d" | "30d">("24h");
 	const [ifaceMetric, setIfaceMetric] = useState<
@@ -299,71 +305,69 @@ function DeploymentCapacityPage() {
 	const [routingVrfFilter, setRoutingVrfFilter] = useState("all");
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
+	const workspaceId = String(workspace ?? "").trim();
 
-	const snap = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: async () => null,
-		initialData: null,
+	const networksQ = useQuery({
+		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
+		queryFn: () => listWorkspaceForwardNetworks(workspaceId),
+		enabled: Boolean(workspaceId),
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 30_000,
 	});
 
-	const deployment = useMemo(() => {
-		return (snap.data?.deployments ?? []).find(
-			(d: WorkspaceDeployment) => d.id === deploymentId,
-		);
-	}, [snap.data?.deployments, deploymentId]);
-
-	const workspaceId = String(deployment?.workspaceId ?? "");
-	const forwardNetworkId = String(
-		(deployment?.config ?? {})["forwardNetworkId"] ?? "",
-	);
-	const forwardEnabled = Boolean((deployment?.config ?? {})["forwardEnabled"]);
+	const networkName = useMemo(() => {
+		const ns = (networksQ.data?.networks ?? []) as any[];
+		const hit = ns.find((n) => String(n?.id ?? "") === String(networkRef));
+		return String(hit?.name ?? "");
+	}, [networksQ.data?.networks, networkRef]);
 
 	const summary = useQuery({
-		queryKey: queryKeys.deploymentCapacitySummary(workspaceId, deploymentId),
-		queryFn: () => getDeploymentCapacitySummary(workspaceId, deploymentId),
-		enabled: Boolean(
-			workspaceId && deploymentId && forwardEnabled && forwardNetworkId,
-		),
+		queryKey: queryKeys.forwardNetworkCapacitySummary(workspaceId, networkRef),
+		queryFn: () => getForwardNetworkCapacitySummary(workspaceId, networkRef),
+		enabled: Boolean(workspaceId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
 
-	const inventory = useQuery<DeploymentCapacityInventoryResponse>({
-		queryKey: queryKeys.deploymentCapacityInventory(workspaceId, deploymentId),
-		queryFn: () => getDeploymentCapacityInventory(workspaceId, deploymentId),
-		enabled: Boolean(
-			workspaceId && deploymentId && forwardEnabled && forwardNetworkId,
+	const inventory = useQuery<ForwardNetworkCapacityInventoryResponse>({
+		queryKey: queryKeys.forwardNetworkCapacityInventory(
+			workspaceId,
+			networkRef,
 		),
+		queryFn: () => getForwardNetworkCapacityInventory(workspaceId, networkRef),
+		enabled: Boolean(workspaceId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
+
+	const forwardNetworkId = String(
+		summary.data?.forwardNetworkId ?? inventory.data?.forwardNetworkId ?? "",
+	);
 
 	const refresh = useMutation({
 		mutationFn: async () => {
 			if (!workspaceId) throw new Error("workspace not found");
-			return refreshDeploymentCapacityRollups(workspaceId, deploymentId);
+			return refreshForwardNetworkCapacityRollups(workspaceId, networkRef);
 		},
 		onSuccess: async (resp) => {
 			toast.success("Refresh queued", {
 				description: `Run ${String(resp.run?.id ?? "")}`.trim(),
 			});
 			await qc.invalidateQueries({
-				queryKey: queryKeys.deploymentCapacitySummary(
+				queryKey: queryKeys.forwardNetworkCapacitySummary(
 					workspaceId,
-					deploymentId,
+					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
-				queryKey: queryKeys.deploymentCapacityInventory(
+				queryKey: queryKeys.forwardNetworkCapacityInventory(
 					workspaceId,
-					deploymentId,
+					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
-				// Prefix match for all growth queries for this deployment.
-				queryKey: ["deploymentCapacityGrowth", workspaceId, deploymentId],
+				// Prefix match for all growth queries for this forward network.
+				queryKey: ["forwardNetworkCapacityGrowth", workspaceId, networkRef],
 			});
 		},
 		onError: (e) =>
@@ -372,9 +376,9 @@ function DeploymentCapacityPage() {
 
 	const loadUnhealthyDevices = useMutation({
 		mutationFn: async () => {
-			return getDeploymentCapacityUnhealthyDevices(
+			return getForwardNetworkCapacityUnhealthyDevices(
 				workspaceId,
-				deploymentId,
+				networkRef,
 				{},
 			);
 		},
@@ -775,7 +779,7 @@ function DeploymentCapacityPage() {
 		queryKey: [
 			"capacityIfaceHistory",
 			workspaceId,
-			deploymentId,
+			networkRef,
 			windowLabel,
 			ifaceMetric,
 			selectedIface?.id ?? "",
@@ -783,9 +787,9 @@ function DeploymentCapacityPage() {
 		queryFn: async () => {
 			if (!selectedIface) return null;
 			const typ = metricToInterfaceType(ifaceMetric);
-			const resp = await postDeploymentCapacityInterfaceMetricsHistory(
+			const resp = await postForwardNetworkCapacityInterfaceMetricsHistory(
 				workspaceId,
-				deploymentId,
+				networkRef,
 				{
 					type: typ,
 					days: windowDays,
@@ -801,13 +805,7 @@ function DeploymentCapacityPage() {
 			);
 			return resp.body as any;
 		},
-		enabled: Boolean(
-			selectedIface &&
-				workspaceId &&
-				deploymentId &&
-				forwardEnabled &&
-				forwardNetworkId,
-		),
+		enabled: Boolean(selectedIface && workspaceId && forwardNetworkId),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -816,7 +814,7 @@ function DeploymentCapacityPage() {
 		queryKey: [
 			"capacityDeviceHistory",
 			workspaceId,
-			deploymentId,
+			networkRef,
 			windowLabel,
 			deviceMetric,
 			selectedDevice?.id ?? "",
@@ -824,9 +822,9 @@ function DeploymentCapacityPage() {
 		queryFn: async () => {
 			if (!selectedDevice) return null;
 			const typ = metricToDeviceType(deviceMetric);
-			const resp = await postDeploymentCapacityDeviceMetricsHistory(
+			const resp = await postForwardNetworkCapacityDeviceMetricsHistory(
 				workspaceId,
-				deploymentId,
+				networkRef,
 				{
 					type: typ,
 					days: windowDays,
@@ -836,13 +834,7 @@ function DeploymentCapacityPage() {
 			);
 			return resp.body as any;
 		},
-		enabled: Boolean(
-			selectedDevice &&
-				workspaceId &&
-				deploymentId &&
-				forwardEnabled &&
-				forwardNetworkId,
-		),
+		enabled: Boolean(selectedDevice && workspaceId && forwardNetworkId),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -1179,49 +1171,45 @@ function DeploymentCapacityPage() {
 	);
 
 	const ifaceGrowth = useQuery({
-		queryKey: queryKeys.deploymentCapacityGrowth(
+		queryKey: queryKeys.forwardNetworkCapacityGrowth(
 			workspaceId,
-			deploymentId,
+			networkRef,
 			windowLabel,
 			growthIfaceMetric,
 			compareHours,
 			"interface",
 		),
 		queryFn: () =>
-			getDeploymentCapacityGrowth(workspaceId, deploymentId, {
+			getForwardNetworkCapacityGrowth(workspaceId, networkRef, {
 				metric: growthIfaceMetric,
 				window: windowLabel,
 				objectType: "interface",
 				compareHours,
 				limit: 50,
 			}),
-		enabled: Boolean(
-			workspaceId && deploymentId && forwardEnabled && forwardNetworkId,
-		),
+		enabled: Boolean(workspaceId && networkRef && forwardNetworkId),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const deviceGrowth = useQuery({
-		queryKey: queryKeys.deploymentCapacityGrowth(
+		queryKey: queryKeys.forwardNetworkCapacityGrowth(
 			workspaceId,
-			deploymentId,
+			networkRef,
 			windowLabel,
 			growthDeviceMetric,
 			compareHours,
 			"device",
 		),
 		queryFn: () =>
-			getDeploymentCapacityGrowth(workspaceId, deploymentId, {
+			getForwardNetworkCapacityGrowth(workspaceId, networkRef, {
 				metric: growthDeviceMetric,
 				window: windowLabel,
 				objectType: "device",
 				compareHours,
 				limit: 50,
 			}),
-		enabled: Boolean(
-			workspaceId && deploymentId && forwardEnabled && forwardNetworkId,
-		),
+		enabled: Boolean(workspaceId && networkRef && forwardNetworkId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -1465,13 +1453,13 @@ function DeploymentCapacityPage() {
 		windowLabel,
 	]);
 
-	if (!deployment) {
+	if (!workspaceId) {
 		return (
 			<div className="space-y-6 p-6">
 				<div className="flex items-center gap-3">
 					<Link
-						to="/dashboard/deployments/$deploymentId"
-						params={{ deploymentId }}
+						to="/dashboard/forward-networks"
+						search={{ workspace: "" } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -1484,7 +1472,7 @@ function DeploymentCapacityPage() {
 				</div>
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
-						Deployment not found.
+						Workspace is required.
 					</CardContent>
 				</Card>
 			</div>
@@ -1496,14 +1484,14 @@ function DeploymentCapacityPage() {
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 				<div className="flex items-center gap-3">
 					<Link
-						to="/dashboard/deployments/$deploymentId"
-						params={{ deploymentId }}
+						to="/dashboard/forward-networks"
+						search={{ workspace: workspaceId } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
 							className: "h-9 w-9",
 						})}
-						title="Back to deployment"
+						title="Back to Forward networks"
 					>
 						<ArrowLeft className="h-4 w-4" />
 					</Link>
@@ -1512,7 +1500,13 @@ function DeploymentCapacityPage() {
 							<TrendingUp className="h-5 w-5" /> Capacity
 						</h1>
 						<p className="text-sm text-muted-foreground mt-1">
-							Deployment: <span className="font-medium">{deployment.name}</span>
+							Forward network:{" "}
+							<span className="font-medium">{networkName || networkRef}</span>
+							{forwardNetworkId ? (
+								<span className="ml-2 font-mono text-xs">
+									{forwardNetworkId}
+								</span>
+							) : null}
 						</p>
 					</div>
 				</div>
@@ -1603,10 +1597,10 @@ function DeploymentCapacityPage() {
 					<Button
 						variant="outline"
 						onClick={() => refresh.mutate()}
-						disabled={refresh.isPending || !forwardEnabled || !forwardNetworkId}
+						disabled={refresh.isPending || !forwardNetworkId}
 						title={
-							!forwardEnabled || !forwardNetworkId
-								? "Enable Forward and run sync first"
+							!forwardNetworkId
+								? "Load the saved Forward network first"
 								: "Enqueue a background rollup task"
 						}
 					>
@@ -1756,7 +1750,7 @@ function DeploymentCapacityPage() {
 											r.samples ?? 0,
 										]);
 										downloadText(
-											`capacity_interfaces_${deploymentId}_${windowLabel}_${ifaceMetric}.csv`,
+											`capacity_interfaces_${networkRef}_${windowLabel}_${ifaceMetric}.csv`,
 											"text/csv",
 											toCSV(headers, rows),
 										);
@@ -2102,7 +2096,7 @@ function DeploymentCapacityPage() {
 											r.samples ?? 0,
 										]);
 										downloadText(
-											`capacity_devices_${deploymentId}_${windowLabel}_${deviceMetric}.csv`,
+											`capacity_devices_${networkRef}_${windowLabel}_${deviceMetric}.csv`,
 											"text/csv",
 											toCSV(headers, rows),
 										);

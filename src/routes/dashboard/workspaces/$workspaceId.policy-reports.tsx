@@ -34,6 +34,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../../components/ui/select";
+import { Switch } from "../../../components/ui/switch";
 import {
 	Table,
 	TableBody,
@@ -55,6 +56,8 @@ import {
 	type PolicyReportCatalogCheck,
 	type PolicyReportCatalogParam,
 	type PolicyReportException,
+	type PolicyReportForwardCredentialsStatus,
+	type PolicyReportForwardNetwork,
 	type PolicyReportNQEResponse,
 	type PolicyReportPack,
 	type PolicyReportPackDeltaResponse,
@@ -64,15 +67,21 @@ import {
 	approveWorkspacePolicyReportException,
 	attestWorkspacePolicyReportRecertAssignment,
 	createWorkspacePolicyReportException,
+	createWorkspacePolicyReportForwardNetwork,
 	createWorkspacePolicyReportRecertCampaign,
+	deleteWorkspacePolicyReportForwardNetwork,
+	deleteWorkspacePolicyReportForwardNetworkCredentials,
 	generateWorkspacePolicyReportRecertAssignments,
 	getWorkspacePolicyReportCheck,
 	getWorkspacePolicyReportChecks,
+	getWorkspacePolicyReportForwardNetworkCredentials,
 	getWorkspacePolicyReportPacks,
 	getWorkspacePolicyReportSnapshots,
 	listWorkspacePolicyReportExceptions,
+	listWorkspacePolicyReportForwardNetworks,
 	listWorkspacePolicyReportRecertAssignments,
 	listWorkspacePolicyReportRecertCampaigns,
+	putWorkspacePolicyReportForwardNetworkCredentials,
 	rejectWorkspacePolicyReportException,
 	runWorkspacePolicyReportCheck,
 	runWorkspacePolicyReportPack,
@@ -199,6 +208,18 @@ function PolicyReportsPage() {
 
 	const [networkId, setNetworkId] = useState("");
 	const [snapshotId, setSnapshotId] = useState<string>("");
+	const [suppressApprovedExceptions, setSuppressApprovedExceptions] =
+		useState<boolean>(false);
+	const [savedNetworkRef, setSavedNetworkRef] = useState<string>("");
+	const [addNetworkOpen, setAddNetworkOpen] = useState<boolean>(false);
+	const [addNetworkForwardId, setAddNetworkForwardId] = useState<string>("");
+	const [addNetworkName, setAddNetworkName] = useState<string>("");
+	const [addNetworkDesc, setAddNetworkDesc] = useState<string>("");
+	const [credsOpen, setCredsOpen] = useState<boolean>(false);
+	const [credsBaseUrl, setCredsBaseUrl] = useState<string>("https://fwd.app");
+	const [credsSkipTLSVerify, setCredsSkipTLSVerify] = useState<boolean>(false);
+	const [credsUsername, setCredsUsername] = useState<string>("");
+	const [credsPassword, setCredsPassword] = useState<string>("");
 	const [flowSrcIp, setFlowSrcIp] = useState<string>("");
 	const [flowDstIp, setFlowDstIp] = useState<string>("");
 	const [flowIpProto, setFlowIpProto] = useState<string>("6");
@@ -261,6 +282,15 @@ function PolicyReportsPage() {
 	const [exceptionTicketUrl, setExceptionTicketUrl] = useState<string>("");
 	const [exceptionExpiresAt, setExceptionExpiresAt] = useState<string>("");
 
+	const [assignmentDecisionOpen, setAssignmentDecisionOpen] =
+		useState<boolean>(false);
+	const [assignmentDecisionMode, setAssignmentDecisionMode] = useState<
+		"ATTEST" | "WAIVE"
+	>("ATTEST");
+	const [assignmentDecisionId, setAssignmentDecisionId] = useState<string>("");
+	const [assignmentDecisionJustification, setAssignmentDecisionJustification] =
+		useState<string>("");
+
 	const [cpDeviceName, setCpDeviceName] = useState<string>("");
 	const [cpOp, setCpOp] = useState<string>("ADD");
 	const [cpRuleIndex, setCpRuleIndex] = useState<string>("0");
@@ -296,6 +326,12 @@ function PolicyReportsPage() {
 		staleTime: 60_000,
 	});
 
+	const forwardNetworks = useQuery({
+		queryKey: ["policyReportsForwardNetworks", workspaceId],
+		queryFn: () => listWorkspacePolicyReportForwardNetworks(workspaceId),
+		staleTime: 10_000,
+	});
+
 	const campaigns = useQuery({
 		queryKey: queryKeys.policyReportsRecertCampaigns(workspaceId),
 		queryFn: () => listWorkspacePolicyReportRecertCampaigns(workspaceId),
@@ -320,8 +356,15 @@ function PolicyReportsPage() {
 	});
 
 	const exceptions = useQuery({
-		queryKey: queryKeys.policyReportsExceptions(workspaceId),
-		queryFn: () => listWorkspacePolicyReportExceptions(workspaceId),
+		queryKey: queryKeys.policyReportsExceptions(workspaceId, networkId.trim()),
+		queryFn: () =>
+			listWorkspacePolicyReportExceptions(
+				workspaceId,
+				networkId.trim() || undefined,
+				undefined,
+				500,
+			),
+		enabled: networkId.trim().length > 0,
 		staleTime: 10_000,
 	});
 
@@ -332,6 +375,21 @@ function PolicyReportsPage() {
 				workspaceId,
 				networkId.trim(),
 				25,
+			);
+		},
+		enabled: networkId.trim().length > 0,
+		retry: false,
+		staleTime: 10_000,
+	});
+
+	const forwardCreds = useQuery({
+		queryKey: ["policyReportsForwardCreds", workspaceId, networkId.trim()],
+		queryFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			return getWorkspacePolicyReportForwardNetworkCredentials(
+				workspaceId,
+				net,
 			);
 		},
 		enabled: networkId.trim().length > 0,
@@ -537,6 +595,102 @@ function PolicyReportsPage() {
 			toast.error("Delta failed", { description: (e as Error).message }),
 	});
 
+	const createForwardNetwork = useMutation({
+		mutationFn: async () => {
+			const forwardNetworkId = addNetworkForwardId.trim();
+			const name = addNetworkName.trim();
+			if (!forwardNetworkId) throw new Error("Forward Network ID is required");
+			if (!name) throw new Error("Name is required");
+			return createWorkspacePolicyReportForwardNetwork(workspaceId, {
+				forwardNetworkId,
+				name,
+				description: addNetworkDesc.trim() || undefined,
+			});
+		},
+		onSuccess: async (n) => {
+			toast.success("Network saved", { description: n.forwardNetworkId });
+			setAddNetworkOpen(false);
+			setAddNetworkForwardId("");
+			setAddNetworkName("");
+			setAddNetworkDesc("");
+			await forwardNetworks.refetch();
+		},
+		onError: (e) =>
+			toast.error("Save network failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const deleteForwardNetwork = useMutation({
+		mutationFn: async (networkRef: string) => {
+			if (!networkRef.trim()) throw new Error("Select a saved network");
+			return deleteWorkspacePolicyReportForwardNetwork(
+				workspaceId,
+				networkRef.trim(),
+			);
+		},
+		onSuccess: async () => {
+			toast.success("Network deleted");
+			setSavedNetworkRef("");
+			await forwardNetworks.refetch();
+		},
+		onError: (e) =>
+			toast.error("Delete network failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const putForwardCreds = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const baseUrl = credsBaseUrl.trim();
+			if (!baseUrl) throw new Error("Forward URL is required");
+			const username = credsUsername.trim();
+			if (!username) throw new Error("Forward username is required");
+			return putWorkspacePolicyReportForwardNetworkCredentials(
+				workspaceId,
+				net,
+				{
+					baseUrl,
+					skipTlsVerify: credsSkipTLSVerify,
+					username,
+					password: credsPassword.trim() || undefined,
+				},
+			);
+		},
+		onSuccess: async () => {
+			toast.success("Credentials saved");
+			setCredsPassword("");
+			setCredsOpen(false);
+			await forwardCreds.refetch();
+		},
+		onError: (e) =>
+			toast.error("Save credentials failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const deleteForwardCreds = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			return deleteWorkspacePolicyReportForwardNetworkCredentials(
+				workspaceId,
+				net,
+			);
+		},
+		onSuccess: async () => {
+			toast.success("Credentials cleared");
+			setCredsPassword("");
+			await forwardCreds.refetch();
+		},
+		onError: (e) =>
+			toast.error("Clear credentials failed", {
+				description: (e as Error).message,
+			}),
+	});
+
 	const createCampaign = useMutation({
 		mutationFn: async () => {
 			const net = networkId.trim();
@@ -596,15 +750,23 @@ function PolicyReportsPage() {
 	});
 
 	const attestAssignment = useMutation({
-		mutationFn: async (assignmentId: string) => {
+		mutationFn: async (req: {
+			assignmentId: string;
+			justification: string;
+		}) => {
+			const justification = req.justification.trim();
+			if (!justification) throw new Error("Justification is required");
 			return attestWorkspacePolicyReportRecertAssignment(
 				workspaceId,
-				assignmentId,
-				{ justification: "attested" },
+				req.assignmentId,
+				{ justification },
 			);
 		},
 		onSuccess: async () => {
 			toast.success("Assignment attested");
+			setAssignmentDecisionOpen(false);
+			setAssignmentDecisionId("");
+			setAssignmentDecisionJustification("");
 			await assignments.refetch();
 			await campaigns.refetch();
 		},
@@ -613,15 +775,23 @@ function PolicyReportsPage() {
 	});
 
 	const waiveAssignment = useMutation({
-		mutationFn: async (assignmentId: string) => {
+		mutationFn: async (req: {
+			assignmentId: string;
+			justification: string;
+		}) => {
+			const justification = req.justification.trim();
+			if (!justification) throw new Error("Justification is required");
 			return waiveWorkspacePolicyReportRecertAssignment(
 				workspaceId,
-				assignmentId,
-				{ justification: "waived" },
+				req.assignmentId,
+				{ justification },
 			);
 		},
 		onSuccess: async () => {
 			toast.success("Assignment waived");
+			setAssignmentDecisionOpen(false);
+			setAssignmentDecisionId("");
+			setAssignmentDecisionJustification("");
 			await assignments.refetch();
 			await campaigns.refetch();
 		},
@@ -631,6 +801,8 @@ function PolicyReportsPage() {
 
 	const createException = useMutation({
 		mutationFn: async () => {
+			const forwardNetworkId = networkId.trim();
+			if (!forwardNetworkId) throw new Error("Network ID is required");
 			const findingId = exceptionFindingId.trim();
 			const checkId = exceptionCheckId.trim();
 			const justification = exceptionJustification.trim();
@@ -638,6 +810,7 @@ function PolicyReportsPage() {
 				throw new Error("findingId, checkId, and justification are required");
 			}
 			return createWorkspacePolicyReportException(workspaceId, {
+				forwardNetworkId,
 				findingId,
 				checkId,
 				justification,
@@ -856,6 +1029,75 @@ function PolicyReportsPage() {
 
 	const checksList: PolicyReportCatalogCheck[] = checks.data?.checks ?? [];
 	const packsList: PolicyReportPack[] = packs.data?.packs ?? [];
+	const forwardNetworksList: PolicyReportForwardNetwork[] =
+		forwardNetworks.data?.networks ?? [];
+	const forwardCredsStatus: PolicyReportForwardCredentialsStatus | null =
+		(forwardCreds.data as any) ?? null;
+
+	const approvedExceptionsByKey = useMemo(() => {
+		const now = Date.now();
+		const out = new Map<string, PolicyReportException>();
+		for (const e of exceptions.data?.exceptions ?? []) {
+			const st = String((e as any)?.status ?? "").toUpperCase();
+			if (st !== "APPROVED") continue;
+			const checkId = String((e as any)?.checkId ?? "").trim();
+			const findingId = String((e as any)?.findingId ?? "").trim();
+			if (!checkId || !findingId) continue;
+
+			const exp = String((e as any)?.expiresAt ?? "").trim();
+			if (exp) {
+				const ts = Date.parse(exp);
+				if (Number.isFinite(ts) && ts <= now) continue;
+			}
+			out.set(`${checkId}|${findingId}`, e as any);
+		}
+		return out;
+	}, [exceptions.data]);
+
+	function applyExceptionSuppression(
+		checkId: string,
+		results: unknown,
+	): {
+		applicable: boolean;
+		suppressed: number;
+		results: unknown;
+	} {
+		if (!suppressApprovedExceptions) {
+			return { applicable: false, suppressed: 0, results };
+		}
+		if (approvedExceptionsByKey.size === 0) {
+			return { applicable: false, suppressed: 0, results };
+		}
+		if (!Array.isArray(results)) {
+			return { applicable: false, suppressed: 0, results };
+		}
+
+		let hasFindingId = false;
+		let suppressed = 0;
+		const kept: any[] = [];
+		for (const it of results) {
+			if (!it || typeof it !== "object") {
+				kept.push(it);
+				continue;
+			}
+			const fid = String((it as any)?.findingId ?? "").trim();
+			if (!fid) {
+				kept.push(it);
+				continue;
+			}
+			hasFindingId = true;
+			const key = `${checkId}|${fid}`;
+			if (approvedExceptionsByKey.has(key)) {
+				suppressed++;
+				continue;
+			}
+			kept.push(it);
+		}
+		if (!hasFindingId) {
+			return { applicable: false, suppressed: 0, results };
+		}
+		return { applicable: true, suppressed, results: kept };
+	}
 
 	const activeParamsCheck = useMemo(() => {
 		if (!paramsDialogCheckId) return null;
@@ -887,6 +1129,18 @@ function PolicyReportsPage() {
 						<ArrowLeft className="mr-2 h-4 w-4" />
 						Workspace
 					</Link>
+					<div className="flex items-center gap-2 rounded-md border px-3 py-2">
+						<div className="text-xs text-muted-foreground">
+							Suppress approved exceptions
+							{approvedExceptionsByKey.size > 0
+								? ` (${approvedExceptionsByKey.size} active)`
+								: ""}
+						</div>
+						<Switch
+							checked={suppressApprovedExceptions}
+							onCheckedChange={setSuppressApprovedExceptions}
+						/>
+					</div>
 					<Button
 						variant="outline"
 						onClick={() => {
@@ -928,6 +1182,7 @@ function PolicyReportsPage() {
 							const netId = net || "";
 							const snap = snapshotId.trim() || "latest";
 							const generatedAt = new Date().toISOString();
+							const suppress = suppressApprovedExceptions;
 
 							// Build a lightweight auditor-friendly report.
 							const checksMeta = checksList.reduce(
@@ -938,29 +1193,18 @@ function PolicyReportsPage() {
 								{} as Record<string, PolicyReportCatalogCheck>,
 							);
 
-							const byCheck = Object.entries(resultsByCheck).map(([id, r]) => ({
-								id,
-								total: Number((r as any)?.total ?? 0),
-							}));
+							const byCheck = Object.entries(resultsByCheck).map(([id, r]) => {
+								const rawTotal = Number((r as any)?.total ?? 0);
+								const itemsRaw = asArray((r as any)?.results);
+								const supd = applyExceptionSuppression(id, itemsRaw);
+								const total = supd.applicable
+									? asArray(supd.results).length
+									: rawTotal;
+								return { id, total };
+							});
 							byCheck.sort((a, b) => b.total - a.total);
 
-							const now = Date.now();
-							const approvedExceptions = (
-								exceptions.data?.exceptions ?? []
-							).filter((e: any) => {
-								const st = String(e?.status ?? "").toUpperCase();
-								if (st !== "APPROVED") return false;
-								const exp = String(e?.expiresAt ?? "").trim();
-								if (!exp) return true;
-								const ts = Date.parse(exp);
-								return Number.isFinite(ts) ? ts > now : true;
-							});
-							const exceptionsByKey = new Map<string, any>(
-								approvedExceptions.map((e: any) => [
-									`${String(e?.checkId ?? "")}|${String(e?.findingId ?? "")}`,
-									e,
-								]),
-							);
+							const exceptionsByKey = approvedExceptionsByKey as any;
 
 							const renderRow = (checkId: string, obj: any, cols: string[]) => {
 								const fid = String(obj?.findingId ?? "").trim();
@@ -988,12 +1232,22 @@ function PolicyReportsPage() {
 							let bodyHTML = "";
 							for (const { id } of byCheck.slice(0, 30)) {
 								const r = resultsByCheck[id];
-								const items = asArray((r as any)?.results);
+								const itemsRaw = asArray((r as any)?.results);
+								const rawTotal = Number(
+									(r as any)?.total ?? itemsRaw.length ?? 0,
+								);
+								const supd = applyExceptionSuppression(id, itemsRaw);
+								const items = supd.applicable
+									? asArray(supd.results)
+									: itemsRaw;
 								const cols = pickColumns(items).slice(0, 10);
 								const meta = checksMeta[id];
+								const totalText = supd.applicable
+									? `${items.length} (suppressed ${supd.suppressed} of ${rawTotal})`
+									: String(rawTotal);
 								bodyHTML += `<section class=\"card\">
   <div class=\"h2\">${esc(meta?.title ?? id)}</div>
-  <div class=\"sub\">checkId=<span class=\"mono\">${esc(id)}</span> • category=${esc(meta?.category ?? "")} • severity=${esc(meta?.severity ?? "")} • total=${esc((r as any)?.total ?? 0)}</div>
+  <div class=\"sub\">checkId=<span class=\"mono\">${esc(id)}</span> • category=${esc(meta?.category ?? "")} • severity=${esc(meta?.severity ?? "")} • total=${esc(totalText)}</div>
   ${
 		items.length
 			? `<table>
@@ -1043,6 +1297,7 @@ function PolicyReportsPage() {
     <span class="chip">networkId=<span class="mono">${esc(netId)}</span></span>
     <span class="chip">snapshotId=<span class="mono">${esc(snap)}</span></span>
     <span class="chip">generatedAt=<span class="mono">${esc(generatedAt)}</span></span>
+    <span class="chip">suppressApprovedExceptions=<span class="mono">${esc(String(suppress))}</span></span>
   </div>
 
   <div class="card">
@@ -1083,7 +1338,115 @@ function PolicyReportsPage() {
 				<CardHeader>
 					<CardTitle>Target</CardTitle>
 				</CardHeader>
-				<CardContent className="grid gap-4 md:grid-cols-2">
+				<CardContent className="grid gap-4 md:grid-cols-3">
+					<div className="space-y-2">
+						<div className="flex items-center justify-between gap-2">
+							<div className="text-sm font-medium">Saved networks</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => forwardNetworks.refetch()}
+									disabled={forwardNetworks.isFetching}
+								>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Refresh
+								</Button>
+								<Button
+									size="sm"
+									onClick={() => {
+										setAddNetworkForwardId(networkId.trim());
+										setAddNetworkName("");
+										setAddNetworkDesc("");
+										setAddNetworkOpen(true);
+									}}
+								>
+									Add
+								</Button>
+							</div>
+						</div>
+						<Select
+							value={savedNetworkRef}
+							onValueChange={(v) => {
+								setSavedNetworkRef(v);
+								const n = forwardNetworksList.find((x) => x.id === v);
+								if (n) {
+									setNetworkId(n.forwardNetworkId);
+									setSnapshotId("");
+								}
+							}}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Pick a saved network" />
+							</SelectTrigger>
+							<SelectContent>
+								{forwardNetworksList.map((n) => (
+									<SelectItem key={n.id} value={n.id}>
+										{n.name} ({n.forwardNetworkId})
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<div className="flex justify-end">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => deleteForwardNetwork.mutate(savedNetworkRef)}
+								disabled={!savedNetworkRef || deleteForwardNetwork.isPending}
+							>
+								Delete
+							</Button>
+						</div>
+						<div className="flex items-center justify-between rounded-md border px-3 py-2">
+							<div className="text-xs text-muted-foreground">
+								Your Forward credentials for this network:{" "}
+								<span className="font-mono">
+									{networkId.trim()
+										? forwardCreds.isLoading
+											? "loading…"
+											: forwardCredsStatus?.configured
+												? "configured"
+												: "not set"
+										: "n/a"}
+								</span>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										const st = forwardCredsStatus;
+										setCredsBaseUrl(st?.baseUrl ?? "https://fwd.app");
+										setCredsSkipTLSVerify(Boolean(st?.skipTlsVerify ?? false));
+										setCredsUsername(st?.username ?? "");
+										setCredsPassword("");
+										setCredsOpen(true);
+									}}
+									disabled={!networkId.trim()}
+								>
+									Configure
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => deleteForwardCreds.mutate()}
+									disabled={
+										!networkId.trim() ||
+										deleteForwardCreds.isPending ||
+										!forwardCredsStatus?.configured
+									}
+								>
+									Clear
+								</Button>
+							</div>
+						</div>
+						{forwardNetworks.isError ? (
+							<p className="text-xs text-destructive">
+								Failed to load saved networks:{" "}
+								{(forwardNetworks.error as Error).message}
+							</p>
+						) : null}
+					</div>
 					<div className="space-y-2">
 						<div className="text-sm font-medium">Forward Network ID</div>
 						<Input
@@ -1718,6 +2081,15 @@ function PolicyReportsPage() {
 						const result = resultsByCheck[id];
 						const hasParams = (c.params ?? []).length > 0;
 						const customParams = paramsByCheck[id];
+						const sup = result
+							? applyExceptionSuppression(id, (result as any)?.results)
+							: { applicable: false, suppressed: 0, results: null as any };
+						const effectiveResults =
+							result && sup.applicable ? sup.results : result?.results;
+						const effectiveTotal =
+							result && sup.applicable
+								? asArray(effectiveResults).length
+								: result?.total;
 						return (
 							<Card key={id}>
 								<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -1815,7 +2187,7 @@ function PolicyReportsPage() {
 											variant="outline"
 											onClick={() => {
 												const net = networkId.trim();
-												const csv = resultsToCSV(result?.results);
+												const csv = resultsToCSV(effectiveResults);
 												if (!csv) {
 													toast.error(
 														"CSV export only supports array-of-object results",
@@ -1837,10 +2209,24 @@ function PolicyReportsPage() {
 								</CardHeader>
 								{result ? (
 									<CardContent className="space-y-3">
-										<div className="grid gap-3 md:grid-cols-2">
+										<div className="grid gap-3 md:grid-cols-3">
 											<div className="text-sm">
 												<div className="text-muted-foreground">Total</div>
-												<div className="font-medium">{result.total}</div>
+												<div className="font-medium">
+													{effectiveTotal}
+													{sup.applicable ? (
+														<span className="text-muted-foreground text-xs">
+															{" "}
+															(of {result.total})
+														</span>
+													) : null}
+												</div>
+											</div>
+											<div className="text-sm">
+												<div className="text-muted-foreground">Suppressed</div>
+												<div className="font-medium">
+													{sup.applicable ? sup.suppressed : "—"}
+												</div>
 											</div>
 											<div className="text-sm">
 												<div className="text-muted-foreground">Snapshot</div>
@@ -1853,7 +2239,7 @@ function PolicyReportsPage() {
 											readOnly
 											className="font-mono text-xs"
 											rows={10}
-											value={jsonPretty(result.results)}
+											value={jsonPretty(effectiveResults)}
 										/>
 									</CardContent>
 								) : null}
@@ -1945,15 +2331,30 @@ function PolicyReportsPage() {
 								{(() => {
 									const perDevice = new Map<string, number>();
 									const perDeviceRisk = new Map<string, number>();
-									const perCheck: Array<{ checkId: string; total: number }> =
-										[];
+									const perCheck: Array<{
+										checkId: string;
+										rawTotal: number;
+										suppressed: number;
+										remaining: number;
+									}> = [];
 									for (const [checkId, resp] of Object.entries(
 										lastPackRun.results ?? {},
 									)) {
-										const total = Number((resp as any)?.total ?? 0);
-										perCheck.push({ checkId, total });
-										const items = asArray((resp as any)?.results);
-										for (const it of items) {
+										const itemsRaw = asArray((resp as any)?.results);
+										const rawTotal = Number(
+											(resp as any)?.total ?? itemsRaw.length ?? 0,
+										);
+										const sup = applyExceptionSuppression(checkId, itemsRaw);
+										const usedItems = sup.applicable
+											? asArray(sup.results)
+											: itemsRaw;
+										perCheck.push({
+											checkId,
+											rawTotal,
+											suppressed: sup.applicable ? sup.suppressed : 0,
+											remaining: usedItems.length,
+										});
+										for (const it of usedItems) {
 											const dev =
 												typeof it?.device === "string"
 													? it.device
@@ -1971,7 +2372,7 @@ function PolicyReportsPage() {
 											}
 										}
 									}
-									perCheck.sort((a, b) => b.total - a.total);
+									perCheck.sort((a, b) => b.remaining - a.remaining);
 									const topDevices = Array.from(perDevice.entries())
 										.sort((a, b) => b[1] - a[1])
 										.slice(0, 12);
@@ -1991,6 +2392,16 @@ function PolicyReportsPage() {
 																<TableHead className="text-right">
 																	Total
 																</TableHead>
+																{suppressApprovedExceptions ? (
+																	<>
+																		<TableHead className="text-right">
+																			Suppressed
+																		</TableHead>
+																		<TableHead className="text-right">
+																			Remaining
+																		</TableHead>
+																	</>
+																) : null}
 															</TableRow>
 														</TableHeader>
 														<TableBody>
@@ -2000,8 +2411,18 @@ function PolicyReportsPage() {
 																		{r.checkId}
 																	</TableCell>
 																	<TableCell className="text-right tabular-nums">
-																		{r.total}
+																		{r.rawTotal}
 																	</TableCell>
+																	{suppressApprovedExceptions ? (
+																		<>
+																			<TableCell className="text-right tabular-nums">
+																				{r.suppressed}
+																			</TableCell>
+																			<TableCell className="text-right tabular-nums">
+																				{r.remaining}
+																			</TableCell>
+																		</>
+																	) : null}
 																</TableRow>
 															))}
 														</TableBody>
@@ -2475,7 +2896,12 @@ function PolicyReportsPage() {
 															<div className="flex justify-end gap-2">
 																<Button
 																	size="sm"
-																	onClick={() => attestAssignment.mutate(a.id)}
+																	onClick={() => {
+																		setAssignmentDecisionMode("ATTEST");
+																		setAssignmentDecisionId(a.id);
+																		setAssignmentDecisionJustification("");
+																		setAssignmentDecisionOpen(true);
+																	}}
 																	disabled={attestAssignment.isPending}
 																>
 																	Attest
@@ -2483,7 +2909,12 @@ function PolicyReportsPage() {
 																<Button
 																	size="sm"
 																	variant="outline"
-																	onClick={() => waiveAssignment.mutate(a.id)}
+																	onClick={() => {
+																		setAssignmentDecisionMode("WAIVE");
+																		setAssignmentDecisionId(a.id);
+																		setAssignmentDecisionJustification("");
+																		setAssignmentDecisionOpen(true);
+																	}}
 																	disabled={waiveAssignment.isPending}
 																>
 																	Waive
@@ -2531,6 +2962,9 @@ function PolicyReportsPage() {
 											<TableHead>Status</TableHead>
 											<TableHead>Check</TableHead>
 											<TableHead>Finding</TableHead>
+											<TableHead>Justification</TableHead>
+											<TableHead>Ticket</TableHead>
+											<TableHead>Created</TableHead>
 											<TableHead className="text-right">Expires</TableHead>
 											<TableHead className="text-right">Actions</TableHead>
 										</TableRow>
@@ -2539,7 +2973,7 @@ function PolicyReportsPage() {
 										{(exceptions.data?.exceptions ?? []).length === 0 ? (
 											<TableRow>
 												<TableCell
-													colSpan={5}
+													colSpan={8}
 													className="text-sm text-muted-foreground"
 												>
 													No exceptions yet.
@@ -2557,6 +2991,31 @@ function PolicyReportsPage() {
 													<TableCell className="font-mono text-xs max-w-[520px] truncate">
 														{e.findingId}
 													</TableCell>
+													<TableCell className="max-w-[420px] truncate text-xs">
+														{e.justification}
+													</TableCell>
+													<TableCell className="max-w-[240px] truncate text-xs">
+														{e.ticketUrl ? (
+															<a
+																href={e.ticketUrl}
+																target="_blank"
+																rel="noreferrer"
+																className="underline"
+															>
+																{e.ticketUrl}
+															</a>
+														) : (
+															"—"
+														)}
+													</TableCell>
+													<TableCell className="text-xs">
+														<div className="font-mono">{e.createdBy}</div>
+														{e.approvedBy ? (
+															<div className="text-muted-foreground font-mono">
+																approved {e.approvedBy}
+															</div>
+														) : null}
+													</TableCell>
 													<TableCell className="text-right text-xs font-mono">
 														{e.expiresAt
 															? String(e.expiresAt).slice(0, 10)
@@ -2566,8 +3025,22 @@ function PolicyReportsPage() {
 														<div className="flex justify-end gap-2">
 															<Button
 																size="sm"
+																variant="outline"
+																onClick={() => {
+																	setGenericEvidence(jsonPretty(e));
+																	setGenericEvidenceOpen(true);
+																}}
+															>
+																View
+															</Button>
+															<Button
+																size="sm"
 																onClick={() => approveException.mutate(e.id)}
-																disabled={approveException.isPending}
+																disabled={
+																	approveException.isPending ||
+																	String(e.status ?? "").toUpperCase() !==
+																		"PROPOSED"
+																}
 															>
 																Approve
 															</Button>
@@ -2575,7 +3048,11 @@ function PolicyReportsPage() {
 																size="sm"
 																variant="outline"
 																onClick={() => rejectException.mutate(e.id)}
-																disabled={rejectException.isPending}
+																disabled={
+																	rejectException.isPending ||
+																	String(e.status ?? "").toUpperCase() !==
+																		"PROPOSED"
+																}
 															>
 																Reject
 															</Button>
@@ -3380,6 +3857,141 @@ function PolicyReportsPage() {
 				</DialogContent>
 			</Dialog>
 
+			<Dialog open={addNetworkOpen} onOpenChange={setAddNetworkOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>Add Forward Network</DialogTitle>
+						<DialogDescription>
+							Save one or more Forward Network IDs so Policy Reports is
+							organized per network.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Forward Network ID</div>
+								<Input
+									value={addNetworkForwardId}
+									onChange={(e) => setAddNetworkForwardId(e.target.value)}
+									placeholder="e.g. 235216"
+									className="font-mono text-xs"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Name</div>
+								<Input
+									value={addNetworkName}
+									onChange={(e) => setAddNetworkName(e.target.value)}
+									placeholder="Prod Branch WAN"
+								/>
+							</div>
+						</div>
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Description (optional)</div>
+							<Textarea
+								value={addNetworkDesc}
+								onChange={(e) => setAddNetworkDesc(e.target.value)}
+								rows={3}
+								placeholder="Optional notes"
+							/>
+						</div>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setAddNetworkOpen(false)}
+								disabled={createForwardNetwork.isPending}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => createForwardNetwork.mutate()}
+								disabled={createForwardNetwork.isPending}
+							>
+								Save
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={credsOpen} onOpenChange={setCredsOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>Forward Credentials (Per User)</DialogTitle>
+						<DialogDescription>
+							Stored encrypted. Leave password empty to keep the existing stored
+							password.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Forward URL</div>
+								<Input
+									value={credsBaseUrl}
+									onChange={(e) => setCredsBaseUrl(e.target.value)}
+									placeholder="https://fwd.app"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Skip TLS Verify</div>
+								<Select
+									value={credsSkipTLSVerify ? "true" : "false"}
+									onValueChange={(v) => setCredsSkipTLSVerify(v === "true")}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="false">false</SelectItem>
+										<SelectItem value="true">true</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+						<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Username</div>
+								<Input
+									value={credsUsername}
+									onChange={(e) => setCredsUsername(e.target.value)}
+									placeholder="Forward username"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Password</div>
+								<Input
+									type="password"
+									value={credsPassword}
+									onChange={(e) => setCredsPassword(e.target.value)}
+									placeholder={
+										forwardCredsStatus?.hasPassword ? "(stored)" : "••••••••"
+									}
+								/>
+								<p className="text-xs text-muted-foreground">
+									Password is never shown again once stored.
+								</p>
+							</div>
+						</div>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setCredsOpen(false)}
+								disabled={putForwardCreds.isPending}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => putForwardCreds.mutate()}
+								disabled={putForwardCreds.isPending}
+							>
+								Save
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
 			<Dialog open={createCampaignOpen} onOpenChange={setCreateCampaignOpen}>
 				<DialogContent className="max-w-2xl">
 					<DialogHeader>
@@ -3541,6 +4153,75 @@ function PolicyReportsPage() {
 								disabled={createException.isPending}
 							>
 								Propose
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={assignmentDecisionOpen}
+				onOpenChange={setAssignmentDecisionOpen}
+			>
+				<DialogContent className="max-w-xl">
+					<DialogHeader>
+						<DialogTitle>
+							{assignmentDecisionMode === "ATTEST"
+								? "Attest Assignment"
+								: "Waive Assignment"}
+						</DialogTitle>
+						<DialogDescription>
+							Record an audit-friendly justification (no config push).
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Justification</div>
+							<Textarea
+								value={assignmentDecisionJustification}
+								onChange={(e) =>
+									setAssignmentDecisionJustification(e.target.value)
+								}
+								rows={4}
+								placeholder="Why is this acceptable? Reference tickets / compensating controls."
+							/>
+						</div>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setAssignmentDecisionOpen(false)}
+								disabled={
+									attestAssignment.isPending || waiveAssignment.isPending
+								}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => {
+									const id = assignmentDecisionId;
+									if (!id) {
+										toast.error("Missing assignment id");
+										return;
+									}
+									const justification = assignmentDecisionJustification.trim();
+									if (!justification) {
+										toast.error("Justification is required");
+										return;
+									}
+									if (assignmentDecisionMode === "ATTEST") {
+										attestAssignment.mutate({
+											assignmentId: id,
+											justification,
+										});
+									} else {
+										waiveAssignment.mutate({ assignmentId: id, justification });
+									}
+								}}
+								disabled={
+									attestAssignment.isPending || waiveAssignment.isPending
+								}
+							>
+								{assignmentDecisionMode === "ATTEST" ? "Attest" : "Waive"}
 							</Button>
 						</div>
 					</div>

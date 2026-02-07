@@ -1278,6 +1278,40 @@ export async function refreshDeploymentCapacityRollups(
 	);
 }
 
+export type ForwardNetworkCapacitySummaryResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	rollups: CapacityRollupRow[];
+	stale: boolean;
+};
+
+export type ForwardNetworkCapacityRefreshResponse = {
+	workspaceId: string;
+	networkRef: string;
+	run: JSONMap;
+};
+
+export async function getForwardNetworkCapacitySummary(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacitySummaryResponse> {
+	return apiFetch<ForwardNetworkCapacitySummaryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/summary`,
+	);
+}
+
+export async function refreshForwardNetworkCapacityRollups(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacityRefreshResponse> {
+	return apiFetch<ForwardNetworkCapacityRefreshResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/rollups/refresh`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
 export type CapacityDeviceInventoryRow = {
 	deviceName: string;
 	tagNames?: string[];
@@ -1340,6 +1374,44 @@ export type DeploymentCapacityInventoryResponse = {
 		ifaceName: string;
 		subIfaceName?: string | null;
 	}>;
+	hardwareTcam?: Array<{
+		deviceName: string;
+		vendor?: string;
+		os?: string;
+		model?: string | null;
+		tcamUsed: number;
+		tcamTotal: number;
+		commandText?: string;
+		evidence?: string;
+	}>;
+	routeScale: CapacityRouteScaleRow[];
+	bgpNeighbors: CapacityBgpNeighborRow[];
+};
+
+export type ForwardNetworkCapacityInventoryResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	snapshotId?: string;
+	devices: CapacityDeviceInventoryRow[];
+	interfaces: CapacityInterfaceInventoryRow[];
+	interfaceVrfs?: Array<{
+		deviceName: string;
+		vrf: string;
+		ifaceName: string;
+		subIfaceName?: string | null;
+	}>;
+	hardwareTcam?: Array<{
+		deviceName: string;
+		vendor?: string;
+		os?: string;
+		model?: string | null;
+		tcamUsed: number;
+		tcamTotal: number;
+		commandText?: string;
+		evidence?: string;
+	}>;
 	routeScale: CapacityRouteScaleRow[];
 	bgpNeighbors: CapacityBgpNeighborRow[];
 };
@@ -1350,6 +1422,15 @@ export async function getDeploymentCapacityInventory(
 ): Promise<DeploymentCapacityInventoryResponse> {
 	return apiFetch<DeploymentCapacityInventoryResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/inventory`,
+	);
+}
+
+export async function getForwardNetworkCapacityInventory(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacityInventoryResponse> {
+	return apiFetch<ForwardNetworkCapacityInventoryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/inventory`,
 	);
 }
 
@@ -1385,6 +1466,19 @@ export type DeploymentCapacityGrowthResponse = {
 	rows: CapacityGrowthRow[];
 };
 
+export type ForwardNetworkCapacityGrowthResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	metric: string;
+	window: string;
+	objectType?: string;
+	asOf?: string;
+	compareAsOf?: string;
+	compareHours: number;
+	rows: CapacityGrowthRow[];
+};
+
 export async function getDeploymentCapacityGrowth(
 	workspaceId: string,
 	deploymentId: string,
@@ -1398,6 +1492,22 @@ export async function getDeploymentCapacityGrowth(
 	if (q.limit) qs.set("limit", String(q.limit));
 	return apiFetch<DeploymentCapacityGrowthResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/growth?${qs.toString()}`,
+	);
+}
+
+export async function getForwardNetworkCapacityGrowth(
+	workspaceId: string,
+	networkRef: string,
+	q: DeploymentCapacityGrowthQuery,
+): Promise<ForwardNetworkCapacityGrowthResponse> {
+	const qs = new URLSearchParams();
+	qs.set("metric", q.metric);
+	qs.set("window", q.window);
+	if (q.objectType) qs.set("objectType", q.objectType);
+	if (q.compareHours) qs.set("compareHours", String(q.compareHours));
+	if (q.limit) qs.set("limit", String(q.limit));
+	return apiFetch<ForwardNetworkCapacityGrowthResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/growth?${qs.toString()}`,
 	);
 }
 
@@ -1427,6 +1537,17 @@ export async function postDeploymentCapacityInterfaceMetricsHistory(
 	);
 }
 
+export async function postForwardNetworkCapacityInterfaceMetricsHistory(
+	workspaceId: string,
+	networkRef: string,
+	body: PostCapacityInterfaceMetricsHistoryRequest,
+): Promise<CapacityPerfProxyResponse> {
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/interface-metrics-history`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
 export type PostCapacityDeviceMetricsHistoryRequest = {
 	type: string;
 	days?: number;
@@ -1447,6 +1568,17 @@ export async function postDeploymentCapacityDeviceMetricsHistory(
 	);
 }
 
+export async function postForwardNetworkCapacityDeviceMetricsHistory(
+	workspaceId: string,
+	networkRef: string,
+	body: PostCapacityDeviceMetricsHistoryRequest,
+): Promise<CapacityPerfProxyResponse> {
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/device-metrics-history`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
 export type GetCapacityUnhealthyDevicesQuery = {
 	snapshotId?: string;
 	endTime?: string;
@@ -1463,6 +1595,20 @@ export async function getDeploymentCapacityUnhealthyDevices(
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-devices${suffix}`,
+	);
+}
+
+export async function getForwardNetworkCapacityUnhealthyDevices(
+	workspaceId: string,
+	networkRef: string,
+	q: GetCapacityUnhealthyDevicesQuery,
+): Promise<CapacityPerfProxyResponse> {
+	const qs = new URLSearchParams();
+	if (q.snapshotId) qs.set("snapshotId", q.snapshotId);
+	if (q.endTime) qs.set("endTime", q.endTime);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-devices${suffix}`,
 	);
 }
 
@@ -1487,6 +1633,22 @@ export async function postDeploymentCapacityUnhealthyInterfaces(
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function postForwardNetworkCapacityUnhealthyInterfaces(
+	workspaceId: string,
+	networkRef: string,
+	q: GetCapacityUnhealthyInterfacesQuery,
+	body: PostCapacityUnhealthyInterfacesRequest,
+): Promise<CapacityPerfProxyResponse> {
+	const qs = new URLSearchParams();
+	if (q.snapshotId) qs.set("snapshotId", q.snapshotId);
+	if (q.endTime) qs.set("endTime", q.endTime);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-interfaces${suffix}`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -3144,6 +3306,7 @@ export type PolicyReportAttestAssignmentRequest = {
 export type PolicyReportException = {
 	id: string;
 	workspaceId: string;
+	forwardNetworkId: string;
 	findingId: string;
 	checkId: string;
 	status: string;
@@ -3161,6 +3324,7 @@ export type PolicyReportListExceptionsResponse = {
 };
 
 export type PolicyReportCreateExceptionRequest = {
+	forwardNetworkId: string;
 	findingId: string;
 	checkId: string;
 	justification: string;
@@ -3170,6 +3334,45 @@ export type PolicyReportCreateExceptionRequest = {
 
 export type PolicyReportDecisionResponse = {
 	ok: boolean;
+};
+
+export type PolicyReportForwardNetwork = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	collectorConfigId?: string;
+	createdBy: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportCreateForwardNetworkRequest = {
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	collectorConfigId?: string;
+};
+
+export type PolicyReportListForwardNetworksResponse = {
+	networks: PolicyReportForwardNetwork[];
+};
+
+export type PolicyReportForwardCredentialsStatus = {
+	configured: boolean;
+	baseUrl?: string;
+	skipTlsVerify?: boolean;
+	username?: string;
+	hasPassword?: boolean;
+	updatedAt?: string;
+};
+
+export type PolicyReportPutForwardCredentialsRequest = {
+	baseUrl: string;
+	skipTlsVerify: boolean;
+	username: string;
+	password?: string;
 };
 
 export type PolicyReportFlowTuple = {
@@ -3396,6 +3599,100 @@ export async function waiveWorkspacePolicyReportRecertAssignment(
 	);
 }
 
+// Forward Networks (generic workspace-saved networks; used by capacity tooling)
+
+export async function createWorkspaceForwardNetwork(
+	workspaceId: string,
+	body: PolicyReportCreateForwardNetworkRequest,
+): Promise<PolicyReportForwardNetwork> {
+	return apiFetch<PolicyReportForwardNetwork>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspaceForwardNetworks(
+	workspaceId: string,
+): Promise<PolicyReportListForwardNetworksResponse> {
+	return apiFetch<PolicyReportListForwardNetworksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks`,
+	);
+}
+
+export async function deleteWorkspaceForwardNetwork(
+	workspaceId: string,
+	networkRef: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function createWorkspacePolicyReportForwardNetwork(
+	workspaceId: string,
+	body: PolicyReportCreateForwardNetworkRequest,
+): Promise<PolicyReportForwardNetwork> {
+	return apiFetch<PolicyReportForwardNetwork>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspacePolicyReportForwardNetworks(
+	workspaceId: string,
+): Promise<PolicyReportListForwardNetworksResponse> {
+	return apiFetch<PolicyReportListForwardNetworksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks`,
+	);
+}
+
+export async function deleteWorkspacePolicyReportForwardNetwork(
+	workspaceId: string,
+	networkRef: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(networkRef)}`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function getWorkspacePolicyReportForwardNetworkCredentials(
+	workspaceId: string,
+	forwardNetworkId: string,
+): Promise<PolicyReportForwardCredentialsStatus> {
+	return apiFetch<PolicyReportForwardCredentialsStatus>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+	);
+}
+
+export async function putWorkspacePolicyReportForwardNetworkCredentials(
+	workspaceId: string,
+	forwardNetworkId: string,
+	body: PolicyReportPutForwardCredentialsRequest,
+): Promise<PolicyReportForwardCredentialsStatus> {
+	return apiFetch<PolicyReportForwardCredentialsStatus>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		{ method: "PUT", body: JSON.stringify(body) },
+	);
+}
+
+export async function deleteWorkspacePolicyReportForwardNetworkCredentials(
+	workspaceId: string,
+	forwardNetworkId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		{ method: "DELETE" },
+	);
+}
+
 export async function createWorkspacePolicyReportException(
 	workspaceId: string,
 	body: PolicyReportCreateExceptionRequest,
@@ -3411,10 +3708,12 @@ export async function createWorkspacePolicyReportException(
 
 export async function listWorkspacePolicyReportExceptions(
 	workspaceId: string,
+	forwardNetworkId?: string,
 	status?: string,
 	limit?: number,
 ): Promise<PolicyReportListExceptionsResponse> {
 	const qs = new URLSearchParams();
+	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListExceptionsResponse>(

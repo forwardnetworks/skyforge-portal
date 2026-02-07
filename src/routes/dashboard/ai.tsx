@@ -22,6 +22,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/query-keys";
 import {
+	type RunLogState,
+	type TaskLogEntry,
+	useRunEvents,
+} from "@/lib/run-events";
+import {
 	type UserAIGenerateRequest,
 	autofixUserAITemplate,
 	disconnectUserGemini,
@@ -111,6 +116,9 @@ function AITemplatesPage() {
 	const [saveName, setSaveName] = useState("");
 	const [lastError, setLastError] = useState<string>("");
 	const [lastValidateRunId, setLastValidateRunId] = useState<string>("");
+	const [outputTab, setOutputTab] = useState<
+		"template" | "request" | "validate"
+	>("template");
 	const [actionState, setActionState] =
 		useState<Record<ActionName, ActionState>>(INITIAL_ACTIONS);
 	const [activeAction, setActiveAction] = useState<ActionName | null>(null);
@@ -196,6 +204,15 @@ function AITemplatesPage() {
 		queryKey: queryKeys.userAIHistory(),
 		queryFn: getUserAIHistory,
 		refetchInterval: 15_000,
+	});
+
+	useRunEvents(lastValidateRunId, Boolean(lastValidateRunId));
+	const validateLogs = useQuery({
+		queryKey: queryKeys.runLogs(lastValidateRunId),
+		queryFn: async () => ({ cursor: 0, entries: [] }) as RunLogState,
+		enabled: Boolean(lastValidateRunId),
+		retry: false,
+		staleTime: Number.POSITIVE_INFINITY,
 	});
 
 	const canGenerate =
@@ -362,6 +379,7 @@ function AITemplatesPage() {
 			});
 		},
 		onMutate: () => {
+			if (kind === "netlab") setOutputTab("validate");
 			beginAction(
 				"validate",
 				kind === "netlab"
@@ -376,6 +394,12 @@ function AITemplatesPage() {
 			if (kind === "netlab") {
 				const runId = res.task?.id != null ? String(res.task.id) : "";
 				setLastValidateRunId(runId);
+				if (runId) {
+					qc.setQueryData(queryKeys.runLogs(runId), {
+						cursor: 0,
+						entries: [],
+					} satisfies RunLogState);
+				}
 				finishAction(
 					"validate",
 					"succeeded",
@@ -1025,10 +1049,16 @@ function AITemplatesPage() {
 						<CardTitle>Output</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
-						<Tabs defaultValue="template">
+						<Tabs
+							value={outputTab}
+							onValueChange={(v) => setOutputTab(v as any)}
+						>
 							<TabsList>
 								<TabsTrigger value="template">Template</TabsTrigger>
 								<TabsTrigger value="request">Request</TabsTrigger>
+								{lastValidateRunId ? (
+									<TabsTrigger value="validate">Validation Log</TabsTrigger>
+								) : null}
 							</TabsList>
 							<TabsContent value="template" className="space-y-2">
 								<div className="text-xs text-muted-foreground">
@@ -1083,6 +1113,48 @@ function AITemplatesPage() {
 									/>
 								</div>
 							</TabsContent>
+							<TabsContent value="validate" className="space-y-3">
+								<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+									<div className="space-y-1">
+										<div className="text-xs text-muted-foreground">Run</div>
+										<div className="break-all font-mono text-xs">
+											{lastValidateRunId || "—"}
+										</div>
+									</div>
+									<div className="flex items-center gap-2">
+										{lastValidateRunId ? (
+											<Button variant="outline" size="sm" asChild>
+												<Link
+													to="/dashboard/runs/$runId"
+													params={{ runId: lastValidateRunId }}
+												>
+													Open run
+												</Link>
+											</Button>
+										) : null}
+										<Button
+											variant="outline"
+											size="sm"
+											disabled={!lastValidateRunId}
+											onClick={() => {
+												if (!lastValidateRunId) return;
+												qc.setQueryData(queryKeys.runLogs(lastValidateRunId), {
+													cursor: 0,
+													entries: [],
+												} satisfies RunLogState);
+											}}
+										>
+											Clear
+										</Button>
+										<div className="text-xs text-muted-foreground">
+											Cursor: {String(validateLogs.data?.cursor ?? 0)}
+										</div>
+									</div>
+								</div>
+								<div className="rounded-md border bg-zinc-950 p-4 font-mono text-xs text-zinc-100">
+									<RunLogOutput entries={validateLogs.data?.entries ?? []} />
+								</div>
+							</TabsContent>
 						</Tabs>
 						<div className="text-xs text-muted-foreground">
 							Validate runs an in-cluster netlab validation job (netlab
@@ -1131,6 +1203,34 @@ function AITemplatesPage() {
 					)}
 				</CardContent>
 			</Card>
+		</div>
+	);
+}
+
+function RunLogOutput(props: { entries: TaskLogEntry[] }) {
+	const containerRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+		el.scrollTop = el.scrollHeight;
+	}, [props.entries.length]);
+
+	if (props.entries.length === 0)
+		return <div className="text-zinc-500">Waiting for output…</div>;
+	return (
+		<div
+			ref={containerRef}
+			className="max-h-[65vh] overflow-auto whitespace-pre-wrap"
+		>
+			{props.entries.map((e, idx) => (
+				<div key={`${e.time}-${idx}`}>
+					<span className="select-none text-zinc-500">
+						{e.time ? `${e.time} ` : ""}
+					</span>
+					<span>{e.output}</span>
+				</div>
+			))}
 		</div>
 	);
 }

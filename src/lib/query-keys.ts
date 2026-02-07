@@ -29,6 +29,29 @@ export const queryKeys = {
 			String(compareHours),
 			objectType,
 		] as const,
+	workspaceForwardNetworks: (workspaceId: string) =>
+		["workspaceForwardNetworks", workspaceId] as const,
+	forwardNetworkCapacitySummary: (workspaceId: string, networkRef: string) =>
+		["forwardNetworkCapacitySummary", workspaceId, networkRef] as const,
+	forwardNetworkCapacityInventory: (workspaceId: string, networkRef: string) =>
+		["forwardNetworkCapacityInventory", workspaceId, networkRef] as const,
+	forwardNetworkCapacityGrowth: (
+		workspaceId: string,
+		networkRef: string,
+		window: string,
+		metric: string,
+		compareHours: number,
+		objectType: string,
+	) =>
+		[
+			"forwardNetworkCapacityGrowth",
+			workspaceId,
+			networkRef,
+			window,
+			metric,
+			String(compareHours),
+			objectType,
+		] as const,
 	workspaces: () => ["workspaces"] as const,
 	workspaceForwardConfig: (workspaceId: string) =>
 		["workspaceForwardConfig", workspaceId] as const,
@@ -143,6 +166,15 @@ export const queryKeys = {
 			status ?? "",
 			assignee ?? "",
 		] as const,
-	policyReportsExceptions: (workspaceId: string, status?: string) =>
-		["policyReportsExceptions", workspaceId, status ?? ""] as const,
+	policyReportsExceptions: (
+		workspaceId: string,
+		forwardNetworkId?: string,
+		status?: string,
+	) =>
+		[
+			"policyReportsExceptions",
+			workspaceId,
+			forwardNetworkId ?? "",
+			status ?? "",
+		] as const,
 };

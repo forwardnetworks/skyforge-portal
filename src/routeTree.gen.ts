@@ -33,6 +33,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
 import { Route as DashboardWorkspacesIndexRouteImport } from './routes/dashboard/workspaces/index'
 import { Route as DashboardRunsIndexRouteImport } from './routes/dashboard/runs/index'
+import { Route as DashboardForwardNetworksIndexRouteImport } from './routes/dashboard/forward-networks/index'
 import { Route as DashboardDocsIndexRouteImport } from './routes/dashboard/docs/index'
 import { Route as DashboardDeploymentsIndexRouteImport } from './routes/dashboard/deployments/index'
 import { Route as DashboardWorkspacesWorkspaceIdRouteImport } from './routes/dashboard/workspaces/$workspaceId'
@@ -43,6 +44,7 @@ import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
 import { Route as DashboardWorkspacesWorkspaceIdPolicyReportsRouteImport } from './routes/dashboard/workspaces/$workspaceId.policy-reports'
+import { Route as DashboardForwardNetworksNetworkRefCapacityRouteImport } from './routes/dashboard/forward-networks/$networkRef.capacity'
 import { Route as DashboardDeploymentsDeploymentIdMapRouteImport } from './routes/dashboard/deployments/$deploymentId.map'
 import { Route as DashboardDeploymentsDeploymentIdCapacityRouteImport } from './routes/dashboard/deployments/$deploymentId.capacity'
 
@@ -167,6 +169,12 @@ const DashboardRunsIndexRoute = DashboardRunsIndexRouteImport.update({
   path: '/dashboard/runs/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardForwardNetworksIndexRoute =
+  DashboardForwardNetworksIndexRouteImport.update({
+    id: '/dashboard/forward-networks/',
+    path: '/dashboard/forward-networks/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardDocsIndexRoute = DashboardDocsIndexRouteImport.update({
   id: '/dashboard/docs/',
   path: '/dashboard/docs/',
@@ -221,6 +229,12 @@ const DashboardWorkspacesWorkspaceIdPolicyReportsRoute =
     path: '/policy-reports',
     getParentRoute: () => DashboardWorkspacesWorkspaceIdRoute,
   } as any)
+const DashboardForwardNetworksNetworkRefCapacityRoute =
+  DashboardForwardNetworksNetworkRefCapacityRouteImport.update({
+    id: '/dashboard/forward-networks/$networkRef/capacity',
+    path: '/dashboard/forward-networks/$networkRef/capacity',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardDeploymentsDeploymentIdMapRoute =
   DashboardDeploymentsDeploymentIdMapRouteImport.update({
     id: '/dashboard/deployments/$deploymentId/map',
@@ -265,10 +279,12 @@ export interface FileRoutesByFullPath {
   '/dashboard/workspaces/$workspaceId': typeof DashboardWorkspacesWorkspaceIdRouteWithChildren
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
+  '/dashboard/forward-networks': typeof DashboardForwardNetworksIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
+  '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -303,10 +319,12 @@ export interface FileRoutesByTo {
   '/dashboard/workspaces/$workspaceId': typeof DashboardWorkspacesWorkspaceIdRouteWithChildren
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
+  '/dashboard/forward-networks': typeof DashboardForwardNetworksIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
+  '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -342,10 +360,12 @@ export interface FileRoutesById {
   '/dashboard/workspaces/$workspaceId': typeof DashboardWorkspacesWorkspaceIdRouteWithChildren
   '/dashboard/deployments/': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
+  '/dashboard/forward-networks/': typeof DashboardForwardNetworksIndexRoute
   '/dashboard/runs/': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces/': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
+  '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -382,10 +402,12 @@ export interface FileRouteTypes {
     | '/dashboard/workspaces/$workspaceId'
     | '/dashboard/deployments'
     | '/dashboard/docs'
+    | '/dashboard/forward-networks'
     | '/dashboard/runs'
     | '/dashboard/workspaces'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
+    | '/dashboard/forward-networks/$networkRef/capacity'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
@@ -420,10 +442,12 @@ export interface FileRouteTypes {
     | '/dashboard/workspaces/$workspaceId'
     | '/dashboard/deployments'
     | '/dashboard/docs'
+    | '/dashboard/forward-networks'
     | '/dashboard/runs'
     | '/dashboard/workspaces'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
+    | '/dashboard/forward-networks/$networkRef/capacity'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId'
   id:
@@ -458,10 +482,12 @@ export interface FileRouteTypes {
     | '/dashboard/workspaces/$workspaceId'
     | '/dashboard/deployments/'
     | '/dashboard/docs/'
+    | '/dashboard/forward-networks/'
     | '/dashboard/runs/'
     | '/dashboard/workspaces/'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
+    | '/dashboard/forward-networks/$networkRef/capacity'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
@@ -497,10 +523,12 @@ export interface RootRouteChildren {
   DashboardWorkspacesWorkspaceIdRoute: typeof DashboardWorkspacesWorkspaceIdRouteWithChildren
   DashboardDeploymentsIndexRoute: typeof DashboardDeploymentsIndexRoute
   DashboardDocsIndexRoute: typeof DashboardDocsIndexRoute
+  DashboardForwardNetworksIndexRoute: typeof DashboardForwardNetworksIndexRoute
   DashboardRunsIndexRoute: typeof DashboardRunsIndexRoute
   DashboardWorkspacesIndexRoute: typeof DashboardWorkspacesIndexRoute
   DashboardDeploymentsDeploymentIdCapacityRoute: typeof DashboardDeploymentsDeploymentIdCapacityRoute
   DashboardDeploymentsDeploymentIdMapRoute: typeof DashboardDeploymentsDeploymentIdMapRoute
+  DashboardForwardNetworksNetworkRefCapacityRoute: typeof DashboardForwardNetworksNetworkRefCapacityRoute
   DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 
@@ -674,6 +702,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRunsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/forward-networks/': {
+      id: '/dashboard/forward-networks/'
+      path: '/dashboard/forward-networks'
+      fullPath: '/dashboard/forward-networks'
+      preLoaderRoute: typeof DashboardForwardNetworksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/docs/': {
       id: '/dashboard/docs/'
       path: '/dashboard/docs'
@@ -744,6 +779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWorkspacesWorkspaceIdPolicyReportsRouteImport
       parentRoute: typeof DashboardWorkspacesWorkspaceIdRoute
     }
+    '/dashboard/forward-networks/$networkRef/capacity': {
+      id: '/dashboard/forward-networks/$networkRef/capacity'
+      path: '/dashboard/forward-networks/$networkRef/capacity'
+      fullPath: '/dashboard/forward-networks/$networkRef/capacity'
+      preLoaderRoute: typeof DashboardForwardNetworksNetworkRefCapacityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/deployments/$deploymentId/map': {
       id: '/dashboard/deployments/$deploymentId/map'
       path: '/dashboard/deployments/$deploymentId/map'
@@ -808,12 +850,15 @@ const rootRouteChildren: RootRouteChildren = {
     DashboardWorkspacesWorkspaceIdRouteWithChildren,
   DashboardDeploymentsIndexRoute: DashboardDeploymentsIndexRoute,
   DashboardDocsIndexRoute: DashboardDocsIndexRoute,
+  DashboardForwardNetworksIndexRoute: DashboardForwardNetworksIndexRoute,
   DashboardRunsIndexRoute: DashboardRunsIndexRoute,
   DashboardWorkspacesIndexRoute: DashboardWorkspacesIndexRoute,
   DashboardDeploymentsDeploymentIdCapacityRoute:
     DashboardDeploymentsDeploymentIdCapacityRoute,
   DashboardDeploymentsDeploymentIdMapRoute:
     DashboardDeploymentsDeploymentIdMapRoute,
+  DashboardForwardNetworksNetworkRefCapacityRoute:
+    DashboardForwardNetworksNetworkRefCapacityRoute,
   DashboardDeploymentsDeploymentIdIndexRoute:
     DashboardDeploymentsDeploymentIdIndexRoute,
 }
