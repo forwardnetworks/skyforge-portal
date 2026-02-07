@@ -91,6 +91,12 @@ const items: NavItem[] = [
 				external: true,
 				adminOnly: true,
 			},
+			{
+				label: "Elastic (Kibana)",
+				href: "/kibana/",
+				icon: Database,
+				external: true,
+			},
 		],
 	},
 	{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
@@ -111,12 +117,6 @@ const items: NavItem[] = [
 			},
 			{ label: "NetBox", href: "/netbox/", icon: Network, external: true },
 			{ label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
-			{
-				label: "Elastic (Kibana)",
-				href: "/kibana/",
-				icon: Database,
-				external: true,
-			},
 			{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 		],
 	},
@@ -179,11 +179,14 @@ export function SideNav(props: {
 									item.children?.filter((child) => {
 										if (child.label === "Forward Collector")
 											return !!f.forwardEnabled;
+										if (child.label === "ServiceNow") return !!f.forwardEnabled;
 										if (child.label === "Artifacts") return !!f.minioEnabled;
 										if (child.label === "Git") return !!f.giteaEnabled;
 										if (child.label === "DNS") return !!f.dnsEnabled;
 										if (child.label === "Coder") return !!f.coderEnabled;
 										if (child.label === "Coder Admin") return !!f.coderEnabled;
+										if (child.label === "Elastic (Kibana)")
+											return !!f.forwardEnabled && !!f.elasticEnabled;
 										if (child.adminOnly) return !!props.isAdmin;
 										return true;
 									}) ?? [];
@@ -197,8 +200,6 @@ export function SideNav(props: {
 										if (child.label === "API Testing") return !!f.yaadeEnabled;
 										if (child.label === "NetBox") return !!f.netboxEnabled;
 										if (child.label === "Nautobot") return !!f.nautobotEnabled;
-										if (child.label === "Elastic (Kibana)")
-											return !!f.elasticEnabled;
 										return true;
 									}) ?? [];
 								if (children.length === 0) return [];
