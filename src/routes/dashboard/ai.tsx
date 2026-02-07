@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { Loader2, Square } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -105,6 +107,7 @@ function AITemplatesPage() {
 	const [seed, setSeed] = useState("");
 	const [output, setOutput] = useState("");
 	const [rawOutput, setRawOutput] = useState("");
+	const generateAbort = useRef<AbortController | null>(null);
 	const [saveName, setSaveName] = useState("");
 	const [lastError, setLastError] = useState<string>("");
 	const [lastValidateRunId, setLastValidateRunId] = useState<string>("");
@@ -237,13 +240,18 @@ function AITemplatesPage() {
 					"no external files",
 				].filter(Boolean),
 			};
-			return generateUserAITemplate(payload);
+			const controller = new AbortController();
+			generateAbort.current = controller;
+			return generateUserAITemplate(payload, { signal: controller.signal });
 		},
 		onMutate: () => {
 			beginAction("generate", `Generating ${kind} template with Gemini…`, {
 				kind,
 				provider: "gemini",
 			});
+			setOutput("");
+			setRawOutput("");
+			setLastError("");
 		},
 		onSuccess: (res) => {
 			setOutput(res.content ?? "");
@@ -258,9 +266,20 @@ function AITemplatesPage() {
 			);
 			void qc.invalidateQueries({ queryKey: queryKeys.userAIHistory() });
 			toast.success("Template generated", { description: res.filename });
+			generateAbort.current = null;
 		},
 		onError: (e) => {
+			generateAbort.current = null;
+			const isAbort =
+				(e instanceof DOMException && e.name === "AbortError") ||
+				(e instanceof Error && e.name === "AbortError");
 			const msg = e instanceof Error ? e.message : String(e);
+			if (isAbort) {
+				setLastError("");
+				setRawOutput("");
+				finishAction("generate", "failed", "Generation canceled");
+				return;
+			}
 			setLastError(msg);
 			setRawOutput("");
 			if (e instanceof Error && "bodyText" in e) {
@@ -289,6 +308,9 @@ function AITemplatesPage() {
 			toast.error("Failed to generate template", {
 				description: msg,
 			});
+		},
+		onSettled: () => {
+			generateAbort.current = null;
 		},
 	});
 
@@ -506,6 +528,55 @@ function AITemplatesPage() {
 					Connect Gemini and generate Netlab or Containerlab templates.
 				</p>
 			</div>
+
+			{activeAction && activeState?.phase === "running" ? (
+				<Card>
+					<CardContent className="flex flex-col gap-2 pt-6">
+						<div className="flex flex-wrap items-center justify-between gap-2">
+							<div className="flex items-center gap-2">
+								<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+								<div className="text-sm">
+									<span className="font-medium">
+										{ACTION_LABEL[activeAction]}
+									</span>{" "}
+									<span className="text-muted-foreground">
+										{activeState.summary}
+									</span>
+								</div>
+							</div>
+							<div className="flex items-center gap-2">
+								<Badge variant="secondary">{fmtDuration(activeElapsed)}</Badge>
+								{activeAction === "generate" ? (
+									<Button
+										size="sm"
+										variant="outline"
+										disabled={!generateAbort.current || !generate.isPending}
+										onClick={() => {
+											const ctl = generateAbort.current;
+											if (ctl) {
+												ctl.abort();
+												generateAbort.current = null;
+												toast.message("Generation canceled");
+											}
+										}}
+									>
+										<Square className="mr-2 h-4 w-4" />
+										Cancel
+									</Button>
+								) : null}
+							</div>
+						</div>
+						<Progress value={activityProgressValue} />
+						{activeState.requestMeta ? (
+							<div className="text-xs text-muted-foreground">
+								{Object.entries(activeState.requestMeta)
+									.map(([k, v]) => `${k}=${v}`)
+									.join(" · ")}
+							</div>
+						) : null}
+					</CardContent>
+				</Card>
+			) : null}
 
 			<Card>
 				<CardHeader>
@@ -850,14 +921,28 @@ function AITemplatesPage() {
 								}
 								onClick={() => generate.mutate()}
 							>
-								Generate
+								{generate.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Generating…
+									</>
+								) : (
+									"Generate"
+								)}
 							</Button>
 							<Button
 								variant="outline"
 								disabled={!output.trim() || validate.isPending || isBusy}
 								onClick={() => validate.mutate()}
 							>
-								Validate
+								{validate.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Validating…
+									</>
+								) : (
+									"Validate"
+								)}
 							</Button>
 							<Button
 								variant="outline"
@@ -869,7 +954,14 @@ function AITemplatesPage() {
 								}
 								onClick={() => autofix.mutate()}
 							>
-								Auto-fix
+								{autofix.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Auto-fixing…
+									</>
+								) : (
+									"Auto-fix"
+								)}
 							</Button>
 							{lastValidateRunId ? (
 								<Button variant="outline" asChild>
@@ -915,7 +1007,14 @@ function AITemplatesPage() {
 								disabled={!output.trim() || save.isPending || isBusy}
 								onClick={() => save.mutate()}
 							>
-								Save to Repo
+								{save.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Saving…
+									</>
+								) : (
+									"Save to Repo"
+								)}
 							</Button>
 						</div>
 					</CardContent>

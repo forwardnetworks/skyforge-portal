@@ -76,6 +76,7 @@ const items: NavItem[] = [
 			{ label: "Overview", href: "/dashboard/integrations", icon: Workflow },
 			{ label: "Forward Collector", href: "/dashboard/forward", icon: Radio },
 			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
+			{ label: "Elastic", href: "/dashboard/elastic", icon: Database },
 			{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
 			{ label: "Git", href: "/git/", icon: GitBranch, external: true },
 			{
@@ -190,6 +191,7 @@ export function SideNav(props: {
 									item.children?.filter((child) => {
 										if (child.label === "Forward Collector")
 											return !!f.forwardEnabled;
+										if (child.label === "Elastic") return !!f.elasticEnabled;
 										if (child.label === "Artifacts") return !!f.minioEnabled;
 										if (child.label === "Git") return !!f.giteaEnabled;
 										if (child.label === "DNS") return !!f.dnsEnabled;

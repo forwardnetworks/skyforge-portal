@@ -27,6 +27,7 @@ import { Route as DashboardPolicyReportsRouteImport } from './routes/dashboard/p
 import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
 import { Route as DashboardGeminiRouteImport } from './routes/dashboard/gemini'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
+import { Route as DashboardElasticRouteImport } from './routes/dashboard/elastic'
 import { Route as DashboardAiRouteImport } from './routes/dashboard/ai'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
@@ -43,6 +44,7 @@ import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
 import { Route as DashboardWorkspacesWorkspaceIdPolicyReportsRouteImport } from './routes/dashboard/workspaces/$workspaceId.policy-reports'
 import { Route as DashboardDeploymentsDeploymentIdMapRouteImport } from './routes/dashboard/deployments/$deploymentId.map'
+import { Route as DashboardDeploymentsDeploymentIdCapacityRouteImport } from './routes/dashboard/deployments/$deploymentId.capacity'
 
 const WebhooksRoute = WebhooksRouteImport.update({
   id: '/webhooks',
@@ -134,6 +136,11 @@ const DashboardForwardRoute = DashboardForwardRouteImport.update({
   path: '/dashboard/forward',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardElasticRoute = DashboardElasticRouteImport.update({
+  id: '/dashboard/elastic',
+  path: '/dashboard/elastic',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardAiRoute = DashboardAiRouteImport.update({
   id: '/dashboard/ai',
   path: '/dashboard/ai',
@@ -220,6 +227,12 @@ const DashboardDeploymentsDeploymentIdMapRoute =
     path: '/dashboard/deployments/$deploymentId/map',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DashboardDeploymentsDeploymentIdCapacityRoute =
+  DashboardDeploymentsDeploymentIdCapacityRouteImport.update({
+    id: '/dashboard/deployments/$deploymentId/capacity',
+    path: '/dashboard/deployments/$deploymentId/capacity',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -232,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/ai': typeof DashboardAiRoute
+  '/dashboard/elastic': typeof DashboardElasticRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -253,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces': typeof DashboardWorkspacesIndexRoute
+  '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
@@ -268,6 +283,7 @@ export interface FileRoutesByTo {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/ai': typeof DashboardAiRoute
+  '/dashboard/elastic': typeof DashboardElasticRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -289,6 +305,7 @@ export interface FileRoutesByTo {
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces': typeof DashboardWorkspacesIndexRoute
+  '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
@@ -305,6 +322,7 @@ export interface FileRoutesById {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/ai': typeof DashboardAiRoute
+  '/dashboard/elastic': typeof DashboardElasticRoute
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -326,6 +344,7 @@ export interface FileRoutesById {
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
   '/dashboard/runs/': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces/': typeof DashboardWorkspacesIndexRoute
+  '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
@@ -343,6 +362,7 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/ai'
+    | '/dashboard/elastic'
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
@@ -364,6 +384,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs'
     | '/dashboard/runs'
     | '/dashboard/workspaces'
+    | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId'
@@ -379,6 +400,7 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/ai'
+    | '/dashboard/elastic'
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
@@ -400,6 +422,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs'
     | '/dashboard/runs'
     | '/dashboard/workspaces'
+    | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId'
@@ -415,6 +438,7 @@ export interface FileRouteTypes {
     | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/ai'
+    | '/dashboard/elastic'
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
@@ -436,6 +460,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs/'
     | '/dashboard/runs/'
     | '/dashboard/workspaces/'
+    | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId/'
@@ -452,6 +477,7 @@ export interface RootRouteChildren {
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardAiRoute: typeof DashboardAiRoute
+  DashboardElasticRoute: typeof DashboardElasticRoute
   DashboardForwardRoute: typeof DashboardForwardRoute
   DashboardGeminiRoute: typeof DashboardGeminiRoute
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
@@ -473,6 +499,7 @@ export interface RootRouteChildren {
   DashboardDocsIndexRoute: typeof DashboardDocsIndexRoute
   DashboardRunsIndexRoute: typeof DashboardRunsIndexRoute
   DashboardWorkspacesIndexRoute: typeof DashboardWorkspacesIndexRoute
+  DashboardDeploymentsDeploymentIdCapacityRoute: typeof DashboardDeploymentsDeploymentIdCapacityRoute
   DashboardDeploymentsDeploymentIdMapRoute: typeof DashboardDeploymentsDeploymentIdMapRoute
   DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -605,6 +632,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardForwardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/elastic': {
+      id: '/dashboard/elastic'
+      path: '/dashboard/elastic'
+      fullPath: '/dashboard/elastic'
+      preLoaderRoute: typeof DashboardElasticRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/ai': {
       id: '/dashboard/ai'
       path: '/dashboard/ai'
@@ -717,6 +751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsDeploymentIdMapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/deployments/$deploymentId/capacity': {
+      id: '/dashboard/deployments/$deploymentId/capacity'
+      path: '/dashboard/deployments/$deploymentId/capacity'
+      fullPath: '/dashboard/deployments/$deploymentId/capacity'
+      preLoaderRoute: typeof DashboardDeploymentsDeploymentIdCapacityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -746,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   DashboardAiRoute: DashboardAiRoute,
+  DashboardElasticRoute: DashboardElasticRoute,
   DashboardForwardRoute: DashboardForwardRoute,
   DashboardGeminiRoute: DashboardGeminiRoute,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
@@ -768,6 +810,8 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardDocsIndexRoute: DashboardDocsIndexRoute,
   DashboardRunsIndexRoute: DashboardRunsIndexRoute,
   DashboardWorkspacesIndexRoute: DashboardWorkspacesIndexRoute,
+  DashboardDeploymentsDeploymentIdCapacityRoute:
+    DashboardDeploymentsDeploymentIdCapacityRoute,
   DashboardDeploymentsDeploymentIdMapRoute:
     DashboardDeploymentsDeploymentIdMapRoute,
   DashboardDeploymentsDeploymentIdIndexRoute:

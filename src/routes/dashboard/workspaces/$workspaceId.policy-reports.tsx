@@ -15,6 +15,7 @@ import { Button, buttonVariants } from "../../../components/ui/button";
 import {
 	Card,
 	CardContent,
+	CardDescription,
 	CardHeader,
 	CardTitle,
 } from "../../../components/ui/card";
@@ -34,6 +35,14 @@ import {
 	SelectValue,
 } from "../../../components/ui/select";
 import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "../../../components/ui/table";
+import {
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -45,17 +54,31 @@ import {
 	type JSONMap,
 	type PolicyReportCatalogCheck,
 	type PolicyReportCatalogParam,
+	type PolicyReportException,
 	type PolicyReportNQEResponse,
 	type PolicyReportPack,
 	type PolicyReportPackDeltaResponse,
+	type PolicyReportRecertAssignment,
+	type PolicyReportRecertCampaignWithCounts,
 	type PolicyReportRunPackResponse,
+	approveWorkspacePolicyReportException,
+	attestWorkspacePolicyReportRecertAssignment,
+	createWorkspacePolicyReportException,
+	createWorkspacePolicyReportRecertCampaign,
+	generateWorkspacePolicyReportRecertAssignments,
 	getWorkspacePolicyReportCheck,
 	getWorkspacePolicyReportChecks,
 	getWorkspacePolicyReportPacks,
 	getWorkspacePolicyReportSnapshots,
+	listWorkspacePolicyReportExceptions,
+	listWorkspacePolicyReportRecertAssignments,
+	listWorkspacePolicyReportRecertCampaigns,
+	rejectWorkspacePolicyReportException,
 	runWorkspacePolicyReportCheck,
 	runWorkspacePolicyReportPack,
 	runWorkspacePolicyReportPackDelta,
+	simulateWorkspacePolicyReportChangePlanning,
+	waiveWorkspacePolicyReportRecertAssignment,
 } from "../../../lib/skyforge-api";
 
 export const Route = createFileRoute(
@@ -176,13 +199,20 @@ function PolicyReportsPage() {
 
 	const [networkId, setNetworkId] = useState("");
 	const [snapshotId, setSnapshotId] = useState<string>("");
+	const [flowSrcIp, setFlowSrcIp] = useState<string>("");
+	const [flowDstIp, setFlowDstIp] = useState<string>("");
+	const [flowIpProto, setFlowIpProto] = useState<string>("6");
+	const [flowDstPort, setFlowDstPort] = useState<string>("443");
+	const [flowFirewallsOnly, setFlowFirewallsOnly] = useState<boolean>(true);
+	const [flowIncludeImplicitDefault, setFlowIncludeImplicitDefault] =
+		useState<boolean>(false);
 	const [baselineSnapshotId, setBaselineSnapshotId] = useState<string>("");
 	const [compareSnapshotId, setCompareSnapshotId] = useState<string>("");
 	const [deltaPackId, setDeltaPackId] = useState<string>("");
 
-	const [activeTab, setActiveTab] = useState<"checks" | "packs" | "deltas">(
-		"checks",
-	);
+	const [activeTab, setActiveTab] = useState<
+		"flow" | "checks" | "packs" | "deltas" | "governance" | "change"
+	>("flow");
 	const [resultsByCheck, setResultsByCheck] = useState<
 		Record<string, PolicyReportNQEResponse>
 	>({});
@@ -192,6 +222,55 @@ function PolicyReportsPage() {
 		useState<PolicyReportPackDeltaResponse | null>(null);
 
 	const [openCheckId, setOpenCheckId] = useState<string>("");
+	const [flowEvidenceOpen, setFlowEvidenceOpen] = useState<boolean>(false);
+	const [flowEvidence, setFlowEvidence] = useState<string>("");
+	const [flowSelectedDevice, setFlowSelectedDevice] = useState<string>("");
+	const [flowMatchesResp, setFlowMatchesResp] =
+		useState<PolicyReportNQEResponse | null>(null);
+	const [flowRuleEvidenceOpen, setFlowRuleEvidenceOpen] =
+		useState<boolean>(false);
+	const [flowRuleEvidence, setFlowRuleEvidence] = useState<string>("");
+
+	const [genericEvidenceOpen, setGenericEvidenceOpen] = useState(false);
+	const [genericEvidence, setGenericEvidence] = useState("");
+
+	const [deltaCheckDialogOpen, setDeltaCheckDialogOpen] = useState(false);
+	const [deltaCheckDialogCheckId, setDeltaCheckDialogCheckId] =
+		useState<string>("");
+	const [deltaChangedDialogOpen, setDeltaChangedDialogOpen] = useState(false);
+	const [deltaChangedDialogPayload, setDeltaChangedDialogPayload] = useState<{
+		findingId: string;
+		baseline: unknown;
+		compare: unknown;
+	} | null>(null);
+
+	const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
+	const [createCampaignOpen, setCreateCampaignOpen] = useState<boolean>(false);
+	const [campaignName, setCampaignName] = useState<string>("");
+	const [campaignDesc, setCampaignDesc] = useState<string>("");
+	const [campaignPackId, setCampaignPackId] = useState<string>("policy-recert");
+	const [campaignDueAt, setCampaignDueAt] = useState<string>("");
+	const [campaignAssignee, setCampaignAssignee] = useState<string>("");
+
+	const [exceptionCreateOpen, setExceptionCreateOpen] =
+		useState<boolean>(false);
+	const [exceptionFindingId, setExceptionFindingId] = useState<string>("");
+	const [exceptionCheckId, setExceptionCheckId] = useState<string>("");
+	const [exceptionJustification, setExceptionJustification] =
+		useState<string>("");
+	const [exceptionTicketUrl, setExceptionTicketUrl] = useState<string>("");
+	const [exceptionExpiresAt, setExceptionExpiresAt] = useState<string>("");
+
+	const [cpDeviceName, setCpDeviceName] = useState<string>("");
+	const [cpOp, setCpOp] = useState<string>("ADD");
+	const [cpRuleIndex, setCpRuleIndex] = useState<string>("0");
+	const [cpRuleAction, setCpRuleAction] = useState<string>("DENY");
+	const [cpIpv4Src, setCpIpv4Src] = useState<string>("0.0.0.0/0");
+	const [cpIpv4Dst, setCpIpv4Dst] = useState<string>("0.0.0.0/0");
+	const [cpIpProto, setCpIpProto] = useState<string>("6,17");
+	const [cpTpDst, setCpTpDst] = useState<string>("");
+	const [cpFlowsText, setCpFlowsText] = useState<string>("");
+	const [cpResult, setCpResult] = useState<any>(null);
 
 	const [paramsByCheck, setParamsByCheck] = useState<Record<string, JSONMap>>(
 		{},
@@ -215,6 +294,35 @@ function PolicyReportsPage() {
 		queryKey: queryKeys.policyReportsPacks(workspaceId),
 		queryFn: () => getWorkspacePolicyReportPacks(workspaceId),
 		staleTime: 60_000,
+	});
+
+	const campaigns = useQuery({
+		queryKey: queryKeys.policyReportsRecertCampaigns(workspaceId),
+		queryFn: () => listWorkspacePolicyReportRecertCampaigns(workspaceId),
+		staleTime: 10_000,
+	});
+
+	const assignments = useQuery({
+		queryKey: queryKeys.policyReportsRecertAssignments(
+			workspaceId,
+			selectedCampaignId,
+		),
+		queryFn: () =>
+			listWorkspacePolicyReportRecertAssignments(
+				workspaceId,
+				selectedCampaignId || undefined,
+				undefined,
+				undefined,
+				200,
+			),
+		enabled: !!selectedCampaignId,
+		staleTime: 10_000,
+	});
+
+	const exceptions = useQuery({
+		queryKey: queryKeys.policyReportsExceptions(workspaceId),
+		queryFn: () => listWorkspacePolicyReportExceptions(workspaceId),
+		staleTime: 10_000,
 	});
 
 	const snapshots = useQuery({
@@ -272,6 +380,118 @@ function PolicyReportsPage() {
 			toast.error("Check failed", { description: (e as Error).message }),
 	});
 
+	const runFlowDecision = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const src = flowSrcIp.trim();
+			const dst = flowDstIp.trim();
+			if (!src || !dst)
+				throw new Error("Source and destination IP are required");
+
+			const ipProto = Number(flowIpProto.trim() || "-1");
+			const dstPort = Number(flowDstPort.trim() || "-1");
+
+			return runWorkspacePolicyReportCheck(workspaceId, {
+				networkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				checkId: "acl-flow-decision.nqe",
+				parameters: {
+					srcIp: src,
+					dstIp: dst,
+					ipProto: Number.isFinite(ipProto) ? ipProto : -1,
+					dstPort: Number.isFinite(dstPort) ? dstPort : -1,
+					firewallsOnly: flowFirewallsOnly,
+					includeImplicitDefault: flowIncludeImplicitDefault,
+				},
+			});
+		},
+		onSuccess: (resp) => {
+			setResultsByCheck((prev) => ({
+				...prev,
+				["acl-flow-decision.nqe"]: resp,
+			}));
+			toast.success("Flow decision completed");
+		},
+		onError: (e) =>
+			toast.error("Flow decision failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runFlowToRules = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const src = flowSrcIp.trim();
+			const dst = flowDstIp.trim();
+			if (!src || !dst)
+				throw new Error("Source and destination IP are required");
+
+			const ipProto = Number(flowIpProto.trim() || "-1");
+			const dstPort = Number(flowDstPort.trim() || "-1");
+
+			return runWorkspacePolicyReportCheck(workspaceId, {
+				networkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				checkId: "acl-flow-to-rules.nqe",
+				parameters: {
+					srcIp: src,
+					dstIp: dst,
+					ipProto: Number.isFinite(ipProto) ? ipProto : -1,
+					dstPort: Number.isFinite(dstPort) ? dstPort : -1,
+					firewallsOnly: flowFirewallsOnly,
+					includeImplicitDefault: flowIncludeImplicitDefault,
+				},
+			});
+		},
+		onSuccess: (resp) => {
+			setFlowMatchesResp(resp);
+			toast.success("Flow matches completed");
+		},
+		onError: (e) =>
+			toast.error("Flow matches failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runNatFlowMatches = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const src = flowSrcIp.trim();
+			const dst = flowDstIp.trim();
+			if (!src || !dst)
+				throw new Error("Source and destination IP are required");
+
+			const ipProto = Number(flowIpProto.trim() || "-1");
+			const dstPort = Number(flowDstPort.trim() || "-1");
+
+			return runWorkspacePolicyReportCheck(workspaceId, {
+				networkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				checkId: "nat-flow-matches.nqe",
+				parameters: {
+					srcIp: src,
+					dstIp: dst,
+					ipProto: Number.isFinite(ipProto) ? ipProto : -1,
+					dstPort: Number.isFinite(dstPort) ? dstPort : -1,
+				},
+			});
+		},
+		onSuccess: (resp) => {
+			setResultsByCheck((prev) => ({
+				...prev,
+				["nat-flow-matches.nqe"]: resp,
+			}));
+			toast.success("NAT matches completed");
+		},
+		onError: (e) =>
+			toast.error("NAT matches failed", {
+				description: (e as Error).message,
+			}),
+	});
+
 	const runPack = useMutation({
 		mutationFn: async (packId: string) => {
 			const net = networkId.trim();
@@ -316,6 +536,323 @@ function PolicyReportsPage() {
 		onError: (e) =>
 			toast.error("Delta failed", { description: (e as Error).message }),
 	});
+
+	const createCampaign = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const name = campaignName.trim();
+			if (!name) throw new Error("Campaign name is required");
+			const packId = campaignPackId.trim();
+			if (!packId) throw new Error("Pack is required");
+			const dueAt = campaignDueAt.trim();
+			return createWorkspacePolicyReportRecertCampaign(workspaceId, {
+				name,
+				description: campaignDesc.trim() || undefined,
+				forwardNetworkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				packId,
+				dueAt: dueAt || undefined,
+			});
+		},
+		onSuccess: async (resp) => {
+			toast.success("Campaign created");
+			setCreateCampaignOpen(false);
+			setSelectedCampaignId(resp.campaign.id);
+			setCampaignName("");
+			setCampaignDesc("");
+			await campaigns.refetch();
+		},
+		onError: (e) =>
+			toast.error("Create campaign failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const generateAssignments = useMutation({
+		mutationFn: async () => {
+			if (!selectedCampaignId) throw new Error("Select a campaign");
+			return generateWorkspacePolicyReportRecertAssignments(
+				workspaceId,
+				selectedCampaignId,
+				{
+					assigneeUsername: campaignAssignee.trim() || undefined,
+					maxPerCheck: 500,
+					maxTotal: 5000,
+				},
+			);
+		},
+		onSuccess: async (resp) => {
+			toast.success("Assignments generated", {
+				description: `${resp.created} stored`,
+			});
+			await campaigns.refetch();
+			await assignments.refetch();
+		},
+		onError: (e) =>
+			toast.error("Generate assignments failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const attestAssignment = useMutation({
+		mutationFn: async (assignmentId: string) => {
+			return attestWorkspacePolicyReportRecertAssignment(
+				workspaceId,
+				assignmentId,
+				{ justification: "attested" },
+			);
+		},
+		onSuccess: async () => {
+			toast.success("Assignment attested");
+			await assignments.refetch();
+			await campaigns.refetch();
+		},
+		onError: (e) =>
+			toast.error("Attest failed", { description: (e as Error).message }),
+	});
+
+	const waiveAssignment = useMutation({
+		mutationFn: async (assignmentId: string) => {
+			return waiveWorkspacePolicyReportRecertAssignment(
+				workspaceId,
+				assignmentId,
+				{ justification: "waived" },
+			);
+		},
+		onSuccess: async () => {
+			toast.success("Assignment waived");
+			await assignments.refetch();
+			await campaigns.refetch();
+		},
+		onError: (e) =>
+			toast.error("Waive failed", { description: (e as Error).message }),
+	});
+
+	const createException = useMutation({
+		mutationFn: async () => {
+			const findingId = exceptionFindingId.trim();
+			const checkId = exceptionCheckId.trim();
+			const justification = exceptionJustification.trim();
+			if (!findingId || !checkId || !justification) {
+				throw new Error("findingId, checkId, and justification are required");
+			}
+			return createWorkspacePolicyReportException(workspaceId, {
+				findingId,
+				checkId,
+				justification,
+				ticketUrl: exceptionTicketUrl.trim() || undefined,
+				expiresAt: exceptionExpiresAt.trim() || undefined,
+			});
+		},
+		onSuccess: async () => {
+			toast.success("Exception proposed");
+			setExceptionCreateOpen(false);
+			setExceptionFindingId("");
+			setExceptionCheckId("");
+			setExceptionJustification("");
+			setExceptionTicketUrl("");
+			setExceptionExpiresAt("");
+			await exceptions.refetch();
+		},
+		onError: (e) =>
+			toast.error("Create exception failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const approveException = useMutation({
+		mutationFn: async (exceptionId: string) => {
+			return approveWorkspacePolicyReportException(workspaceId, exceptionId);
+		},
+		onSuccess: async () => {
+			toast.success("Exception approved");
+			await exceptions.refetch();
+		},
+		onError: (e) =>
+			toast.error("Approve failed", { description: (e as Error).message }),
+	});
+
+	const rejectException = useMutation({
+		mutationFn: async (exceptionId: string) => {
+			return rejectWorkspacePolicyReportException(workspaceId, exceptionId);
+		},
+		onSuccess: async () => {
+			toast.success("Exception rejected");
+			await exceptions.refetch();
+		},
+		onError: (e) =>
+			toast.error("Reject failed", { description: (e as Error).message }),
+	});
+
+	const runChangePlanning = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+
+			const parseCSV = (s: string) =>
+				s
+					.split(/[\n,]+/g)
+					.map((x) => x.trim())
+					.filter(Boolean);
+			const parseInts = (s: string) =>
+				parseCSV(s)
+					.map((x) => Number(x))
+					.filter((n) => Number.isFinite(n))
+					.map((n) => Math.trunc(n));
+
+			const flows: Array<{
+				srcIp: string;
+				dstIp: string;
+				ipProto?: number;
+				dstPort?: number;
+			}> = [];
+
+			const rawLines = cpFlowsText
+				.split("\n")
+				.map((l) => l.trim())
+				.filter(Boolean);
+			if (rawLines.length === 0) {
+				const src = flowSrcIp.trim();
+				const dst = flowDstIp.trim();
+				if (!src || !dst)
+					throw new Error(
+						"Provide flows (textarea) or set Source/Destination in Flow tab",
+					);
+				flows.push({
+					srcIp: src,
+					dstIp: dst,
+					ipProto: Number(flowIpProto.trim() || "-1"),
+					dstPort: Number(flowDstPort.trim() || "-1"),
+				});
+			} else {
+				for (const line of rawLines) {
+					const parts = line.split(/[,\s]+/g).filter(Boolean);
+					if (parts.length < 2) continue;
+					const srcIp = parts[0];
+					const dstIp = parts[1];
+					const ipProto = parts.length >= 3 ? Number(parts[2]) : -1;
+					const dstPort = parts.length >= 4 ? Number(parts[3]) : -1;
+					flows.push({
+						srcIp,
+						dstIp,
+						ipProto: Number.isFinite(ipProto) ? ipProto : -1,
+						dstPort: Number.isFinite(dstPort) ? dstPort : -1,
+					});
+				}
+			}
+
+			const idx = Number(cpRuleIndex.trim() || "0");
+			if (!Number.isFinite(idx) || idx < 0)
+				throw new Error("Invalid rule index");
+
+			return simulateWorkspacePolicyReportChangePlanning(workspaceId, {
+				networkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				deviceName: cpDeviceName.trim() || undefined,
+				firewallsOnly: true,
+				includeImplicitDefault: flowIncludeImplicitDefault,
+				flows,
+				change: {
+					op: cpOp.trim() || "ADD",
+					rule: {
+						index: Math.trunc(idx),
+						action: cpRuleAction.trim() || "PERMIT",
+						ipv4Src: parseCSV(cpIpv4Src),
+						ipv4Dst: parseCSV(cpIpv4Dst),
+						ipProto: parseInts(cpIpProto),
+						tpDst: parseCSV(cpTpDst),
+					},
+				},
+			});
+		},
+		onSuccess: (resp) => {
+			setCpResult(resp);
+			toast.success("Simulation completed");
+		},
+		onError: (e) =>
+			toast.error("Simulation failed", { description: (e as Error).message }),
+	});
+
+	function asArray(u: unknown): any[] {
+		return Array.isArray(u) ? u : [];
+	}
+
+	function evidenceFields(obj: any): Array<{ key: string; value: string }> {
+		if (!obj || typeof obj !== "object") return [];
+		const out: Array<{ key: string; value: string }> = [];
+		for (const [k, v] of Object.entries(obj)) {
+			if (k === "evidence" || k.endsWith("Evidence")) {
+				const s = typeof v === "string" ? v : "";
+				if (s) out.push({ key: k, value: s });
+			}
+		}
+		return out;
+	}
+
+	function pickColumns(items: any[]): string[] {
+		const preferred = [
+			"findingId",
+			"riskScore",
+			"device",
+			"rule",
+			"action",
+			"decision",
+			"severity",
+			"category",
+			"reason",
+			"ruleIndex",
+			"firstRuleIndex",
+			"shadowedRuleIndex",
+			"shadowingRuleIndex",
+			"partiallyShadowedRuleIndex",
+			"earlierRuleIndex",
+			"laterRuleIndex",
+			"unreachableRuleIndex",
+			"coveringRuleIndex",
+			"ospfProcess",
+			"os",
+		];
+		const present = new Set<string>();
+		for (const it of items) {
+			if (!it || typeof it !== "object") continue;
+			for (const k of Object.keys(it)) present.add(k);
+		}
+		return preferred.filter((k) => present.has(k));
+	}
+
+	function fmtValue(v: unknown): string {
+		if (v == null) return "";
+		if (typeof v === "string") return v;
+		if (typeof v === "number" || typeof v === "boolean") return String(v);
+		try {
+			return JSON.stringify(v);
+		} catch {
+			return String(v);
+		}
+	}
+
+	function diffTopLevel(
+		a: unknown,
+		b: unknown,
+	): Array<{
+		key: string;
+		baseline: string;
+		compare: string;
+	}> {
+		const ao = a && typeof a === "object" ? (a as Record<string, unknown>) : {};
+		const bo = b && typeof b === "object" ? (b as Record<string, unknown>) : {};
+		const keys = new Set<string>([...Object.keys(ao), ...Object.keys(bo)]);
+		keys.delete("findingId");
+		const out: Array<{ key: string; baseline: string; compare: string }> = [];
+		for (const k of Array.from(keys).sort()) {
+			const av = fmtValue(ao[k]);
+			const bv = fmtValue(bo[k]);
+			if (av === bv) continue;
+			out.push({ key: k, baseline: av, compare: bv });
+		}
+		return out;
+	}
 
 	const checksList: PolicyReportCatalogCheck[] = checks.data?.checks ?? [];
 	const packsList: PolicyReportPack[] = packs.data?.packs ?? [];
@@ -376,35 +913,156 @@ function PolicyReportsPage() {
 						variant="outline"
 						onClick={() => {
 							const net = networkId.trim();
+							const esc = (s: unknown) =>
+								String(s ?? "")
+									.replaceAll("&", "&amp;")
+									.replaceAll("<", "&lt;")
+									.replaceAll(">", "&gt;")
+									.replaceAll('"', "&quot;")
+									.replaceAll("'", "&#39;");
+							const cap = (s: unknown, n: number) => {
+								const t = String(s ?? "");
+								if (t.length <= n) return t;
+								return `${t.slice(0, n)}…`;
+							};
+							const netId = net || "";
+							const snap = snapshotId.trim() || "latest";
+							const generatedAt = new Date().toISOString();
+
+							// Build a lightweight auditor-friendly report.
+							const checksMeta = checksList.reduce(
+								(acc, c) => {
+									acc[c.id] = c;
+									return acc;
+								},
+								{} as Record<string, PolicyReportCatalogCheck>,
+							);
+
+							const byCheck = Object.entries(resultsByCheck).map(([id, r]) => ({
+								id,
+								total: Number((r as any)?.total ?? 0),
+							}));
+							byCheck.sort((a, b) => b.total - a.total);
+
+							const now = Date.now();
+							const approvedExceptions = (
+								exceptions.data?.exceptions ?? []
+							).filter((e: any) => {
+								const st = String(e?.status ?? "").toUpperCase();
+								if (st !== "APPROVED") return false;
+								const exp = String(e?.expiresAt ?? "").trim();
+								if (!exp) return true;
+								const ts = Date.parse(exp);
+								return Number.isFinite(ts) ? ts > now : true;
+							});
+							const exceptionsByKey = new Map<string, any>(
+								approvedExceptions.map((e: any) => [
+									`${String(e?.checkId ?? "")}|${String(e?.findingId ?? "")}`,
+									e,
+								]),
+							);
+
+							const renderRow = (checkId: string, obj: any, cols: string[]) => {
+								const fid = String(obj?.findingId ?? "").trim();
+								const exKey = fid ? `${checkId}|${fid}` : "";
+								const ex = exKey ? exceptionsByKey.get(exKey) : null;
+								const exHTML = ex
+									? `<div><div class="mono">${esc(String(ex.status ?? ""))}</div>${
+											ex.expiresAt
+												? `<div class="hint">expires ${esc(String(ex.expiresAt).slice(0, 10))}</div>`
+												: ""
+										}</div>`
+									: "";
+								const ev = evidenceFields(obj);
+								const evText = ev[0]?.value ?? "";
+								const evHTML = evText
+									? `<details><summary>Evidence</summary><pre>${esc(cap(evText, 4000))}</pre></details>`
+									: "";
+								return `<tr>${cols
+									.map(
+										(k) => `<td class=\"mono\">${esc(fmtValue(obj?.[k]))}</td>`,
+									)
+									.join("")}<td>${exHTML}</td><td>${evHTML}</td></tr>`;
+							};
+
+							let bodyHTML = "";
+							for (const { id } of byCheck.slice(0, 30)) {
+								const r = resultsByCheck[id];
+								const items = asArray((r as any)?.results);
+								const cols = pickColumns(items).slice(0, 10);
+								const meta = checksMeta[id];
+								bodyHTML += `<section class=\"card\">
+  <div class=\"h2\">${esc(meta?.title ?? id)}</div>
+  <div class=\"sub\">checkId=<span class=\"mono\">${esc(id)}</span> • category=${esc(meta?.category ?? "")} • severity=${esc(meta?.severity ?? "")} • total=${esc((r as any)?.total ?? 0)}</div>
+  ${
+		items.length
+			? `<table>
+    <thead><tr>${cols
+			.map((c) => `<th>${esc(c)}</th>`)
+			.join("")}<th>Exception</th><th>Evidence</th></tr></thead>
+    <tbody>
+      ${items
+				.slice(0, 15)
+				.map((it) => renderRow(id, it, cols))
+				.join("")}
+    </tbody>
+  </table>
+  <div class=\"hint\">Showing 15 of ${items.length} findings.</div>`
+			: `<div class=\"hint\">No findings.</div>`
+	}
+</section>`;
+							}
+
 							const html = `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
   <title>Policy Reports</title>
   <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
-    h1 { margin: 0 0 6px 0; }
-    .meta { color: #555; margin-bottom: 16px; }
-    pre { background: #0b1020; color: #e9edf7; padding: 12px; border-radius: 8px; overflow-x: auto; }
-    .card { border: 1px solid #ddd; border-radius: 10px; padding: 14px; margin: 14px 0; }
+    :root { --fg:#0b1020; --muted:#5b6477; --border:#d7dbe5; --bg:#ffffff; --chip:#f3f5fa; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 28px; color: var(--fg); background: var(--bg); }
+    h1 { margin: 0 0 6px 0; font-size: 22px; }
+    .meta { color: var(--muted); margin-bottom: 14px; font-size: 12px; line-height: 1.5; }
+    .chip { display:inline-block; background: var(--chip); border:1px solid var(--border); border-radius: 999px; padding: 2px 10px; font-size: 11px; margin-right: 6px; }
+    .card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 14px 0; }
+    .h2 { font-weight: 700; margin-bottom: 4px; }
+    .sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-top: 1px solid var(--border); padding: 8px 8px; font-size: 12px; vertical-align: top; }
+    th { text-align: left; color: var(--muted); font-weight: 600; background: #fbfcfe; }
+    pre { background: #0b1020; color: #e9edf7; padding: 10px; border-radius: 10px; overflow-x: auto; font-size: 11px; }
+    details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+    .hint { color: var(--muted); font-size: 11px; margin-top: 8px; }
   </style>
 </head>
 <body>
   <h1>Policy Reports</h1>
   <div class="meta">
-    workspaceId=${workspaceId}<br/>
-    networkId=${net || ""}<br/>
-    snapshotId=${snapshotId.trim() || "latest"}<br/>
-    generatedAt=${new Date().toISOString()}
+    <span class="chip">workspaceId=<span class="mono">${esc(workspaceId)}</span></span>
+    <span class="chip">networkId=<span class="mono">${esc(netId)}</span></span>
+    <span class="chip">snapshotId=<span class="mono">${esc(snap)}</span></span>
+    <span class="chip">generatedAt=<span class="mono">${esc(generatedAt)}</span></span>
   </div>
+
   <div class="card">
-    <h2>Last Pack Run</h2>
-    <pre>${jsonPretty(lastPackRun)}</pre>
+    <div class="h2">Summary</div>
+    <div class="sub">Totals by check (top 30)</div>
+    <table>
+      <thead><tr><th>Check</th><th>Total</th></tr></thead>
+      <tbody>
+        ${byCheck
+					.slice(0, 30)
+					.map(
+						({ id, total }) =>
+							`<tr><td class="mono">${esc(id)}</td><td class="mono">${esc(total)}</td></tr>`,
+					)
+					.join("")}
+      </tbody>
+    </table>
   </div>
-  <div class="card">
-    <h2>Results By Check</h2>
-    <pre>${jsonPretty(resultsByCheck)}</pre>
-  </div>
+
+  ${bodyHTML}
 </body>
 </html>`;
 							downloadText(
@@ -476,10 +1134,567 @@ function PolicyReportsPage() {
 
 			<Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
 				<TabsList>
+					<TabsTrigger value="flow">Flow</TabsTrigger>
 					<TabsTrigger value="checks">Checks</TabsTrigger>
 					<TabsTrigger value="packs">Packs</TabsTrigger>
 					<TabsTrigger value="deltas">Deltas</TabsTrigger>
+					<TabsTrigger value="governance">Governance</TabsTrigger>
+					<TabsTrigger value="change">Change Planning</TabsTrigger>
 				</TabsList>
+
+				<TabsContent value="flow" className="space-y-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Flow Analyzer (First Match)</CardTitle>
+						</CardHeader>
+						<CardContent className="grid gap-4 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Source IP</div>
+								<Input
+									value={flowSrcIp}
+									onChange={(e) => setFlowSrcIp(e.target.value)}
+									placeholder="e.g. 10.0.0.10"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Destination IP</div>
+								<Input
+									value={flowDstIp}
+									onChange={(e) => setFlowDstIp(e.target.value)}
+									placeholder="e.g. 10.0.0.20"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">IP Protocol</div>
+								<Input
+									value={flowIpProto}
+									onChange={(e) => setFlowIpProto(e.target.value)}
+									placeholder="6 (TCP), 17 (UDP), or -1"
+								/>
+								<p className="text-xs text-muted-foreground">
+									Use <span className="font-mono">-1</span> to ignore.
+								</p>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Destination Port</div>
+								<Input
+									value={flowDstPort}
+									onChange={(e) => setFlowDstPort(e.target.value)}
+									placeholder="443 or -1"
+								/>
+								<p className="text-xs text-muted-foreground">
+									Use <span className="font-mono">-1</span> to ignore.
+								</p>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Firewalls Only</div>
+								<Select
+									value={flowFirewallsOnly ? "true" : "false"}
+									onValueChange={(v) => setFlowFirewallsOnly(v === "true")}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="true">true</SelectItem>
+										<SelectItem value="false">false</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">
+									Include Implicit/Default Rules
+								</div>
+								<Select
+									value={flowIncludeImplicitDefault ? "true" : "false"}
+									onValueChange={(v) =>
+										setFlowIncludeImplicitDefault(v === "true")
+									}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="false">false</SelectItem>
+										<SelectItem value="true">true</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</CardContent>
+						<CardContent className="flex items-center gap-2 pt-0">
+							<Button
+								onClick={() => runFlowDecision.mutate()}
+								disabled={runFlowDecision.isPending}
+							>
+								<Play className="mr-2 h-4 w-4" />
+								Decide
+							</Button>
+							<Button
+								variant="outline"
+								onClick={() => runFlowToRules.mutate()}
+								disabled={runFlowToRules.isPending}
+							>
+								<Play className="mr-2 h-4 w-4" />
+								Matching rules
+							</Button>
+							<Button
+								variant="outline"
+								onClick={() => runNatFlowMatches.mutate()}
+								disabled={runNatFlowMatches.isPending}
+							>
+								<Play className="mr-2 h-4 w-4" />
+								NAT matches
+							</Button>
+							<Button
+								variant="outline"
+								onClick={async () => {
+									setOpenCheckId("acl-flow-decision.nqe");
+									await openCheck.mutateAsync("acl-flow-decision.nqe");
+								}}
+							>
+								View query
+							</Button>
+							<Button
+								variant="outline"
+								onClick={async () => {
+									setOpenCheckId("acl-flow-to-rules.nqe");
+									await openCheck.mutateAsync("acl-flow-to-rules.nqe");
+								}}
+							>
+								View matches query
+							</Button>
+							<Button
+								variant="outline"
+								onClick={async () => {
+									setOpenCheckId("nat-flow-matches.nqe");
+									await openCheck.mutateAsync("nat-flow-matches.nqe");
+								}}
+							>
+								View NAT query
+							</Button>
+						</CardContent>
+					</Card>
+
+					{resultsByCheck["acl-flow-decision.nqe"] ? (
+						<Card>
+							<CardHeader>
+								<CardTitle>Decision Results</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								{(() => {
+									const resp = resultsByCheck["acl-flow-decision.nqe"];
+									const rows = (resp?.results as any) ?? [];
+									const list = Array.isArray(rows) ? rows : [];
+									const hasMatch = list.filter((r: any) => r?.matchCount > 0);
+									const noMatch = list.filter(
+										(r: any) => !r || r?.matchCount <= 0,
+									);
+									return (
+										<div className="space-y-3">
+											<div className="flex flex-wrap items-center gap-2 text-sm">
+												<Badge variant="secondary">
+													Devices: {list.length}
+												</Badge>
+												<Badge variant="secondary">
+													Matched: {hasMatch.length}
+												</Badge>
+												<Badge variant="secondary">
+													No match: {noMatch.length}
+												</Badge>
+											</div>
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead>Device</TableHead>
+														<TableHead>Decision</TableHead>
+														<TableHead>First Rule</TableHead>
+														<TableHead className="text-right">
+															Matches
+														</TableHead>
+														<TableHead className="text-right">Index</TableHead>
+														<TableHead className="text-right">
+															Evidence
+														</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													{list.map((r: any) => {
+														const decision = String(r?.decision ?? "");
+														const has = Number(r?.matchCount ?? 0) > 0;
+														const dev = String(r?.device ?? "");
+														return (
+															<TableRow
+																key={dev || String(Math.random())}
+																className="cursor-pointer"
+																onClick={() => {
+																	if (!dev) return;
+																	setFlowSelectedDevice(dev);
+																}}
+															>
+																<TableCell className="font-medium">
+																	{dev}
+																</TableCell>
+																<TableCell>
+																	<Badge
+																		variant={
+																			decision === "PERMIT"
+																				? "default"
+																				: decision === "DENY"
+																					? "destructive"
+																					: "secondary"
+																		}
+																	>
+																		{decision || "UNKNOWN"}
+																	</Badge>
+																</TableCell>
+																<TableCell className="max-w-[520px] truncate">
+																	{has ? String(r?.firstRule ?? "") : "(none)"}
+																</TableCell>
+																<TableCell className="text-right">
+																	{Number(r?.matchCount ?? 0)}
+																</TableCell>
+																<TableCell className="text-right">
+																	{has ? Number(r?.firstRuleIndex ?? -1) : "-"}
+																</TableCell>
+																<TableCell className="text-right">
+																	<Button
+																		variant="outline"
+																		size="sm"
+																		disabled={!has || !r?.firstRuleEvidence}
+																		onClick={() => {
+																			setFlowEvidence(
+																				String(r?.firstRuleEvidence ?? ""),
+																			);
+																			setFlowEvidenceOpen(true);
+																		}}
+																	>
+																		View
+																	</Button>
+																</TableCell>
+															</TableRow>
+														);
+													})}
+												</TableBody>
+											</Table>
+											<details className="pt-2">
+												<summary className="cursor-pointer text-xs text-muted-foreground">
+													Show raw JSON
+												</summary>
+												<div className="pt-2">
+													<Textarea
+														readOnly
+														className="font-mono text-xs"
+														rows={10}
+														value={jsonPretty(resp)}
+													/>
+												</div>
+											</details>
+										</div>
+									);
+								})()}
+							</CardContent>
+						</Card>
+					) : null}
+
+					{resultsByCheck["nat-flow-matches.nqe"] ? (
+						<Card>
+							<CardHeader>
+								<CardTitle>NAT Matches</CardTitle>
+								<CardDescription>
+									Modeled NAT entries that match the flow tuple.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								{(() => {
+									const resp = resultsByCheck["nat-flow-matches.nqe"];
+									const rows = (resp?.results as any) ?? [];
+									const list = Array.isArray(rows) ? rows : [];
+									return (
+										<div className="space-y-3">
+											<div className="flex flex-wrap items-center gap-2 text-sm">
+												<Badge variant="secondary">
+													Matches: {list.length}
+												</Badge>
+											</div>
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead>Device</TableHead>
+														<TableHead>Rule</TableHead>
+														<TableHead className="text-right">Index</TableHead>
+														<TableHead className="text-right">
+															Evidence
+														</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													{list.map((r: any, i: number) => {
+														const dev = String(r?.device ?? "");
+														const rule = String(r?.rule ?? "");
+														const idx = Number(r?.ruleIndex ?? i);
+														return (
+															<TableRow key={`${dev}:${rule}:${idx}:${i}`}>
+																<TableCell className="font-medium">
+																	{dev}
+																</TableCell>
+																<TableCell className="max-w-[520px] truncate">
+																	{rule || "(unnamed)"}
+																</TableCell>
+																<TableCell className="text-right">
+																	{idx}
+																</TableCell>
+																<TableCell className="text-right">
+																	<Button
+																		variant="outline"
+																		size="sm"
+																		disabled={!r?.evidence && !r?.rewrites}
+																		onClick={() => {
+																			const ev = String(r?.evidence ?? "");
+																			const rw = r?.rewrites
+																				? jsonPretty(r?.rewrites)
+																				: "";
+																			const body = [
+																				ev ? "Evidence:\n" + ev : "",
+																				rw ? "Rewrites:\n" + rw : "",
+																			]
+																				.filter(Boolean)
+																				.join("\n\n");
+																			setGenericEvidence(
+																				body || "(no evidence)",
+																			);
+																			setGenericEvidenceOpen(true);
+																		}}
+																	>
+																		View
+																	</Button>
+																</TableCell>
+															</TableRow>
+														);
+													})}
+												</TableBody>
+											</Table>
+											<details className="pt-2">
+												<summary className="cursor-pointer text-xs text-muted-foreground">
+													Show raw JSON
+												</summary>
+												<div className="pt-2">
+													<Textarea
+														readOnly
+														className="font-mono text-xs"
+														rows={10}
+														value={jsonPretty(resp)}
+													/>
+												</div>
+											</details>
+										</div>
+									);
+								})()}
+							</CardContent>
+						</Card>
+					) : null}
+
+					{flowMatchesResp ? (
+						<Card>
+							<CardHeader>
+								<CardTitle>Matching Rules</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								{(() => {
+									const rows = (flowMatchesResp.results as any) ?? [];
+									const list = Array.isArray(rows) ? rows : [];
+									const devices = Array.from(
+										new Set(
+											list
+												.map((r: any) => String(r?.device ?? ""))
+												.filter(Boolean),
+										),
+									).sort();
+									const filtered = flowSelectedDevice
+										? list.filter(
+												(r: any) =>
+													String(r?.device ?? "") === flowSelectedDevice,
+											)
+										: list;
+
+									return (
+										<div className="space-y-3">
+											<div className="grid gap-3 md:grid-cols-2">
+												<div className="space-y-2">
+													<div className="text-sm font-medium">
+														Device filter
+													</div>
+													<Select
+														value={flowSelectedDevice}
+														onValueChange={setFlowSelectedDevice}
+													>
+														<SelectTrigger>
+															<SelectValue placeholder="All devices" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="">(All)</SelectItem>
+															{devices.map((d) => (
+																<SelectItem key={d} value={d}>
+																	{d}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+													<div className="flex items-center gap-2">
+														<Button
+															variant="outline"
+															size="sm"
+															onClick={() => setFlowSelectedDevice("")}
+															disabled={!flowSelectedDevice}
+														>
+															Clear filter
+														</Button>
+														{flowSelectedDevice ? (
+															<span className="text-xs text-muted-foreground">
+																Filtered to{" "}
+																<span className="font-mono">
+																	{flowSelectedDevice}
+																</span>
+															</span>
+														) : null}
+													</div>
+													<p className="text-xs text-muted-foreground">
+														{filtered.length} matching rules
+													</p>
+												</div>
+												<div className="flex items-end justify-end gap-2">
+													<Button
+														variant="outline"
+														onClick={() => {
+															const net = networkId.trim();
+															downloadJSON(
+																`flow-matching-rules_${net || "network"}_${snapshotId.trim() || "latest"}.json`,
+																flowMatchesResp,
+															);
+														}}
+													>
+														<Download className="mr-2 h-4 w-4" />
+														Export JSON
+													</Button>
+													<Button
+														variant="outline"
+														onClick={() => {
+															const csv = resultsToCSV(flowMatchesResp.results);
+															if (!csv) {
+																toast.error(
+																	"CSV export only supports array-of-object results",
+																);
+																return;
+															}
+															const net = networkId.trim();
+															downloadText(
+																`flow-matching-rules_${net || "network"}_${snapshotId.trim() || "latest"}.csv`,
+																"text/csv",
+																csv,
+															);
+														}}
+													>
+														<Download className="mr-2 h-4 w-4" />
+														CSV
+													</Button>
+												</div>
+											</div>
+
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead>Device</TableHead>
+														<TableHead className="text-right">Index</TableHead>
+														<TableHead>Action</TableHead>
+														<TableHead>Rule</TableHead>
+														<TableHead className="text-right">Hits</TableHead>
+														<TableHead className="text-right">
+															Evidence
+														</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													{filtered
+														.slice()
+														.sort(
+															(a: any, b: any) =>
+																String(a?.device ?? "").localeCompare(
+																	String(b?.device ?? ""),
+																) ||
+																Number(a?.ruleIndex ?? 0) -
+																	Number(b?.ruleIndex ?? 0),
+														)
+														.map((r: any, idx: number) => {
+															const action = String(r?.action ?? "");
+															return (
+																<TableRow
+																	key={`${String(r?.device ?? "")}:${Number(r?.ruleIndex ?? 0)}:${idx}`}
+																>
+																	<TableCell className="font-medium">
+																		{String(r?.device ?? "")}
+																	</TableCell>
+																	<TableCell className="text-right">
+																		{Number(r?.ruleIndex ?? -1)}
+																	</TableCell>
+																	<TableCell>
+																		<Badge
+																			variant={
+																				action === "PERMIT"
+																					? "default"
+																					: action === "DENY"
+																						? "destructive"
+																						: "secondary"
+																			}
+																		>
+																			{action || "UNKNOWN"}
+																		</Badge>
+																	</TableCell>
+																	<TableCell className="max-w-[520px] truncate">
+																		{String(r?.rule ?? "")}
+																	</TableCell>
+																	<TableCell className="text-right">
+																		{r?.hitCount ?? "-"}
+																	</TableCell>
+																	<TableCell className="text-right">
+																		<Button
+																			variant="outline"
+																			size="sm"
+																			disabled={!r?.evidence}
+																			onClick={() => {
+																				setFlowRuleEvidence(
+																					String(r?.evidence ?? ""),
+																				);
+																				setFlowRuleEvidenceOpen(true);
+																			}}
+																		>
+																			View
+																		</Button>
+																	</TableCell>
+																</TableRow>
+															);
+														})}
+												</TableBody>
+											</Table>
+
+											<details className="pt-2">
+												<summary className="cursor-pointer text-xs text-muted-foreground">
+													Show raw JSON
+												</summary>
+												<div className="pt-2">
+													<Textarea
+														readOnly
+														className="font-mono text-xs"
+														rows={10}
+														value={jsonPretty(flowMatchesResp)}
+													/>
+												</div>
+											</details>
+										</div>
+									);
+								})()}
+							</CardContent>
+						</Card>
+					) : null}
+				</TabsContent>
 
 				<TabsContent value="checks" className="space-y-4">
 					{checks.isLoading ? (
@@ -711,6 +1926,188 @@ function PolicyReportsPage() {
 							</CardHeader>
 						</Card>
 					))}
+
+					{lastPackRun ? (
+						<Card>
+							<CardHeader>
+								<CardTitle>Pack Results</CardTitle>
+								<CardDescription>
+									Last run:{" "}
+									<span className="font-mono">{lastPackRun.packId}</span>{" "}
+									(snapshot{" "}
+									<span className="font-mono">
+										{lastPackRun.snapshotId ?? "latest"}
+									</span>
+									)
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								{(() => {
+									const perDevice = new Map<string, number>();
+									const perDeviceRisk = new Map<string, number>();
+									const perCheck: Array<{ checkId: string; total: number }> =
+										[];
+									for (const [checkId, resp] of Object.entries(
+										lastPackRun.results ?? {},
+									)) {
+										const total = Number((resp as any)?.total ?? 0);
+										perCheck.push({ checkId, total });
+										const items = asArray((resp as any)?.results);
+										for (const it of items) {
+											const dev =
+												typeof it?.device === "string"
+													? it.device
+													: typeof it?.Device === "string"
+														? it.Device
+														: "";
+											if (!dev) continue;
+											perDevice.set(dev, (perDevice.get(dev) ?? 0) + 1);
+											const rs = Number((it as any)?.riskScore ?? 0);
+											if (Number.isFinite(rs) && rs > 0) {
+												perDeviceRisk.set(
+													dev,
+													(perDeviceRisk.get(dev) ?? 0) + rs,
+												);
+											}
+										}
+									}
+									perCheck.sort((a, b) => b.total - a.total);
+									const topDevices = Array.from(perDevice.entries())
+										.sort((a, b) => b[1] - a[1])
+										.slice(0, 12);
+									const topRisk = Array.from(perDeviceRisk.entries())
+										.sort((a, b) => b[1] - a[1])
+										.slice(0, 12);
+
+									return (
+										<div className="grid gap-4 lg:grid-cols-3">
+											<div className="space-y-2">
+												<div className="text-sm font-medium">By check</div>
+												<div className="rounded-md border">
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>Check</TableHead>
+																<TableHead className="text-right">
+																	Total
+																</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{perCheck.map((r) => (
+																<TableRow key={r.checkId}>
+																	<TableCell className="font-mono text-xs">
+																		{r.checkId}
+																	</TableCell>
+																	<TableCell className="text-right tabular-nums">
+																		{r.total}
+																	</TableCell>
+																</TableRow>
+															))}
+														</TableBody>
+													</Table>
+												</div>
+											</div>
+
+											<div className="space-y-2">
+												<div className="text-sm font-medium">Top devices</div>
+												<div className="rounded-md border">
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>Device</TableHead>
+																<TableHead className="text-right">
+																	Findings
+																</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{topDevices.length === 0 ? (
+																<TableRow>
+																	<TableCell
+																		colSpan={2}
+																		className="text-sm text-muted-foreground"
+																	>
+																		No device field present in pack outputs.
+																	</TableCell>
+																</TableRow>
+															) : (
+																topDevices.map(([dev, n]) => (
+																	<TableRow key={dev}>
+																		<TableCell className="font-medium">
+																			{dev}
+																		</TableCell>
+																		<TableCell className="text-right tabular-nums">
+																			{n}
+																		</TableCell>
+																	</TableRow>
+																))
+															)}
+														</TableBody>
+													</Table>
+												</div>
+											</div>
+
+											<div className="space-y-2">
+												<div className="text-sm font-medium">
+													Top risk devices
+												</div>
+												<div className="rounded-md border">
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>Device</TableHead>
+																<TableHead className="text-right">
+																	Risk sum
+																</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{topRisk.length === 0 ? (
+																<TableRow>
+																	<TableCell
+																		colSpan={2}
+																		className="text-sm text-muted-foreground"
+																	>
+																		No riskScore present in pack outputs.
+																	</TableCell>
+																</TableRow>
+															) : (
+																topRisk.map(([dev, n]) => (
+																	<TableRow key={dev}>
+																		<TableCell className="font-medium">
+																			{dev}
+																		</TableCell>
+																		<TableCell className="text-right tabular-nums">
+																			{Math.round(n)}
+																		</TableCell>
+																	</TableRow>
+																))
+															)}
+														</TableBody>
+													</Table>
+												</div>
+											</div>
+										</div>
+									);
+								})()}
+
+								<details>
+									<summary className="cursor-pointer text-xs text-muted-foreground">
+										Show raw JSON
+									</summary>
+									<div className="pt-2">
+										<Textarea
+											readOnly
+											className="font-mono text-xs"
+											rows={12}
+											value={jsonPretty(lastPackRun)}
+										/>
+									</div>
+								</details>
+							</CardContent>
+						</Card>
+					) : null}
 				</TabsContent>
 
 				<TabsContent value="deltas" className="space-y-4">
@@ -805,12 +2202,601 @@ function PolicyReportsPage() {
 								<CardTitle>Delta Results</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-3">
+								<div className="rounded-md border">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Check</TableHead>
+												<TableHead className="text-right">Baseline</TableHead>
+												<TableHead className="text-right">Compare</TableHead>
+												<TableHead className="text-right">New</TableHead>
+												<TableHead className="text-right">Resolved</TableHead>
+												<TableHead className="text-right">Changed</TableHead>
+												<TableHead className="text-right">Details</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{(lastDeltaRun.checks ?? []).map((c) => (
+												<TableRow key={c.checkId}>
+													<TableCell className="font-mono text-xs">
+														{c.checkId}
+													</TableCell>
+													<TableCell className="text-right tabular-nums">
+														{c.baselineTotal}
+													</TableCell>
+													<TableCell className="text-right tabular-nums">
+														{c.compareTotal}
+													</TableCell>
+													<TableCell className="text-right tabular-nums">
+														{c.newCount}
+													</TableCell>
+													<TableCell className="text-right tabular-nums">
+														{c.resolvedCount}
+													</TableCell>
+													<TableCell className="text-right tabular-nums">
+														{c.changedCount ?? 0}
+													</TableCell>
+													<TableCell className="text-right">
+														<Button
+															variant="outline"
+															size="sm"
+															onClick={() => {
+																setDeltaCheckDialogCheckId(c.checkId);
+																setDeltaCheckDialogOpen(true);
+															}}
+														>
+															View
+														</Button>
+													</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+								</div>
+
 								<Textarea
 									readOnly
 									className="font-mono text-xs"
 									rows={14}
 									value={jsonPretty(lastDeltaRun)}
 								/>
+							</CardContent>
+						</Card>
+					) : null}
+				</TabsContent>
+
+				<TabsContent value="governance" className="space-y-4">
+					<Card>
+						<CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+							<div>
+								<CardTitle>Recert Campaigns</CardTitle>
+								<CardDescription>
+									Persisted review workflows (no config push): generate
+									assignments, attest, waive, and export evidence.
+								</CardDescription>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									onClick={() => campaigns.refetch()}
+									disabled={campaigns.isFetching}
+								>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Refresh
+								</Button>
+								<Button onClick={() => setCreateCampaignOpen(true)}>
+									New campaign
+								</Button>
+							</div>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							{campaigns.isError ? (
+								<p className="text-xs text-destructive">
+									Failed to load campaigns: {(campaigns.error as Error).message}
+								</p>
+							) : null}
+							<div className="rounded-md border">
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead>Name</TableHead>
+											<TableHead>Pack</TableHead>
+											<TableHead>Status</TableHead>
+											<TableHead className="text-right">Pending</TableHead>
+											<TableHead className="text-right">Attested</TableHead>
+											<TableHead className="text-right">Waived</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{(campaigns.data?.campaigns ?? []).length === 0 ? (
+											<TableRow>
+												<TableCell
+													colSpan={6}
+													className="text-sm text-muted-foreground"
+												>
+													No campaigns yet.
+												</TableCell>
+											</TableRow>
+										) : (
+											(campaigns.data?.campaigns ?? []).map((c) => (
+												<TableRow
+													key={c.campaign.id}
+													className="cursor-pointer"
+													onClick={() => setSelectedCampaignId(c.campaign.id)}
+												>
+													<TableCell className="font-medium">
+														{c.campaign.name}
+														{selectedCampaignId === c.campaign.id ? (
+															<Badge className="ml-2" variant="secondary">
+																selected
+															</Badge>
+														) : null}
+													</TableCell>
+													<TableCell className="font-mono text-xs">
+														{c.campaign.packId}
+													</TableCell>
+													<TableCell>
+														<Badge variant="secondary">
+															{c.campaign.status}
+														</Badge>
+													</TableCell>
+													<TableCell className="text-right tabular-nums">
+														{c.counts.pending}
+													</TableCell>
+													<TableCell className="text-right tabular-nums">
+														{c.counts.attested}
+													</TableCell>
+													<TableCell className="text-right tabular-nums">
+														{c.counts.waived}
+													</TableCell>
+												</TableRow>
+											))
+										)}
+									</TableBody>
+								</Table>
+							</div>
+						</CardContent>
+					</Card>
+
+					{selectedCampaignId ? (
+						<Card>
+							<CardHeader>
+								<CardTitle>Assignments</CardTitle>
+								<CardDescription>
+									Generate (or regenerate) assignments from the campaign pack
+									results.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<div className="grid gap-3 md:grid-cols-3">
+									<div className="space-y-2">
+										<div className="text-sm font-medium">Default assignee</div>
+										<Input
+											value={campaignAssignee}
+											onChange={(e) => setCampaignAssignee(e.target.value)}
+											placeholder="optional (username)"
+										/>
+									</div>
+									<div className="space-y-2 md:col-span-2">
+										<div className="text-sm font-medium">Actions</div>
+										<div className="flex flex-wrap items-center gap-2">
+											<Button
+												onClick={() => generateAssignments.mutate()}
+												disabled={generateAssignments.isPending}
+											>
+												<Play className="mr-2 h-4 w-4" />
+												Generate assignments
+											</Button>
+											<Button
+												variant="outline"
+												onClick={() => assignments.refetch()}
+												disabled={assignments.isFetching}
+											>
+												<RefreshCw className="mr-2 h-4 w-4" />
+												Refresh
+											</Button>
+										</div>
+										<p className="text-xs text-muted-foreground">
+											Generation replaces existing assignments for the campaign.
+										</p>
+									</div>
+								</div>
+
+								{assignments.isError ? (
+									<p className="text-xs text-destructive">
+										Failed to load assignments:{" "}
+										{(assignments.error as Error).message}
+									</p>
+								) : null}
+
+								<div className="rounded-md border">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Asset</TableHead>
+												<TableHead>Check</TableHead>
+												<TableHead>Status</TableHead>
+												<TableHead className="text-right">Risk</TableHead>
+												<TableHead className="text-right">Details</TableHead>
+												<TableHead className="text-right">Actions</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{(assignments.data?.assignments ?? []).length === 0 ? (
+												<TableRow>
+													<TableCell
+														colSpan={6}
+														className="text-sm text-muted-foreground"
+													>
+														No assignments yet.
+													</TableCell>
+												</TableRow>
+											) : (
+												(assignments.data?.assignments ?? []).map((a) => (
+													<TableRow key={a.id}>
+														<TableCell className="font-mono text-xs">
+															{a.findingAssetKey || "—"}
+														</TableCell>
+														<TableCell className="max-w-[420px] truncate">
+															<div className="text-sm font-medium">
+																{a.checkTitle || a.checkId}
+															</div>
+															<div className="text-xs text-muted-foreground font-mono">
+																{a.checkId}
+															</div>
+														</TableCell>
+														<TableCell>
+															<Badge variant="secondary">{a.status}</Badge>
+														</TableCell>
+														<TableCell className="text-right tabular-nums">
+															{typeof a.findingRiskScore === "number"
+																? a.findingRiskScore
+																: "—"}
+														</TableCell>
+														<TableCell className="text-right">
+															<Button
+																variant="outline"
+																size="sm"
+																onClick={() => {
+																	setGenericEvidence(
+																		jsonPretty({
+																			findingId: a.findingId,
+																			checkId: a.checkId,
+																			finding: a.finding,
+																		}),
+																	);
+																	setGenericEvidenceOpen(true);
+																}}
+															>
+																View
+															</Button>
+														</TableCell>
+														<TableCell className="text-right">
+															<div className="flex justify-end gap-2">
+																<Button
+																	size="sm"
+																	onClick={() => attestAssignment.mutate(a.id)}
+																	disabled={attestAssignment.isPending}
+																>
+																	Attest
+																</Button>
+																<Button
+																	size="sm"
+																	variant="outline"
+																	onClick={() => waiveAssignment.mutate(a.id)}
+																	disabled={waiveAssignment.isPending}
+																>
+																	Waive
+																</Button>
+															</div>
+														</TableCell>
+													</TableRow>
+												))
+											)}
+										</TableBody>
+									</Table>
+								</div>
+							</CardContent>
+						</Card>
+					) : null}
+
+					<Card>
+						<CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+							<div>
+								<CardTitle>Exceptions</CardTitle>
+								<CardDescription>
+									Propose exceptions for specific findings (with expiry and
+									audit trail).
+								</CardDescription>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									onClick={() => exceptions.refetch()}
+									disabled={exceptions.isFetching}
+								>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Refresh
+								</Button>
+								<Button onClick={() => setExceptionCreateOpen(true)}>
+									New exception
+								</Button>
+							</div>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							<div className="rounded-md border">
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead>Status</TableHead>
+											<TableHead>Check</TableHead>
+											<TableHead>Finding</TableHead>
+											<TableHead className="text-right">Expires</TableHead>
+											<TableHead className="text-right">Actions</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{(exceptions.data?.exceptions ?? []).length === 0 ? (
+											<TableRow>
+												<TableCell
+													colSpan={5}
+													className="text-sm text-muted-foreground"
+												>
+													No exceptions yet.
+												</TableCell>
+											</TableRow>
+										) : (
+											(exceptions.data?.exceptions ?? []).map((e) => (
+												<TableRow key={e.id}>
+													<TableCell>
+														<Badge variant="secondary">{e.status}</Badge>
+													</TableCell>
+													<TableCell className="font-mono text-xs">
+														{e.checkId}
+													</TableCell>
+													<TableCell className="font-mono text-xs max-w-[520px] truncate">
+														{e.findingId}
+													</TableCell>
+													<TableCell className="text-right text-xs font-mono">
+														{e.expiresAt
+															? String(e.expiresAt).slice(0, 10)
+															: "—"}
+													</TableCell>
+													<TableCell className="text-right">
+														<div className="flex justify-end gap-2">
+															<Button
+																size="sm"
+																onClick={() => approveException.mutate(e.id)}
+																disabled={approveException.isPending}
+															>
+																Approve
+															</Button>
+															<Button
+																size="sm"
+																variant="outline"
+																onClick={() => rejectException.mutate(e.id)}
+																disabled={rejectException.isPending}
+															>
+																Reject
+															</Button>
+														</div>
+													</TableCell>
+												</TableRow>
+											))
+										)}
+									</TableBody>
+								</Table>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="change" className="space-y-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Change Planning (Simulation)</CardTitle>
+							<CardDescription>
+								Demo-grade what-if: simulate an ADD/MODIFY/REMOVE against
+								first-match decisions for a list of flows (no config push).
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="grid gap-4 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Device (optional)</div>
+								<Input
+									value={cpDeviceName}
+									onChange={(e) => setCpDeviceName(e.target.value)}
+									placeholder="Exact device name (optional)"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Operation</div>
+								<Select value={cpOp} onValueChange={setCpOp}>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="ADD">ADD</SelectItem>
+										<SelectItem value="MODIFY">MODIFY</SelectItem>
+										<SelectItem value="REMOVE">REMOVE</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Rule index</div>
+								<Input
+									value={cpRuleIndex}
+									onChange={(e) => setCpRuleIndex(e.target.value)}
+									placeholder="0"
+									inputMode="numeric"
+									className="font-mono text-xs"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Action</div>
+								<Select value={cpRuleAction} onValueChange={setCpRuleAction}>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="PERMIT">PERMIT</SelectItem>
+										<SelectItem value="DENY">DENY</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</CardContent>
+						<CardContent className="space-y-4 pt-0">
+							<div className="grid gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										ipv4Src (CIDRs, comma/newline; empty = any)
+									</div>
+									<Textarea
+										value={cpIpv4Src}
+										onChange={(e) => setCpIpv4Src(e.target.value)}
+										rows={3}
+										className="font-mono text-xs"
+										placeholder="10.0.0.0/8"
+									/>
+								</div>
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										ipv4Dst (CIDRs, comma/newline; empty = any)
+									</div>
+									<Textarea
+										value={cpIpv4Dst}
+										onChange={(e) => setCpIpv4Dst(e.target.value)}
+										rows={3}
+										className="font-mono text-xs"
+										placeholder="10.1.0.0/16"
+									/>
+								</div>
+							</div>
+							<div className="grid gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										ipProto (comma/newline ints; empty = any)
+									</div>
+									<Input
+										value={cpIpProto}
+										onChange={(e) => setCpIpProto(e.target.value)}
+										placeholder="6,17"
+										className="font-mono text-xs"
+									/>
+								</div>
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										tpDst (e.g. 443, 80-81; empty = any)
+									</div>
+									<Input
+										value={cpTpDst}
+										onChange={(e) => setCpTpDst(e.target.value)}
+										placeholder="443, 8443"
+										className="font-mono text-xs"
+									/>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">
+									Flows (one per line: srcIp dstIp [ipProto] [dstPort])
+								</div>
+								<Textarea
+									value={cpFlowsText}
+									onChange={(e) => setCpFlowsText(e.target.value)}
+									rows={6}
+									className="font-mono text-xs"
+									placeholder="10.0.0.1 10.0.0.2 6 443"
+								/>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									onClick={() => runChangePlanning.mutate()}
+									disabled={runChangePlanning.isPending}
+								>
+									<Play className="mr-2 h-4 w-4" />
+									Simulate
+								</Button>
+								<Button
+									variant="outline"
+									onClick={() => setCpResult(null)}
+									disabled={!cpResult}
+								>
+									Clear
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+
+					{cpResult ? (
+						<Card>
+							<CardHeader>
+								<CardTitle>Impact</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<div className="flex flex-wrap items-center gap-2 text-sm">
+									<Badge variant="secondary">
+										Flows: {cpResult.totalFlows}
+									</Badge>
+									<Badge variant="secondary">
+										Devices: {cpResult.totalDevices}
+									</Badge>
+									<Badge variant="secondary">
+										Changed: {cpResult.changedCount}
+									</Badge>
+								</div>
+								<div className="rounded-md border">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Device</TableHead>
+												<TableHead>Flow</TableHead>
+												<TableHead>Before</TableHead>
+												<TableHead>After</TableHead>
+												<TableHead>Reason</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{(cpResult.impacts ?? [])
+												.filter((x: any) => x?.changed)
+												.slice(0, 200)
+												.map((x: any, i: number) => (
+													<TableRow key={`${x.device}:${i}`}>
+														<TableCell className="font-mono text-xs">
+															{x.device}
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{x.flow?.srcIp} → {x.flow?.dstIp}{" "}
+															{x.flow?.ipProto ?? ""} {x.flow?.dstPort ?? ""}
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{x.beforeDecision}{" "}
+															{x.beforeRule ? `(${x.beforeRule})` : ""}
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{x.afterDecision}{" "}
+															{x.afterRule ? `(${x.afterRule})` : ""}
+														</TableCell>
+														<TableCell className="text-xs text-muted-foreground">
+															{x.reason || ""}
+														</TableCell>
+													</TableRow>
+												))}
+										</TableBody>
+									</Table>
+								</div>
+								<details>
+									<summary className="cursor-pointer text-xs text-muted-foreground">
+										Show raw JSON
+									</summary>
+									<div className="pt-2">
+										<Textarea
+											readOnly
+											className="font-mono text-xs"
+											rows={14}
+											value={jsonPretty(cpResult)}
+										/>
+									</div>
+								</details>
 							</CardContent>
 						</Card>
 					) : null}
@@ -836,6 +2822,348 @@ function PolicyReportsPage() {
 							openCheck.data?.content ?? (openCheck.isPending ? "Loading…" : "")
 						}
 					/>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={flowEvidenceOpen} onOpenChange={setFlowEvidenceOpen}>
+				<DialogContent className="max-w-4xl">
+					<DialogHeader>
+						<DialogTitle>First Match Evidence</DialogTitle>
+						<DialogDescription>sourceConfigText(...) output</DialogDescription>
+					</DialogHeader>
+					<Textarea
+						readOnly
+						className="font-mono text-xs"
+						rows={18}
+						value={flowEvidence}
+					/>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={flowRuleEvidenceOpen}
+				onOpenChange={setFlowRuleEvidenceOpen}
+			>
+				<DialogContent className="max-w-4xl">
+					<DialogHeader>
+						<DialogTitle>Rule Evidence</DialogTitle>
+						<DialogDescription>sourceConfigText(...) output</DialogDescription>
+					</DialogHeader>
+					<Textarea
+						readOnly
+						className="font-mono text-xs"
+						rows={18}
+						value={flowRuleEvidence}
+					/>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={genericEvidenceOpen} onOpenChange={setGenericEvidenceOpen}>
+				<DialogContent className="max-w-4xl">
+					<DialogHeader>
+						<DialogTitle>Evidence</DialogTitle>
+						<DialogDescription>sourceConfigText(...) output</DialogDescription>
+					</DialogHeader>
+					<Textarea
+						readOnly
+						className="font-mono text-xs"
+						rows={18}
+						value={genericEvidence}
+					/>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={deltaCheckDialogOpen}
+				onOpenChange={setDeltaCheckDialogOpen}
+			>
+				<DialogContent className="max-w-6xl">
+					<DialogHeader>
+						<DialogTitle>Delta Check Details</DialogTitle>
+						<DialogDescription>{deltaCheckDialogCheckId}</DialogDescription>
+					</DialogHeader>
+					{(() => {
+						const c = (lastDeltaRun?.checks ?? []).find(
+							(x) => x.checkId === deltaCheckDialogCheckId,
+						);
+						if (!c) {
+							return (
+								<div className="text-sm text-muted-foreground">
+									No data for this check.
+								</div>
+							);
+						}
+
+						const newItems = asArray(c.newSamples);
+						const oldItems = asArray(c.oldSamples);
+						const changedItems = asArray(c.changedSamples);
+
+						const renderSamples = (items: any[]) => {
+							const cols = pickColumns(items);
+							return (
+								<div className="rounded-md border">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												{cols.map((k) => (
+													<TableHead key={k}>{k}</TableHead>
+												))}
+												<TableHead className="text-right">Evidence</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{items.slice(0, 50).map((it: any, idx: number) => {
+												const ev = evidenceFields(it);
+												return (
+													<TableRow key={idx}>
+														{cols.map((k) => (
+															<TableCell
+																key={k}
+																className="max-w-[360px] truncate font-mono text-xs"
+															>
+																{typeof it?.[k] === "string" ||
+																typeof it?.[k] === "number"
+																	? String(it?.[k])
+																	: it?.[k] == null
+																		? ""
+																		: JSON.stringify(it?.[k])}
+															</TableCell>
+														))}
+														<TableCell className="text-right">
+															<Button
+																variant="outline"
+																size="sm"
+																disabled={ev.length === 0}
+																onClick={() => {
+																	setGenericEvidence(ev[0]?.value ?? "");
+																	setGenericEvidenceOpen(true);
+																}}
+															>
+																View
+															</Button>
+														</TableCell>
+													</TableRow>
+												);
+											})}
+										</TableBody>
+									</Table>
+								</div>
+							);
+						};
+
+						return (
+							<div className="space-y-4">
+								<div className="grid gap-3 md:grid-cols-3">
+									<div className="text-sm">
+										<div className="text-muted-foreground">New</div>
+										<div className="font-medium">{c.newCount}</div>
+									</div>
+									<div className="text-sm">
+										<div className="text-muted-foreground">Resolved</div>
+										<div className="font-medium">{c.resolvedCount}</div>
+									</div>
+									<div className="text-sm">
+										<div className="text-muted-foreground">Changed</div>
+										<div className="font-medium">{c.changedCount ?? 0}</div>
+									</div>
+								</div>
+
+								{newItems.length ? (
+									<div className="space-y-2">
+										<div className="text-sm font-medium">New samples</div>
+										{renderSamples(newItems)}
+									</div>
+								) : null}
+
+								{oldItems.length ? (
+									<div className="space-y-2">
+										<div className="text-sm font-medium">Resolved samples</div>
+										{renderSamples(oldItems)}
+									</div>
+								) : null}
+
+								{changedItems.length ? (
+									<div className="space-y-2">
+										<div className="text-sm font-medium">Changed samples</div>
+										<div className="rounded-md border">
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead>findingId</TableHead>
+														<TableHead className="text-right">
+															Baseline/Compare
+														</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													{changedItems
+														.slice(0, 50)
+														.map((it: any, idx: number) => (
+															<TableRow key={idx}>
+																<TableCell className="font-mono text-xs">
+																	{String(it?.findingId ?? "")}
+																</TableCell>
+																<TableCell className="text-right">
+																	<Button
+																		variant="outline"
+																		size="sm"
+																		onClick={() => {
+																			setDeltaChangedDialogPayload({
+																				findingId: String(it?.findingId ?? ""),
+																				baseline: it?.baseline,
+																				compare: it?.compare,
+																			});
+																			setDeltaChangedDialogOpen(true);
+																		}}
+																	>
+																		View
+																	</Button>
+																</TableCell>
+															</TableRow>
+														))}
+												</TableBody>
+											</Table>
+										</div>
+									</div>
+								) : null}
+							</div>
+						);
+					})()}
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={deltaChangedDialogOpen}
+				onOpenChange={setDeltaChangedDialogOpen}
+			>
+				<DialogContent className="max-w-6xl">
+					<DialogHeader>
+						<DialogTitle>Changed Finding</DialogTitle>
+						<DialogDescription>
+							{deltaChangedDialogPayload?.findingId ?? ""}
+						</DialogDescription>
+					</DialogHeader>
+					{(() => {
+						const diffs = diffTopLevel(
+							deltaChangedDialogPayload?.baseline,
+							deltaChangedDialogPayload?.compare,
+						);
+						return diffs.length ? (
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Top-level differences</div>
+								<div className="rounded-md border">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Field</TableHead>
+												<TableHead>Baseline</TableHead>
+												<TableHead>Compare</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{diffs.slice(0, 30).map((d) => (
+												<TableRow key={d.key}>
+													<TableCell className="font-mono text-xs">
+														{d.key}
+													</TableCell>
+													<TableCell className="max-w-[360px] truncate font-mono text-xs">
+														{d.baseline}
+													</TableCell>
+													<TableCell className="max-w-[360px] truncate font-mono text-xs">
+														{d.compare}
+													</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+								</div>
+								{diffs.length > 30 ? (
+									<div className="text-xs text-muted-foreground">
+										Showing 30 of {diffs.length} differing fields.
+									</div>
+								) : null}
+							</div>
+						) : (
+							<div className="text-xs text-muted-foreground">
+								No top-level differences detected (the change may be nested).
+							</div>
+						);
+					})()}
+					<div className="grid gap-3 md:grid-cols-2">
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Baseline</div>
+							<Textarea
+								readOnly
+								className="font-mono text-xs"
+								rows={16}
+								value={jsonPretty(deltaChangedDialogPayload?.baseline)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Compare</div>
+							<Textarea
+								readOnly
+								className="font-mono text-xs"
+								rows={16}
+								value={jsonPretty(deltaChangedDialogPayload?.compare)}
+							/>
+						</div>
+					</div>
+					<div className="flex items-center gap-2 pt-2">
+						<Button
+							variant="outline"
+							onClick={() => {
+								const baseEv = evidenceFields(
+									deltaChangedDialogPayload?.baseline,
+								);
+								const compEv = evidenceFields(
+									deltaChangedDialogPayload?.compare,
+								);
+								const ev = baseEv[0]?.value ?? compEv[0]?.value ?? "";
+								setGenericEvidence(ev);
+								setGenericEvidenceOpen(true);
+							}}
+							disabled={
+								evidenceFields(deltaChangedDialogPayload?.baseline).length ===
+									0 &&
+								evidenceFields(deltaChangedDialogPayload?.compare).length === 0
+							}
+						>
+							View evidence
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => {
+								const baseEv = evidenceFields(
+									deltaChangedDialogPayload?.baseline,
+								);
+								const ev = baseEv[0]?.value ?? "";
+								setGenericEvidence(ev);
+								setGenericEvidenceOpen(true);
+							}}
+							disabled={
+								evidenceFields(deltaChangedDialogPayload?.baseline).length === 0
+							}
+						>
+							Baseline evidence
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => {
+								const compEv = evidenceFields(
+									deltaChangedDialogPayload?.compare,
+								);
+								const ev = compEv[0]?.value ?? "";
+								setGenericEvidence(ev);
+								setGenericEvidenceOpen(true);
+							}}
+							disabled={
+								evidenceFields(deltaChangedDialogPayload?.compare).length === 0
+							}
+						>
+							Compare evidence
+						</Button>
+					</div>
 				</DialogContent>
 			</Dialog>
 
@@ -1049,6 +3377,173 @@ function PolicyReportsPage() {
 					) : (
 						<div className="text-sm text-muted-foreground">No parameters.</div>
 					)}
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={createCampaignOpen} onOpenChange={setCreateCampaignOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>New Recert Campaign</DialogTitle>
+						<DialogDescription>
+							Uses the current Network ID and Snapshot selection at the top of
+							the page.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Name</div>
+								<Input
+									value={campaignName}
+									onChange={(e) => setCampaignName(e.target.value)}
+									placeholder="Q1 Policy Recert"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Pack</div>
+								<Select
+									value={campaignPackId}
+									onValueChange={setCampaignPackId}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Pick a pack" />
+									</SelectTrigger>
+									<SelectContent>
+										{packsList.map((p) => (
+											<SelectItem key={p.id} value={p.id}>
+												{p.title ?? p.id}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Description</div>
+							<Textarea
+								value={campaignDesc}
+								onChange={(e) => setCampaignDesc(e.target.value)}
+								rows={3}
+								placeholder="optional"
+							/>
+						</div>
+						<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">
+									Due At (RFC3339, optional)
+								</div>
+								<Input
+									value={campaignDueAt}
+									onChange={(e) => setCampaignDueAt(e.target.value)}
+									placeholder="2026-03-31T23:59:59Z"
+									className="font-mono text-xs"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">
+									Default assignee (optional)
+								</div>
+								<Input
+									value={campaignAssignee}
+									onChange={(e) => setCampaignAssignee(e.target.value)}
+									placeholder="username"
+								/>
+							</div>
+						</div>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setCreateCampaignOpen(false)}
+								disabled={createCampaign.isPending}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => createCampaign.mutate()}
+								disabled={createCampaign.isPending}
+							>
+								Create
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={exceptionCreateOpen} onOpenChange={setExceptionCreateOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>New Exception</DialogTitle>
+						<DialogDescription>
+							Attach to a specific findingId + checkId (copy from report JSON).
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Check ID</div>
+								<Input
+									value={exceptionCheckId}
+									onChange={(e) => setExceptionCheckId(e.target.value)}
+									placeholder="acl-any-any-permit.nqe"
+									className="font-mono text-xs"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Finding ID</div>
+								<Input
+									value={exceptionFindingId}
+									onChange={(e) => setExceptionFindingId(e.target.value)}
+									placeholder="sha256..."
+									className="font-mono text-xs"
+								/>
+							</div>
+						</div>
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Justification</div>
+							<Textarea
+								value={exceptionJustification}
+								onChange={(e) => setExceptionJustification(e.target.value)}
+								rows={4}
+								placeholder="Explain compensating controls and why this is acceptable."
+							/>
+						</div>
+						<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Ticket URL (optional)</div>
+								<Input
+									value={exceptionTicketUrl}
+									onChange={(e) => setExceptionTicketUrl(e.target.value)}
+									placeholder="https://jira/... or https://servicenow/..."
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">
+									Expires At (RFC3339, optional)
+								</div>
+								<Input
+									value={exceptionExpiresAt}
+									onChange={(e) => setExceptionExpiresAt(e.target.value)}
+									placeholder="2026-06-30T23:59:59Z"
+									className="font-mono text-xs"
+								/>
+							</div>
+						</div>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setExceptionCreateOpen(false)}
+								disabled={createException.isPending}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => createException.mutate()}
+								disabled={createException.isPending}
+							>
+								Propose
+							</Button>
+						</div>
+					</div>
 				</DialogContent>
 			</Dialog>
 		</div>

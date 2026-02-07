@@ -621,6 +621,67 @@ export async function disconnectUserGemini(): Promise<void> {
 	});
 }
 
+export type UserElasticConfigResponse = {
+	enabled: boolean;
+	configured: boolean;
+	url?: string;
+	indexPrefix?: string;
+	authType?: "none" | "api_key" | "basic" | string;
+	hasApiKey: boolean;
+	basicUsername?: string;
+	hasBasicPassword: boolean;
+	verifyTls: boolean;
+	updatedAt?: string;
+	defaultUrl?: string;
+	defaultIndexPrefix?: string;
+};
+
+export type PutUserElasticConfigRequest = {
+	url: string;
+	indexPrefix: string;
+	authType: "none" | "api_key" | "basic";
+	apiKey: string;
+	basicUsername: string;
+	basicPassword: string;
+	verifyTls?: boolean;
+};
+
+export type UserElasticTestResponse = {
+	status: "ok" | "error" | string;
+	detail?: string;
+	checkedAt?: string;
+};
+
+export async function getUserElasticConfig(): Promise<UserElasticConfigResponse> {
+	return apiFetch<UserElasticConfigResponse>("/api/user/integrations/elastic");
+}
+
+export async function putUserElasticConfig(
+	payload: PutUserElasticConfigRequest,
+): Promise<UserElasticConfigResponse> {
+	return apiFetch<UserElasticConfigResponse>("/api/user/integrations/elastic", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function clearUserElasticConfig(): Promise<void> {
+	await apiFetch<void>("/api/user/integrations/elastic/clear", {
+		method: "POST",
+		body: "{}",
+	});
+}
+
+export async function testUserElasticConfig(): Promise<UserElasticTestResponse> {
+	return apiFetch<UserElasticTestResponse>(
+		"/api/user/integrations/elastic/test",
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
 export type UserAIGenerateRequest = {
 	provider?: "gemini";
 	kind: "netlab" | "containerlab";
@@ -653,10 +714,12 @@ export type UserAIHistoryResponse = {
 
 export async function generateUserAITemplate(
 	payload: UserAIGenerateRequest,
+	opts?: { signal?: AbortSignal },
 ): Promise<UserAIGenerateResponse> {
 	return apiFetch<UserAIGenerateResponse>("/api/user/ai/generate", {
 		method: "POST",
 		body: JSON.stringify(payload),
+		signal: opts?.signal,
 	});
 }
 
@@ -1153,6 +1216,278 @@ export async function syncDeploymentForward(
 	return apiFetch<SyncDeploymentForwardResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward/sync`,
 		{ method: "POST", body: "{}" },
+	);
+}
+
+export type CapacityRollupRow = {
+	objectType: string;
+	objectId: string;
+	metric: string;
+	window: string;
+	periodEnd: string;
+	samples: number;
+	avg?: number;
+	p95?: number;
+	p99?: number;
+	max?: number;
+	slopePerDay?: number;
+	forecastCrossingTs?: string;
+	threshold?: number;
+	details?: JSONMap;
+	createdAt?: string;
+	forwardNetworkId?: string;
+	deploymentId?: string;
+	workspaceId?: string;
+};
+
+export type DeploymentCapacitySummaryResponse = {
+	workspaceId: string;
+	deploymentId: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	rollups: CapacityRollupRow[];
+	stale: boolean;
+};
+
+export type DeploymentCapacityRefreshResponse = {
+	workspaceId: string;
+	deploymentId: string;
+	run: JSONMap;
+};
+
+export type CapacityPerfProxyResponse = {
+	body: unknown;
+};
+
+export async function getDeploymentCapacitySummary(
+	workspaceId: string,
+	deploymentId: string,
+): Promise<DeploymentCapacitySummaryResponse> {
+	return apiFetch<DeploymentCapacitySummaryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/summary`,
+	);
+}
+
+export async function refreshDeploymentCapacityRollups(
+	workspaceId: string,
+	deploymentId: string,
+): Promise<DeploymentCapacityRefreshResponse> {
+	return apiFetch<DeploymentCapacityRefreshResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/rollups/refresh`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export type CapacityDeviceInventoryRow = {
+	deviceName: string;
+	tagNames?: string[];
+	groupNames?: string[];
+	deviceType?: string;
+	vendor?: string;
+	os?: string;
+	model?: string | null;
+	osVersion?: string | null;
+	locationName?: string | null;
+};
+
+export type CapacityInterfaceInventoryRow = {
+	deviceName: string;
+	deviceLocationName?: string | null;
+	deviceTagNames?: string[];
+	deviceGroupNames?: string[];
+	interfaceName: string;
+	description?: string | null;
+	adminStatus?: string;
+	operStatus?: string;
+	layer?: string;
+	interfaceType?: string;
+	mtu?: number | null;
+	speedMbps?: number | null;
+};
+
+export type CapacityRouteScaleRow = {
+	deviceName: string;
+	vrf: string;
+	ipv4Routes: number;
+	ipv6Routes: number;
+};
+
+export type CapacityBgpNeighborRow = {
+	deviceName: string;
+	vrf: string;
+	neighborAddress: string;
+	peerDeviceName?: string | null;
+	peerVrf?: string | null;
+	peerAs: number;
+	enabled: boolean;
+	sessionState?: string | null;
+	receivedPrefixes?: number | null;
+	advertisedPrefixes?: number | null;
+	sessionDurationSec?: number | null;
+};
+
+export type DeploymentCapacityInventoryResponse = {
+	workspaceId: string;
+	deploymentId: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	snapshotId?: string;
+	devices: CapacityDeviceInventoryRow[];
+	interfaces: CapacityInterfaceInventoryRow[];
+	interfaceVrfs?: Array<{
+		deviceName: string;
+		vrf: string;
+		ifaceName: string;
+		subIfaceName?: string | null;
+	}>;
+	routeScale: CapacityRouteScaleRow[];
+	bgpNeighbors: CapacityBgpNeighborRow[];
+};
+
+export async function getDeploymentCapacityInventory(
+	workspaceId: string,
+	deploymentId: string,
+): Promise<DeploymentCapacityInventoryResponse> {
+	return apiFetch<DeploymentCapacityInventoryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/inventory`,
+	);
+}
+
+export type DeploymentCapacityGrowthQuery = {
+	metric: string;
+	window: string;
+	objectType?: string;
+	compareHours?: number;
+	limit?: number;
+};
+
+export type CapacityGrowthRow = {
+	objectType: string;
+	objectId: string;
+	metric: string;
+	window: string;
+	now: CapacityRollupRow;
+	prev?: CapacityRollupRow | null;
+	deltaP95?: number | null;
+	deltaMax?: number | null;
+	deltaP95Gbps?: number | null;
+};
+
+export type DeploymentCapacityGrowthResponse = {
+	workspaceId: string;
+	deploymentId: string;
+	metric: string;
+	window: string;
+	objectType?: string;
+	asOf?: string;
+	compareAsOf?: string;
+	compareHours: number;
+	rows: CapacityGrowthRow[];
+};
+
+export async function getDeploymentCapacityGrowth(
+	workspaceId: string,
+	deploymentId: string,
+	q: DeploymentCapacityGrowthQuery,
+): Promise<DeploymentCapacityGrowthResponse> {
+	const qs = new URLSearchParams();
+	qs.set("metric", q.metric);
+	qs.set("window", q.window);
+	if (q.objectType) qs.set("objectType", q.objectType);
+	if (q.compareHours) qs.set("compareHours", String(q.compareHours));
+	if (q.limit) qs.set("limit", String(q.limit));
+	return apiFetch<DeploymentCapacityGrowthResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/growth?${qs.toString()}`,
+	);
+}
+
+export type CapacityInterfaceWithDirection = {
+	deviceName: string;
+	interfaceName: string;
+	direction?: string;
+};
+
+export type PostCapacityInterfaceMetricsHistoryRequest = {
+	type: string;
+	days?: number;
+	startTime?: string;
+	endTime?: string;
+	maxSamples?: number;
+	interfaces: CapacityInterfaceWithDirection[];
+};
+
+export async function postDeploymentCapacityInterfaceMetricsHistory(
+	workspaceId: string,
+	deploymentId: string,
+	body: PostCapacityInterfaceMetricsHistoryRequest,
+): Promise<CapacityPerfProxyResponse> {
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/interface-metrics-history`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export type PostCapacityDeviceMetricsHistoryRequest = {
+	type: string;
+	days?: number;
+	startTime?: string;
+	endTime?: string;
+	maxSamples?: number;
+	devices: string[];
+};
+
+export async function postDeploymentCapacityDeviceMetricsHistory(
+	workspaceId: string,
+	deploymentId: string,
+	body: PostCapacityDeviceMetricsHistoryRequest,
+): Promise<CapacityPerfProxyResponse> {
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/device-metrics-history`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export type GetCapacityUnhealthyDevicesQuery = {
+	snapshotId?: string;
+	endTime?: string;
+};
+
+export async function getDeploymentCapacityUnhealthyDevices(
+	workspaceId: string,
+	deploymentId: string,
+	q: GetCapacityUnhealthyDevicesQuery,
+): Promise<CapacityPerfProxyResponse> {
+	const qs = new URLSearchParams();
+	if (q.snapshotId) qs.set("snapshotId", q.snapshotId);
+	if (q.endTime) qs.set("endTime", q.endTime);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-devices${suffix}`,
+	);
+}
+
+export type PostCapacityUnhealthyInterfacesRequest = {
+	devices: string[];
+};
+
+export type GetCapacityUnhealthyInterfacesQuery = {
+	snapshotId?: string;
+	endTime?: string;
+};
+
+export async function postDeploymentCapacityUnhealthyInterfaces(
+	workspaceId: string,
+	deploymentId: string,
+	q: GetCapacityUnhealthyInterfacesQuery,
+	body: PostCapacityUnhealthyInterfacesRequest,
+): Promise<CapacityPerfProxyResponse> {
+	const qs = new URLSearchParams();
+	if (q.snapshotId) qs.set("snapshotId", q.snapshotId);
+	if (q.endTime) qs.set("endTime", q.endTime);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
@@ -2711,8 +3046,10 @@ export type PolicyReportPackDeltaCheck = {
 	compareTotal: number;
 	newCount: number;
 	resolvedCount: number;
+	changedCount: number;
 	newSamples?: unknown;
 	oldSamples?: unknown;
+	changedSamples?: unknown;
 };
 
 export type PolicyReportPackDeltaResponse = {
@@ -2721,6 +3058,169 @@ export type PolicyReportPackDeltaResponse = {
 	baselineSnapshotId: string;
 	compareSnapshotId: string;
 	checks: PolicyReportPackDeltaCheck[];
+};
+
+export type PolicyReportRecertCampaign = {
+	id: string;
+	workspaceId: string;
+	name: string;
+	description?: string;
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId: string;
+	status: string;
+	dueAt?: string;
+	createdBy: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportRecertCampaignCounts = {
+	total: number;
+	pending: number;
+	attested: number;
+	waived: number;
+};
+
+export type PolicyReportRecertCampaignWithCounts = {
+	campaign: PolicyReportRecertCampaign;
+	counts: PolicyReportRecertCampaignCounts;
+};
+
+export type PolicyReportListRecertCampaignsResponse = {
+	campaigns: PolicyReportRecertCampaignWithCounts[];
+};
+
+export type PolicyReportCreateRecertCampaignRequest = {
+	name: string;
+	description?: string;
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId: string;
+	dueAt?: string;
+};
+
+export type PolicyReportRecertAssignment = {
+	id: string;
+	campaignId: string;
+	workspaceId: string;
+	findingId: string;
+	checkId: string;
+	assigneeUsername?: string;
+	status: string;
+	justification?: string;
+	attestedAt?: string;
+	finding?: unknown;
+	createdAt: string;
+	updatedAt: string;
+	checkTitle?: string;
+	checkCategory?: string;
+	checkSeverity?: string;
+	findingRiskScore?: number;
+	findingRiskReasons?: string[];
+	findingAssetKey?: string;
+};
+
+export type PolicyReportListRecertAssignmentsResponse = {
+	assignments: PolicyReportRecertAssignment[];
+};
+
+export type PolicyReportGenerateRecertAssignmentsRequest = {
+	assigneeUsername?: string;
+	maxPerCheck?: number;
+	maxTotal?: number;
+	queryOptions?: JSONMap;
+};
+
+export type PolicyReportGenerateRecertAssignmentsResponse = {
+	campaignId: string;
+	created: number;
+};
+
+export type PolicyReportAttestAssignmentRequest = {
+	justification?: string;
+};
+
+export type PolicyReportException = {
+	id: string;
+	workspaceId: string;
+	findingId: string;
+	checkId: string;
+	status: string;
+	justification: string;
+	ticketUrl?: string;
+	expiresAt?: string;
+	createdBy: string;
+	approvedBy?: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportListExceptionsResponse = {
+	exceptions: PolicyReportException[];
+};
+
+export type PolicyReportCreateExceptionRequest = {
+	findingId: string;
+	checkId: string;
+	justification: string;
+	ticketUrl?: string;
+	expiresAt?: string;
+};
+
+export type PolicyReportDecisionResponse = {
+	ok: boolean;
+};
+
+export type PolicyReportFlowTuple = {
+	srcIp: string;
+	dstIp: string;
+	ipProto?: number;
+	dstPort?: number;
+};
+
+export type PolicyReportProposedRule = {
+	index: number;
+	action: string;
+	ipv4Src?: string[];
+	ipv4Dst?: string[];
+	ipProto?: number[];
+	tpDst?: string[];
+};
+
+export type PolicyReportRuleChange = {
+	op: string;
+	rule: PolicyReportProposedRule;
+};
+
+export type PolicyReportChangePlanningRequest = {
+	networkId: string;
+	snapshotId?: string;
+	firewallsOnly?: boolean;
+	includeImplicitDefault?: boolean;
+	deviceName?: string;
+	flows: PolicyReportFlowTuple[];
+	change: PolicyReportRuleChange;
+};
+
+export type PolicyReportFlowImpact = {
+	device: string;
+	flow: PolicyReportFlowTuple;
+	beforeDecision: string;
+	afterDecision: string;
+	beforeRule?: string;
+	afterRule?: string;
+	beforeIndex?: number;
+	afterIndex?: number;
+	changed: boolean;
+	reason?: string;
+};
+
+export type PolicyReportChangePlanningResponse = {
+	totalFlows: number;
+	totalDevices: number;
+	changedCount: number;
+	impacts: PolicyReportFlowImpact[];
 };
 
 export async function getWorkspacePolicyReportChecks(
@@ -2795,6 +3295,159 @@ export async function runWorkspacePolicyReportPackDelta(
 ): Promise<PolicyReportPackDeltaResponse> {
 	return apiFetch<PolicyReportPackDeltaResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs/delta`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function createWorkspacePolicyReportRecertCampaign(
+	workspaceId: string,
+	body: PolicyReportCreateRecertCampaignRequest,
+): Promise<PolicyReportRecertCampaignWithCounts> {
+	return apiFetch<PolicyReportRecertCampaignWithCounts>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspacePolicyReportRecertCampaigns(
+	workspaceId: string,
+	status?: string,
+	limit?: number,
+): Promise<PolicyReportListRecertCampaignsResponse> {
+	const qs = new URLSearchParams();
+	if (status) qs.set("status", status);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListRecertCampaignsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns?${qs.toString()}`,
+	);
+}
+
+export async function getWorkspacePolicyReportRecertCampaign(
+	workspaceId: string,
+	campaignId: string,
+): Promise<PolicyReportRecertCampaignWithCounts> {
+	return apiFetch<PolicyReportRecertCampaignWithCounts>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}`,
+	);
+}
+
+export async function generateWorkspacePolicyReportRecertAssignments(
+	workspaceId: string,
+	campaignId: string,
+	body: PolicyReportGenerateRecertAssignmentsRequest,
+): Promise<PolicyReportGenerateRecertAssignmentsResponse> {
+	return apiFetch<PolicyReportGenerateRecertAssignmentsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}/generate`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspacePolicyReportRecertAssignments(
+	workspaceId: string,
+	campaignId?: string,
+	status?: string,
+	assignee?: string,
+	limit?: number,
+): Promise<PolicyReportListRecertAssignmentsResponse> {
+	const qs = new URLSearchParams();
+	if (campaignId) qs.set("campaignId", campaignId);
+	if (status) qs.set("status", status);
+	if (assignee) qs.set("assignee", assignee);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListRecertAssignmentsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments?${qs.toString()}`,
+	);
+}
+
+export async function attestWorkspacePolicyReportRecertAssignment(
+	workspaceId: string,
+	assignmentId: string,
+	body: PolicyReportAttestAssignmentRequest,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/attest`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function waiveWorkspacePolicyReportRecertAssignment(
+	workspaceId: string,
+	assignmentId: string,
+	body: PolicyReportAttestAssignmentRequest,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/waive`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function createWorkspacePolicyReportException(
+	workspaceId: string,
+	body: PolicyReportCreateExceptionRequest,
+): Promise<PolicyReportException> {
+	return apiFetch<PolicyReportException>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspacePolicyReportExceptions(
+	workspaceId: string,
+	status?: string,
+	limit?: number,
+): Promise<PolicyReportListExceptionsResponse> {
+	const qs = new URLSearchParams();
+	if (status) qs.set("status", status);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListExceptionsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions?${qs.toString()}`,
+	);
+}
+
+export async function approveWorkspacePolicyReportException(
+	workspaceId: string,
+	exceptionId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/approve`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function rejectWorkspacePolicyReportException(
+	workspaceId: string,
+	exceptionId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/reject`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function simulateWorkspacePolicyReportChangePlanning(
+	workspaceId: string,
+	body: PolicyReportChangePlanningRequest,
+): Promise<PolicyReportChangePlanningResponse> {
+	return apiFetch<PolicyReportChangePlanningResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/change-planning/simulate`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),

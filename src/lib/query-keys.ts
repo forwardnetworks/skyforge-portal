@@ -8,6 +8,27 @@ export const queryKeys = {
 		["deploymentTopology", workspaceId, deploymentId] as const,
 	deploymentUIEvents: (workspaceId: string, deploymentId: string) =>
 		["deploymentUIEvents", workspaceId, deploymentId] as const,
+	deploymentCapacitySummary: (workspaceId: string, deploymentId: string) =>
+		["deploymentCapacitySummary", workspaceId, deploymentId] as const,
+	deploymentCapacityInventory: (workspaceId: string, deploymentId: string) =>
+		["deploymentCapacityInventory", workspaceId, deploymentId] as const,
+	deploymentCapacityGrowth: (
+		workspaceId: string,
+		deploymentId: string,
+		window: string,
+		metric: string,
+		compareHours: number,
+		objectType: string,
+	) =>
+		[
+			"deploymentCapacityGrowth",
+			workspaceId,
+			deploymentId,
+			window,
+			metric,
+			String(compareHours),
+			objectType,
+		] as const,
 	workspaces: () => ["workspaces"] as const,
 	workspaceForwardConfig: (workspaceId: string) =>
 		["workspaceForwardConfig", workspaceId] as const,
@@ -39,6 +60,7 @@ export const queryKeys = {
 	userServiceNowPdiStatus: () => ["userServiceNowPdiStatus"] as const,
 	userServiceNowSchemaStatus: () => ["userServiceNowSchemaStatus"] as const,
 	userGeminiConfig: () => ["userGeminiConfig"] as const,
+	userElasticConfig: () => ["userElasticConfig"] as const,
 	userAIHistory: () => ["userAIHistory"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	workspaceArtifacts: (workspaceId: string) =>
@@ -104,4 +126,23 @@ export const queryKeys = {
 		["policyReportsPacks", workspaceId] as const,
 	policyReportsSnapshots: (workspaceId: string, networkId: string) =>
 		["policyReportsSnapshots", workspaceId, networkId] as const,
+	policyReportsRecertCampaigns: (workspaceId: string, status?: string) =>
+		["policyReportsRecertCampaigns", workspaceId, status ?? ""] as const,
+	policyReportsRecertCampaign: (workspaceId: string, campaignId: string) =>
+		["policyReportsRecertCampaign", workspaceId, campaignId] as const,
+	policyReportsRecertAssignments: (
+		workspaceId: string,
+		campaignId?: string,
+		status?: string,
+		assignee?: string,
+	) =>
+		[
+			"policyReportsRecertAssignments",
+			workspaceId,
+			campaignId ?? "",
+			status ?? "",
+			assignee ?? "",
+		] as const,
+	policyReportsExceptions: (workspaceId: string, status?: string) =>
+		["policyReportsExceptions", workspaceId, status ?? ""] as const,
 };
