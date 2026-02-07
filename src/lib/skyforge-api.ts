@@ -75,6 +75,9 @@ export type ServiceNowSchemaStatusResponse = {
 
 export type UserGeminiConfigResponse = {
 	enabled: boolean;
+	aiEnabled: boolean;
+	oauthConfigured: boolean;
+	vertexConfigured: boolean;
 	configured: boolean;
 	email?: string;
 	scopes?: string;
@@ -2611,7 +2614,7 @@ export async function deleteUserVariableGroup(
 	);
 }
 
-export type SecureTrackCatalogParam = {
+export type PolicyReportCatalogParam = {
 	name: string;
 	type: string;
 	default?: unknown;
@@ -2619,59 +2622,59 @@ export type SecureTrackCatalogParam = {
 	required?: boolean;
 };
 
-export type SecureTrackCatalogCheck = {
+export type PolicyReportCatalogCheck = {
 	id: string;
 	title?: string;
 	category?: string;
 	severity?: string;
 	description?: string;
-	params?: SecureTrackCatalogParam[];
+	params?: PolicyReportCatalogParam[];
 };
 
-export type SecureTrackCatalog = {
+export type PolicyReportCatalog = {
 	version?: string;
-	checks?: SecureTrackCatalogCheck[];
+	checks?: PolicyReportCatalogCheck[];
 };
 
-export type SecureTrackPackCheck = {
+export type PolicyReportPackCheck = {
 	id: string;
 	parameters?: JSONMap;
 };
 
-export type SecureTrackPack = {
+export type PolicyReportPack = {
 	id: string;
 	title?: string;
 	description?: string;
-	checks?: SecureTrackPackCheck[];
+	checks?: PolicyReportPackCheck[];
 };
 
-export type SecureTrackPacks = {
+export type PolicyReportPacks = {
 	version?: string;
-	packs?: SecureTrackPack[];
+	packs?: PolicyReportPack[];
 };
 
-export type SecureTrackChecksResponse = {
-	catalog?: SecureTrackCatalog;
-	checks: SecureTrackCatalogCheck[];
+export type PolicyReportChecksResponse = {
+	catalog?: PolicyReportCatalog;
+	checks: PolicyReportCatalogCheck[];
 	files: string[];
 };
 
-export type SecureTrackCheckResponse = {
-	check?: SecureTrackCatalogCheck;
+export type PolicyReportCheckResponse = {
+	check?: PolicyReportCatalogCheck;
 	content: string;
 };
 
-export type SecureTrackNQEResponse = {
+export type PolicyReportNQEResponse = {
 	snapshotId?: string;
 	total: number;
 	results: unknown;
 };
 
-export type SecureTrackSnapshotsResponse = {
+export type PolicyReportSnapshotsResponse = {
 	body: unknown;
 };
 
-export type SecureTrackRunCheckRequest = {
+export type PolicyReportRunCheckRequest = {
 	networkId: string;
 	snapshotId?: string;
 	checkId: string;
@@ -2679,65 +2682,93 @@ export type SecureTrackRunCheckRequest = {
 	queryOptions?: JSONMap;
 };
 
-export type SecureTrackRunPackRequest = {
+export type PolicyReportRunPackRequest = {
 	networkId: string;
 	snapshotId?: string;
 	packId: string;
+	queryOptions?: JSONMap;
 };
 
-export type SecureTrackRunPackResponse = {
+export type PolicyReportRunPackResponse = {
 	packId: string;
 	networkId: string;
 	snapshotId?: string;
-	results: Record<string, SecureTrackNQEResponse>;
+	results: Record<string, PolicyReportNQEResponse>;
 };
 
-export async function getWorkspaceSecureTrackChecks(
+export type PolicyReportPackDeltaRequest = {
+	networkId: string;
+	packId: string;
+	baselineSnapshotId: string;
+	compareSnapshotId: string;
+	queryOptions?: JSONMap;
+	maxSamplesPerBucket?: number;
+};
+
+export type PolicyReportPackDeltaCheck = {
+	checkId: string;
+	baselineTotal: number;
+	compareTotal: number;
+	newCount: number;
+	resolvedCount: number;
+	newSamples?: unknown;
+	oldSamples?: unknown;
+};
+
+export type PolicyReportPackDeltaResponse = {
+	packId: string;
+	networkId: string;
+	baselineSnapshotId: string;
+	compareSnapshotId: string;
+	checks: PolicyReportPackDeltaCheck[];
+};
+
+export async function getWorkspacePolicyReportChecks(
 	workspaceId: string,
-): Promise<SecureTrackChecksResponse> {
-	return apiFetch<SecureTrackChecksResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/checks`,
+): Promise<PolicyReportChecksResponse> {
+	return apiFetch<PolicyReportChecksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks`,
 	);
 }
 
-export async function getWorkspaceSecureTrackCheck(
+export async function getWorkspacePolicyReportCheck(
 	workspaceId: string,
 	checkId: string,
-): Promise<SecureTrackCheckResponse> {
-	return apiFetch<SecureTrackCheckResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/checks/${encodeURIComponent(checkId)}`,
+): Promise<PolicyReportCheckResponse> {
+	return apiFetch<PolicyReportCheckResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks/${encodeURIComponent(checkId)}`,
 	);
 }
 
-export async function getWorkspaceSecureTrackPacks(
+export async function getWorkspacePolicyReportPacks(
 	workspaceId: string,
-): Promise<SecureTrackPacks> {
-	return apiFetch<SecureTrackPacks>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/packs`,
+): Promise<PolicyReportPacks> {
+	return apiFetch<PolicyReportPacks>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs`,
 	);
 }
 
-export async function getWorkspaceSecureTrackSnapshots(
+export async function getWorkspacePolicyReportSnapshots(
 	workspaceId: string,
 	networkId: string,
 	maxResults?: number,
-): Promise<SecureTrackSnapshotsResponse> {
+): Promise<PolicyReportSnapshotsResponse> {
 	const qs = new URLSearchParams();
 	qs.set("networkId", networkId);
 	if (typeof maxResults === "number") {
 		qs.set("maxResults", String(maxResults));
 	}
-	return apiFetch<SecureTrackSnapshotsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/snapshots?${qs.toString()}`,
+	return apiFetch<PolicyReportSnapshotsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/snapshots?${qs.toString()}`,
 	);
 }
 
-export async function runWorkspaceSecureTrackCheck(
+export async function runWorkspacePolicyReportCheck(
 	workspaceId: string,
-	body: SecureTrackRunCheckRequest,
-): Promise<SecureTrackNQEResponse> {
-	return apiFetch<SecureTrackNQEResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/checks/run`,
+	body: PolicyReportRunCheckRequest,
+): Promise<PolicyReportNQEResponse> {
+	return apiFetch<PolicyReportNQEResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks/run`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -2745,12 +2776,25 @@ export async function runWorkspaceSecureTrackCheck(
 	);
 }
 
-export async function runWorkspaceSecureTrackPack(
+export async function runWorkspacePolicyReportPack(
 	workspaceId: string,
-	body: SecureTrackRunPackRequest,
-): Promise<SecureTrackRunPackResponse> {
-	return apiFetch<SecureTrackRunPackResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/securetrack/packs/run`,
+	body: PolicyReportRunPackRequest,
+): Promise<PolicyReportRunPackResponse> {
+	return apiFetch<PolicyReportRunPackResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs/run`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function runWorkspacePolicyReportPackDelta(
+	workspaceId: string,
+	body: PolicyReportPackDeltaRequest,
+): Promise<PolicyReportPackDeltaResponse> {
+	return apiFetch<PolicyReportPackDeltaResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs/delta`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),

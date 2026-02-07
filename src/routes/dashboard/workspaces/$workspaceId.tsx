@@ -196,12 +196,12 @@ function WorkspaceAccessPage() {
 						variant="outline"
 						onClick={() =>
 							navigate({
-								to: "/dashboard/workspaces/$workspaceId/securetrack",
+								to: "/dashboard/workspaces/$workspaceId/policy-reports",
 								params: { workspaceId },
 							})
 						}
 					>
-						SecureTrack
+						Policy Reports
 					</Button>
 					<Button
 						variant="destructive"

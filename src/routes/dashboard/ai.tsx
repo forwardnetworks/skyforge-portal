@@ -196,7 +196,11 @@ function AITemplatesPage() {
 	});
 
 	const canGenerate =
-		(geminiCfg.data?.enabled ?? false) && (geminiCfg.data?.configured ?? false);
+		(geminiCfg.data?.enabled ?? false) &&
+		(geminiCfg.data?.aiEnabled ?? false) &&
+		(geminiCfg.data?.oauthConfigured ?? false) &&
+		(geminiCfg.data?.vertexConfigured ?? false) &&
+		(geminiCfg.data?.configured ?? false);
 
 	const disconnect = useMutation({
 		mutationFn: async () => disconnectUserGemini(),
@@ -510,9 +514,99 @@ function AITemplatesPage() {
 				<CardContent className="space-y-2 text-sm">
 					{geminiCfg.isLoading ? (
 						<div className="text-sm text-muted-foreground">Loading…</div>
+					) : geminiCfg.isError ? (
+						<div className="space-y-2">
+							<div className="text-sm text-destructive">
+								Failed to load Gemini configuration:{" "}
+								{geminiCfg.error instanceof Error
+									? geminiCfg.error.message
+									: String(geminiCfg.error)}
+							</div>
+							<div className="flex items-center gap-2">
+								<Button variant="secondary" onClick={() => geminiCfg.refetch()}>
+									Retry
+								</Button>
+							</div>
+						</div>
 					) : !geminiCfg.data?.enabled ? (
 						<div className="text-sm text-muted-foreground">
-							Gemini integration is disabled on this Skyforge instance.
+							Gemini integration is disabled on this Skyforge instance. Ask an
+							admin to enable `skyforge.gemini.enabled` in the Helm values.
+						</div>
+					) : !geminiCfg.data?.aiEnabled ? (
+						<div className="text-sm text-muted-foreground">
+							AI template generation is disabled on this Skyforge instance. Ask
+							an admin to enable `skyforge.ai.enabled` in the Helm values.
+						</div>
+					) : !geminiCfg.data?.oauthConfigured ? (
+						<div className="space-y-2">
+							<div className="text-sm text-muted-foreground">
+								Gemini OAuth is not configured (missing OAuth client ID/secret
+								and/or redirect URL). Ask an admin to set
+								`skyforge.gemini.clientID` and ensure the secret referenced by
+								`skyforge.gemini.clientSecretSecretName` is populated.
+							</div>
+							<dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2">
+								<dt className="text-muted-foreground">Model</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.model ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Fallback</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.fallbackModel ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Location</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.location ?? "—"}
+								</dd>
+							</dl>
+						</div>
+					) : !geminiCfg.data?.vertexConfigured ? (
+						<div className="space-y-2">
+							<div className="text-sm text-muted-foreground">
+								Vertex AI is not configured (missing
+								`skyforge.gemini.projectId`). You can connect Gemini, but
+								generation will fail until the project is set.
+							</div>
+							<dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2">
+								<dt className="text-muted-foreground">Model</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.model ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Fallback</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.fallbackModel ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Location</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.location ?? "—"}
+								</dd>
+							</dl>
+							<div className="flex items-center gap-2 pt-1">
+								<Button
+									disabled={
+										!geminiCfg.data?.enabled || !geminiCfg.data?.oauthConfigured
+									}
+									onClick={() => {
+										window.location.assign(
+											`${SKYFORGE_API}/user/integrations/gemini/connect`,
+										);
+									}}
+								>
+									{geminiCfg.data?.configured ? "Reconnect" : "Connect"}
+								</Button>
+								<Button
+									variant="secondary"
+									disabled={!geminiCfg.data?.configured || disconnect.isPending}
+									onClick={() => disconnect.mutate()}
+								>
+									Disconnect
+								</Button>
+							</div>
 						</div>
 					) : (
 						<>
@@ -555,7 +649,9 @@ function AITemplatesPage() {
 
 							<div className="flex items-center gap-2 pt-1">
 								<Button
-									disabled={!geminiCfg.data?.enabled}
+									disabled={
+										!geminiCfg.data?.enabled || !geminiCfg.data?.oauthConfigured
+									}
 									onClick={() => {
 										window.location.assign(
 											`${SKYFORGE_API}/user/integrations/gemini/connect`,

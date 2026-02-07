@@ -17,6 +17,7 @@ import {
 	Settings,
 	ShieldCheck,
 	Sparkles,
+	Users,
 	Webhook,
 	Workflow,
 } from "lucide-react";
@@ -59,6 +60,8 @@ type Features = {
 const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
+	{ label: "Runs", href: "/dashboard/runs", icon: Workflow },
+	{ label: "Workspaces", href: "/dashboard/workspaces", icon: Users },
 	{
 		label: "Designer",
 		href: "/dashboard/labs/designer",
@@ -66,7 +69,7 @@ const items: NavItem[] = [
 		newTab: true,
 	},
 	{
-		label: "Integrations",
+		label: "Connect",
 		href: "",
 		icon: Workflow,
 		children: [
@@ -93,13 +96,17 @@ const items: NavItem[] = [
 			},
 		],
 	},
-	{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
 	{
 		label: "Tools",
 		href: "",
 		icon: Database,
 		children: [
 			{ label: "AI", href: "/dashboard/ai", icon: Sparkles },
+			{
+				label: "Policy Reports",
+				href: "/dashboard/policy-reports",
+				icon: ShieldCheck,
+			},
 			{ label: "Webhooks", href: "/webhooks", icon: Webhook },
 			{ label: "Syslog", href: "/syslog", icon: Inbox },
 			{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
@@ -121,16 +128,24 @@ const items: NavItem[] = [
 		],
 	},
 	{
-		label: "Admin Settings",
-		href: "/admin/settings",
+		label: "Settings",
+		href: "",
 		icon: Settings,
-		adminOnly: true,
-	},
-	{
-		label: "Governance",
-		href: "/admin/governance",
-		icon: ShieldCheck,
-		adminOnly: true,
+		children: [
+			{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
+			{
+				label: "Admin Settings",
+				href: "/admin/settings",
+				icon: Settings,
+				adminOnly: true,
+			},
+			{
+				label: "Governance",
+				href: "/admin/governance",
+				icon: ShieldCheck,
+				adminOnly: true,
+			},
+		],
 	},
 ];
 
@@ -141,7 +156,8 @@ export function SideNav(props: {
 }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({
-		SSOT: true,
+		Tools: true,
+		Connect: true,
 	});
 
 	const targetForExternal = "_blank";
@@ -162,11 +178,6 @@ export function SideNav(props: {
 	return (
 		<nav className="grid items-start gap-2">
 			<div className="space-y-2">
-				{!props.collapsed ? (
-					<h4 className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-						Overview
-					</h4>
-				) : null}
 				<div className="grid gap-1">
 					{items
 						.filter((item) => (item.adminOnly ? !!props.isAdmin : true))
@@ -174,7 +185,7 @@ export function SideNav(props: {
 							const f = props.features;
 							if (!f) return [item];
 
-							if (item.label === "Integrations") {
+							if (item.label === "Connect") {
 								const children =
 									item.children?.filter((child) => {
 										if (child.label === "Forward Collector")
@@ -199,6 +210,16 @@ export function SideNav(props: {
 										if (child.label === "Nautobot") return !!f.nautobotEnabled;
 										if (child.label === "Elastic (Kibana)")
 											return !!f.elasticEnabled;
+										return true;
+									}) ?? [];
+								if (children.length === 0) return [];
+								return [{ ...item, children }];
+							}
+
+							if (item.label === "Settings") {
+								const children =
+									item.children?.filter((child) => {
+										if (child.adminOnly) return !!props.isAdmin;
 										return true;
 									}) ?? [];
 								if (children.length === 0) return [];

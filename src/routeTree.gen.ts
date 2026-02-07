@@ -23,6 +23,7 @@ import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
+import { Route as DashboardPolicyReportsRouteImport } from './routes/dashboard/policy-reports'
 import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
 import { Route as DashboardGeminiRouteImport } from './routes/dashboard/gemini'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
@@ -40,7 +41,7 @@ import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/la
 import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$slug'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
-import { Route as DashboardWorkspacesWorkspaceIdSecuretrackRouteImport } from './routes/dashboard/workspaces/$workspaceId.securetrack'
+import { Route as DashboardWorkspacesWorkspaceIdPolicyReportsRouteImport } from './routes/dashboard/workspaces/$workspaceId.policy-reports'
 import { Route as DashboardDeploymentsDeploymentIdMapRouteImport } from './routes/dashboard/deployments/$deploymentId.map'
 
 const WebhooksRoute = WebhooksRouteImport.update({
@@ -111,6 +112,11 @@ const DashboardServicenowRoute = DashboardServicenowRouteImport.update({
 const DashboardS3Route = DashboardS3RouteImport.update({
   id: '/dashboard/s3',
   path: '/dashboard/s3',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardPolicyReportsRoute = DashboardPolicyReportsRouteImport.update({
+  id: '/dashboard/policy-reports',
+  path: '/dashboard/policy-reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
@@ -202,10 +208,10 @@ const DashboardDeploymentsDeploymentIdIndexRoute =
     path: '/dashboard/deployments/$deploymentId/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const DashboardWorkspacesWorkspaceIdSecuretrackRoute =
-  DashboardWorkspacesWorkspaceIdSecuretrackRouteImport.update({
-    id: '/securetrack',
-    path: '/securetrack',
+const DashboardWorkspacesWorkspaceIdPolicyReportsRoute =
+  DashboardWorkspacesWorkspaceIdPolicyReportsRouteImport.update({
+    id: '/policy-reports',
+    path: '/policy-reports',
     getParentRoute: () => DashboardWorkspacesWorkspaceIdRoute,
   } as any)
 const DashboardDeploymentsDeploymentIdMapRoute =
@@ -229,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -247,7 +254,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
-  '/dashboard/workspaces/$workspaceId/securetrack': typeof DashboardWorkspacesWorkspaceIdSecuretrackRoute
+  '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -282,7 +290,7 @@ export interface FileRoutesByTo {
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
-  '/dashboard/workspaces/$workspaceId/securetrack': typeof DashboardWorkspacesWorkspaceIdSecuretrackRoute
+  '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesById {
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/dashboard/forward': typeof DashboardForwardRoute
   '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -318,7 +327,7 @@ export interface FileRoutesById {
   '/dashboard/runs/': typeof DashboardRunsIndexRoute
   '/dashboard/workspaces/': typeof DashboardWorkspacesIndexRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
-  '/dashboard/workspaces/$workspaceId/securetrack': typeof DashboardWorkspacesWorkspaceIdSecuretrackRoute
+  '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
+    | '/dashboard/policy-reports'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
@@ -355,7 +365,7 @@ export interface FileRouteTypes {
     | '/dashboard/runs'
     | '/dashboard/workspaces'
     | '/dashboard/deployments/$deploymentId/map'
-    | '/dashboard/workspaces/$workspaceId/securetrack'
+    | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
+    | '/dashboard/policy-reports'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
@@ -390,7 +401,7 @@ export interface FileRouteTypes {
     | '/dashboard/runs'
     | '/dashboard/workspaces'
     | '/dashboard/deployments/$deploymentId/map'
-    | '/dashboard/workspaces/$workspaceId/securetrack'
+    | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId'
   id:
     | '__root__'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/dashboard/forward'
     | '/dashboard/gemini'
     | '/dashboard/integrations'
+    | '/dashboard/policy-reports'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
@@ -425,7 +437,7 @@ export interface FileRouteTypes {
     | '/dashboard/runs/'
     | '/dashboard/workspaces/'
     | '/dashboard/deployments/$deploymentId/map'
-    | '/dashboard/workspaces/$workspaceId/securetrack'
+    | '/dashboard/workspaces/$workspaceId/policy-reports'
     | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
 }
@@ -443,6 +455,7 @@ export interface RootRouteChildren {
   DashboardForwardRoute: typeof DashboardForwardRoute
   DashboardGeminiRoute: typeof DashboardGeminiRoute
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
+  DashboardPolicyReportsRoute: typeof DashboardPolicyReportsRoute
   DashboardS3Route: typeof DashboardS3Route
   DashboardServicenowRoute: typeof DashboardServicenowRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
@@ -564,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardS3RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/policy-reports': {
+      id: '/dashboard/policy-reports'
+      path: '/dashboard/policy-reports'
+      fullPath: '/dashboard/policy-reports'
+      preLoaderRoute: typeof DashboardPolicyReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/integrations': {
       id: '/dashboard/integrations'
       path: '/dashboard/integrations'
@@ -683,11 +703,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsDeploymentIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/workspaces/$workspaceId/securetrack': {
-      id: '/dashboard/workspaces/$workspaceId/securetrack'
-      path: '/securetrack'
-      fullPath: '/dashboard/workspaces/$workspaceId/securetrack'
-      preLoaderRoute: typeof DashboardWorkspacesWorkspaceIdSecuretrackRouteImport
+    '/dashboard/workspaces/$workspaceId/policy-reports': {
+      id: '/dashboard/workspaces/$workspaceId/policy-reports'
+      path: '/policy-reports'
+      fullPath: '/dashboard/workspaces/$workspaceId/policy-reports'
+      preLoaderRoute: typeof DashboardWorkspacesWorkspaceIdPolicyReportsRouteImport
       parentRoute: typeof DashboardWorkspacesWorkspaceIdRoute
     }
     '/dashboard/deployments/$deploymentId/map': {
@@ -701,13 +721,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardWorkspacesWorkspaceIdRouteChildren {
-  DashboardWorkspacesWorkspaceIdSecuretrackRoute: typeof DashboardWorkspacesWorkspaceIdSecuretrackRoute
+  DashboardWorkspacesWorkspaceIdPolicyReportsRoute: typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
 }
 
 const DashboardWorkspacesWorkspaceIdRouteChildren: DashboardWorkspacesWorkspaceIdRouteChildren =
   {
-    DashboardWorkspacesWorkspaceIdSecuretrackRoute:
-      DashboardWorkspacesWorkspaceIdSecuretrackRoute,
+    DashboardWorkspacesWorkspaceIdPolicyReportsRoute:
+      DashboardWorkspacesWorkspaceIdPolicyReportsRoute,
   }
 
 const DashboardWorkspacesWorkspaceIdRouteWithChildren =
@@ -729,6 +749,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardForwardRoute: DashboardForwardRoute,
   DashboardGeminiRoute: DashboardGeminiRoute,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
+  DashboardPolicyReportsRoute: DashboardPolicyReportsRoute,
   DashboardS3Route: DashboardS3Route,
   DashboardServicenowRoute: DashboardServicenowRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
