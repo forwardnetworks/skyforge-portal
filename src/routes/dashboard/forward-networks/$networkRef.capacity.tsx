@@ -25,9 +25,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryKeys } from "@/lib/query-keys";
 import {
 	type CapacityRollupRow,
+	type ForwardNetworkCapacityCoverageResponse,
 	type ForwardNetworkCapacityInventoryResponse,
+	type ForwardNetworkCapacitySnapshotDeltaResponse,
+	getForwardNetworkCapacityCoverage,
 	getForwardNetworkCapacityGrowth,
 	getForwardNetworkCapacityInventory,
+	getForwardNetworkCapacitySnapshotDelta,
 	getForwardNetworkCapacitySummary,
 	getForwardNetworkCapacityUnhealthyDevices,
 	listWorkspaceForwardNetworks,
@@ -340,6 +344,26 @@ function ForwardNetworkCapacityPage() {
 		staleTime: 30_000,
 	});
 
+	const coverage = useQuery<ForwardNetworkCapacityCoverageResponse>({
+		queryKey: queryKeys.forwardNetworkCapacityCoverage(workspaceId, networkRef),
+		queryFn: () => getForwardNetworkCapacityCoverage(workspaceId, networkRef),
+		enabled: Boolean(workspaceId && networkRef),
+		retry: false,
+		staleTime: 30_000,
+	});
+
+	const snapshotDelta = useQuery<ForwardNetworkCapacitySnapshotDeltaResponse>({
+		queryKey: queryKeys.forwardNetworkCapacitySnapshotDelta(
+			workspaceId,
+			networkRef,
+		),
+		queryFn: () =>
+			getForwardNetworkCapacitySnapshotDelta(workspaceId, networkRef),
+		enabled: Boolean(workspaceId && networkRef),
+		retry: false,
+		staleTime: 30_000,
+	});
+
 	const forwardNetworkId = String(
 		summary.data?.forwardNetworkId ?? inventory.data?.forwardNetworkId ?? "",
 	);
@@ -364,6 +388,22 @@ function ForwardNetworkCapacityPage() {
 					workspaceId,
 					networkRef,
 				),
+			});
+			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkCapacityCoverage(
+					workspaceId,
+					networkRef,
+				),
+			});
+			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkCapacitySnapshotDelta(
+					workspaceId,
+					networkRef,
+				),
+			});
+			await qc.invalidateQueries({
+				queryKey:
+					queryKeys.workspaceForwardNetworkCapacityPortfolio(workspaceId),
 			});
 			await qc.invalidateQueries({
 				// Prefix match for all growth queries for this forward network.
@@ -1610,7 +1650,7 @@ function ForwardNetworkCapacityPage() {
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
 				<Card>
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm">As Of</CardTitle>
@@ -1663,6 +1703,57 @@ function ForwardNetworkCapacityPage() {
 						)}
 					</CardContent>
 				</Card>
+				<Card>
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm">Coverage</CardTitle>
+					</CardHeader>
+					<CardContent className="text-sm space-y-1">
+						{(() => {
+							const c = coverage.data;
+							const pct = (num: number, den: number) => {
+								if (!den) return "—";
+								return `${((num / den) * 100).toFixed(0)}%`;
+							};
+							const ifacePct = c ? pct(c.ifacesWithSpeed, c.ifacesTotal) : "—";
+							const rollupDen = c
+								? c.rollupsInterfaceTotal + c.rollupsDeviceTotal
+								: 0;
+							const rollupPct = c ? pct(c.rollupsWithSamples, rollupDen) : "—";
+							return (
+								<div className="space-y-2">
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-xs text-muted-foreground">
+											Ifaces w/speed
+										</div>
+										<div className="font-medium">
+											{ifacePct}{" "}
+											<span className="text-xs text-muted-foreground">
+												({c ? `${c.ifacesWithSpeed}/${c.ifacesTotal}` : "—"})
+											</span>
+										</div>
+									</div>
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-xs text-muted-foreground">
+											Rollups w/samples
+										</div>
+										<div className="font-medium">
+											{rollupPct}{" "}
+											<span className="text-xs text-muted-foreground">
+												({c ? `${c.rollupsWithSamples}/${rollupDen}` : "—"})
+											</span>
+										</div>
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Inv:{" "}
+										<span className="font-mono">{c?.asOfInventory ?? "—"}</span>
+										{" · "}Rollups:{" "}
+										<span className="font-mono">{c?.asOfRollups ?? "—"}</span>
+									</div>
+								</div>
+							);
+						})()}
+					</CardContent>
+				</Card>
 			</div>
 
 			<Tabs defaultValue="interfaces" className="space-y-4">
@@ -1671,6 +1762,7 @@ function ForwardNetworkCapacityPage() {
 					<TabsTrigger value="devices">Devices</TabsTrigger>
 					<TabsTrigger value="growth">Growth</TabsTrigger>
 					<TabsTrigger value="routing">Routing/BGP</TabsTrigger>
+					<TabsTrigger value="changes">Changes</TabsTrigger>
 					<TabsTrigger value="health">Health</TabsTrigger>
 					<TabsTrigger value="raw">Raw</TabsTrigger>
 				</TabsList>
@@ -2947,6 +3039,177 @@ function ForwardNetworkCapacityPage() {
 									}
 									emptyText="No BGP cache yet. Click Refresh to enqueue."
 								/>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="changes" className="space-y-4">
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Snapshot Delta</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-2">
+							{snapshotDelta.isLoading ? (
+								<Skeleton className="h-24 w-full" />
+							) : snapshotDelta.isError ? (
+								<div className="text-destructive text-sm">
+									Failed to load snapshot delta:{" "}
+									{snapshotDelta.error instanceof Error
+										? snapshotDelta.error.message
+										: String(snapshotDelta.error)}
+								</div>
+							) : (
+								<div className="space-y-3">
+									<div className="text-sm text-muted-foreground">
+										Latest:{" "}
+										<span className="font-mono text-xs">
+											{snapshotDelta.data?.latestSnapshotId ?? "—"}
+										</span>
+										{" · "}Prev:{" "}
+										<span className="font-mono text-xs">
+											{snapshotDelta.data?.prevSnapshotId ?? "—"}
+										</span>
+									</div>
+									<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+										<Card>
+											<CardHeader className="pb-2">
+												<CardTitle className="text-sm">
+													Route Scale Changes
+												</CardTitle>
+											</CardHeader>
+											<CardContent>
+												<DataTable
+													columns={[
+														{
+															id: "device",
+															header: "Device",
+															cell: (r) => (
+																<span className="font-mono text-xs">
+																	{r.deviceName}
+																</span>
+															),
+															width: 220,
+														},
+														{
+															id: "vrf",
+															header: "VRF",
+															cell: (r) => (
+																<span className="font-mono text-xs">
+																	{r.vrf}
+																</span>
+															),
+															width: 160,
+														},
+														{
+															id: "v4",
+															header: "IPv4 Δ",
+															align: "right",
+															cell: (r) => {
+																const n = Number(r.ipv4Delta ?? 0);
+																const s = n > 0 ? `+${n}` : String(n);
+																return (
+																	<span className="text-xs tabular-nums">
+																		{s}
+																	</span>
+																);
+															},
+															width: 90,
+														},
+														{
+															id: "v6",
+															header: "IPv6 Δ",
+															align: "right",
+															cell: (r) => {
+																const n = Number(r.ipv6Delta ?? 0);
+																const s = n > 0 ? `+${n}` : String(n);
+																return (
+																	<span className="text-xs tabular-nums">
+																		{s}
+																	</span>
+																);
+															},
+															width: 90,
+														},
+													]}
+													rows={snapshotDelta.data?.routeDelta ?? []}
+													getRowId={(r) => `${r.deviceName}:${r.vrf}`}
+													emptyText="No route scale deltas between last two snapshots."
+													maxHeightClassName="max-h-[320px]"
+													minWidthClassName="min-w-0"
+												/>
+											</CardContent>
+										</Card>
+										<Card>
+											<CardHeader className="pb-2">
+												<CardTitle className="text-sm">
+													BGP Neighbor Changes
+												</CardTitle>
+											</CardHeader>
+											<CardContent>
+												<DataTable
+													columns={[
+														{
+															id: "device",
+															header: "Device",
+															cell: (r) => (
+																<span className="font-mono text-xs">
+																	{r.deviceName}
+																</span>
+															),
+															width: 220,
+														},
+														{
+															id: "vrf",
+															header: "VRF",
+															cell: (r) => (
+																<span className="font-mono text-xs">
+																	{r.vrf}
+																</span>
+															),
+															width: 160,
+														},
+														{
+															id: "nbr",
+															header: "Nbrs Δ",
+															align: "right",
+															cell: (r) => {
+																const n = Number(r.neighborsDelta ?? 0);
+																const s = n > 0 ? `+${n}` : String(n);
+																return (
+																	<span className="text-xs tabular-nums">
+																		{s}
+																	</span>
+																);
+															},
+															width: 80,
+														},
+														{
+															id: "est",
+															header: "Est Δ",
+															align: "right",
+															cell: (r) => {
+																const n = Number(r.establishedDelta ?? 0);
+																const s = n > 0 ? `+${n}` : String(n);
+																return (
+																	<span className="text-xs tabular-nums">
+																		{s}
+																	</span>
+																);
+															},
+															width: 80,
+														},
+													]}
+													rows={snapshotDelta.data?.bgpDelta ?? []}
+													getRowId={(r) => `${r.deviceName}:${r.vrf}`}
+													emptyText="No BGP scale deltas between last two snapshots."
+													maxHeightClassName="max-h-[320px]"
+													minWidthClassName="min-w-0"
+												/>
+											</CardContent>
+										</Card>
+									</div>
+								</div>
 							)}
 						</CardContent>
 					</Card>

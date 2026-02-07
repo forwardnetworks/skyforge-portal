@@ -1312,6 +1312,98 @@ export async function refreshForwardNetworkCapacityRollups(
 	);
 }
 
+export type ForwardNetworkCapacityCoverageResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOfRollups?: string;
+	asOfInventory?: string;
+	devicesTotal: number;
+	ifacesTotal: number;
+	ifacesWithSpeed: number;
+	ifacesAdminUp: number;
+	ifacesOperUp: number;
+	rollupsInterfaceTotal: number;
+	rollupsDeviceTotal: number;
+	rollupsWithSamples: number;
+};
+
+export async function getForwardNetworkCapacityCoverage(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacityCoverageResponse> {
+	return apiFetch<ForwardNetworkCapacityCoverageResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/coverage`,
+	);
+}
+
+export type CapacityRouteScaleDeltaRow = {
+	deviceName: string;
+	vrf: string;
+	ipv4Now: number;
+	ipv6Now: number;
+	ipv4Prev: number;
+	ipv6Prev: number;
+	ipv4Delta: number;
+	ipv6Delta: number;
+};
+
+export type CapacityBgpNeighborDeltaRow = {
+	deviceName: string;
+	vrf: string;
+	neighborsNow: number;
+	neighborsPrev: number;
+	neighborsDelta: number;
+	establishedNow: number;
+	establishedPrev: number;
+	establishedDelta: number;
+};
+
+export type ForwardNetworkCapacitySnapshotDeltaResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	latestSnapshotId?: string;
+	prevSnapshotId?: string;
+	routeDelta: CapacityRouteScaleDeltaRow[];
+	bgpDelta: CapacityBgpNeighborDeltaRow[];
+};
+
+export async function getForwardNetworkCapacitySnapshotDelta(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacitySnapshotDeltaResponse> {
+	return apiFetch<ForwardNetworkCapacitySnapshotDeltaResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/snapshot-delta`,
+	);
+}
+
+export type ForwardNetworkCapacityPortfolioItem = {
+	networkRef: string;
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	asOf?: string;
+	stale: boolean;
+	hotInterfaces: number;
+	soonestForecast?: string | null;
+	maxUtilMax?: number | null;
+	maxUtilP95?: number | null;
+};
+
+export type ForwardNetworkCapacityPortfolioResponse = {
+	workspaceId: string;
+	items: ForwardNetworkCapacityPortfolioItem[];
+};
+
+export async function getWorkspaceForwardNetworkCapacityPortfolio(
+	workspaceId: string,
+): Promise<ForwardNetworkCapacityPortfolioResponse> {
+	return apiFetch<ForwardNetworkCapacityPortfolioResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/capacity/forward-networks/portfolio`,
+	);
+}
+
 export type CapacityDeviceInventoryRow = {
 	deviceName: string;
 	tagNames?: string[];
