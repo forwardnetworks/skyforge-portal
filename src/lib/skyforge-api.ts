@@ -1378,6 +1378,45 @@ export async function getForwardNetworkCapacitySnapshotDelta(
 	);
 }
 
+export type ForwardNetworkCapacityUpgradeCandidate = {
+	scopeType: string;
+	device: string;
+	name: string;
+	members?: string[];
+	speedMbps: number;
+	worstDirection: string;
+	p95Util: number;
+	maxUtil: number;
+	p95Gbps: number;
+	maxGbps: number;
+	forecastCrossingTs?: string | null;
+	requiredSpeedMbps?: number | null;
+	recommendedSpeedMbps?: number | null;
+	reason?: string;
+	worstMemberMaxUtil?: number | null;
+};
+
+export type ForwardNetworkCapacityUpgradeCandidatesResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	items: ForwardNetworkCapacityUpgradeCandidate[];
+};
+
+export async function getForwardNetworkCapacityUpgradeCandidates(
+	workspaceId: string,
+	networkRef: string,
+	q: { window?: string } = {},
+): Promise<ForwardNetworkCapacityUpgradeCandidatesResponse> {
+	const qs = new URLSearchParams();
+	if (q.window) qs.set("window", q.window);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<ForwardNetworkCapacityUpgradeCandidatesResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/upgrade-candidates${suffix}`,
+	);
+}
+
 export type ForwardNetworkCapacityPortfolioItem = {
 	networkRef: string;
 	forwardNetworkId: string;
@@ -1429,6 +1468,9 @@ export type CapacityInterfaceInventoryRow = {
 	interfaceType?: string;
 	mtu?: number | null;
 	speedMbps?: number | null;
+	aggregateId?: string | null;
+	aggregationMemberNames?: string[];
+	aggregationConfiguredMemberNames?: string[];
 };
 
 export type CapacityRouteScaleRow = {
@@ -3467,6 +3509,132 @@ export type PolicyReportPutForwardCredentialsRequest = {
 	password?: string;
 };
 
+export type PolicyReportZone = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	subnets: string[];
+	createdBy: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportCreateZoneRequest = {
+	name: string;
+	description?: string;
+	subnets: string[];
+};
+
+export type PolicyReportUpdateZoneRequest = {
+	name: string;
+	description?: string;
+	subnets: string[];
+};
+
+export type PolicyReportListZonesResponse = {
+	zones: PolicyReportZone[];
+};
+
+export type PolicyReportRun = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId: string;
+	status: string;
+	error?: string;
+	createdBy: string;
+	startedAt: string;
+	finishedAt?: string;
+	request?: unknown;
+};
+
+export type PolicyReportRunCheck = {
+	runId: string;
+	checkId: string;
+	total: number;
+};
+
+export type PolicyReportRunFinding = {
+	runId: string;
+	checkId: string;
+	findingId: string;
+	riskScore: number;
+	assetKey?: string;
+	finding?: unknown;
+};
+
+export type PolicyReportFindingAgg = {
+	workspaceId: string;
+	forwardNetworkId: string;
+	checkId: string;
+	findingId: string;
+	status: string;
+	riskScore: number;
+	assetKey?: string;
+	finding?: unknown;
+	firstSeenAt: string;
+	lastSeenAt: string;
+	resolvedAt?: string;
+	lastRunId?: string;
+};
+
+export type PolicyReportCreateRunRequest = {
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId: string;
+	queryOptions?: JSONMap;
+	maxPerCheck?: number;
+	maxTotal?: number;
+};
+
+export type PolicyReportCreateRunResponse = {
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+	results?: Record<string, PolicyReportNQEResponse>;
+};
+
+export type PolicyReportListRunsResponse = {
+	runs: PolicyReportRun[];
+};
+
+export type PolicyReportGetRunResponse = {
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+};
+
+export type PolicyReportListRunFindingsResponse = {
+	findings: PolicyReportRunFinding[];
+};
+
+export type PolicyReportListFindingsResponse = {
+	findings: PolicyReportFindingAgg[];
+};
+
+export type PolicyReportCustomRunCheckSpec = {
+	checkId: string;
+	parameters?: JSONMap;
+};
+
+export type PolicyReportCreateCustomRunRequest = {
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId?: string;
+	title?: string;
+	checks: PolicyReportCustomRunCheckSpec[];
+	queryOptions?: JSONMap;
+	maxPerCheck?: number;
+	maxTotal?: number;
+};
+
+export type PolicyReportCreateCustomRunResponse = {
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+	results?: Record<string, PolicyReportNQEResponse>;
+};
+
 export type PolicyReportFlowTuple = {
 	srcIp: string;
 	dstIp: string;
@@ -3782,6 +3950,127 @@ export async function deleteWorkspacePolicyReportForwardNetworkCredentials(
 	return apiFetch<PolicyReportDecisionResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
 		{ method: "DELETE" },
+	);
+}
+
+export async function createWorkspacePolicyReportZone(
+	workspaceId: string,
+	forwardNetworkId: string,
+	body: PolicyReportCreateZoneRequest,
+): Promise<PolicyReportZone> {
+	return apiFetch<PolicyReportZone>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function listWorkspacePolicyReportZones(
+	workspaceId: string,
+	forwardNetworkId: string,
+): Promise<PolicyReportListZonesResponse> {
+	return apiFetch<PolicyReportListZonesResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
+	);
+}
+
+export async function updateWorkspacePolicyReportZone(
+	workspaceId: string,
+	forwardNetworkId: string,
+	zoneId: string,
+	body: PolicyReportUpdateZoneRequest,
+): Promise<PolicyReportZone> {
+	return apiFetch<PolicyReportZone>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
+		{ method: "PUT", body: JSON.stringify(body) },
+	);
+}
+
+export async function deleteWorkspacePolicyReportZone(
+	workspaceId: string,
+	forwardNetworkId: string,
+	zoneId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function createWorkspacePolicyReportRun(
+	workspaceId: string,
+	body: PolicyReportCreateRunRequest,
+): Promise<PolicyReportCreateRunResponse> {
+	return apiFetch<PolicyReportCreateRunResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function createWorkspacePolicyReportCustomRun(
+	workspaceId: string,
+	body: PolicyReportCreateCustomRunRequest,
+): Promise<PolicyReportCreateCustomRunResponse> {
+	return apiFetch<PolicyReportCreateCustomRunResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/custom`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function listWorkspacePolicyReportRuns(
+	workspaceId: string,
+	forwardNetworkId?: string,
+	packId?: string,
+	status?: string,
+	limit?: number,
+): Promise<PolicyReportListRunsResponse> {
+	const qs = new URLSearchParams();
+	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
+	if (packId) qs.set("packId", packId);
+	if (status) qs.set("status", status);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListRunsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs?${qs.toString()}`,
+	);
+}
+
+export async function getWorkspacePolicyReportRun(
+	workspaceId: string,
+	runId: string,
+): Promise<PolicyReportGetRunResponse> {
+	return apiFetch<PolicyReportGetRunResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}`,
+	);
+}
+
+export async function listWorkspacePolicyReportRunFindings(
+	workspaceId: string,
+	runId: string,
+	checkId?: string,
+	limit?: number,
+): Promise<PolicyReportListRunFindingsResponse> {
+	const qs = new URLSearchParams();
+	if (checkId) qs.set("checkId", checkId);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	const q = qs.toString();
+	return apiFetch<PolicyReportListRunFindingsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}/findings${q ? `?${q}` : ""}`,
+	);
+}
+
+export async function listWorkspacePolicyReportFindings(
+	workspaceId: string,
+	forwardNetworkId?: string,
+	checkId?: string,
+	status?: string,
+	limit?: number,
+): Promise<PolicyReportListFindingsResponse> {
+	const qs = new URLSearchParams();
+	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
+	if (checkId) qs.set("checkId", checkId);
+	if (status) qs.set("status", status);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListFindingsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/findings?${qs.toString()}`,
 	);
 }
 

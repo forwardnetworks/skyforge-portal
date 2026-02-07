@@ -3,6 +3,8 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import {
 	ArrowLeft,
 	Download,
+	FolderClock,
+	Layers,
 	Play,
 	RefreshCw,
 	Settings2,
@@ -63,24 +65,37 @@ import {
 	type PolicyReportPackDeltaResponse,
 	type PolicyReportRecertAssignment,
 	type PolicyReportRecertCampaignWithCounts,
+	type PolicyReportRun,
+	type PolicyReportRunCheck,
+	type PolicyReportRunFinding,
 	type PolicyReportRunPackResponse,
+	type PolicyReportZone,
 	approveWorkspacePolicyReportException,
 	attestWorkspacePolicyReportRecertAssignment,
+	createWorkspacePolicyReportCustomRun,
 	createWorkspacePolicyReportException,
 	createWorkspacePolicyReportForwardNetwork,
 	createWorkspacePolicyReportRecertCampaign,
+	createWorkspacePolicyReportRun,
+	createWorkspacePolicyReportZone,
 	deleteWorkspacePolicyReportForwardNetwork,
 	deleteWorkspacePolicyReportForwardNetworkCredentials,
+	deleteWorkspacePolicyReportZone,
 	generateWorkspacePolicyReportRecertAssignments,
 	getWorkspacePolicyReportCheck,
 	getWorkspacePolicyReportChecks,
 	getWorkspacePolicyReportForwardNetworkCredentials,
 	getWorkspacePolicyReportPacks,
+	getWorkspacePolicyReportRun,
 	getWorkspacePolicyReportSnapshots,
 	listWorkspacePolicyReportExceptions,
+	listWorkspacePolicyReportFindings,
 	listWorkspacePolicyReportForwardNetworks,
 	listWorkspacePolicyReportRecertAssignments,
 	listWorkspacePolicyReportRecertCampaigns,
+	listWorkspacePolicyReportRunFindings,
+	listWorkspacePolicyReportRuns,
+	listWorkspacePolicyReportZones,
 	putWorkspacePolicyReportForwardNetworkCredentials,
 	rejectWorkspacePolicyReportException,
 	runWorkspacePolicyReportCheck,
@@ -175,6 +190,72 @@ function resultsToCSV(value: unknown): string {
 	return [header, ...lines].join("\n");
 }
 
+function splitListText(text: string): string[] {
+	const parts = text
+		.split(/[\n,]+/g)
+		.map((s) => s.trim())
+		.filter(Boolean);
+	const out: string[] = [];
+	const seen = new Set<string>();
+	for (const p of parts) {
+		if (seen.has(p)) continue;
+		seen.add(p);
+		out.push(p);
+	}
+	return out;
+}
+
+function splitPortsText(text: string): number[] {
+	const parts = text
+		.split(/[\n,]+/g)
+		.map((s) => s.trim())
+		.filter(Boolean);
+	const out: number[] = [];
+	const seen = new Set<number>();
+	for (const p of parts) {
+		const n = Number(p);
+		if (!Number.isFinite(n) || n <= 0 || n > 65535) continue;
+		const v = Math.trunc(n);
+		if (seen.has(v)) continue;
+		seen.add(v);
+		out.push(v);
+	}
+	return out;
+}
+
+function parseFlowSuiteText(
+	text: string,
+): Array<{ srcIp: string; dstIp: string; ipProto: number; dstPort: number }> {
+	const lines = text.split(/\r?\n/g).map((l) => l.trim());
+	const out: Array<{
+		srcIp: string;
+		dstIp: string;
+		ipProto: number;
+		dstPort: number;
+	}> = [];
+	for (const ln of lines) {
+		if (!ln) continue;
+		if (ln.startsWith("#")) continue;
+		const parts = ln
+			.split(/[,\s]+/g)
+			.map((p) => p.trim())
+			.filter(Boolean);
+		if (parts.length < 2) continue;
+		const srcIp = parts[0] ?? "";
+		const dstIp = parts[1] ?? "";
+		const ipProto = Number(parts[2] ?? "6");
+		const dstPort = Number(parts[3] ?? "443");
+		if (!srcIp || !dstIp) continue;
+		out.push({
+			srcIp,
+			dstIp,
+			ipProto: Number.isFinite(ipProto) ? Math.trunc(ipProto) : 6,
+			dstPort: Number.isFinite(dstPort) ? Math.trunc(dstPort) : 443,
+		});
+	}
+	return out;
+}
+
 function severityVariant(
 	sev: string | undefined,
 ): "default" | "destructive" | "secondary" {
@@ -227,12 +308,34 @@ function PolicyReportsPage() {
 	const [flowFirewallsOnly, setFlowFirewallsOnly] = useState<boolean>(true);
 	const [flowIncludeImplicitDefault, setFlowIncludeImplicitDefault] =
 		useState<boolean>(false);
+
+	// Intent suite (batch flows)
+	const [intentFlowsText, setIntentFlowsText] = useState<string>("");
+	const [intentSuiteRows, setIntentSuiteRows] = useState<
+		Array<{
+			flow: { srcIp: string; dstIp: string; ipProto: number; dstPort: number };
+			permits: number;
+			denies: number;
+			noMatch: number;
+			resp: PolicyReportNQEResponse;
+		}>
+	>([]);
+	const [intentDetailOpen, setIntentDetailOpen] = useState<boolean>(false);
+	const [intentDetail, setIntentDetail] = useState<any>(null);
 	const [baselineSnapshotId, setBaselineSnapshotId] = useState<string>("");
 	const [compareSnapshotId, setCompareSnapshotId] = useState<string>("");
 	const [deltaPackId, setDeltaPackId] = useState<string>("");
 
 	const [activeTab, setActiveTab] = useState<
-		"flow" | "checks" | "packs" | "deltas" | "governance" | "change"
+		| "flow"
+		| "intent"
+		| "checks"
+		| "packs"
+		| "deltas"
+		| "segmentation"
+		| "runs"
+		| "governance"
+		| "change"
 	>("flow");
 	const [resultsByCheck, setResultsByCheck] = useState<
 		Record<string, PolicyReportNQEResponse>
@@ -314,6 +417,33 @@ function PolicyReportsPage() {
 		Record<string, string>
 	>({});
 
+	// Segmentation (zones)
+	const [zoneCreateOpen, setZoneCreateOpen] = useState<boolean>(false);
+	const [zoneName, setZoneName] = useState<string>("");
+	const [zoneDesc, setZoneDesc] = useState<string>("");
+	const [zoneSubnetsText, setZoneSubnetsText] = useState<string>("");
+	const [segSrcZoneId, setSegSrcZoneId] = useState<string>("");
+	const [segDstZoneId, setSegDstZoneId] = useState<string>("");
+	const [segSensitivePortsText, setSegSensitivePortsText] = useState<string>(
+		"22,23,3389,445,1433,1521,3306,5432,6379,9200,27017",
+	);
+	const [segAnyServiceResp, setSegAnyServiceResp] =
+		useState<PolicyReportNQEResponse | null>(null);
+	const [segSensitiveResp, setSegSensitiveResp] =
+		useState<PolicyReportNQEResponse | null>(null);
+	const [segAnyToZoneAnyServiceResp, setSegAnyToZoneAnyServiceResp] =
+		useState<PolicyReportNQEResponse | null>(null);
+	const [segAnyToZoneSensitiveResp, setSegAnyToZoneSensitiveResp] =
+		useState<PolicyReportNQEResponse | null>(null);
+	const [segStoredRun, setSegStoredRun] = useState<PolicyReportRun | null>(
+		null,
+	);
+
+	// Runs history
+	const [runDialogOpen, setRunDialogOpen] = useState<boolean>(false);
+	const [runDialogId, setRunDialogId] = useState<string>("");
+	const [runDialogCheckId, setRunDialogCheckId] = useState<string>("");
+
 	const checks = useQuery({
 		queryKey: queryKeys.policyReportsChecks(workspaceId),
 		queryFn: () => getWorkspacePolicyReportChecks(workspaceId),
@@ -390,6 +520,83 @@ function PolicyReportsPage() {
 			return getWorkspacePolicyReportForwardNetworkCredentials(
 				workspaceId,
 				net,
+			);
+		},
+		enabled: networkId.trim().length > 0,
+		retry: false,
+		staleTime: 10_000,
+	});
+
+	const zones = useQuery({
+		queryKey: queryKeys.policyReportsZones(workspaceId, networkId.trim()),
+		queryFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			return listWorkspacePolicyReportZones(workspaceId, net);
+		},
+		enabled: networkId.trim().length > 0,
+		retry: false,
+		staleTime: 10_000,
+	});
+
+	const runs = useQuery({
+		queryKey: queryKeys.policyReportsRuns(workspaceId, networkId.trim()),
+		queryFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			return listWorkspacePolicyReportRuns(
+				workspaceId,
+				net,
+				undefined,
+				undefined,
+				50,
+			);
+		},
+		enabled: networkId.trim().length > 0,
+		retry: false,
+		staleTime: 10_000,
+	});
+
+	const runDetail = useQuery({
+		queryKey: queryKeys.policyReportsRun(workspaceId, runDialogId),
+		queryFn: () => getWorkspacePolicyReportRun(workspaceId, runDialogId),
+		enabled: runDialogOpen && runDialogId.trim().length > 0,
+		retry: false,
+		staleTime: 10_000,
+	});
+
+	const runFindings = useQuery({
+		queryKey: queryKeys.policyReportsRunFindings(
+			workspaceId,
+			runDialogId,
+			runDialogCheckId.trim() || undefined,
+		),
+		queryFn: async () => {
+			const runId = runDialogId.trim();
+			if (!runId) throw new Error("Run ID is required");
+			return listWorkspacePolicyReportRunFindings(
+				workspaceId,
+				runId,
+				runDialogCheckId.trim() || undefined,
+				500,
+			);
+		},
+		enabled: runDialogOpen && runDialogId.trim().length > 0,
+		retry: false,
+		staleTime: 10_000,
+	});
+
+	const aggFindings = useQuery({
+		queryKey: queryKeys.policyReportsFindings(workspaceId, networkId.trim()),
+		queryFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			return listWorkspacePolicyReportFindings(
+				workspaceId,
+				net,
+				undefined,
+				"ACTIVE",
+				500,
 			);
 		},
 		enabled: networkId.trim().length > 0,
@@ -550,6 +757,126 @@ function PolicyReportsPage() {
 			}),
 	});
 
+	const runIntentSuite = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const flows = parseFlowSuiteText(intentFlowsText);
+			if (flows.length === 0)
+				throw new Error(
+					"Add at least one flow (srcIp dstIp [ipProto] [dstPort])",
+				);
+
+			const rows: Array<{
+				flow: {
+					srcIp: string;
+					dstIp: string;
+					ipProto: number;
+					dstPort: number;
+				};
+				permits: number;
+				denies: number;
+				noMatch: number;
+				resp: PolicyReportNQEResponse;
+			}> = [];
+
+			for (const f of flows) {
+				const resp = await runWorkspacePolicyReportCheck(workspaceId, {
+					networkId: net,
+					snapshotId: snapshotId.trim() || undefined,
+					checkId: "acl-flow-decision.nqe",
+					parameters: {
+						srcIp: f.srcIp,
+						dstIp: f.dstIp,
+						ipProto: f.ipProto,
+						dstPort: f.dstPort,
+						firewallsOnly: flowFirewallsOnly,
+						includeImplicitDefault: flowIncludeImplicitDefault,
+					},
+				});
+				const list = asArray((resp as any)?.results);
+				let permits = 0;
+				let denies = 0;
+				let noMatch = 0;
+				for (const r of list) {
+					const d = String((r as any)?.decision ?? "");
+					if (d === "PERMIT") permits++;
+					else if (d === "DENY") denies++;
+					else noMatch++;
+				}
+				rows.push({ flow: f, permits, denies, noMatch, resp });
+			}
+			return rows;
+		},
+		onSuccess: (rows) => {
+			setIntentSuiteRows(rows);
+			toast.success("Intent suite completed", {
+				description: `${rows.length} flows`,
+			});
+		},
+		onError: (e) =>
+			toast.error("Intent suite failed", { description: (e as Error).message }),
+	});
+
+	const storeIntentSuiteAsRuns = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const flows = parseFlowSuiteText(intentFlowsText);
+			if (flows.length === 0)
+				throw new Error(
+					"Add at least one flow (srcIp dstIp [ipProto] [dstPort])",
+				);
+			if (flows.length > 20)
+				throw new Error("Limit is 20 flows for stored runs");
+
+			const created: string[] = [];
+			for (const f of flows) {
+				const title = `${f.srcIp} -> ${f.dstIp} proto=${f.ipProto} port=${f.dstPort}`;
+				const resp = await createWorkspacePolicyReportCustomRun(workspaceId, {
+					forwardNetworkId: net,
+					snapshotId: snapshotId.trim() || undefined,
+					packId: "intent",
+					title,
+					checks: [
+						{
+							checkId: "acl-flow-decision.nqe",
+							parameters: {
+								srcIp: f.srcIp,
+								dstIp: f.dstIp,
+								ipProto: f.ipProto,
+								dstPort: f.dstPort,
+								firewallsOnly: flowFirewallsOnly,
+								includeImplicitDefault: flowIncludeImplicitDefault,
+							},
+						},
+						{
+							checkId: "nat-flow-matches.nqe",
+							parameters: {
+								srcIp: f.srcIp,
+								dstIp: f.dstIp,
+								ipProto: f.ipProto,
+								dstPort: f.dstPort,
+							},
+						},
+					],
+				});
+				created.push(resp.run.id);
+			}
+			return created;
+		},
+		onSuccess: async (ids) => {
+			toast.success("Stored intent runs", {
+				description: `${ids.length} runs`,
+			});
+			await runs.refetch();
+		},
+		onError: (e) =>
+			toast.error("Store intent runs failed", {
+				description: (e as Error).message,
+			}),
+	});
+
 	const runPack = useMutation({
 		mutationFn: async (packId: string) => {
 			const net = networkId.trim();
@@ -567,6 +894,36 @@ function PolicyReportsPage() {
 		},
 		onError: (e) =>
 			toast.error("Pack failed", { description: (e as Error).message }),
+	});
+
+	const runPackAndStore = useMutation({
+		mutationFn: async (packId: string) => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			if (!packId.trim()) throw new Error("Pack is required");
+			return createWorkspacePolicyReportRun(workspaceId, {
+				forwardNetworkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				packId: packId.trim(),
+			});
+		},
+		onSuccess: async (resp) => {
+			if (resp.results) {
+				setResultsByCheck((prev) => ({ ...prev, ...resp.results }));
+				setLastPackRun({
+					packId: resp.run.packId,
+					networkId: resp.run.forwardNetworkId,
+					snapshotId: resp.run.snapshotId,
+					results: resp.results,
+				});
+			}
+			toast.success("Pack stored", { description: resp.run.id });
+			await runs.refetch();
+		},
+		onError: (e) =>
+			toast.error("Pack store failed", {
+				description: (e as Error).message,
+			}),
 	});
 
 	const runDelta = useMutation({
@@ -687,6 +1044,225 @@ function PolicyReportsPage() {
 		},
 		onError: (e) =>
 			toast.error("Clear credentials failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const createZone = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const name = zoneName.trim();
+			if (!name) throw new Error("Zone name is required");
+			const subnets = splitListText(zoneSubnetsText);
+			if (subnets.length === 0)
+				throw new Error("At least one subnet is required");
+			return createWorkspacePolicyReportZone(workspaceId, net, {
+				name,
+				description: zoneDesc.trim() || undefined,
+				subnets,
+			});
+		},
+		onSuccess: async (z) => {
+			toast.success("Zone created", { description: z.name });
+			setZoneCreateOpen(false);
+			setZoneName("");
+			setZoneDesc("");
+			setZoneSubnetsText("");
+			await zones.refetch();
+		},
+		onError: (e) =>
+			toast.error("Create zone failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const deleteZone = useMutation({
+		mutationFn: async (zoneId: string) => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			return deleteWorkspacePolicyReportZone(workspaceId, net, zoneId);
+		},
+		onSuccess: async () => {
+			toast.success("Zone deleted");
+			await zones.refetch();
+		},
+		onError: (e) =>
+			toast.error("Delete zone failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runSegAnyService = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const zonesList: PolicyReportZone[] = zones.data?.zones ?? [];
+			const src = zonesList.find((z) => z.id === segSrcZoneId);
+			const dst = zonesList.find((z) => z.id === segDstZoneId);
+			if (!src || !dst) throw new Error("Select source and destination zones");
+			return runWorkspacePolicyReportCheck(workspaceId, {
+				networkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				checkId: "acl-zone-to-zone-any-service.nqe",
+				parameters: {
+					srcSubnets: src.subnets,
+					dstSubnets: dst.subnets,
+					firewallsOnly: true,
+					includeImplicitDefault: false,
+				},
+			});
+		},
+		onSuccess: (resp) => {
+			setSegAnyServiceResp(resp);
+			toast.success("Segmentation check completed");
+		},
+		onError: (e) =>
+			toast.error("Segmentation check failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runSegSensitivePorts = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const zonesList: PolicyReportZone[] = zones.data?.zones ?? [];
+			const src = zonesList.find((z) => z.id === segSrcZoneId);
+			const dst = zonesList.find((z) => z.id === segDstZoneId);
+			if (!src || !dst) throw new Error("Select source and destination zones");
+			const ports = splitPortsText(segSensitivePortsText);
+			if (ports.length === 0) throw new Error("Sensitive ports is required");
+			return runWorkspacePolicyReportCheck(workspaceId, {
+				networkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				checkId: "acl-zone-to-zone-sensitive-ports.nqe",
+				parameters: {
+					srcSubnets: src.subnets,
+					dstSubnets: dst.subnets,
+					sensitivePorts: ports,
+					firewallsOnly: true,
+					includeImplicitDefault: false,
+				},
+			});
+		},
+		onSuccess: (resp) => {
+			setSegSensitiveResp(resp);
+			toast.success("Sensitive ports check completed");
+		},
+		onError: (e) =>
+			toast.error("Sensitive ports check failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const storeSegmentationReport = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const zonesList: PolicyReportZone[] = zones.data?.zones ?? [];
+			const src = zonesList.find((z) => z.id === segSrcZoneId);
+			const dst = zonesList.find((z) => z.id === segDstZoneId);
+			if (!src || !dst) throw new Error("Select source and destination zones");
+			const ports = splitPortsText(segSensitivePortsText);
+			if (ports.length === 0) throw new Error("Sensitive ports is required");
+			const title = `${src.name} -> ${dst.name}`;
+			return createWorkspacePolicyReportCustomRun(workspaceId, {
+				forwardNetworkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				packId: "segmentation",
+				title,
+				checks: [
+					{
+						checkId: "acl-zone-to-zone-any-service.nqe",
+						parameters: {
+							srcSubnets: src.subnets,
+							dstSubnets: dst.subnets,
+							firewallsOnly: true,
+							includeImplicitDefault: false,
+						},
+					},
+					{
+						checkId: "acl-zone-to-zone-sensitive-ports.nqe",
+						parameters: {
+							srcSubnets: src.subnets,
+							dstSubnets: dst.subnets,
+							sensitivePorts: ports,
+							firewallsOnly: true,
+							includeImplicitDefault: false,
+						},
+					},
+				],
+			});
+		},
+		onSuccess: async (resp) => {
+			setSegStoredRun(resp.run);
+			toast.success("Segmentation report stored", {
+				description: resp.run.id,
+			});
+			await runs.refetch();
+		},
+		onError: (e) =>
+			toast.error("Store segmentation report failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runAnyToZoneAnyService = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const zonesList: PolicyReportZone[] = zones.data?.zones ?? [];
+			const dst = zonesList.find((z) => z.id === segDstZoneId);
+			if (!dst) throw new Error("Select a destination zone");
+			return runWorkspacePolicyReportCheck(workspaceId, {
+				networkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				checkId: "acl-any-to-zone-any-service.nqe",
+				parameters: {
+					dstSubnets: dst.subnets,
+					firewallsOnly: true,
+					includeImplicitDefault: false,
+				},
+			});
+		},
+		onSuccess: (resp) => {
+			setSegAnyToZoneAnyServiceResp(resp);
+			toast.success("Any-to-zone any-service check completed");
+		},
+		onError: (e) =>
+			toast.error("Any-to-zone any-service failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runAnyToZoneSensitivePorts = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const zonesList: PolicyReportZone[] = zones.data?.zones ?? [];
+			const dst = zonesList.find((z) => z.id === segDstZoneId);
+			if (!dst) throw new Error("Select a destination zone");
+			const ports = splitPortsText(segSensitivePortsText);
+			if (ports.length === 0) throw new Error("Sensitive ports is required");
+			return runWorkspacePolicyReportCheck(workspaceId, {
+				networkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				checkId: "acl-any-to-zone-sensitive-ports.nqe",
+				parameters: {
+					dstSubnets: dst.subnets,
+					sensitivePorts: ports,
+					firewallsOnly: true,
+					includeImplicitDefault: false,
+				},
+			});
+		},
+		onSuccess: (resp) => {
+			setSegAnyToZoneSensitiveResp(resp);
+			toast.success("Any-to-zone sensitive ports check completed");
+		},
+		onError: (e) =>
+			toast.error("Any-to-zone sensitive ports failed", {
 				description: (e as Error).message,
 			}),
 	});
@@ -1498,8 +2074,11 @@ function PolicyReportsPage() {
 			<Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
 				<TabsList>
 					<TabsTrigger value="flow">Flow</TabsTrigger>
+					<TabsTrigger value="intent">Intent</TabsTrigger>
+					<TabsTrigger value="segmentation">Segmentation</TabsTrigger>
 					<TabsTrigger value="checks">Checks</TabsTrigger>
 					<TabsTrigger value="packs">Packs</TabsTrigger>
+					<TabsTrigger value="runs">Runs</TabsTrigger>
 					<TabsTrigger value="deltas">Deltas</TabsTrigger>
 					<TabsTrigger value="governance">Governance</TabsTrigger>
 					<TabsTrigger value="change">Change Planning</TabsTrigger>
@@ -2059,6 +2638,899 @@ function PolicyReportsPage() {
 					) : null}
 				</TabsContent>
 
+				<TabsContent value="intent" className="space-y-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Connectivity Intent Suite</CardTitle>
+							<CardDescription>
+								Run a batch of flow intents using{" "}
+								<span className="font-mono">acl-flow-decision.nqe</span>.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Flows</div>
+								<Textarea
+									value={intentFlowsText}
+									onChange={(e) => setIntentFlowsText(e.target.value)}
+									rows={6}
+									placeholder={
+										"# srcIp dstIp ipProto dstPort\n10.0.0.10 10.0.0.20 6 443\n10.0.0.10 10.0.0.30 6 22"
+									}
+									className="font-mono text-xs"
+								/>
+								<p className="text-xs text-muted-foreground">
+									Format per line:{" "}
+									<span className="font-mono">
+										srcIp dstIp [ipProto] [dstPort]
+									</span>
+									. Separators: spaces or commas.
+								</p>
+							</div>
+
+							<div className="flex flex-wrap items-center gap-2">
+								<Button
+									onClick={() => runIntentSuite.mutate()}
+									disabled={runIntentSuite.isPending}
+								>
+									<Play className="mr-2 h-4 w-4" />
+									Run suite
+								</Button>
+								<Button
+									variant="secondary"
+									onClick={() => storeIntentSuiteAsRuns.mutate()}
+									disabled={storeIntentSuiteAsRuns.isPending}
+								>
+									<FolderClock className="mr-2 h-4 w-4" />
+									Store as runs (per flow)
+								</Button>
+								<Badge variant="outline">
+									Firewalls only:{" "}
+									<span className="font-mono">
+										{flowFirewallsOnly ? "true" : "false"}
+									</span>
+								</Badge>
+								<Badge variant="outline">
+									Include implicit/default:{" "}
+									<span className="font-mono">
+										{flowIncludeImplicitDefault ? "true" : "false"}
+									</span>
+								</Badge>
+							</div>
+						</CardContent>
+					</Card>
+
+					{intentSuiteRows.length > 0 ? (
+						<Card>
+							<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+								<div className="space-y-1">
+									<CardTitle className="text-base">Suite Results</CardTitle>
+									<CardDescription>
+										Click a row to view the raw decision results.
+									</CardDescription>
+								</div>
+								<div className="flex items-center gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => {
+											const net = networkId.trim();
+											downloadJSON(
+												`intent-suite_${net || "network"}_${snapshotId.trim() || "latest"}.json`,
+												intentSuiteRows,
+											);
+										}}
+									>
+										<Download className="mr-2 h-4 w-4" />
+										Export
+									</Button>
+								</div>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<div className="rounded-md border">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Flow</TableHead>
+												<TableHead className="text-right">PERMIT</TableHead>
+												<TableHead className="text-right">DENY</TableHead>
+												<TableHead className="text-right">NO_MATCH</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{intentSuiteRows.map((r, idx) => {
+												const f = r.flow;
+												const flowStr = `${f.srcIp} -> ${f.dstIp} proto=${f.ipProto} port=${f.dstPort}`;
+												return (
+													<TableRow
+														key={`${flowStr}:${idx}`}
+														className="cursor-pointer"
+														onClick={() => {
+															setIntentDetail({
+																flow: f,
+																summary: r,
+																raw: r.resp,
+															});
+															setIntentDetailOpen(true);
+														}}
+													>
+														<TableCell className="font-mono text-xs">
+															{flowStr}
+														</TableCell>
+														<TableCell className="text-right">
+															<Badge
+																variant={
+																	r.permits > 0 ? "default" : "secondary"
+																}
+															>
+																{r.permits}
+															</Badge>
+														</TableCell>
+														<TableCell className="text-right">
+															<Badge
+																variant={
+																	r.denies > 0 ? "destructive" : "secondary"
+																}
+															>
+																{r.denies}
+															</Badge>
+														</TableCell>
+														<TableCell className="text-right">
+															{r.noMatch}
+														</TableCell>
+													</TableRow>
+												);
+											})}
+										</TableBody>
+									</Table>
+								</div>
+							</CardContent>
+						</Card>
+					) : null}
+
+					<Dialog open={intentDetailOpen} onOpenChange={setIntentDetailOpen}>
+						<DialogContent className="max-w-4xl">
+							<DialogHeader>
+								<DialogTitle>Intent details</DialogTitle>
+								<DialogDescription>
+									{intentDetail?.flow ? (
+										<span className="font-mono">
+											{intentDetail.flow.srcIp} -&gt; {intentDetail.flow.dstIp}{" "}
+											proto={intentDetail.flow.ipProto} port=
+											{intentDetail.flow.dstPort}
+										</span>
+									) : null}
+								</DialogDescription>
+							</DialogHeader>
+							<Textarea
+								readOnly
+								className="font-mono text-xs"
+								rows={18}
+								value={jsonPretty(intentDetail?.raw ?? {})}
+							/>
+						</DialogContent>
+					</Dialog>
+				</TabsContent>
+
+				<TabsContent value="segmentation" className="space-y-4">
+					<Card>
+						<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+							<div className="space-y-1">
+								<CardTitle className="flex items-center gap-2">
+									<Layers className="h-5 w-5" />
+									Zones
+								</CardTitle>
+								<CardDescription>
+									Define zones (CIDR sets) to drive zone-to-zone policy checks.
+								</CardDescription>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									onClick={() => setZoneCreateOpen(true)}
+									disabled={!networkId.trim()}
+								>
+									Add zone
+								</Button>
+								<Button
+									variant="outline"
+									onClick={() => zones.refetch()}
+									disabled={!networkId.trim() || zones.isFetching}
+								>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Refresh
+								</Button>
+							</div>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							{zones.isLoading ? (
+								<div className="text-sm text-muted-foreground">
+									Loading zones…
+								</div>
+							) : null}
+							{zones.isError ? (
+								<div className="text-sm text-destructive">
+									Failed to load zones: {(zones.error as Error).message}
+								</div>
+							) : null}
+							{(() => {
+								const list: PolicyReportZone[] = zones.data?.zones ?? [];
+								if (list.length === 0) {
+									return (
+										<div className="text-sm text-muted-foreground">
+											No zones yet.
+										</div>
+									);
+								}
+								return (
+									<div className="rounded-md border">
+										<Table>
+											<TableHeader>
+												<TableRow>
+													<TableHead>Name</TableHead>
+													<TableHead>Subnets</TableHead>
+													<TableHead className="text-right">Actions</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{list.map((z) => (
+													<TableRow key={z.id}>
+														<TableCell className="font-medium">
+															{z.name}
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{(z.subnets ?? []).join(", ")}
+														</TableCell>
+														<TableCell className="text-right">
+															<Button
+																variant="outline"
+																size="sm"
+																disabled={deleteZone.isPending}
+																onClick={() => {
+																	if (confirm(`Delete zone "${z.name}"?`)) {
+																		deleteZone.mutate(z.id);
+																	}
+																}}
+															>
+																Delete
+															</Button>
+														</TableCell>
+													</TableRow>
+												))}
+											</TableBody>
+										</Table>
+									</div>
+								);
+							})()}
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<Shield className="h-5 w-5" />
+								Zone-to-Zone Checks
+							</CardTitle>
+							<CardDescription>
+								Run segmentation checks using the modeled firewall ACL view.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							{(() => {
+								const list: PolicyReportZone[] = zones.data?.zones ?? [];
+								return (
+									<div className="grid gap-4 md:grid-cols-2">
+										<div className="space-y-2">
+											<div className="text-sm font-medium">Source zone</div>
+											<Select
+												value={segSrcZoneId}
+												onValueChange={setSegSrcZoneId}
+											>
+												<SelectTrigger>
+													<SelectValue placeholder="Select source zone" />
+												</SelectTrigger>
+												<SelectContent>
+													{list.map((z) => (
+														<SelectItem key={z.id} value={z.id}>
+															{z.name}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-2">
+											<div className="text-sm font-medium">
+												Destination zone
+											</div>
+											<Select
+												value={segDstZoneId}
+												onValueChange={setSegDstZoneId}
+											>
+												<SelectTrigger>
+													<SelectValue placeholder="Select destination zone" />
+												</SelectTrigger>
+												<SelectContent>
+													{list.map((z) => (
+														<SelectItem key={z.id} value={z.id}>
+															{z.name}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-2 md:col-span-2">
+											<div className="text-sm font-medium">Sensitive ports</div>
+											<Input
+												value={segSensitivePortsText}
+												onChange={(e) =>
+													setSegSensitivePortsText(e.target.value)
+												}
+												placeholder="22,3389,445,…"
+											/>
+											<p className="text-xs text-muted-foreground">
+												Comma or newline separated.
+											</p>
+										</div>
+										<div className="flex flex-wrap gap-2 md:col-span-2">
+											<Button
+												variant="outline"
+												onClick={() => runSegAnyService.mutate()}
+												disabled={runSegAnyService.isPending}
+											>
+												<Play className="mr-2 h-4 w-4" />
+												Any-service permits
+											</Button>
+											<Button
+												variant="outline"
+												onClick={() => runSegSensitivePorts.mutate()}
+												disabled={runSegSensitivePorts.isPending}
+											>
+												<Play className="mr-2 h-4 w-4" />
+												Sensitive ports
+											</Button>
+											<Button
+												variant="outline"
+												onClick={() => runAnyToZoneAnyService.mutate()}
+												disabled={runAnyToZoneAnyService.isPending}
+											>
+												<Play className="mr-2 h-4 w-4" />
+												Any to dst (any-service)
+											</Button>
+											<Button
+												variant="outline"
+												onClick={() => runAnyToZoneSensitivePorts.mutate()}
+												disabled={runAnyToZoneSensitivePorts.isPending}
+											>
+												<Play className="mr-2 h-4 w-4" />
+												Any to dst (sensitive ports)
+											</Button>
+											<Button
+												onClick={() => storeSegmentationReport.mutate()}
+												disabled={storeSegmentationReport.isPending}
+											>
+												<FolderClock className="mr-2 h-4 w-4" />
+												Run and store report
+											</Button>
+											{segStoredRun ? (
+												<Badge variant="secondary">
+													Stored run:{" "}
+													<span className="font-mono">{segStoredRun.id}</span>
+												</Badge>
+											) : null}
+										</div>
+									</div>
+								);
+							})()}
+						</CardContent>
+					</Card>
+
+					{segAnyServiceResp ? (
+						<Card>
+							<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+								<div className="space-y-1">
+									<CardTitle className="text-base">
+										Zone-to-zone any-service permits
+									</CardTitle>
+									<CardDescription>
+										Check:{" "}
+										<span className="font-mono">
+											acl-zone-to-zone-any-service.nqe
+										</span>
+									</CardDescription>
+								</div>
+								<div className="flex items-center gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => {
+											const net = networkId.trim();
+											downloadJSON(
+												`segmentation_any-service_${net || "network"}_${snapshotId.trim() || "latest"}.json`,
+												segAnyServiceResp,
+											);
+										}}
+									>
+										<Download className="mr-2 h-4 w-4" />
+										Export
+									</Button>
+								</div>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<div className="flex flex-wrap items-center gap-2 text-sm">
+									<Badge variant="secondary">
+										Total: {Number(segAnyServiceResp.total ?? 0)}
+									</Badge>
+									<Badge variant="secondary">
+										Snapshot:{" "}
+										<span className="font-mono">
+											{segAnyServiceResp.snapshotId ?? "(unknown)"}
+										</span>
+									</Badge>
+								</div>
+								<Textarea
+									readOnly
+									className="font-mono text-xs"
+									rows={10}
+									value={jsonPretty(segAnyServiceResp)}
+								/>
+							</CardContent>
+						</Card>
+					) : null}
+
+					{segSensitiveResp ? (
+						<Card>
+							<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+								<div className="space-y-1">
+									<CardTitle className="text-base">
+										Zone-to-zone sensitive ports permits
+									</CardTitle>
+									<CardDescription>
+										Check:{" "}
+										<span className="font-mono">
+											acl-zone-to-zone-sensitive-ports.nqe
+										</span>
+									</CardDescription>
+								</div>
+								<div className="flex items-center gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => {
+											const net = networkId.trim();
+											downloadJSON(
+												`segmentation_sensitive-ports_${net || "network"}_${snapshotId.trim() || "latest"}.json`,
+												segSensitiveResp,
+											);
+										}}
+									>
+										<Download className="mr-2 h-4 w-4" />
+										Export
+									</Button>
+								</div>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<div className="flex flex-wrap items-center gap-2 text-sm">
+									<Badge variant="secondary">
+										Total: {Number(segSensitiveResp.total ?? 0)}
+									</Badge>
+									<Badge variant="secondary">
+										Snapshot:{" "}
+										<span className="font-mono">
+											{segSensitiveResp.snapshotId ?? "(unknown)"}
+										</span>
+									</Badge>
+								</div>
+								<Textarea
+									readOnly
+									className="font-mono text-xs"
+									rows={10}
+									value={jsonPretty(segSensitiveResp)}
+								/>
+							</CardContent>
+						</Card>
+					) : null}
+
+					{segAnyToZoneAnyServiceResp ? (
+						<Card>
+							<CardHeader>
+								<CardTitle className="text-base">
+									Any source to destination zone (any-service)
+								</CardTitle>
+								<CardDescription>
+									Check:{" "}
+									<span className="font-mono">
+										acl-any-to-zone-any-service.nqe
+									</span>
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<div className="flex flex-wrap items-center gap-2 text-sm">
+									<Badge variant="secondary">
+										Total: {Number(segAnyToZoneAnyServiceResp.total ?? 0)}
+									</Badge>
+									<Badge variant="secondary">
+										Snapshot:{" "}
+										<span className="font-mono">
+											{segAnyToZoneAnyServiceResp.snapshotId ?? "(unknown)"}
+										</span>
+									</Badge>
+								</div>
+								<Textarea
+									readOnly
+									className="font-mono text-xs"
+									rows={10}
+									value={jsonPretty(segAnyToZoneAnyServiceResp)}
+								/>
+							</CardContent>
+						</Card>
+					) : null}
+
+					{segAnyToZoneSensitiveResp ? (
+						<Card>
+							<CardHeader>
+								<CardTitle className="text-base">
+									Any source to destination zone (sensitive ports)
+								</CardTitle>
+								<CardDescription>
+									Check:{" "}
+									<span className="font-mono">
+										acl-any-to-zone-sensitive-ports.nqe
+									</span>
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<div className="flex flex-wrap items-center gap-2 text-sm">
+									<Badge variant="secondary">
+										Total: {Number(segAnyToZoneSensitiveResp.total ?? 0)}
+									</Badge>
+									<Badge variant="secondary">
+										Snapshot:{" "}
+										<span className="font-mono">
+											{segAnyToZoneSensitiveResp.snapshotId ?? "(unknown)"}
+										</span>
+									</Badge>
+								</div>
+								<Textarea
+									readOnly
+									className="font-mono text-xs"
+									rows={10}
+									value={jsonPretty(segAnyToZoneSensitiveResp)}
+								/>
+							</CardContent>
+						</Card>
+					) : null}
+				</TabsContent>
+
+				<TabsContent value="runs" className="space-y-4">
+					<Card>
+						<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+							<div className="space-y-1">
+								<CardTitle className="flex items-center gap-2">
+									<FolderClock className="h-5 w-5" />
+									Runs
+								</CardTitle>
+								<CardDescription>
+									Stored Policy Report runs for this Forward network.
+								</CardDescription>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									onClick={() => runs.refetch()}
+									disabled={!networkId.trim() || runs.isFetching}
+								>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Refresh
+								</Button>
+							</div>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							{runs.isLoading ? (
+								<div className="text-sm text-muted-foreground">
+									Loading runs…
+								</div>
+							) : null}
+							{runs.isError ? (
+								<div className="text-sm text-destructive">
+									Failed to load runs: {(runs.error as Error).message}
+								</div>
+							) : null}
+							{(() => {
+								const list: PolicyReportRun[] = runs.data?.runs ?? [];
+								if (list.length === 0) {
+									return (
+										<div className="text-sm text-muted-foreground">
+											No stored runs yet.
+										</div>
+									);
+								}
+								return (
+									<div className="rounded-md border">
+										<Table>
+											<TableHeader>
+												<TableRow>
+													<TableHead>Started</TableHead>
+													<TableHead>Pack</TableHead>
+													<TableHead>Status</TableHead>
+													<TableHead>Snapshot</TableHead>
+													<TableHead>Run ID</TableHead>
+													<TableHead className="text-right">Actions</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{list.map((r) => (
+													<TableRow key={r.id}>
+														<TableCell className="text-xs text-muted-foreground">
+															{String(r.startedAt ?? "")}
+														</TableCell>
+														<TableCell>
+															<Badge variant="secondary">{r.packId}</Badge>
+														</TableCell>
+														<TableCell>
+															<Badge
+																variant={
+																	String(r.status).toUpperCase() === "FAILED"
+																		? "destructive"
+																		: "secondary"
+																}
+															>
+																{r.status}
+															</Badge>
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{r.snapshotId || "latest"}
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{r.id}
+														</TableCell>
+														<TableCell className="text-right">
+															<Button
+																variant="outline"
+																size="sm"
+																onClick={() => {
+																	setRunDialogId(r.id);
+																	setRunDialogCheckId("");
+																	setRunDialogOpen(true);
+																}}
+															>
+																View
+															</Button>
+														</TableCell>
+													</TableRow>
+												))}
+											</TableBody>
+										</Table>
+									</div>
+								);
+							})()}
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+							<div className="space-y-1">
+								<CardTitle className="text-base">Active Findings</CardTitle>
+								<CardDescription>
+									Aggregated posture findings across stored runs
+									(violation-style checks only).
+								</CardDescription>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									onClick={() => aggFindings.refetch()}
+									disabled={!networkId.trim() || aggFindings.isFetching}
+								>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Refresh
+								</Button>
+							</div>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							{aggFindings.isLoading ? (
+								<div className="text-sm text-muted-foreground">Loading…</div>
+							) : null}
+							{aggFindings.isError ? (
+								<div className="text-sm text-destructive">
+									Failed: {(aggFindings.error as Error).message}
+								</div>
+							) : null}
+							{(() => {
+								const list = aggFindings.data?.findings ?? [];
+								if (!Array.isArray(list) || list.length === 0) {
+									return (
+										<div className="text-sm text-muted-foreground">
+											No active findings.
+										</div>
+									);
+								}
+								const rows = list
+									.slice()
+									.sort(
+										(a: any, b: any) =>
+											Number(b?.riskScore ?? 0) - Number(a?.riskScore ?? 0),
+									)
+									.slice(0, 200);
+								return (
+									<div className="rounded-md border">
+										<Table>
+											<TableHeader>
+												<TableRow>
+													<TableHead>Risk</TableHead>
+													<TableHead>Check</TableHead>
+													<TableHead>Asset</TableHead>
+													<TableHead>Last seen</TableHead>
+													<TableHead className="text-right">Details</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{rows.map((f: any) => (
+													<TableRow
+														key={`${String(f?.checkId ?? "")}:${String(f?.findingId ?? "")}`}
+													>
+														<TableCell className="text-right">
+															<Badge
+																variant={
+																	Number(f?.riskScore ?? 0) >= 80
+																		? "destructive"
+																		: Number(f?.riskScore ?? 0) >= 50
+																			? "default"
+																			: "secondary"
+																}
+															>
+																{Number(f?.riskScore ?? 0)}
+															</Badge>
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{String(f?.checkId ?? "")}
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{String(f?.assetKey ?? "") || "—"}
+														</TableCell>
+														<TableCell className="text-xs text-muted-foreground">
+															{String(f?.lastSeenAt ?? "")}
+														</TableCell>
+														<TableCell className="text-right">
+															<Button
+																variant="outline"
+																size="sm"
+																onClick={() => {
+																	setGenericEvidence(
+																		jsonPretty(f?.finding ?? {}),
+																	);
+																	setGenericEvidenceOpen(true);
+																}}
+															>
+																View
+															</Button>
+														</TableCell>
+													</TableRow>
+												))}
+											</TableBody>
+										</Table>
+									</div>
+								);
+							})()}
+							<p className="text-xs text-muted-foreground">
+								Showing up to 200 findings (sorted by riskScore).
+							</p>
+						</CardContent>
+					</Card>
+
+					<Dialog
+						open={runDialogOpen}
+						onOpenChange={(o) => {
+							setRunDialogOpen(o);
+							if (!o) {
+								setRunDialogId("");
+								setRunDialogCheckId("");
+							}
+						}}
+					>
+						<DialogContent className="max-w-4xl">
+							<DialogHeader>
+								<DialogTitle>Run details</DialogTitle>
+								<DialogDescription>
+									<span className="font-mono">{runDialogId}</span>
+								</DialogDescription>
+							</DialogHeader>
+							<div className="space-y-3">
+								{runDetail.isLoading ? (
+									<div className="text-sm text-muted-foreground">Loading…</div>
+								) : null}
+								{runDetail.isError ? (
+									<div className="text-sm text-destructive">
+										Failed to load run: {(runDetail.error as Error).message}
+									</div>
+								) : null}
+								{runDetail.data ? (
+									<div className="space-y-3">
+										<div className="flex flex-wrap items-center gap-2 text-sm">
+											<Badge variant="secondary">
+												Pack: {runDetail.data.run.packId}
+											</Badge>
+											<Badge variant="secondary">
+												Status: {runDetail.data.run.status}
+											</Badge>
+											<Badge variant="secondary">
+												Snapshot:{" "}
+												<span className="font-mono">
+													{runDetail.data.run.snapshotId || "latest"}
+												</span>
+											</Badge>
+										</div>
+
+										<div className="grid gap-4 md:grid-cols-2">
+											<div className="space-y-2">
+												<div className="text-sm font-medium">Checks</div>
+												<div className="rounded-md border">
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>Check</TableHead>
+																<TableHead className="text-right">
+																	Total
+																</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{(runDetail.data.checks ?? []).map((c) => (
+																<TableRow
+																	key={c.checkId}
+																	className="cursor-pointer"
+																	onClick={() => setRunDialogCheckId(c.checkId)}
+																>
+																	<TableCell className="font-mono text-xs">
+																		{c.checkId}
+																	</TableCell>
+																	<TableCell className="text-right">
+																		{c.total}
+																	</TableCell>
+																</TableRow>
+															))}
+														</TableBody>
+													</Table>
+												</div>
+												<p className="text-xs text-muted-foreground">
+													Click a check to load run findings.
+												</p>
+											</div>
+											<div className="space-y-2">
+												<div className="text-sm font-medium">Findings</div>
+												<div className="text-xs text-muted-foreground">
+													Check filter:{" "}
+													<span className="font-mono">
+														{runDialogCheckId || "(all)"}
+													</span>
+												</div>
+												<Textarea
+													readOnly
+													className="font-mono text-xs"
+													rows={10}
+													value={jsonPretty(runFindings.data?.findings ?? [])}
+												/>
+											</div>
+										</div>
+
+										<details className="pt-2">
+											<summary className="cursor-pointer text-xs text-muted-foreground">
+												Show request JSON
+											</summary>
+											<div className="pt-2">
+												<Textarea
+													readOnly
+													className="font-mono text-xs"
+													rows={10}
+													value={jsonPretty(runDetail.data.run.request)}
+												/>
+											</div>
+										</details>
+									</div>
+								) : null}
+							</div>
+						</DialogContent>
+					</Dialog>
+				</TabsContent>
+
 				<TabsContent value="checks" className="space-y-4">
 					{checks.isLoading ? (
 						<Card>
@@ -2286,6 +3758,14 @@ function PolicyReportsPage() {
 									>
 										<Play className="mr-2 h-4 w-4" />
 										Run pack
+									</Button>
+									<Button
+										variant="secondary"
+										onClick={() => runPackAndStore.mutate(p.id)}
+										disabled={runPackAndStore.isPending}
+									>
+										<FolderClock className="mr-2 h-4 w-4" />
+										Run and store
 									</Button>
 									<Button
 										variant="outline"
@@ -3906,6 +5386,67 @@ function PolicyReportsPage() {
 							<Button
 								onClick={() => createForwardNetwork.mutate()}
 								disabled={createForwardNetwork.isPending}
+							>
+								Save
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={zoneCreateOpen} onOpenChange={setZoneCreateOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>Add Zone</DialogTitle>
+						<DialogDescription>
+							A zone is a named set of CIDRs used for segmentation-style checks.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Name</div>
+								<Input
+									value={zoneName}
+									onChange={(e) => setZoneName(e.target.value)}
+									placeholder="mgmt, prod, dmz, pci…"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">
+									Description (optional)
+								</div>
+								<Input
+									value={zoneDesc}
+									onChange={(e) => setZoneDesc(e.target.value)}
+									placeholder="Optional notes"
+								/>
+							</div>
+						</div>
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Subnets (CIDRs)</div>
+							<Textarea
+								value={zoneSubnetsText}
+								onChange={(e) => setZoneSubnetsText(e.target.value)}
+								rows={6}
+								placeholder={"10.0.0.0/8\n192.168.10.0/24"}
+								className="font-mono text-xs"
+							/>
+							<p className="text-xs text-muted-foreground">
+								One per line or comma-separated.
+							</p>
+						</div>
+						<div className="flex items-center justify-end gap-2 pt-2">
+							<Button
+								variant="outline"
+								onClick={() => setZoneCreateOpen(false)}
+								disabled={createZone.isPending}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => createZone.mutate()}
+								disabled={createZone.isPending}
 							>
 								Save
 							</Button>

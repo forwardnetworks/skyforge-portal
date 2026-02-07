@@ -28,12 +28,15 @@ import {
 	type ForwardNetworkCapacityCoverageResponse,
 	type ForwardNetworkCapacityInventoryResponse,
 	type ForwardNetworkCapacitySnapshotDeltaResponse,
+	type ForwardNetworkCapacityUpgradeCandidate,
+	type ForwardNetworkCapacityUpgradeCandidatesResponse,
 	getForwardNetworkCapacityCoverage,
 	getForwardNetworkCapacityGrowth,
 	getForwardNetworkCapacityInventory,
 	getForwardNetworkCapacitySnapshotDelta,
 	getForwardNetworkCapacitySummary,
 	getForwardNetworkCapacityUnhealthyDevices,
+	getForwardNetworkCapacityUpgradeCandidates,
 	listWorkspaceForwardNetworks,
 	postForwardNetworkCapacityDeviceMetricsHistory,
 	postForwardNetworkCapacityInterfaceMetricsHistory,
@@ -158,6 +161,8 @@ type InterfaceRow = {
 	device: string;
 	iface: string;
 	dir: string;
+	aggregateId?: string;
+	isAggregate?: boolean;
 	vrf?: string;
 	vrfNames?: string[];
 	locationName?: string;
@@ -309,6 +314,7 @@ function ForwardNetworkCapacityPage() {
 	const [routingVrfFilter, setRoutingVrfFilter] = useState("all");
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
+	const [planFilter, setPlanFilter] = useState("");
 	const workspaceId = String(workspace ?? "").trim();
 
 	const networksQ = useQuery({
@@ -364,9 +370,44 @@ function ForwardNetworkCapacityPage() {
 		staleTime: 30_000,
 	});
 
+	const upgradeCandidates =
+		useQuery<ForwardNetworkCapacityUpgradeCandidatesResponse>({
+			queryKey: queryKeys.forwardNetworkCapacityUpgradeCandidates(
+				workspaceId,
+				networkRef,
+				windowLabel,
+			),
+			queryFn: () =>
+				getForwardNetworkCapacityUpgradeCandidates(workspaceId, networkRef, {
+					window: windowLabel,
+				}),
+			enabled: Boolean(workspaceId && networkRef),
+			retry: false,
+			staleTime: 30_000,
+		});
+
 	const forwardNetworkId = String(
 		summary.data?.forwardNetworkId ?? inventory.data?.forwardNetworkId ?? "",
 	);
+
+	const ifaceInvIndex = useMemo(() => {
+		const m = new Map<
+			string,
+			{ aggregateId?: string; interfaceType?: string }
+		>();
+		for (const r of inventory.data?.interfaces ?? []) {
+			const dev = String(r.deviceName ?? "").trim();
+			const ifn = String(r.interfaceName ?? "").trim();
+			if (!dev || !ifn) continue;
+			const agg = String(r.aggregateId ?? "").trim();
+			const typ = String(r.interfaceType ?? "").trim();
+			m.set(`${dev}|${ifn}`, {
+				aggregateId: agg || undefined,
+				interfaceType: typ || undefined,
+			});
+		}
+		return m;
+	}, [inventory.data?.interfaces]);
 
 	const refresh = useMutation({
 		mutationFn: async () => {
@@ -400,6 +441,13 @@ function ForwardNetworkCapacityPage() {
 					workspaceId,
 					networkRef,
 				),
+			});
+			await qc.invalidateQueries({
+				queryKey: [
+					"forwardNetworkCapacityUpgradeCandidates",
+					workspaceId,
+					networkRef,
+				],
 			});
 			await qc.invalidateQueries({
 				queryKey:
@@ -496,12 +544,17 @@ function ForwardNetworkCapacityPage() {
 							.map((x) => String(x ?? "").trim())
 							.filter(Boolean)
 					: undefined;
+				const inv = ifaceInvIndex.get(`${device}|${iface}`);
+				const aggregateId = inv?.aggregateId;
+				const isAggregate = inv?.interfaceType === "IF_AGGREGATE";
 				const id = `${device}:${iface}:${dir}:${r.metric}:${r.window}`;
 				return {
 					id,
 					device,
 					iface,
 					dir,
+					aggregateId,
+					isAggregate,
 					vrf,
 					vrfNames,
 					locationName,
@@ -934,6 +987,24 @@ function ForwardNetworkCapacityPage() {
 				header: "Interface",
 				cell: (r) => <span className="font-mono text-xs">{r.iface}</span>,
 				width: 220,
+			},
+			{
+				id: "lag",
+				header: "LAG",
+				cell: (r) => {
+					if (r.isAggregate) {
+						return <Badge variant="secondary">aggregate</Badge>;
+					}
+					if (r.aggregateId) {
+						return (
+							<span className="font-mono text-xs text-muted-foreground">
+								{r.aggregateId}
+							</span>
+						);
+					}
+					return <span className="text-muted-foreground text-xs">—</span>;
+				},
+				width: 170,
 			},
 			{
 				id: "dir",
@@ -1758,14 +1829,228 @@ function ForwardNetworkCapacityPage() {
 
 			<Tabs defaultValue="interfaces" className="space-y-4">
 				<TabsList>
+					<TabsTrigger value="scorecard">Scorecard</TabsTrigger>
 					<TabsTrigger value="interfaces">Interfaces</TabsTrigger>
 					<TabsTrigger value="devices">Devices</TabsTrigger>
 					<TabsTrigger value="growth">Growth</TabsTrigger>
+					<TabsTrigger value="plan">Plan</TabsTrigger>
 					<TabsTrigger value="routing">Routing/BGP</TabsTrigger>
 					<TabsTrigger value="changes">Changes</TabsTrigger>
 					<TabsTrigger value="health">Health</TabsTrigger>
 					<TabsTrigger value="raw">Raw</TabsTrigger>
 				</TabsList>
+
+				<TabsContent value="scorecard" className="space-y-4">
+					{(() => {
+						const ifaces = inventory.data?.interfaces ?? [];
+						const aggregates = ifaces.filter(
+							(r) => String(r.interfaceType ?? "") === "IF_AGGREGATE",
+						);
+						const members = ifaces.filter((r) =>
+							String(r.aggregateId ?? "").trim(),
+						);
+						const items = (upgradeCandidates.data?.items ??
+							[]) as ForwardNetworkCapacityUpgradeCandidate[];
+						const top = items.slice(0, 10);
+						const soonest = (() => {
+							let best: string | null = null;
+							for (const it of items) {
+								const s = String(it.forecastCrossingTs ?? "").trim();
+								if (!s) continue;
+								if (!best || Date.parse(s) < Date.parse(best)) best = s;
+							}
+							return best;
+						})();
+						return (
+							<div className="space-y-4">
+								<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+									<Card>
+										<CardHeader className="pb-2">
+											<CardTitle className="text-sm">Collection</CardTitle>
+										</CardHeader>
+										<CardContent className="text-sm space-y-1">
+											<div className="flex items-center justify-between">
+												<div className="text-xs text-muted-foreground">
+													As of
+												</div>
+												<div className="font-mono text-xs">
+													{summary.data?.asOf ?? inventory.data?.asOf ?? "—"}
+												</div>
+											</div>
+											<div className="flex items-center justify-between">
+												<div className="text-xs text-muted-foreground">
+													Status
+												</div>
+												<div>
+													{summary.data?.stale ? (
+														<Badge variant="destructive">Stale</Badge>
+													) : (
+														<Badge variant="secondary">Fresh</Badge>
+													)}
+												</div>
+											</div>
+											<div className="flex items-center justify-between">
+												<div className="text-xs text-muted-foreground">
+													Ifaces w/speed
+												</div>
+												<div className="font-medium text-xs">
+													{coverage.data
+														? `${coverage.data.ifacesWithSpeed}/${coverage.data.ifacesTotal}`
+														: "—"}
+												</div>
+											</div>
+											<div className="flex items-center justify-between">
+												<div className="text-xs text-muted-foreground">
+													Rollups w/samples
+												</div>
+												<div className="font-medium text-xs">
+													{coverage.data
+														? `${coverage.data.rollupsWithSamples}/${coverage.data.rollupsInterfaceTotal + coverage.data.rollupsDeviceTotal}`
+														: "—"}
+												</div>
+											</div>
+										</CardContent>
+									</Card>
+									<Card>
+										<CardHeader className="pb-2">
+											<CardTitle className="text-sm">LAGs</CardTitle>
+										</CardHeader>
+										<CardContent className="text-sm space-y-1">
+											<div className="flex items-center justify-between">
+												<div className="text-xs text-muted-foreground">
+													Aggregate ifaces
+												</div>
+												<div className="text-2xl font-semibold">
+													{aggregates.length}
+												</div>
+											</div>
+											<div className="flex items-center justify-between">
+												<div className="text-xs text-muted-foreground">
+													Member ifaces
+												</div>
+												<div className="text-2xl font-semibold">
+													{members.length}
+												</div>
+											</div>
+											<div className="text-xs text-muted-foreground">
+												LAG membership from NQE (ethernet.aggregateId +
+												aggregation.memberNames).
+											</div>
+										</CardContent>
+									</Card>
+									<Card>
+										<CardHeader className="pb-2">
+											<CardTitle className="text-sm">Upgrade Risk</CardTitle>
+										</CardHeader>
+										<CardContent className="text-sm space-y-1">
+											<div className="flex items-center justify-between">
+												<div className="text-xs text-muted-foreground">
+													Candidates
+												</div>
+												<div className="text-2xl font-semibold">
+													{items.length}
+												</div>
+											</div>
+											<div className="flex items-center justify-between">
+												<div className="text-xs text-muted-foreground">
+													Soonest forecast
+												</div>
+												<div className="font-mono text-xs">
+													{soonest ? soonest.slice(0, 10) : "—"}
+												</div>
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Based on util_* rollups (window {windowLabel}).
+											</div>
+										</CardContent>
+									</Card>
+								</div>
+
+								<Card>
+									<CardHeader>
+										<CardTitle className="text-base">
+											Top Upgrade Candidates
+										</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<DataTable
+											columns={
+												[
+													{
+														id: "device",
+														header: "Device",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.device}
+															</span>
+														),
+														width: 220,
+													},
+													{
+														id: "name",
+														header: "Link",
+														cell: (r) => (
+															<div className="text-xs">
+																<div className="flex items-center gap-2">
+																	<span className="font-mono">{r.name}</span>
+																	{r.scopeType === "lag" ? (
+																		<Badge variant="secondary">LAG</Badge>
+																	) : null}
+																</div>
+																{r.recommendedSpeedMbps ? (
+																	<div className="text-muted-foreground">
+																		Rec: {fmtSpeedMbps(r.recommendedSpeedMbps)}
+																	</div>
+																) : null}
+															</div>
+														),
+														width: 260,
+													},
+													{
+														id: "max",
+														header: "Max",
+														align: "right",
+														cell: (r) => fmtPct01(r.maxUtil),
+														width: 90,
+													},
+													{
+														id: "forecast",
+														header: "Forecast",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.forecastCrossingTs
+																	? String(r.forecastCrossingTs).slice(0, 10)
+																	: "—"}
+															</span>
+														),
+														width: 120,
+													},
+													{
+														id: "reason",
+														header: "Reason",
+														cell: (r) => (
+															<span className="text-xs text-muted-foreground">
+																{r.reason || "—"}
+															</span>
+														),
+														width: 140,
+													},
+												] as Array<
+													DataTableColumn<ForwardNetworkCapacityUpgradeCandidate>
+												>
+											}
+											rows={top}
+											getRowId={(r) => `${r.scopeType}:${r.device}:${r.name}`}
+											emptyText="No upgrade candidates yet. Click Refresh to enqueue rollups."
+											maxHeightClassName="max-h-[320px]"
+											minWidthClassName="min-w-0"
+										/>
+									</CardContent>
+								</Card>
+							</div>
+						);
+					})()}
+				</TabsContent>
 
 				<TabsContent value="interfaces" className="space-y-4">
 					<Card>
@@ -2602,6 +2887,278 @@ function ForwardNetworkCapacityPage() {
 									}}
 									emptyText="No growth rows yet. Click Refresh to enqueue."
 								/>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="plan" className="space-y-4">
+					<Card>
+						<CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+							<CardTitle className="text-base">Upgrade Candidates</CardTitle>
+							<div className="flex flex-col gap-2 md:flex-row md:items-center">
+								<Input
+									placeholder="Filter (device / link)…"
+									value={planFilter}
+									onChange={(e) => setPlanFilter(e.target.value)}
+									className="w-[260px]"
+								/>
+								<Button
+									variant="outline"
+									onClick={() => {
+										const items = (upgradeCandidates.data?.items ??
+											[]) as ForwardNetworkCapacityUpgradeCandidate[];
+										const q = planFilter.trim().toLowerCase();
+										const filtered = q
+											? items.filter((it) => {
+													const s =
+														`${it.device} ${it.name} ${(it.members ?? []).join(" ")}`.toLowerCase();
+													return s.includes(q);
+												})
+											: items;
+										const headers = [
+											"scopeType",
+											"device",
+											"name",
+											"members",
+											"speedMbps",
+											"worstDirection",
+											"p95Util",
+											"maxUtil",
+											"p95Gbps",
+											"maxGbps",
+											"forecastCrossingTs",
+											"requiredSpeedMbps",
+											"recommendedSpeedMbps",
+											"reason",
+											"worstMemberMaxUtil",
+										];
+										const rows = filtered.map((it) => [
+											it.scopeType ?? "",
+											it.device ?? "",
+											it.name ?? "",
+											(it.members ?? []).join(" "),
+											it.speedMbps ?? "",
+											it.worstDirection ?? "",
+											it.p95Util ?? "",
+											it.maxUtil ?? "",
+											it.p95Gbps ?? "",
+											it.maxGbps ?? "",
+											it.forecastCrossingTs ?? "",
+											it.requiredSpeedMbps ?? "",
+											it.recommendedSpeedMbps ?? "",
+											it.reason ?? "",
+											it.worstMemberMaxUtil ?? "",
+										]);
+										downloadText(
+											`upgrade-candidates-${networkRef}-${windowLabel}.csv`,
+											"text/csv",
+											toCSV(headers, rows),
+										);
+									}}
+									disabled={upgradeCandidates.isLoading}
+								>
+									Export CSV
+								</Button>
+							</div>
+						</CardHeader>
+						<CardContent>
+							{upgradeCandidates.isLoading ? (
+								<Skeleton className="h-24 w-full" />
+							) : upgradeCandidates.isError ? (
+								<div className="text-destructive text-sm">
+									Failed to load upgrade candidates:{" "}
+									{upgradeCandidates.error instanceof Error
+										? upgradeCandidates.error.message
+										: String(upgradeCandidates.error)}
+								</div>
+							) : (
+								(() => {
+									const items = (upgradeCandidates.data?.items ??
+										[]) as ForwardNetworkCapacityUpgradeCandidate[];
+									const q = planFilter.trim().toLowerCase();
+									const filtered = q
+										? items.filter((it) => {
+												const s =
+													`${it.device} ${it.name} ${(it.members ?? []).join(" ")}`.toLowerCase();
+												return s.includes(q);
+											})
+										: items;
+									return (
+										<DataTable
+											columns={
+												[
+													{
+														id: "device",
+														header: "Device",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.device}
+															</span>
+														),
+														width: 220,
+													},
+													{
+														id: "link",
+														header: "Link",
+														cell: (r) => (
+															<div className="text-xs">
+																<div className="flex items-center gap-2">
+																	<span className="font-mono">{r.name}</span>
+																	{r.scopeType === "lag" ? (
+																		<Badge variant="secondary">LAG</Badge>
+																	) : null}
+																	{r.recommendedSpeedMbps ? (
+																		<Badge variant="destructive">upgrade</Badge>
+																	) : null}
+																</div>
+																{(r.members ?? []).length ? (
+																	<div className="text-muted-foreground">
+																		{(r.members ?? []).length} members
+																	</div>
+																) : null}
+															</div>
+														),
+														width: 240,
+													},
+													{
+														id: "speed",
+														header: "Speed",
+														align: "right",
+														cell: (r) => (
+															<span className="text-xs">
+																{fmtSpeedMbps(r.speedMbps)}
+															</span>
+														),
+														width: 90,
+													},
+													{
+														id: "dir",
+														header: "Worst",
+														cell: (r) => (
+															<span className="text-xs">
+																{r.worstDirection || "—"}
+															</span>
+														),
+														width: 90,
+													},
+													{
+														id: "max",
+														header: "Max",
+														align: "right",
+														cell: (r) => (
+															<span
+																className={
+																	r.maxUtil >= 0.85
+																		? "text-destructive font-medium"
+																		: ""
+																}
+															>
+																{fmtPct01(r.maxUtil)}
+															</span>
+														),
+														width: 90,
+													},
+													{
+														id: "p95",
+														header: "p95",
+														align: "right",
+														cell: (r) => fmtPct01(r.p95Util),
+														width: 90,
+													},
+													{
+														id: "maxGbps",
+														header: "Max (Gbps)",
+														align: "right",
+														cell: (r) => (
+															<span className="text-xs tabular-nums">
+																{Number(r.maxGbps ?? 0).toFixed(2)}
+															</span>
+														),
+														width: 110,
+													},
+													{
+														id: "forecast",
+														header: "Forecast",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.forecastCrossingTs
+																	? String(r.forecastCrossingTs).slice(0, 10)
+																	: "—"}
+															</span>
+														),
+														width: 120,
+													},
+													{
+														id: "req",
+														header: "Req",
+														align: "right",
+														cell: (r) =>
+															r.requiredSpeedMbps ? (
+																<span className="text-xs">
+																	{fmtSpeedMbps(r.requiredSpeedMbps)}
+																</span>
+															) : (
+																<span className="text-muted-foreground text-xs">
+																	—
+																</span>
+															),
+														width: 90,
+													},
+													{
+														id: "rec",
+														header: "Rec",
+														align: "right",
+														cell: (r) =>
+															r.recommendedSpeedMbps ? (
+																<span className="text-xs font-medium text-destructive">
+																	{fmtSpeedMbps(r.recommendedSpeedMbps)}
+																</span>
+															) : (
+																<span className="text-muted-foreground text-xs">
+																	—
+																</span>
+															),
+														width: 90,
+													},
+													{
+														id: "imb",
+														header: "Worst member",
+														align: "right",
+														cell: (r) =>
+															r.worstMemberMaxUtil ? (
+																<span className="text-xs">
+																	{fmtPct01(r.worstMemberMaxUtil)}
+																</span>
+															) : (
+																<span className="text-muted-foreground text-xs">
+																	—
+																</span>
+															),
+														width: 120,
+													},
+													{
+														id: "reason",
+														header: "Reason",
+														cell: (r) => (
+															<span className="text-xs text-muted-foreground">
+																{r.reason || "—"}
+															</span>
+														),
+														width: 140,
+													},
+												] as Array<
+													DataTableColumn<ForwardNetworkCapacityUpgradeCandidate>
+												>
+											}
+											rows={filtered}
+											getRowId={(r) => `${r.scopeType}:${r.device}:${r.name}`}
+											emptyText="No upgrade candidates for this window (no hot links / no near-term forecasts)."
+											maxHeightClassName="max-h-[520px]"
+											minWidthClassName="min-w-0"
+										/>
+									);
+								})()
 							)}
 						</CardContent>
 					</Card>

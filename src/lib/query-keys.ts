@@ -42,6 +42,17 @@ export const queryKeys = {
 		networkRef: string,
 	) =>
 		["forwardNetworkCapacitySnapshotDelta", workspaceId, networkRef] as const,
+	forwardNetworkCapacityUpgradeCandidates: (
+		workspaceId: string,
+		networkRef: string,
+		window: string,
+	) =>
+		[
+			"forwardNetworkCapacityUpgradeCandidates",
+			workspaceId,
+			networkRef,
+			window,
+		] as const,
 	workspaceForwardNetworkCapacityPortfolio: (workspaceId: string) =>
 		["workspaceForwardNetworkCapacityPortfolio", workspaceId] as const,
 	forwardNetworkCapacityGrowth: (
@@ -184,6 +195,41 @@ export const queryKeys = {
 			"policyReportsExceptions",
 			workspaceId,
 			forwardNetworkId ?? "",
+			status ?? "",
+		] as const,
+	policyReportsZones: (workspaceId: string, forwardNetworkId: string) =>
+		["policyReportsZones", workspaceId, forwardNetworkId] as const,
+	policyReportsRuns: (
+		workspaceId: string,
+		forwardNetworkId?: string,
+		packId?: string,
+		status?: string,
+	) =>
+		[
+			"policyReportsRuns",
+			workspaceId,
+			forwardNetworkId ?? "",
+			packId ?? "",
+			status ?? "",
+		] as const,
+	policyReportsRun: (workspaceId: string, runId: string) =>
+		["policyReportsRun", workspaceId, runId] as const,
+	policyReportsRunFindings: (
+		workspaceId: string,
+		runId: string,
+		checkId?: string,
+	) => ["policyReportsRunFindings", workspaceId, runId, checkId ?? ""] as const,
+	policyReportsFindings: (
+		workspaceId: string,
+		forwardNetworkId?: string,
+		checkId?: string,
+		status?: string,
+	) =>
+		[
+			"policyReportsFindings",
+			workspaceId,
+			forwardNetworkId ?? "",
+			checkId ?? "",
 			status ?? "",
 		] as const,
 };
