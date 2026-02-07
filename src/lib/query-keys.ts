@@ -35,6 +35,15 @@ export const queryKeys = {
 		["forwardNetworkCapacitySummary", workspaceId, networkRef] as const,
 	forwardNetworkCapacityInventory: (workspaceId: string, networkRef: string) =>
 		["forwardNetworkCapacityInventory", workspaceId, networkRef] as const,
+	forwardNetworkCapacityCoverage: (workspaceId: string, networkRef: string) =>
+		["forwardNetworkCapacityCoverage", workspaceId, networkRef] as const,
+	forwardNetworkCapacitySnapshotDelta: (
+		workspaceId: string,
+		networkRef: string,
+	) =>
+		["forwardNetworkCapacitySnapshotDelta", workspaceId, networkRef] as const,
+	workspaceForwardNetworkCapacityPortfolio: (workspaceId: string) =>
+		["workspaceForwardNetworkCapacityPortfolio", workspaceId] as const,
 	forwardNetworkCapacityGrowth: (
 		workspaceId: string,
 		networkRef: string,

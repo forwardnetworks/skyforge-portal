@@ -25,6 +25,15 @@ const targets = [
 
 for (const dest of targets) {
 	try {
+		// Avoid accidentally creating a bogus tree when this repo is checked out as a
+		// submodule (e.g. skyforge/components/portal). In that layout, the
+		// "../skyforge/components/..." target would expand to
+		// "skyforge/components/skyforge/components/...", which should never be created.
+		if (!fs.existsSync(path.dirname(dest))) {
+			// eslint-disable-next-line no-console
+			console.warn(`skip sync to ${dest}: parent dir does not exist`);
+			continue;
+		}
 		copyDir(canonicalOutDir, dest);
 		// eslint-disable-next-line no-console
 		console.log(`synced frontend_dist -> ${dest}`);

@@ -4,6 +4,7 @@ import { Plus, Settings, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import {
 	Card,
@@ -27,6 +28,7 @@ import {
 	type SkyforgeWorkspace,
 	createWorkspaceForwardNetwork,
 	deleteWorkspaceForwardNetwork,
+	getWorkspaceForwardNetworkCapacityPortfolio,
 	getWorkspaces,
 	listUserForwardCollectorConfigs,
 	listWorkspaceForwardNetworks,
@@ -99,6 +101,21 @@ function ForwardNetworksPage() {
 	const networks = useMemo(
 		() => (networksQ.data?.networks ?? []) as PolicyReportForwardNetwork[],
 		[networksQ.data?.networks],
+	);
+
+	const portfolioQ = useQuery({
+		queryKey:
+			queryKeys.workspaceForwardNetworkCapacityPortfolio(selectedWorkspaceId),
+		queryFn: () =>
+			getWorkspaceForwardNetworkCapacityPortfolio(selectedWorkspaceId),
+		enabled: Boolean(selectedWorkspaceId),
+		staleTime: 10_000,
+		retry: false,
+	});
+
+	const portfolioItems = useMemo(
+		() => (portfolioQ.data?.items ?? []) as any[],
+		[portfolioQ.data?.items],
 	);
 
 	const collectorsQ = useQuery({
@@ -331,6 +348,99 @@ function ForwardNetworksPage() {
 							</div>
 						</div>
 					))}
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Capacity portfolio</CardTitle>
+					<CardDescription>
+						Quick cross-network view (util_* max &gt;= 85%).
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					{!selectedWorkspaceId ? (
+						<div className="text-sm text-muted-foreground">
+							Select a workspace to see portfolio rollups.
+						</div>
+					) : portfolioQ.isLoading ? (
+						<div className="text-sm text-muted-foreground">Loading…</div>
+					) : portfolioQ.isError ? (
+						<div className="text-sm text-muted-foreground">
+							Unable to load portfolio.
+						</div>
+					) : portfolioItems.length === 0 ? (
+						<div className="text-sm text-muted-foreground">
+							No portfolio data yet. Save a network and run a Capacity refresh.
+						</div>
+					) : (
+						<div className="overflow-x-auto">
+							<table className="w-full text-sm">
+								<thead className="text-xs text-muted-foreground">
+									<tr className="text-left border-b">
+										<th className="py-2 pr-3">Network</th>
+										<th className="py-2 pr-3">As of</th>
+										<th className="py-2 pr-3">Hot ifaces</th>
+										<th className="py-2 pr-3">Soonest</th>
+										<th className="py-2 pr-3">Max max</th>
+										<th className="py-2 pr-3">Max p95</th>
+									</tr>
+								</thead>
+								<tbody>
+									{portfolioItems.map((it) => {
+										const asOf = String(it.asOf ?? "").trim() || "—";
+										const soonest =
+											String(it.soonestForecast ?? "").trim() || "—";
+										const fmtPct = (v: unknown) => {
+											const n = Number(v);
+											if (!Number.isFinite(n)) return "—";
+											return `${(n * 100).toFixed(1)}%`;
+										};
+										return (
+											<tr key={String(it.networkRef)} className="border-b">
+												<td className="py-2 pr-3">
+													<div className="flex items-center gap-2">
+														<Button
+															asChild
+															variant="link"
+															className="p-0 h-auto"
+														>
+															<Link
+																to="/dashboard/forward-networks/$networkRef/capacity"
+																params={{ networkRef: String(it.networkRef) }}
+																search={
+																	{ workspace: selectedWorkspaceId } as any
+																}
+															>
+																{String(it.name ?? it.networkRef)}
+															</Link>
+														</Button>
+														{it.stale ? (
+															<Badge variant="destructive">Stale</Badge>
+														) : (
+															<Badge variant="secondary">Fresh</Badge>
+														)}
+													</div>
+													<div className="text-xs text-muted-foreground font-mono truncate">
+														{String(it.forwardNetworkId ?? "")}
+													</div>
+												</td>
+												<td className="py-2 pr-3 font-mono text-xs">{asOf}</td>
+												<td className="py-2 pr-3">
+													{Number(it.hotInterfaces ?? 0)}
+												</td>
+												<td className="py-2 pr-3 font-mono text-xs">
+													{soonest}
+												</td>
+												<td className="py-2 pr-3">{fmtPct(it.maxUtilMax)}</td>
+												<td className="py-2 pr-3">{fmtPct(it.maxUtilP95)}</td>
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</div>
+					)}
 				</CardContent>
 			</Card>
 		</div>
