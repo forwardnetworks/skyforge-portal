@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { Loader2, Square } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/query-keys";
+import {
+	type RunLogState,
+	type TaskLogEntry,
+	useRunEvents,
+} from "@/lib/run-events";
 import {
 	type UserAIGenerateRequest,
 	autofixUserAITemplate,
@@ -105,9 +112,13 @@ function AITemplatesPage() {
 	const [seed, setSeed] = useState("");
 	const [output, setOutput] = useState("");
 	const [rawOutput, setRawOutput] = useState("");
+	const generateAbort = useRef<AbortController | null>(null);
 	const [saveName, setSaveName] = useState("");
 	const [lastError, setLastError] = useState<string>("");
 	const [lastValidateRunId, setLastValidateRunId] = useState<string>("");
+	const [outputTab, setOutputTab] = useState<
+		"template" | "request" | "validate"
+	>("template");
 	const [actionState, setActionState] =
 		useState<Record<ActionName, ActionState>>(INITIAL_ACTIONS);
 	const [activeAction, setActiveAction] = useState<ActionName | null>(null);
@@ -195,8 +206,21 @@ function AITemplatesPage() {
 		refetchInterval: 15_000,
 	});
 
+	useRunEvents(lastValidateRunId, Boolean(lastValidateRunId));
+	const validateLogs = useQuery({
+		queryKey: queryKeys.runLogs(lastValidateRunId),
+		queryFn: async () => ({ cursor: 0, entries: [] }) as RunLogState,
+		enabled: Boolean(lastValidateRunId),
+		retry: false,
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+
 	const canGenerate =
-		(geminiCfg.data?.enabled ?? false) && (geminiCfg.data?.configured ?? false);
+		(geminiCfg.data?.enabled ?? false) &&
+		(geminiCfg.data?.aiEnabled ?? false) &&
+		(geminiCfg.data?.oauthConfigured ?? false) &&
+		(geminiCfg.data?.vertexConfigured ?? false) &&
+		(geminiCfg.data?.configured ?? false);
 
 	const disconnect = useMutation({
 		mutationFn: async () => disconnectUserGemini(),
@@ -233,13 +257,18 @@ function AITemplatesPage() {
 					"no external files",
 				].filter(Boolean),
 			};
-			return generateUserAITemplate(payload);
+			const controller = new AbortController();
+			generateAbort.current = controller;
+			return generateUserAITemplate(payload, { signal: controller.signal });
 		},
 		onMutate: () => {
 			beginAction("generate", `Generating ${kind} template with Gemini…`, {
 				kind,
 				provider: "gemini",
 			});
+			setOutput("");
+			setRawOutput("");
+			setLastError("");
 		},
 		onSuccess: (res) => {
 			setOutput(res.content ?? "");
@@ -254,9 +283,20 @@ function AITemplatesPage() {
 			);
 			void qc.invalidateQueries({ queryKey: queryKeys.userAIHistory() });
 			toast.success("Template generated", { description: res.filename });
+			generateAbort.current = null;
 		},
 		onError: (e) => {
+			generateAbort.current = null;
+			const isAbort =
+				(e instanceof DOMException && e.name === "AbortError") ||
+				(e instanceof Error && e.name === "AbortError");
 			const msg = e instanceof Error ? e.message : String(e);
+			if (isAbort) {
+				setLastError("");
+				setRawOutput("");
+				finishAction("generate", "failed", "Generation canceled");
+				return;
+			}
 			setLastError(msg);
 			setRawOutput("");
 			if (e instanceof Error && "bodyText" in e) {
@@ -285,6 +325,9 @@ function AITemplatesPage() {
 			toast.error("Failed to generate template", {
 				description: msg,
 			});
+		},
+		onSettled: () => {
+			generateAbort.current = null;
 		},
 	});
 
@@ -336,6 +379,7 @@ function AITemplatesPage() {
 			});
 		},
 		onMutate: () => {
+			if (kind === "netlab") setOutputTab("validate");
 			beginAction(
 				"validate",
 				kind === "netlab"
@@ -350,6 +394,12 @@ function AITemplatesPage() {
 			if (kind === "netlab") {
 				const runId = res.task?.id != null ? String(res.task.id) : "";
 				setLastValidateRunId(runId);
+				if (runId) {
+					qc.setQueryData(queryKeys.runLogs(runId), {
+						cursor: 0,
+						entries: [],
+					} satisfies RunLogState);
+				}
 				finishAction(
 					"validate",
 					"succeeded",
@@ -503,6 +553,55 @@ function AITemplatesPage() {
 				</p>
 			</div>
 
+			{activeAction && activeState?.phase === "running" ? (
+				<Card>
+					<CardContent className="flex flex-col gap-2 pt-6">
+						<div className="flex flex-wrap items-center justify-between gap-2">
+							<div className="flex items-center gap-2">
+								<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+								<div className="text-sm">
+									<span className="font-medium">
+										{ACTION_LABEL[activeAction]}
+									</span>{" "}
+									<span className="text-muted-foreground">
+										{activeState.summary}
+									</span>
+								</div>
+							</div>
+							<div className="flex items-center gap-2">
+								<Badge variant="secondary">{fmtDuration(activeElapsed)}</Badge>
+								{activeAction === "generate" ? (
+									<Button
+										size="sm"
+										variant="outline"
+										disabled={!generateAbort.current || !generate.isPending}
+										onClick={() => {
+											const ctl = generateAbort.current;
+											if (ctl) {
+												ctl.abort();
+												generateAbort.current = null;
+												toast.message("Generation canceled");
+											}
+										}}
+									>
+										<Square className="mr-2 h-4 w-4" />
+										Cancel
+									</Button>
+								) : null}
+							</div>
+						</div>
+						<Progress value={activityProgressValue} />
+						{activeState.requestMeta ? (
+							<div className="text-xs text-muted-foreground">
+								{Object.entries(activeState.requestMeta)
+									.map(([k, v]) => `${k}=${v}`)
+									.join(" · ")}
+							</div>
+						) : null}
+					</CardContent>
+				</Card>
+			) : null}
+
 			<Card>
 				<CardHeader>
 					<CardTitle>Gemini Connection</CardTitle>
@@ -510,9 +609,99 @@ function AITemplatesPage() {
 				<CardContent className="space-y-2 text-sm">
 					{geminiCfg.isLoading ? (
 						<div className="text-sm text-muted-foreground">Loading…</div>
+					) : geminiCfg.isError ? (
+						<div className="space-y-2">
+							<div className="text-sm text-destructive">
+								Failed to load Gemini configuration:{" "}
+								{geminiCfg.error instanceof Error
+									? geminiCfg.error.message
+									: String(geminiCfg.error)}
+							</div>
+							<div className="flex items-center gap-2">
+								<Button variant="secondary" onClick={() => geminiCfg.refetch()}>
+									Retry
+								</Button>
+							</div>
+						</div>
 					) : !geminiCfg.data?.enabled ? (
 						<div className="text-sm text-muted-foreground">
-							Gemini integration is disabled on this Skyforge instance.
+							Gemini integration is disabled on this Skyforge instance. Ask an
+							admin to enable `skyforge.gemini.enabled` in the Helm values.
+						</div>
+					) : !geminiCfg.data?.aiEnabled ? (
+						<div className="text-sm text-muted-foreground">
+							AI template generation is disabled on this Skyforge instance. Ask
+							an admin to enable `skyforge.ai.enabled` in the Helm values.
+						</div>
+					) : !geminiCfg.data?.oauthConfigured ? (
+						<div className="space-y-2">
+							<div className="text-sm text-muted-foreground">
+								Gemini OAuth is not configured (missing OAuth client ID/secret
+								and/or redirect URL). Ask an admin to set
+								`skyforge.gemini.clientID` and ensure the secret referenced by
+								`skyforge.gemini.clientSecretSecretName` is populated.
+							</div>
+							<dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2">
+								<dt className="text-muted-foreground">Model</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.model ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Fallback</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.fallbackModel ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Location</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.location ?? "—"}
+								</dd>
+							</dl>
+						</div>
+					) : !geminiCfg.data?.vertexConfigured ? (
+						<div className="space-y-2">
+							<div className="text-sm text-muted-foreground">
+								Vertex AI is not configured (missing
+								`skyforge.gemini.projectId`). You can connect Gemini, but
+								generation will fail until the project is set.
+							</div>
+							<dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2">
+								<dt className="text-muted-foreground">Model</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.model ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Fallback</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.fallbackModel ?? "—"}
+								</dd>
+
+								<dt className="text-muted-foreground">Location</dt>
+								<dd className="text-right break-all font-mono text-xs">
+									{geminiCfg.data?.location ?? "—"}
+								</dd>
+							</dl>
+							<div className="flex items-center gap-2 pt-1">
+								<Button
+									disabled={
+										!geminiCfg.data?.enabled || !geminiCfg.data?.oauthConfigured
+									}
+									onClick={() => {
+										window.location.assign(
+											`${SKYFORGE_API}/user/integrations/gemini/connect`,
+										);
+									}}
+								>
+									{geminiCfg.data?.configured ? "Reconnect" : "Connect"}
+								</Button>
+								<Button
+									variant="secondary"
+									disabled={!geminiCfg.data?.configured || disconnect.isPending}
+									onClick={() => disconnect.mutate()}
+								>
+									Disconnect
+								</Button>
+							</div>
 						</div>
 					) : (
 						<>
@@ -555,7 +744,9 @@ function AITemplatesPage() {
 
 							<div className="flex items-center gap-2 pt-1">
 								<Button
-									disabled={!geminiCfg.data?.enabled}
+									disabled={
+										!geminiCfg.data?.enabled || !geminiCfg.data?.oauthConfigured
+									}
 									onClick={() => {
 										window.location.assign(
 											`${SKYFORGE_API}/user/integrations/gemini/connect`,
@@ -754,14 +945,28 @@ function AITemplatesPage() {
 								}
 								onClick={() => generate.mutate()}
 							>
-								Generate
+								{generate.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Generating…
+									</>
+								) : (
+									"Generate"
+								)}
 							</Button>
 							<Button
 								variant="outline"
 								disabled={!output.trim() || validate.isPending || isBusy}
 								onClick={() => validate.mutate()}
 							>
-								Validate
+								{validate.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Validating…
+									</>
+								) : (
+									"Validate"
+								)}
 							</Button>
 							<Button
 								variant="outline"
@@ -773,7 +978,14 @@ function AITemplatesPage() {
 								}
 								onClick={() => autofix.mutate()}
 							>
-								Auto-fix
+								{autofix.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Auto-fixing…
+									</>
+								) : (
+									"Auto-fix"
+								)}
 							</Button>
 							{lastValidateRunId ? (
 								<Button variant="outline" asChild>
@@ -819,7 +1031,14 @@ function AITemplatesPage() {
 								disabled={!output.trim() || save.isPending || isBusy}
 								onClick={() => save.mutate()}
 							>
-								Save to Repo
+								{save.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Saving…
+									</>
+								) : (
+									"Save to Repo"
+								)}
 							</Button>
 						</div>
 					</CardContent>
@@ -830,10 +1049,16 @@ function AITemplatesPage() {
 						<CardTitle>Output</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
-						<Tabs defaultValue="template">
+						<Tabs
+							value={outputTab}
+							onValueChange={(v) => setOutputTab(v as any)}
+						>
 							<TabsList>
 								<TabsTrigger value="template">Template</TabsTrigger>
 								<TabsTrigger value="request">Request</TabsTrigger>
+								{lastValidateRunId ? (
+									<TabsTrigger value="validate">Validation Log</TabsTrigger>
+								) : null}
 							</TabsList>
 							<TabsContent value="template" className="space-y-2">
 								<div className="text-xs text-muted-foreground">
@@ -888,6 +1113,48 @@ function AITemplatesPage() {
 									/>
 								</div>
 							</TabsContent>
+							<TabsContent value="validate" className="space-y-3">
+								<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+									<div className="space-y-1">
+										<div className="text-xs text-muted-foreground">Run</div>
+										<div className="break-all font-mono text-xs">
+											{lastValidateRunId || "—"}
+										</div>
+									</div>
+									<div className="flex items-center gap-2">
+										{lastValidateRunId ? (
+											<Button variant="outline" size="sm" asChild>
+												<Link
+													to="/dashboard/runs/$runId"
+													params={{ runId: lastValidateRunId }}
+												>
+													Open run
+												</Link>
+											</Button>
+										) : null}
+										<Button
+											variant="outline"
+											size="sm"
+											disabled={!lastValidateRunId}
+											onClick={() => {
+												if (!lastValidateRunId) return;
+												qc.setQueryData(queryKeys.runLogs(lastValidateRunId), {
+													cursor: 0,
+													entries: [],
+												} satisfies RunLogState);
+											}}
+										>
+											Clear
+										</Button>
+										<div className="text-xs text-muted-foreground">
+											Cursor: {String(validateLogs.data?.cursor ?? 0)}
+										</div>
+									</div>
+								</div>
+								<div className="rounded-md border bg-zinc-950 p-4 font-mono text-xs text-zinc-100">
+									<RunLogOutput entries={validateLogs.data?.entries ?? []} />
+								</div>
+							</TabsContent>
 						</Tabs>
 						<div className="text-xs text-muted-foreground">
 							Validate runs an in-cluster netlab validation job (netlab
@@ -936,6 +1203,34 @@ function AITemplatesPage() {
 					)}
 				</CardContent>
 			</Card>
+		</div>
+	);
+}
+
+function RunLogOutput(props: { entries: TaskLogEntry[] }) {
+	const containerRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+		el.scrollTop = el.scrollHeight;
+	}, [props.entries.length]);
+
+	if (props.entries.length === 0)
+		return <div className="text-zinc-500">Waiting for output…</div>;
+	return (
+		<div
+			ref={containerRef}
+			className="max-h-[65vh] overflow-auto whitespace-pre-wrap"
+		>
+			{props.entries.map((e, idx) => (
+				<div key={`${e.time}-${idx}`}>
+					<span className="select-none text-zinc-500">
+						{e.time ? `${e.time} ` : ""}
+					</span>
+					<span>{e.output}</span>
+				</div>
+			))}
 		</div>
 	);
 }

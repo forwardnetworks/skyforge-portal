@@ -59,6 +59,46 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/api/admin/e2e/session": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** AdminE2ESession seeds a session cookie for CI/E2E flows without external SSO. */
+		post: operations["POST:skyforge.AdminE2ESession"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/admin/e2e/sshprobe": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * AdminSSHProbe runs an in-cluster TCP probe to validate SSH reachability of a
+		 *     list of hosts.
+		 * @description This is primarily used by \`cmd/e2echeck\` so E2E tests can run without local kubectl access.
+		 *
+		 *     NOTE: This does not authenticate to the target device; it only verifies TCP connect and an SSH-like banner prefix ("SSH-").
+		 */
+		post: operations["POST:skyforge.AdminSSHProbe"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/api/admin/governance/costs": {
 		parameters: {
 			query?: never;
@@ -274,6 +314,26 @@ export interface paths {
 		 * @description Data is a short-lived snapshot stored in Redis by Telegraf.
 		 */
 		get: operations["GET:skyforge.ListNodeMetrics"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/admin/tasks/diag": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * TaskQueueDiag provides admin diagnostics for the task queue.
+		 * @description This is intended to answer: "are tasks queued because of real backlog, or because queue event delivery/worker execution is broken?"
+		 */
+		get: operations["GET:skyforge.TaskQueueDiag"];
 		put?: never;
 		post?: never;
 		delete?: never;
@@ -1493,6 +1553,49 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/api/session/forwardauth/envoy": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * SessionForwardAuthEnvoy is a Skyforge SSO gate endpoint for Envoy ext_authz.
+		 * @description It behaves like SessionForwardAuth on success, but on unauthenticated requests it returns a 302 redirect to Skyforge login, preserving the original request URI via the \`next\` parameter.
+		 *
+		 *     NOTE: Envoy's ext\_authz filter commonly forwards the original request path in \`x-envoy-original-path\` (preferred) rather than \`x-forwarded-uri\`.
+		 */
+		get: operations["GET:skyforge.SessionForwardAuthEnvoy"];
+		put?: never;
+		post: operations["POST:skyforge.SessionForwardAuthEnvoyPost"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/session/forwardauth/envoy/{rest}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * NOTE: Envoy's ext_authz `path_prefix` can append the original request path to
+		 *     the
+		 * @description configured prefix (e.g. \`/api/session/forwardauth/envoy/\`), so we also expose wildcard handlers.
+		 */
+		get: operations["GET:skyforge.SessionForwardAuthEnvoyAny"];
+		put?: never;
+		post: operations["POST:skyforge.SessionForwardAuthEnvoyPostAny"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/api/snmp/traps/events": {
 		parameters: {
 			query?: never;
@@ -2007,6 +2110,61 @@ export interface paths {
 		put?: never;
 		/** RotateUserGitDeployKey rotates the user's SSH deploy key. */
 		post: operations["POST:skyforge.RotateUserGitDeployKey"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/user/integrations/elastic": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** GetUserElasticConfig returns the current user's Elastic integration settings. */
+		get: operations["GET:skyforge.GetUserElasticConfig"];
+		/** PutUserElasticConfig upserts the user's Elastic integration settings. */
+		put: operations["PUT:skyforge.PutUserElasticConfig"];
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/user/integrations/elastic/clear": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** ClearUserElasticConfig removes the user's Elastic integration settings. */
+		post: operations["POST:skyforge.ClearUserElasticConfig"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/user/integrations/elastic/test": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * TestUserElasticConfig does a lightweight health check of the configured Elastic
+		 *     endpoint.
+		 */
+		post: operations["POST:skyforge.TestUserElasticConfig"];
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -2816,6 +2974,207 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/growth": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspaceDeploymentCapacityGrowth compares the latest rollup bucket to an
+		 *     earlier one and returns deltas.
+		 * @description Intended for “top growers” views (week-over-week, day-over-day) without pulling Forward time series.
+		 */
+		get: operations["GET:skyforge.GetWorkspaceDeploymentCapacityGrowth"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/inventory": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspaceDeploymentCapacityInventory returns the latest cached NQE results
+		 *     for inventory/routing scale.
+		 */
+		get: operations["GET:skyforge.GetWorkspaceDeploymentCapacityInventory"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/perf/device-metrics": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspaceDeploymentCapacityDeviceMetrics proxies Forward's device-metrics
+		 *     endpoint.
+		 */
+		get: operations["GET:skyforge.GetWorkspaceDeploymentCapacityDeviceMetrics"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/perf/device-metrics-history": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * PostWorkspaceDeploymentCapacityDeviceMetricsHistory proxies Forward's
+		 *     device-metrics-history endpoint.
+		 */
+		post: operations["POST:skyforge.PostWorkspaceDeploymentCapacityDeviceMetricsHistory"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/perf/interface-metrics": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspaceDeploymentCapacityInterfaceMetrics proxies Forward's
+		 *     interface-metrics endpoint.
+		 */
+		get: operations["GET:skyforge.GetWorkspaceDeploymentCapacityInterfaceMetrics"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/perf/interface-metrics-history": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * PostWorkspaceDeploymentCapacityInterfaceMetricsHistory proxies Forward's
+		 *     interface-metrics-history endpoint.
+		 */
+		post: operations["POST:skyforge.PostWorkspaceDeploymentCapacityInterfaceMetricsHistory"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/perf/unhealthy-devices": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspaceDeploymentCapacityUnhealthyDevices proxies Forward's
+		 *     unhealthy-devices endpoint.
+		 */
+		get: operations["GET:skyforge.GetWorkspaceDeploymentCapacityUnhealthyDevices"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/perf/unhealthy-interfaces": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * GetWorkspaceDeploymentCapacityUnhealthyInterfaces proxies Forward's
+		 *     unhealthy-interfaces endpoint.
+		 */
+		post: operations["POST:skyforge.GetWorkspaceDeploymentCapacityUnhealthyInterfaces"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/rollups/refresh": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * RefreshWorkspaceDeploymentCapacityRollups enqueues a background rollup task for
+		 *     the deployment.
+		 */
+		post: operations["POST:skyforge.RefreshWorkspaceDeploymentCapacityRollups"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/deployments/{deploymentID}/capacity/summary": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspaceDeploymentCapacitySummary returns the latest stored capacity rollups
+		 *     for a deployment.
+		 */
+		get: operations["GET:skyforge.GetWorkspaceDeploymentCapacitySummary"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/api/workspaces/{id}/deployments/{deploymentID}/destroy": {
 		parameters: {
 			query?: never;
@@ -3565,6 +3924,341 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/api/workspaces/{id}/policy-reports/catalog": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspacePolicyReportCatalog returns the embedded Policy Reports check
+		 *     catalog.
+		 */
+		get: operations["GET:skyforge.GetWorkspacePolicyReportCatalog"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/checks": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspacePolicyReportChecks lists known checks (catalog + embedded .nqe
+		 *     files).
+		 */
+		get: operations["GET:skyforge.GetWorkspacePolicyReportChecks"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/checks/run": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * RunWorkspacePolicyReportCheck executes an embedded check (.nqe) and returns a
+		 *     normalized response.
+		 */
+		post: operations["POST:skyforge.RunWorkspacePolicyReportCheck"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/checks/{checkId}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** GetWorkspacePolicyReportCheck returns the .nqe file content for a given check. */
+		get: operations["GET:skyforge.GetWorkspacePolicyReportCheck"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/assignments": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** ListWorkspacePolicyReportRecertAssignments lists assignments. */
+		get: operations["GET:skyforge.ListWorkspacePolicyReportRecertAssignments"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/assignments/{assignmentId}/attest": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** AttestWorkspacePolicyReportRecertAssignment marks an assignment as attested. */
+		post: operations["POST:skyforge.AttestWorkspacePolicyReportRecertAssignment"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/assignments/{assignmentId}/waive": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** WaiveWorkspacePolicyReportRecertAssignment marks an assignment as waived. */
+		post: operations["POST:skyforge.WaiveWorkspacePolicyReportRecertAssignment"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/campaigns": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** ListWorkspacePolicyReportRecertCampaigns lists recertification campaigns. */
+		get: operations["GET:skyforge.ListWorkspacePolicyReportRecertCampaigns"];
+		put?: never;
+		/**
+		 * CreateWorkspacePolicyReportRecertCampaign creates a recertification campaign for
+		 *     a given Forward network/snapshot/pack.
+		 */
+		post: operations["POST:skyforge.CreateWorkspacePolicyReportRecertCampaign"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/campaigns/{campaignId}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** GetWorkspacePolicyReportRecertCampaign gets one campaign plus assignment counts. */
+		get: operations["GET:skyforge.GetWorkspacePolicyReportRecertCampaign"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/campaigns/{campaignId}/generate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * GenerateWorkspacePolicyReportRecertAssignments runs the campaign pack and stores
+		 *     resulting findings as assignments.
+		 */
+		post: operations["POST:skyforge.GenerateWorkspacePolicyReportRecertAssignments"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/exceptions": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** ListWorkspacePolicyReportExceptions lists exceptions. */
+		get: operations["GET:skyforge.ListWorkspacePolicyReportExceptions"];
+		put?: never;
+		/** CreateWorkspacePolicyReportException proposes an exception for a finding. */
+		post: operations["POST:skyforge.CreateWorkspacePolicyReportException"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/exceptions/{exceptionId}/approve": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** ApproveWorkspacePolicyReportException approves an exception (owner/admin only). */
+		post: operations["POST:skyforge.ApproveWorkspacePolicyReportException"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/governance/exceptions/{exceptionId}/reject": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** RejectWorkspacePolicyReportException rejects an exception (owner/admin only). */
+		post: operations["POST:skyforge.RejectWorkspacePolicyReportException"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/nqe": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * RunWorkspacePolicyReportNQE executes an NQE query and returns a normalized
+		 *     response.
+		 */
+		post: operations["POST:skyforge.RunWorkspacePolicyReportNQE"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/packs": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * GetWorkspacePolicyReportPacks returns the embedded Policy Reports packs
+		 *     definition.
+		 */
+		get: operations["GET:skyforge.GetWorkspacePolicyReportPacks"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/packs/delta": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * RunWorkspacePolicyReportPackDelta runs a pack on two snapshots and returns a
+		 *     per-check delta summary.
+		 */
+		post: operations["POST:skyforge.RunWorkspacePolicyReportPackDelta"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/packs/run": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * RunWorkspacePolicyReportPack executes all checks in a pack (serially) and
+		 *     returns per-check results.
+		 */
+		post: operations["POST:skyforge.RunWorkspacePolicyReportPack"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/workspaces/{id}/policy-reports/snapshots": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** GetWorkspacePolicyReportSnapshots lists snapshots for a Forward network. */
+		get: operations["GET:skyforge.GetWorkspacePolicyReportSnapshots"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/api/workspaces/{id}/runs/ansible-run": {
 		parameters: {
 			query?: never;
@@ -4164,6 +4858,26 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/internal/bridge/worker/tasks/poll": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * CronProcessQueuedTasksFallbackBridge triggers DB-backed fallback processing for
+		 *     queued tasks.
+		 */
+		post: operations["POST:worker.CronProcessQueuedTasksFallbackBridge"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/internal/bridge/worker/tasks/reconcile": {
 		parameters: {
 			query?: never;
@@ -4209,6 +4923,38 @@ export interface paths {
 		put?: never;
 		/** CronWorkspaceSyncBridge triggers workspace sync maintenance. */
 		post: operations["POST:worker.CronWorkspaceSyncBridge"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/internal/cron/capacity/cleanup": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: operations["POST:skyforge.CronCleanupCapacity"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/internal/cron/capacity/rollups": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: operations["POST:skyforge.CronEnqueueCapacityRollups"];
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -4309,6 +5055,29 @@ export interface paths {
 		 * @description This is used to detect whether any worker pods are alive when tasks are queued.
 		 */
 		post: operations["POST:worker.CronWorkerHeartbeat"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/internal/worker/tasks/poll": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * CronProcessQueuedTasksFallback is a DB-backed fallback that starts tasks
+		 *     directly when they
+		 * @description appear stuck in "queued".
+		 *
+		 *     This avoids the "queued forever" failure mode when Pub/Sub delivery is delayed/unavailable. The primary mechanism is still Pub/Sub; this only kicks in after a minimum queued age.
+		 */
+		post: operations["POST:worker.CronProcessQueuedTasksFallback"];
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -4944,6 +5713,95 @@ export interface components {
 			state: string;
 			subscriptionId: string;
 		};
+		"skyforge.CapacityBgpNeighborRow": {
+			/** Format: int64 */
+			advertisedPrefixes: number;
+			deviceName: string;
+			enabled: boolean;
+			neighborAddress: string;
+			/** Format: int64 */
+			peerAs: number;
+			peerDeviceName: string;
+			peerVrf: string;
+			/** Format: int64 */
+			receivedPrefixes: number;
+			/** Format: int64 */
+			sessionDurationSec: number;
+			sessionState: string;
+			vrf: string;
+		};
+		"skyforge.CapacityDeviceInventoryRow": {
+			deviceName: string;
+			deviceType: string;
+			groupNames: string[];
+			locationName: string;
+			model: string;
+			os: string;
+			osVersion: string;
+			tagNames: string[];
+			vendor: string;
+		};
+		"skyforge.CapacityGrowthRow": {
+			deltaMax: number;
+			deltaP95: number;
+			deltaP95Gbps: number;
+			metric: string;
+			now: components["schemas"]["skyforge.CapacityRollupRow"];
+			objectId: string;
+			objectType: string;
+			prev: components["schemas"]["skyforge.CapacityRollupRow"];
+			window: string;
+		};
+		"skyforge.CapacityInterfaceInventoryRow": {
+			adminStatus: string;
+			description: string;
+			deviceGroupNames: string[];
+			deviceLocationName: string;
+			deviceName: string;
+			deviceTagNames: string[];
+			interfaceName: string;
+			interfaceType: string;
+			layer: string;
+			/** Format: int64 */
+			mtu: number;
+			operStatus: string;
+			/** Format: int64 */
+			speedMbps: number;
+		};
+		"skyforge.CapacityInterfaceWithDirection": {
+			deviceName: string;
+			direction: string;
+			interfaceName: string;
+		};
+		"skyforge.CapacityRollupRow": {
+			avg: number;
+			createdAt: string;
+			deploymentId: string;
+			details: components["schemas"]["skyforge.JSONMap"];
+			forecastCrossingTs: string;
+			forwardNetworkId: string;
+			max: number;
+			metric: string;
+			objectId: string;
+			objectType: string;
+			p95: number;
+			p99: number;
+			periodEnd: string;
+			/** Format: int64 */
+			samples: number;
+			slopePerDay: number;
+			threshold: number;
+			window: string;
+			workspaceId: string;
+		};
+		"skyforge.CapacityRouteScaleRow": {
+			deviceName: string;
+			/** Format: int64 */
+			ipv4Routes: number;
+			/** Format: int64 */
+			ipv6Routes: number;
+			vrf: string;
+		};
 		"skyforge.ClabernetesInfo": {
 			/** Format: int64 */
 			configMaps: number;
@@ -5295,6 +6153,129 @@ export interface components {
 			revokedAt: string;
 			workspaceId: string;
 		};
+		"skyforge.PolicyReportCatalog": {
+			checks: components["schemas"]["skyforge.PolicyReportCatalogCheck"][];
+			version: string;
+		};
+		"skyforge.PolicyReportCatalogCheck": {
+			category: string;
+			description: string;
+			id: string;
+			params: components["schemas"]["skyforge.PolicyReportCatalogParam"][];
+			severity: string;
+			title: string;
+		};
+		"skyforge.PolicyReportCatalogParam": {
+			default: Record<string, never>;
+			description: string;
+			name: string;
+			required: boolean;
+			type: string;
+		};
+		"skyforge.PolicyReportException": {
+			approvedBy: string;
+			checkId: string;
+			/** Format: date-time */
+			createdAt: string;
+			createdBy: string;
+			/** Format: date-time */
+			expiresAt: string;
+			findingId: string;
+			id: string;
+			justification: string;
+			status: string;
+			ticketUrl: string;
+			/** Format: date-time */
+			updatedAt: string;
+			workspaceId: string;
+		};
+		"skyforge.PolicyReportNQEResponse": {
+			results: Record<string, never>;
+			snapshotId: string;
+			/** Format: int64 */
+			total: number;
+		};
+		"skyforge.PolicyReportPack": {
+			checks: components["schemas"]["skyforge.PolicyReportPackCheck"][];
+			description: string;
+			id: string;
+			title: string;
+		};
+		"skyforge.PolicyReportPackCheck": {
+			id: string;
+			parameters: components["schemas"]["skyforge.JSONMap"];
+		};
+		"skyforge.PolicyReportPackDeltaCheck": {
+			/** Format: int64 */
+			baselineTotal: number;
+			/** Format: int64 */
+			changedCount: number;
+			changedSamples: Record<string, never>;
+			checkId: string;
+			/** Format: int64 */
+			compareTotal: number;
+			/** Format: int64 */
+			newCount: number;
+			newSamples: Record<string, never>;
+			oldSamples: Record<string, never>;
+			/** Format: int64 */
+			resolvedCount: number;
+		};
+		"skyforge.PolicyReportRecertAssignment": {
+			assigneeUsername: string;
+			/** Format: date-time */
+			attestedAt: string;
+			campaignId: string;
+			checkCategory: string;
+			checkId: string;
+			checkSeverity: string;
+			checkTitle: string;
+			/** Format: date-time */
+			createdAt: string;
+			finding: Record<string, never>;
+			findingAssetKey: string;
+			findingId: string;
+			findingRiskReasons: string[];
+			/** Format: int64 */
+			findingRiskScore: number;
+			id: string;
+			justification: string;
+			status: string;
+			/** Format: date-time */
+			updatedAt: string;
+			workspaceId: string;
+		};
+		"skyforge.PolicyReportRecertCampaign": {
+			/** Format: date-time */
+			createdAt: string;
+			createdBy: string;
+			description: string;
+			/** Format: date-time */
+			dueAt: string;
+			forwardNetworkId: string;
+			id: string;
+			name: string;
+			packId: string;
+			snapshotId: string;
+			status: string;
+			/** Format: date-time */
+			updatedAt: string;
+			workspaceId: string;
+		};
+		"skyforge.PolicyReportRecertCampaignCounts": {
+			/** Format: int64 */
+			attested: number;
+			/** Format: int64 */
+			pending: number;
+			/** Format: int64 */
+			total: number;
+			/** Format: int64 */
+			waived: number;
+		};
+		"skyforge.PolicyReportRecertCampaignWithCounts": {
+			campaign: components["schemas"]["skyforge.PolicyReportRecertCampaign"];
+			counts: components["schemas"]["skyforge.PolicyReportRecertCampaignCounts"];
+		};
 		"skyforge.ProviderCostBreakdown": {
 			cost: number;
 			currency: string;
@@ -5589,6 +6570,12 @@ export interface components {
 				[key: string]: string;
 			};
 		};
+		"skyforge.adminSSHProbeResult": {
+			/** Format: int64 */
+			attempts: number;
+			error: string;
+			ok: boolean;
+		};
 		"skyforge.collectorRuntimeStatus": {
 			deploymentName: string;
 			image: string;
@@ -5633,6 +6620,7 @@ export interface components {
 			coderEnabled: boolean;
 			dexEnabled: boolean;
 			dnsEnabled: boolean;
+			elasticEnabled: boolean;
 			forwardEnabled: boolean;
 			giteaEnabled: boolean;
 			minioEnabled: boolean;
@@ -5765,6 +6753,78 @@ export interface operations {
 							useSsl: boolean;
 						};
 						publicUrl: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.AdminE2ESession": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					displayName: string;
+					email: string;
+					groups: string[];
+					username: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						cookie: string;
+						user: components["schemas"]["skyforge.UserProfile"];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.AdminSSHProbe": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					hosts: string[];
+					/** Format: int64 */
+					port: number;
+					tcpOnly: boolean;
+					/** Format: int64 */
+					timeoutSeconds: number;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						ok: boolean;
+						results: {
+							[
+								key: string
+							]: components["schemas"]["skyforge.adminSSHProbeResult"];
+						};
 					};
 				};
 			};
@@ -6160,6 +7220,41 @@ export interface operations {
 				content: {
 					"application/json": {
 						nodes: components["schemas"]["skyforge.NodeMetricSnapshot"][];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.TaskQueueDiag": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** Format: int64 */
+						oldestQueuedAgeSec: number;
+						/** Format: int64 */
+						publishFailures10m: number;
+						publishFailuresLatest: string;
+						/** Format: int64 */
+						queued: number;
+						/** Format: int64 */
+						running: number;
+						status: string;
+						workerEnabled: boolean;
+						/** Format: int64 */
+						workerHeartbeatAgeSec: number;
 					};
 				};
 			};
@@ -8136,6 +9231,86 @@ export interface operations {
 			default: components["responses"]["APIError"];
 		};
 	};
+	"GET:skyforge.SessionForwardAuthEnvoy": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.SessionForwardAuthEnvoyPost": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.SessionForwardAuthEnvoyAny": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				rest: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.SessionForwardAuthEnvoyPostAny": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				rest: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
 	"GET:skyforge.ListSnmpTrapEvents": {
 		parameters: {
 			query?: {
@@ -8596,6 +9771,12 @@ export interface operations {
 			content: {
 				"application/json": {
 					content: string;
+					/**
+					 * Filename is an optional user-provided base filename (repo-relative name is
+					 *     computed
+					 * @description from Kind + PathHint). If provided, it may include the expected extension. Examples: - netlab: "bgp-demo" or "bgp-demo.yml" - containerlab: "dc1" or "dc1.clab.yml"
+					 */
+					filename: string;
 					kind: components["schemas"]["skyforge.AITemplateKind"];
 					message: string;
 					pathHint: string;
@@ -9325,6 +10506,134 @@ export interface operations {
 			default: components["responses"]["APIError"];
 		};
 	};
+	"GET:skyforge.GetUserElasticConfig": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** none | api_key | basic */
+						authType: string;
+						basicUsername: string;
+						configured: boolean;
+						defaultIndexPrefix: string;
+						defaultUrl: string;
+						enabled: boolean;
+						hasApiKey: boolean;
+						hasBasicPassword: boolean;
+						indexPrefix: string;
+						updatedAt: string;
+						url: string;
+						verifyTls: boolean;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"PUT:skyforge.PutUserElasticConfig": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					apiKey: string;
+					/** none | api_key | basic */
+					authType: string;
+					basicPassword: string;
+					basicUsername: string;
+					indexPrefix: string;
+					url: string;
+					verifyTls: boolean;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** none | api_key | basic */
+						authType: string;
+						basicUsername: string;
+						configured: boolean;
+						defaultIndexPrefix: string;
+						defaultUrl: string;
+						enabled: boolean;
+						hasApiKey: boolean;
+						hasBasicPassword: boolean;
+						indexPrefix: string;
+						updatedAt: string;
+						url: string;
+						verifyTls: boolean;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.ClearUserElasticConfig": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.TestUserElasticConfig": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						checkedAt: string;
+						detail: string;
+						/** ok | error */
+						status: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
 	"GET:skyforge.GetUserGeminiConfig": {
 		parameters: {
 			query?: never;
@@ -9341,13 +10650,20 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
+						aiEnabled: boolean;
 						configured: boolean;
 						email: string;
 						enabled: boolean;
+						fallbackModel: string;
 						hasToken: boolean;
+						location: string;
+						model: string;
+						oauthConfigured: boolean;
+						projectId: string;
 						redirectUrl: string;
 						scopes: string;
 						updatedAt: string;
+						vertexConfigured: boolean;
 					};
 				};
 			};
@@ -11116,6 +12432,8 @@ export interface operations {
 		parameters: {
 			query?: {
 				forward_delete?: boolean;
+				/** @description Alternate casing used by some UI clients. */
+				forwardDelete?: boolean;
 			};
 			header?: never;
 			path: {
@@ -11170,6 +12488,358 @@ export interface operations {
 					"application/json": {
 						deployment: components["schemas"]["skyforge.WorkspaceDeployment"];
 						run: components["schemas"]["skyforge.JSONMap"];
+						workspaceId: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspaceDeploymentCapacityGrowth": {
+		parameters: {
+			query: {
+				metric: string;
+				window: string;
+				objectType?: string;
+				compareHours?: number;
+				limit?: number;
+			};
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						asOf: string;
+						compareAsOf: string;
+						/** Format: int64 */
+						compareHours: number;
+						deploymentId: string;
+						metric: string;
+						objectType: string;
+						rows: components["schemas"]["skyforge.CapacityGrowthRow"][];
+						window: string;
+						workspaceId: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspaceDeploymentCapacityInventory": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						asOf: string;
+						bgpNeighbors: components["schemas"]["skyforge.CapacityBgpNeighborRow"][];
+						deploymentId: string;
+						devices: components["schemas"]["skyforge.CapacityDeviceInventoryRow"][];
+						forwardNetworkId: string;
+						interfaces: components["schemas"]["skyforge.CapacityInterfaceInventoryRow"][];
+						routeScale: components["schemas"]["skyforge.CapacityRouteScaleRow"][];
+						snapshotId: string;
+						workspaceId: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspaceDeploymentCapacityDeviceMetrics": {
+		parameters: {
+			query: {
+				type: string;
+				days: number;
+				device?: string;
+				snapshotId?: string;
+				endTime?: string;
+			};
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						body: Record<string, never>;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.PostWorkspaceDeploymentCapacityDeviceMetricsHistory": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					/** Format: int64 */
+					days: number;
+					devices: string[];
+					endTime: string;
+					/** Format: int64 */
+					maxSamples: number;
+					startTime: string;
+					type: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						body: Record<string, never>;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspaceDeploymentCapacityInterfaceMetrics": {
+		parameters: {
+			query: {
+				type: string;
+				days: number;
+				direction?: string;
+				interface?: string;
+				interfaceFilter?: string;
+				snapshotId?: string;
+				endTime?: string;
+			};
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						body: Record<string, never>;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.PostWorkspaceDeploymentCapacityInterfaceMetricsHistory": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					/** Format: int64 */
+					days: number;
+					endTime: string;
+					interfaces: components["schemas"]["skyforge.CapacityInterfaceWithDirection"][];
+					/** Format: int64 */
+					maxSamples: number;
+					startTime: string;
+					type: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						body: Record<string, never>;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspaceDeploymentCapacityUnhealthyDevices": {
+		parameters: {
+			query?: {
+				snapshotId?: string;
+				endTime?: string;
+			};
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						body: Record<string, never>;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.GetWorkspaceDeploymentCapacityUnhealthyInterfaces": {
+		parameters: {
+			query?: {
+				snapshotId?: string;
+				endTime?: string;
+			};
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					devices: string[];
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						body: Record<string, never>;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.RefreshWorkspaceDeploymentCapacityRollups": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					/**
+					 * Optional override; primarily for debugging.
+					 * @description Defaults to the deployment id in the path.
+					 */
+					deploymentId: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						deploymentId: string;
+						run: components["schemas"]["skyforge.JSONMap"];
+						workspaceId: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspaceDeploymentCapacitySummary": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				deploymentID: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						asOf: string;
+						deploymentId: string;
+						forwardNetworkId: string;
+						rollups: components["schemas"]["skyforge.CapacityRollupRow"][];
+						stale: boolean;
 						workspaceId: string;
 					};
 				};
@@ -12784,6 +14454,655 @@ export interface operations {
 			default: components["responses"]["APIError"];
 		};
 	};
+	"GET:skyforge.GetWorkspacePolicyReportCatalog": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						checks: components["schemas"]["skyforge.PolicyReportCatalogCheck"][];
+						version: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspacePolicyReportChecks": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						catalog: components["schemas"]["skyforge.PolicyReportCatalog"];
+						checks: components["schemas"]["skyforge.PolicyReportCatalogCheck"][];
+						files: string[];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.RunWorkspacePolicyReportCheck": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					checkId: string;
+					networkId: string;
+					parameters: components["schemas"]["skyforge.JSONMap"];
+					queryOptions: components["schemas"]["skyforge.JSONMap"];
+					snapshotId: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						results: Record<string, never>;
+						snapshotId: string;
+						/** Format: int64 */
+						total: number;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspacePolicyReportCheck": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				checkId: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						check: components["schemas"]["skyforge.PolicyReportCatalogCheck"];
+						content: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.ListWorkspacePolicyReportRecertAssignments": {
+		parameters: {
+			query?: {
+				campaignId?: string;
+				status?: string;
+				assignee?: string;
+				limit?: number;
+			};
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						assignments: components["schemas"]["skyforge.PolicyReportRecertAssignment"][];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.AttestWorkspacePolicyReportRecertAssignment": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				assignmentId: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					justification: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						ok: boolean;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.WaiveWorkspacePolicyReportRecertAssignment": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				assignmentId: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					justification: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						ok: boolean;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.ListWorkspacePolicyReportRecertCampaigns": {
+		parameters: {
+			query?: {
+				status?: string;
+				limit?: number;
+			};
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						campaigns: components["schemas"]["skyforge.PolicyReportRecertCampaignWithCounts"][];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.CreateWorkspacePolicyReportRecertCampaign": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					description: string;
+					/** RFC3339 */
+					dueAt: string;
+					forwardNetworkId: string;
+					name: string;
+					packId: string;
+					snapshotId: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						campaign: components["schemas"]["skyforge.PolicyReportRecertCampaign"];
+						counts: components["schemas"]["skyforge.PolicyReportRecertCampaignCounts"];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspacePolicyReportRecertCampaign": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				campaignId: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						campaign: components["schemas"]["skyforge.PolicyReportRecertCampaign"];
+						counts: components["schemas"]["skyforge.PolicyReportRecertCampaignCounts"];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.GenerateWorkspacePolicyReportRecertAssignments": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				campaignId: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					assigneeUsername: string;
+					/** Format: int64 */
+					maxPerCheck: number;
+					/** Format: int64 */
+					maxTotal: number;
+					queryOptions: components["schemas"]["skyforge.JSONMap"];
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						campaignId: string;
+						/** Format: int64 */
+						created: number;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.ListWorkspacePolicyReportExceptions": {
+		parameters: {
+			query?: {
+				status?: string;
+				limit?: number;
+			};
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						exceptions: components["schemas"]["skyforge.PolicyReportException"][];
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.CreateWorkspacePolicyReportException": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					checkId: string;
+					/** RFC3339 */
+					expiresAt: string;
+					findingId: string;
+					justification: string;
+					ticketUrl: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						approvedBy: string;
+						checkId: string;
+						/** Format: date-time */
+						createdAt: string;
+						createdBy: string;
+						/** Format: date-time */
+						expiresAt: string;
+						findingId: string;
+						id: string;
+						justification: string;
+						status: string;
+						ticketUrl: string;
+						/** Format: date-time */
+						updatedAt: string;
+						workspaceId: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.ApproveWorkspacePolicyReportException": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				exceptionId: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						ok: boolean;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.RejectWorkspacePolicyReportException": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+				exceptionId: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						ok: boolean;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.RunWorkspacePolicyReportNQE": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					networkId: string;
+					parameters: components["schemas"]["skyforge.JSONMap"];
+					query: string;
+					queryOptions: components["schemas"]["skyforge.JSONMap"];
+					snapshotId: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						results: Record<string, never>;
+						snapshotId: string;
+						/** Format: int64 */
+						total: number;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspacePolicyReportPacks": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						packs: components["schemas"]["skyforge.PolicyReportPack"][];
+						version: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.RunWorkspacePolicyReportPackDelta": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					baselineSnapshotId: string;
+					compareSnapshotId: string;
+					/** Format: int64 */
+					maxSamplesPerBucket: number;
+					networkId: string;
+					packId: string;
+					queryOptions: components["schemas"]["skyforge.JSONMap"];
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						baselineSnapshotId: string;
+						checks: components["schemas"]["skyforge.PolicyReportPackDeltaCheck"][];
+						compareSnapshotId: string;
+						networkId: string;
+						packId: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.RunWorkspacePolicyReportPack": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": {
+					networkId: string;
+					packId: string;
+					queryOptions: components["schemas"]["skyforge.JSONMap"];
+					snapshotId: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						networkId: string;
+						packId: string;
+						results: {
+							[
+								key: string
+							]: components["schemas"]["skyforge.PolicyReportNQEResponse"];
+						};
+						snapshotId: string;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"GET:skyforge.GetWorkspacePolicyReportSnapshots": {
+		parameters: {
+			query: {
+				networkId: string;
+				maxResults?: number;
+				snapshotId?: string;
+			};
+			header?: never;
+			path: {
+				id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						body: Record<string, never>;
+					};
+				};
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
 	"POST:skyforge.RunWorkspaceAnsible": {
 		parameters: {
 			query?: never;
@@ -13799,6 +16118,27 @@ export interface operations {
 			default: components["responses"]["APIError"];
 		};
 	};
+	"POST:worker.CronProcessQueuedTasksFallbackBridge": {
+		parameters: {
+			query?: never;
+			header: {
+				"x-skyforge-internal-token": string;
+			};
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
 	"POST:worker.CronReconcileQueuedTasksBridge": {
 		parameters: {
 			query?: never;
@@ -13847,6 +16187,44 @@ export interface operations {
 			header: {
 				"x-skyforge-internal-token": string;
 			};
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.CronCleanupCapacity": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:skyforge.CronEnqueueCapacityRollups": {
+		parameters: {
+			query?: never;
+			header?: never;
 			path?: never;
 			cookie?: never;
 		};
@@ -13958,6 +16336,25 @@ export interface operations {
 		};
 	};
 	"POST:worker.CronWorkerHeartbeat": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Success response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			default: components["responses"]["APIError"];
+		};
+	};
+	"POST:worker.CronProcessQueuedTasksFallback": {
 		parameters: {
 			query?: never;
 			header?: never;

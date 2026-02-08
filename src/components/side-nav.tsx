@@ -17,6 +17,7 @@ import {
 	Settings,
 	ShieldCheck,
 	Sparkles,
+	Users,
 	Webhook,
 	Workflow,
 } from "lucide-react";
@@ -59,6 +60,8 @@ type Features = {
 const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
+	{ label: "Runs", href: "/dashboard/runs", icon: Workflow },
+	{ label: "Workspaces", href: "/dashboard/workspaces", icon: Users },
 	{
 		label: "Designer",
 		href: "/dashboard/labs/designer",
@@ -66,13 +69,19 @@ const items: NavItem[] = [
 		newTab: true,
 	},
 	{
-		label: "Integrations",
+		label: "Connect",
 		href: "",
 		icon: Workflow,
 		children: [
 			{ label: "Overview", href: "/dashboard/integrations", icon: Workflow },
 			{ label: "Forward Collector", href: "/dashboard/forward", icon: Radio },
+			{
+				label: "Forward Networks",
+				href: "/dashboard/forward-networks",
+				icon: Network,
+			},
 			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
+			{ label: "Elastic", href: "/dashboard/elastic", icon: Database },
 			{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
 			{ label: "Git", href: "/git/", icon: GitBranch, external: true },
 			{
@@ -91,15 +100,25 @@ const items: NavItem[] = [
 				external: true,
 				adminOnly: true,
 			},
+			{
+				label: "Elastic (Kibana)",
+				href: "/kibana/",
+				icon: Database,
+				external: true,
+			},
 		],
 	},
-	{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
 	{
 		label: "Tools",
 		href: "",
 		icon: Database,
 		children: [
 			{ label: "AI", href: "/dashboard/ai", icon: Sparkles },
+			{
+				label: "Policy Reports",
+				href: "/dashboard/policy-reports",
+				icon: ShieldCheck,
+			},
 			{ label: "Webhooks", href: "/webhooks", icon: Webhook },
 			{ label: "Syslog", href: "/syslog", icon: Inbox },
 			{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
@@ -111,26 +130,28 @@ const items: NavItem[] = [
 			},
 			{ label: "NetBox", href: "/netbox/", icon: Network, external: true },
 			{ label: "Nautobot", href: "/nautobot/", icon: Network, external: true },
-			{
-				label: "Elastic (Kibana)",
-				href: "/kibana/",
-				icon: Database,
-				external: true,
-			},
 			{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 		],
 	},
 	{
-		label: "Admin Settings",
-		href: "/admin/settings",
+		label: "Settings",
+		href: "",
 		icon: Settings,
-		adminOnly: true,
-	},
-	{
-		label: "Governance",
-		href: "/admin/governance",
-		icon: ShieldCheck,
-		adminOnly: true,
+		children: [
+			{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
+			{
+				label: "Admin Settings",
+				href: "/admin/settings",
+				icon: Settings,
+				adminOnly: true,
+			},
+			{
+				label: "Governance",
+				href: "/admin/governance",
+				icon: ShieldCheck,
+				adminOnly: true,
+			},
+		],
 	},
 ];
 
@@ -141,7 +162,8 @@ export function SideNav(props: {
 }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({
-		SSOT: true,
+		Tools: true,
+		Connect: true,
 	});
 
 	const targetForExternal = "_blank";
@@ -162,11 +184,6 @@ export function SideNav(props: {
 	return (
 		<nav className="grid items-start gap-2">
 			<div className="space-y-2">
-				{!props.collapsed ? (
-					<h4 className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-						Overview
-					</h4>
-				) : null}
 				<div className="grid gap-1">
 					{items
 						.filter((item) => (item.adminOnly ? !!props.isAdmin : true))
@@ -174,16 +191,23 @@ export function SideNav(props: {
 							const f = props.features;
 							if (!f) return [item];
 
-							if (item.label === "Integrations") {
+							if (item.label === "Connect") {
 								const children =
 									item.children?.filter((child) => {
 										if (child.label === "Forward Collector")
 											return !!f.forwardEnabled;
+										if (child.label === "Forward Networks")
+											return !!f.forwardEnabled;
+										if (child.label === "ServiceNow") return !!f.forwardEnabled;
+										if (child.label === "Elastic")
+											return !!f.forwardEnabled && !!f.elasticEnabled;
 										if (child.label === "Artifacts") return !!f.minioEnabled;
 										if (child.label === "Git") return !!f.giteaEnabled;
 										if (child.label === "DNS") return !!f.dnsEnabled;
 										if (child.label === "Coder") return !!f.coderEnabled;
 										if (child.label === "Coder Admin") return !!f.coderEnabled;
+										if (child.label === "Elastic (Kibana)")
+											return !!f.forwardEnabled && !!f.elasticEnabled;
 										if (child.adminOnly) return !!props.isAdmin;
 										return true;
 									}) ?? [];
@@ -197,8 +221,16 @@ export function SideNav(props: {
 										if (child.label === "API Testing") return !!f.yaadeEnabled;
 										if (child.label === "NetBox") return !!f.netboxEnabled;
 										if (child.label === "Nautobot") return !!f.nautobotEnabled;
-										if (child.label === "Elastic (Kibana)")
-											return !!f.elasticEnabled;
+										return true;
+									}) ?? [];
+								if (children.length === 0) return [];
+								return [{ ...item, children }];
+							}
+
+							if (item.label === "Settings") {
+								const children =
+									item.children?.filter((child) => {
+										if (child.adminOnly) return !!props.isAdmin;
 										return true;
 									}) ?? [];
 								if (children.length === 0) return [];

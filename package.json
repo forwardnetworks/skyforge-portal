@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "vite",
 		"prebuild": "node scripts/generate-docs-index.mjs",
-		"build": "vite build",
+		"build": "vite build && node scripts/sync-frontend-dist.mjs",
 		"preview": "vite preview",
 		"type-check": "tsc --noEmit",
 		"lint": "biome check .",

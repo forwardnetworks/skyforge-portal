@@ -75,6 +75,9 @@ export type ServiceNowSchemaStatusResponse = {
 
 export type UserGeminiConfigResponse = {
 	enabled: boolean;
+	aiEnabled: boolean;
+	oauthConfigured: boolean;
+	vertexConfigured: boolean;
 	configured: boolean;
 	email?: string;
 	scopes?: string;
@@ -618,6 +621,99 @@ export async function disconnectUserGemini(): Promise<void> {
 	});
 }
 
+export type UserElasticConfigResponse = {
+	enabled: boolean;
+	configured: boolean;
+	url?: string;
+	indexPrefix?: string;
+	authType?: "none" | "api_key" | "basic" | string;
+	hasApiKey: boolean;
+	basicUsername?: string;
+	hasBasicPassword: boolean;
+	verifyTls: boolean;
+	updatedAt?: string;
+	defaultUrl?: string;
+	defaultIndexPrefix?: string;
+};
+
+export type PutUserElasticConfigRequest = {
+	url: string;
+	indexPrefix: string;
+	authType: "none" | "api_key" | "basic";
+	apiKey: string;
+	basicUsername: string;
+	basicPassword: string;
+	verifyTls?: boolean;
+};
+
+export type UserElasticTestResponse = {
+	status: "ok" | "error" | string;
+	detail?: string;
+	checkedAt?: string;
+};
+
+export async function getUserElasticConfig(): Promise<UserElasticConfigResponse> {
+	return apiFetch<UserElasticConfigResponse>("/api/user/integrations/elastic");
+}
+
+export async function putUserElasticConfig(
+	payload: PutUserElasticConfigRequest,
+): Promise<UserElasticConfigResponse> {
+	return apiFetch<UserElasticConfigResponse>("/api/user/integrations/elastic", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function clearUserElasticConfig(): Promise<void> {
+	await apiFetch<void>("/api/user/integrations/elastic/clear", {
+		method: "POST",
+		body: "{}",
+	});
+}
+
+export async function testUserElasticConfig(): Promise<UserElasticTestResponse> {
+	return apiFetch<UserElasticTestResponse>(
+		"/api/user/integrations/elastic/test",
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
+export type ElasticToolServiceStatus = {
+	id: "elasticsearch" | "kibana" | string;
+	kind: "statefulset" | "deployment" | string;
+	desiredReplicas: number;
+	availableReplicas: number;
+};
+
+export type ElasticToolsStatusResponse = {
+	enabled: boolean;
+	autosleepEnabled: boolean;
+	idleMinutes: number;
+	now: string;
+	lastActivityAt?: string;
+	services: ElasticToolServiceStatus[];
+};
+
+export async function getElasticToolsStatus(): Promise<ElasticToolsStatusResponse> {
+	return apiFetch<ElasticToolsStatusResponse>("/api/system/elastic/tools/status");
+}
+
+export async function wakeElasticTools(): Promise<{
+	status: ElasticToolsStatusResponse;
+}> {
+	return apiFetch<{ status: ElasticToolsStatusResponse }>(
+		"/api/system/elastic/tools/wake",
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
 export type UserAIGenerateRequest = {
 	provider?: "gemini";
 	kind: "netlab" | "containerlab";
@@ -650,10 +746,12 @@ export type UserAIHistoryResponse = {
 
 export async function generateUserAITemplate(
 	payload: UserAIGenerateRequest,
+	opts?: { signal?: AbortSignal },
 ): Promise<UserAIGenerateResponse> {
 	return apiFetch<UserAIGenerateResponse>("/api/user/ai/generate", {
 		method: "POST",
 		body: JSON.stringify(payload),
+		signal: opts?.signal,
 	});
 }
 
@@ -1150,6 +1248,689 @@ export async function syncDeploymentForward(
 	return apiFetch<SyncDeploymentForwardResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward/sync`,
 		{ method: "POST", body: "{}" },
+	);
+}
+
+export type CapacityRollupRow = {
+	objectType: string;
+	objectId: string;
+	metric: string;
+	window: string;
+	periodEnd: string;
+	samples: number;
+	avg?: number;
+	p95?: number;
+	p99?: number;
+	max?: number;
+	slopePerDay?: number;
+	forecastCrossingTs?: string;
+	threshold?: number;
+	details?: JSONMap;
+	createdAt?: string;
+	forwardNetworkId?: string;
+	deploymentId?: string;
+	workspaceId?: string;
+};
+
+export type DeploymentCapacitySummaryResponse = {
+	workspaceId: string;
+	deploymentId: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	rollups: CapacityRollupRow[];
+	stale: boolean;
+};
+
+export type DeploymentCapacityRefreshResponse = {
+	workspaceId: string;
+	deploymentId: string;
+	run: JSONMap;
+};
+
+export type CapacityPerfProxyResponse = {
+	body: unknown;
+};
+
+export async function getDeploymentCapacitySummary(
+	workspaceId: string,
+	deploymentId: string,
+): Promise<DeploymentCapacitySummaryResponse> {
+	return apiFetch<DeploymentCapacitySummaryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/summary`,
+	);
+}
+
+export async function refreshDeploymentCapacityRollups(
+	workspaceId: string,
+	deploymentId: string,
+): Promise<DeploymentCapacityRefreshResponse> {
+	return apiFetch<DeploymentCapacityRefreshResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/rollups/refresh`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export type ForwardNetworkCapacitySummaryResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	rollups: CapacityRollupRow[];
+	stale: boolean;
+};
+
+export type ForwardNetworkCapacityRefreshResponse = {
+	workspaceId: string;
+	networkRef: string;
+	run: JSONMap;
+};
+
+export async function getForwardNetworkCapacitySummary(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacitySummaryResponse> {
+	return apiFetch<ForwardNetworkCapacitySummaryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/summary`,
+	);
+}
+
+export async function refreshForwardNetworkCapacityRollups(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacityRefreshResponse> {
+	return apiFetch<ForwardNetworkCapacityRefreshResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/rollups/refresh`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export type ForwardNetworkCapacityCoverageResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOfRollups?: string;
+	asOfInventory?: string;
+	devicesTotal: number;
+	ifacesTotal: number;
+	ifacesWithSpeed: number;
+	ifacesAdminUp: number;
+	ifacesOperUp: number;
+	rollupsInterfaceTotal: number;
+	rollupsDeviceTotal: number;
+	rollupsWithSamples: number;
+};
+
+export async function getForwardNetworkCapacityCoverage(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacityCoverageResponse> {
+	return apiFetch<ForwardNetworkCapacityCoverageResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/coverage`,
+	);
+}
+
+export type CapacityRouteScaleDeltaRow = {
+	deviceName: string;
+	vrf: string;
+	ipv4Now: number;
+	ipv6Now: number;
+	ipv4Prev: number;
+	ipv6Prev: number;
+	ipv4Delta: number;
+	ipv6Delta: number;
+};
+
+export type CapacityBgpNeighborDeltaRow = {
+	deviceName: string;
+	vrf: string;
+	neighborsNow: number;
+	neighborsPrev: number;
+	neighborsDelta: number;
+	establishedNow: number;
+	establishedPrev: number;
+	establishedDelta: number;
+};
+
+export type ForwardNetworkCapacitySnapshotDeltaResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	latestSnapshotId?: string;
+	prevSnapshotId?: string;
+	routeDelta: CapacityRouteScaleDeltaRow[];
+	bgpDelta: CapacityBgpNeighborDeltaRow[];
+	deviceDelta?: Array<{
+		deviceName: string;
+		changeType: string;
+		changes?: string[];
+		prev?: CapacityDeviceInventoryRow;
+		now?: CapacityDeviceInventoryRow;
+	}>;
+	interfaceDelta?: Array<{
+		deviceName: string;
+		interfaceName: string;
+		changeType: string;
+		changes?: string[];
+		prev?: CapacityInterfaceInventoryRow;
+		now?: CapacityInterfaceInventoryRow;
+	}>;
+};
+
+export async function getForwardNetworkCapacitySnapshotDelta(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacitySnapshotDeltaResponse> {
+	return apiFetch<ForwardNetworkCapacitySnapshotDeltaResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/snapshot-delta`,
+	);
+}
+
+export type ForwardNetworkCapacityUpgradeCandidate = {
+	scopeType: string;
+	device: string;
+	name: string;
+	members?: string[];
+	speedMbps: number;
+	worstDirection: string;
+	p95Util: number;
+	maxUtil: number;
+	p95Gbps: number;
+	maxGbps: number;
+	forecastCrossingTs?: string | null;
+	requiredSpeedMbps?: number | null;
+	recommendedSpeedMbps?: number | null;
+	reason?: string;
+	worstMemberMaxUtil?: number | null;
+};
+
+export type ForwardNetworkCapacityUpgradeCandidatesResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	items: ForwardNetworkCapacityUpgradeCandidate[];
+};
+
+export async function getForwardNetworkCapacityUpgradeCandidates(
+	workspaceId: string,
+	networkRef: string,
+	q: { window?: string } = {},
+): Promise<ForwardNetworkCapacityUpgradeCandidatesResponse> {
+	const qs = new URLSearchParams();
+	if (q.window) qs.set("window", q.window);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<ForwardNetworkCapacityUpgradeCandidatesResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/upgrade-candidates${suffix}`,
+	);
+}
+
+export type ForwardNetworkCapacityPortfolioItem = {
+	networkRef: string;
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	asOf?: string;
+	stale: boolean;
+	hotInterfaces: number;
+	soonestForecast?: string | null;
+	maxUtilMax?: number | null;
+	maxUtilP95?: number | null;
+};
+
+export type ForwardNetworkCapacityPortfolioResponse = {
+	workspaceId: string;
+	items: ForwardNetworkCapacityPortfolioItem[];
+};
+
+export async function getWorkspaceForwardNetworkCapacityPortfolio(
+	workspaceId: string,
+): Promise<ForwardNetworkCapacityPortfolioResponse> {
+	return apiFetch<ForwardNetworkCapacityPortfolioResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/capacity/forward-networks/portfolio`,
+	);
+}
+
+export type CapacityDeviceInventoryRow = {
+	deviceName: string;
+	tagNames?: string[];
+	groupNames?: string[];
+	deviceType?: string;
+	vendor?: string;
+	os?: string;
+	model?: string | null;
+	osVersion?: string | null;
+	locationName?: string | null;
+};
+
+export type CapacityInterfaceInventoryRow = {
+	deviceName: string;
+	deviceLocationName?: string | null;
+	deviceTagNames?: string[];
+	deviceGroupNames?: string[];
+	interfaceName: string;
+	description?: string | null;
+	adminStatus?: string;
+	operStatus?: string;
+	layer?: string;
+	interfaceType?: string;
+	mtu?: number | null;
+	speedMbps?: number | null;
+	aggregateId?: string | null;
+	aggregationMemberNames?: string[];
+	aggregationConfiguredMemberNames?: string[];
+};
+
+export type CapacityRouteScaleRow = {
+	deviceName: string;
+	vrf: string;
+	ipv4Routes: number;
+	ipv6Routes: number;
+};
+
+export type CapacityBgpNeighborRow = {
+	deviceName: string;
+	vrf: string;
+	neighborAddress: string;
+	peerDeviceName?: string | null;
+	peerVrf?: string | null;
+	peerAs: number;
+	enabled: boolean;
+	sessionState?: string | null;
+	receivedPrefixes?: number | null;
+	advertisedPrefixes?: number | null;
+	sessionDurationSec?: number | null;
+};
+
+export type DeploymentCapacityInventoryResponse = {
+	workspaceId: string;
+	deploymentId: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	snapshotId?: string;
+	devices: CapacityDeviceInventoryRow[];
+	interfaces: CapacityInterfaceInventoryRow[];
+	interfaceVrfs?: Array<{
+		deviceName: string;
+		vrf: string;
+		ifaceName: string;
+		subIfaceName?: string | null;
+	}>;
+	hardwareTcam?: Array<{
+		deviceName: string;
+		vendor?: string;
+		os?: string;
+		model?: string | null;
+		tcamUsed: number;
+		tcamTotal: number;
+		commandText?: string;
+		evidence?: string;
+	}>;
+	routeScale: CapacityRouteScaleRow[];
+	bgpNeighbors: CapacityBgpNeighborRow[];
+};
+
+export type ForwardNetworkCapacityInventoryResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	snapshotId?: string;
+	devices: CapacityDeviceInventoryRow[];
+	interfaces: CapacityInterfaceInventoryRow[];
+	interfaceVrfs?: Array<{
+		deviceName: string;
+		vrf: string;
+		ifaceName: string;
+		subIfaceName?: string | null;
+	}>;
+	hardwareTcam?: Array<{
+		deviceName: string;
+		vendor?: string;
+		os?: string;
+		model?: string | null;
+		tcamUsed: number;
+		tcamTotal: number;
+		commandText?: string;
+		evidence?: string;
+	}>;
+	routeScale: CapacityRouteScaleRow[];
+	bgpNeighbors: CapacityBgpNeighborRow[];
+};
+
+export async function getDeploymentCapacityInventory(
+	workspaceId: string,
+	deploymentId: string,
+): Promise<DeploymentCapacityInventoryResponse> {
+	return apiFetch<DeploymentCapacityInventoryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/inventory`,
+	);
+}
+
+export async function getForwardNetworkCapacityInventory(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardNetworkCapacityInventoryResponse> {
+	return apiFetch<ForwardNetworkCapacityInventoryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/inventory`,
+	);
+}
+
+export type DeploymentCapacityGrowthQuery = {
+	metric: string;
+	window: string;
+	objectType?: string;
+	compareHours?: number;
+	limit?: number;
+};
+
+export type CapacityGrowthRow = {
+	objectType: string;
+	objectId: string;
+	metric: string;
+	window: string;
+	now: CapacityRollupRow;
+	prev?: CapacityRollupRow | null;
+	deltaP95?: number | null;
+	deltaMax?: number | null;
+	deltaP95Gbps?: number | null;
+};
+
+export type DeploymentCapacityGrowthResponse = {
+	workspaceId: string;
+	deploymentId: string;
+	metric: string;
+	window: string;
+	objectType?: string;
+	asOf?: string;
+	compareAsOf?: string;
+	compareHours: number;
+	rows: CapacityGrowthRow[];
+};
+
+export type ForwardNetworkCapacityGrowthResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	metric: string;
+	window: string;
+	objectType?: string;
+	asOf?: string;
+	compareAsOf?: string;
+	compareHours: number;
+	rows: CapacityGrowthRow[];
+};
+
+export async function getDeploymentCapacityGrowth(
+	workspaceId: string,
+	deploymentId: string,
+	q: DeploymentCapacityGrowthQuery,
+): Promise<DeploymentCapacityGrowthResponse> {
+	const qs = new URLSearchParams();
+	qs.set("metric", q.metric);
+	qs.set("window", q.window);
+	if (q.objectType) qs.set("objectType", q.objectType);
+	if (q.compareHours) qs.set("compareHours", String(q.compareHours));
+	if (q.limit) qs.set("limit", String(q.limit));
+	return apiFetch<DeploymentCapacityGrowthResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/growth?${qs.toString()}`,
+	);
+}
+
+export async function getForwardNetworkCapacityGrowth(
+	workspaceId: string,
+	networkRef: string,
+	q: DeploymentCapacityGrowthQuery,
+): Promise<ForwardNetworkCapacityGrowthResponse> {
+	const qs = new URLSearchParams();
+	qs.set("metric", q.metric);
+	qs.set("window", q.window);
+	if (q.objectType) qs.set("objectType", q.objectType);
+	if (q.compareHours) qs.set("compareHours", String(q.compareHours));
+	if (q.limit) qs.set("limit", String(q.limit));
+	return apiFetch<ForwardNetworkCapacityGrowthResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/growth?${qs.toString()}`,
+	);
+}
+
+export type CapacityInterfaceWithDirection = {
+	deviceName: string;
+	interfaceName: string;
+	direction?: string;
+};
+
+export type PostCapacityInterfaceMetricsHistoryRequest = {
+	type: string;
+	days?: number;
+	startTime?: string;
+	endTime?: string;
+	maxSamples?: number;
+	interfaces: CapacityInterfaceWithDirection[];
+};
+
+export async function postDeploymentCapacityInterfaceMetricsHistory(
+	workspaceId: string,
+	deploymentId: string,
+	body: PostCapacityInterfaceMetricsHistoryRequest,
+): Promise<CapacityPerfProxyResponse> {
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/interface-metrics-history`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function postForwardNetworkCapacityInterfaceMetricsHistory(
+	workspaceId: string,
+	networkRef: string,
+	body: PostCapacityInterfaceMetricsHistoryRequest,
+): Promise<CapacityPerfProxyResponse> {
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/interface-metrics-history`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export type PostCapacityDeviceMetricsHistoryRequest = {
+	type: string;
+	days?: number;
+	startTime?: string;
+	endTime?: string;
+	maxSamples?: number;
+	devices: string[];
+};
+
+export async function postDeploymentCapacityDeviceMetricsHistory(
+	workspaceId: string,
+	deploymentId: string,
+	body: PostCapacityDeviceMetricsHistoryRequest,
+): Promise<CapacityPerfProxyResponse> {
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/device-metrics-history`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function postForwardNetworkCapacityDeviceMetricsHistory(
+	workspaceId: string,
+	networkRef: string,
+	body: PostCapacityDeviceMetricsHistoryRequest,
+): Promise<CapacityPerfProxyResponse> {
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/device-metrics-history`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export type GetCapacityUnhealthyDevicesQuery = {
+	snapshotId?: string;
+	endTime?: string;
+};
+
+export async function getDeploymentCapacityUnhealthyDevices(
+	workspaceId: string,
+	deploymentId: string,
+	q: GetCapacityUnhealthyDevicesQuery,
+): Promise<CapacityPerfProxyResponse> {
+	const qs = new URLSearchParams();
+	if (q.snapshotId) qs.set("snapshotId", q.snapshotId);
+	if (q.endTime) qs.set("endTime", q.endTime);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-devices${suffix}`,
+	);
+}
+
+export async function getForwardNetworkCapacityUnhealthyDevices(
+	workspaceId: string,
+	networkRef: string,
+	q: GetCapacityUnhealthyDevicesQuery,
+): Promise<CapacityPerfProxyResponse> {
+	const qs = new URLSearchParams();
+	if (q.snapshotId) qs.set("snapshotId", q.snapshotId);
+	if (q.endTime) qs.set("endTime", q.endTime);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-devices${suffix}`,
+	);
+}
+
+export type PostCapacityUnhealthyInterfacesRequest = {
+	devices: string[];
+};
+
+export type GetCapacityUnhealthyInterfacesQuery = {
+	snapshotId?: string;
+	endTime?: string;
+};
+
+export async function postDeploymentCapacityUnhealthyInterfaces(
+	workspaceId: string,
+	deploymentId: string,
+	q: GetCapacityUnhealthyInterfacesQuery,
+	body: PostCapacityUnhealthyInterfacesRequest,
+): Promise<CapacityPerfProxyResponse> {
+	const qs = new URLSearchParams();
+	if (q.snapshotId) qs.set("snapshotId", q.snapshotId);
+	if (q.endTime) qs.set("endTime", q.endTime);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function postForwardNetworkCapacityUnhealthyInterfaces(
+	workspaceId: string,
+	networkRef: string,
+	q: GetCapacityUnhealthyInterfacesQuery,
+	body: PostCapacityUnhealthyInterfacesRequest,
+): Promise<CapacityPerfProxyResponse> {
+	const qs = new URLSearchParams();
+	if (q.snapshotId) qs.set("snapshotId", q.snapshotId);
+	if (q.endTime) qs.set("endTime", q.endTime);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<CapacityPerfProxyResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export type CapacityPathSearchQuery = {
+	from?: string;
+	srcIp?: string;
+	dstIp: string;
+	ipProto?: number;
+	srcPort?: string;
+	dstPort?: string;
+	icmpType?: number;
+	fin?: number;
+	syn?: number;
+	rst?: number;
+	psh?: number;
+	ack?: number;
+	urg?: number;
+	appId?: string;
+	userId?: string;
+	userGroupId?: string;
+	url?: string;
+};
+
+export type ForwardNetworkCapacityPathBottlenecksRequest = {
+	window: string;
+	snapshotId?: string;
+	includeHops?: boolean;
+	queries: CapacityPathSearchQuery[];
+};
+
+export type ForwardNetworkCapacityPathHop = {
+	deviceName?: string;
+	ingressInterface?: string;
+	egressInterface?: string;
+};
+
+export type ForwardNetworkCapacityPathBottleneck = {
+	deviceName: string;
+	interfaceName: string;
+	direction: string;
+	source?: string;
+	speedMbps?: number | null;
+	threshold?: number | null;
+	p95Util?: number | null;
+	maxUtil?: number | null;
+	p95Gbps?: number | null;
+	maxGbps?: number | null;
+	headroomGbps?: number | null;
+	headroomUtil?: number | null;
+	forecastCrossingTs?: string | null;
+};
+
+export type CapacityNote = {
+	code: string;
+	message: string;
+};
+
+export type ForwardNetworkCapacityPathBottleneckItem = {
+	index: number;
+	query: CapacityPathSearchQuery;
+	timedOut?: boolean;
+	totalHits?: number;
+	forwardQueryUrl?: string;
+	forwardingOutcome?: string;
+	securityOutcome?: string;
+	bottleneck?: ForwardNetworkCapacityPathBottleneck | null;
+	hops?: ForwardNetworkCapacityPathHop[];
+	unmatchedHopInterfacesSample?: string[];
+	notes?: CapacityNote[];
+	error?: string;
+};
+
+export type ForwardNetworkCapacityPathBottlenecksCoverage = {
+	hopInterfaceKeys: number;
+	rollupMatched: number;
+	perfFallbackUsed: number;
+	unknown: number;
+	truncated?: boolean;
+	unmatchedHopInterfacesSample?: string[];
+};
+
+export type ForwardNetworkCapacityPathBottlenecksResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	window: string;
+	snapshotId?: string;
+	coverage?: ForwardNetworkCapacityPathBottlenecksCoverage | null;
+	items: ForwardNetworkCapacityPathBottleneckItem[];
+};
+
+export async function postForwardNetworkCapacityPathBottlenecks(
+	workspaceId: string,
+	networkRef: string,
+	body: ForwardNetworkCapacityPathBottlenecksRequest,
+): Promise<ForwardNetworkCapacityPathBottlenecksResponse> {
+	return apiFetch<ForwardNetworkCapacityPathBottlenecksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/path-bottlenecks`,
+		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
@@ -2607,6 +3388,1059 @@ export async function deleteUserVariableGroup(
 		`/api/user/variable-groups/${encodeURIComponent(groupId)}`,
 		{
 			method: "DELETE",
+		},
+	);
+}
+
+export type PolicyReportCatalogParam = {
+	name: string;
+	type: string;
+	default?: unknown;
+	description?: string;
+	required?: boolean;
+};
+
+export type PolicyReportCatalogCheck = {
+	id: string;
+	title?: string;
+	category?: string;
+	severity?: string;
+	description?: string;
+	params?: PolicyReportCatalogParam[];
+};
+
+export type PolicyReportCatalog = {
+	version?: string;
+	checks?: PolicyReportCatalogCheck[];
+};
+
+export type PolicyReportPackCheck = {
+	id: string;
+	parameters?: JSONMap;
+};
+
+export type PolicyReportPack = {
+	id: string;
+	title?: string;
+	description?: string;
+	checks?: PolicyReportPackCheck[];
+};
+
+export type PolicyReportPacks = {
+	version?: string;
+	packs?: PolicyReportPack[];
+};
+
+export type PolicyReportChecksResponse = {
+	catalog?: PolicyReportCatalog;
+	checks: PolicyReportCatalogCheck[];
+	files: string[];
+};
+
+export type PolicyReportCheckResponse = {
+	check?: PolicyReportCatalogCheck;
+	content: string;
+};
+
+export type PolicyReportNQEResponse = {
+	snapshotId?: string;
+	total: number;
+	results: unknown;
+};
+
+export type PolicyReportSnapshotsResponse = {
+	body: unknown;
+};
+
+export type PolicyReportRunCheckRequest = {
+	networkId: string;
+	snapshotId?: string;
+	checkId: string;
+	parameters?: JSONMap;
+	queryOptions?: JSONMap;
+};
+
+export type PolicyReportRunPackRequest = {
+	networkId: string;
+	snapshotId?: string;
+	packId: string;
+	queryOptions?: JSONMap;
+};
+
+export type PolicyReportRunPackResponse = {
+	packId: string;
+	networkId: string;
+	snapshotId?: string;
+	results: Record<string, PolicyReportNQEResponse>;
+};
+
+export type PolicyReportPackDeltaRequest = {
+	networkId: string;
+	packId: string;
+	baselineSnapshotId: string;
+	compareSnapshotId: string;
+	queryOptions?: JSONMap;
+	maxSamplesPerBucket?: number;
+};
+
+export type PolicyReportPackDeltaCheck = {
+	checkId: string;
+	baselineTotal: number;
+	compareTotal: number;
+	newCount: number;
+	resolvedCount: number;
+	changedCount: number;
+	newSamples?: unknown;
+	oldSamples?: unknown;
+	changedSamples?: unknown;
+};
+
+export type PolicyReportPackDeltaResponse = {
+	packId: string;
+	networkId: string;
+	baselineSnapshotId: string;
+	compareSnapshotId: string;
+	checks: PolicyReportPackDeltaCheck[];
+};
+
+export type PolicyReportRecertCampaign = {
+	id: string;
+	workspaceId: string;
+	name: string;
+	description?: string;
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId: string;
+	status: string;
+	dueAt?: string;
+	createdBy: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportRecertCampaignCounts = {
+	total: number;
+	pending: number;
+	attested: number;
+	waived: number;
+};
+
+export type PolicyReportRecertCampaignWithCounts = {
+	campaign: PolicyReportRecertCampaign;
+	counts: PolicyReportRecertCampaignCounts;
+};
+
+export type PolicyReportListRecertCampaignsResponse = {
+	campaigns: PolicyReportRecertCampaignWithCounts[];
+};
+
+export type PolicyReportCreateRecertCampaignRequest = {
+	name: string;
+	description?: string;
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId: string;
+	dueAt?: string;
+};
+
+export type PolicyReportRecertAssignment = {
+	id: string;
+	campaignId: string;
+	workspaceId: string;
+	findingId: string;
+	checkId: string;
+	assigneeUsername?: string;
+	status: string;
+	justification?: string;
+	attestedAt?: string;
+	finding?: unknown;
+	createdAt: string;
+	updatedAt: string;
+	checkTitle?: string;
+	checkCategory?: string;
+	checkSeverity?: string;
+	findingRiskScore?: number;
+	findingRiskReasons?: string[];
+	findingAssetKey?: string;
+};
+
+export type PolicyReportListRecertAssignmentsResponse = {
+	assignments: PolicyReportRecertAssignment[];
+};
+
+export type PolicyReportGenerateRecertAssignmentsRequest = {
+	assigneeUsername?: string;
+	maxPerCheck?: number;
+	maxTotal?: number;
+	queryOptions?: JSONMap;
+};
+
+export type PolicyReportGenerateRecertAssignmentsResponse = {
+	campaignId: string;
+	created: number;
+};
+
+export type PolicyReportAttestAssignmentRequest = {
+	justification?: string;
+};
+
+export type PolicyReportException = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	findingId: string;
+	checkId: string;
+	status: string;
+	justification: string;
+	ticketUrl?: string;
+	expiresAt?: string;
+	createdBy: string;
+	approvedBy?: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportListExceptionsResponse = {
+	exceptions: PolicyReportException[];
+};
+
+export type PolicyReportCreateExceptionRequest = {
+	forwardNetworkId: string;
+	findingId: string;
+	checkId: string;
+	justification: string;
+	ticketUrl?: string;
+	expiresAt?: string;
+};
+
+export type PolicyReportDecisionResponse = {
+	ok: boolean;
+};
+
+export type PolicyReportForwardNetwork = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	collectorConfigId?: string;
+	createdBy: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportCreateForwardNetworkRequest = {
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	collectorConfigId?: string;
+};
+
+export type PolicyReportListForwardNetworksResponse = {
+	networks: PolicyReportForwardNetwork[];
+};
+
+export type PolicyReportForwardCredentialsStatus = {
+	configured: boolean;
+	baseUrl?: string;
+	skipTlsVerify?: boolean;
+	username?: string;
+	hasPassword?: boolean;
+	updatedAt?: string;
+};
+
+export type PolicyReportPutForwardCredentialsRequest = {
+	baseUrl: string;
+	skipTlsVerify: boolean;
+	username: string;
+	password?: string;
+};
+
+export type PolicyReportZone = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	subnets: string[];
+	createdBy: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportCreateZoneRequest = {
+	name: string;
+	description?: string;
+	subnets: string[];
+};
+
+export type PolicyReportUpdateZoneRequest = {
+	name: string;
+	description?: string;
+	subnets: string[];
+};
+
+export type PolicyReportListZonesResponse = {
+	zones: PolicyReportZone[];
+};
+
+export type PolicyReportRun = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId: string;
+	status: string;
+	error?: string;
+	createdBy: string;
+	startedAt: string;
+	finishedAt?: string;
+	request?: unknown;
+};
+
+export type PolicyReportRunCheck = {
+	runId: string;
+	checkId: string;
+	total: number;
+};
+
+export type PolicyReportRunFinding = {
+	runId: string;
+	checkId: string;
+	findingId: string;
+	riskScore: number;
+	assetKey?: string;
+	finding?: unknown;
+};
+
+export type PolicyReportFindingAgg = {
+	workspaceId: string;
+	forwardNetworkId: string;
+	checkId: string;
+	findingId: string;
+	status: string;
+	riskScore: number;
+	assetKey?: string;
+	finding?: unknown;
+	firstSeenAt: string;
+	lastSeenAt: string;
+	resolvedAt?: string;
+	lastRunId?: string;
+};
+
+export type PolicyReportCreateRunRequest = {
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId: string;
+	queryOptions?: JSONMap;
+	maxPerCheck?: number;
+	maxTotal?: number;
+};
+
+export type PolicyReportCreateRunResponse = {
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+	results?: Record<string, PolicyReportNQEResponse>;
+};
+
+export type PolicyReportListRunsResponse = {
+	runs: PolicyReportRun[];
+};
+
+export type PolicyReportGetRunResponse = {
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+};
+
+export type PolicyReportListRunFindingsResponse = {
+	findings: PolicyReportRunFinding[];
+};
+
+export type PolicyReportListFindingsResponse = {
+	findings: PolicyReportFindingAgg[];
+};
+
+export type PolicyReportPresetCheckSpec = {
+	checkId: string;
+	parameters?: JSONMap;
+};
+
+export type PolicyReportPreset = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	kind: string;
+	packId?: string;
+	titleTemplate?: string;
+	snapshotId?: string;
+	checks?: PolicyReportPresetCheckSpec[];
+	queryOptions?: JSONMap;
+	maxPerCheck?: number;
+	maxTotal?: number;
+	enabled: boolean;
+	intervalMinutes: number;
+	nextRunAt?: string;
+	lastRunId?: string;
+	lastRunAt?: string;
+	lastError?: string;
+	ownerUsername: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportCreatePresetRequest = {
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	kind?: string;
+	packId?: string;
+	titleTemplate?: string;
+	snapshotId?: string;
+	checks?: PolicyReportPresetCheckSpec[];
+	queryOptions?: JSONMap;
+	maxPerCheck?: number;
+	maxTotal?: number;
+	enabled?: boolean;
+	intervalMinutes?: number;
+};
+
+export type PolicyReportListPresetsResponse = {
+	presets: PolicyReportPreset[];
+};
+
+export type PolicyReportRunPresetResponse = {
+	preset: PolicyReportPreset;
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+	results?: Record<string, PolicyReportNQEResponse>;
+};
+
+export type PolicyReportPathQuery = {
+	from?: string;
+	srcIp?: string;
+	dstIp: string;
+	ipProto?: number;
+	srcPort?: string;
+	dstPort?: string;
+};
+
+export type PolicyReportPathsEnforcementBypassRequest = {
+	forwardNetworkId: string;
+	snapshotId?: string;
+	queries: PolicyReportPathQuery[];
+	requireEnforcement?: boolean;
+	requireSymmetricDelivery?: boolean;
+	requireReturnEnforcement?: boolean;
+	enforcementDeviceTypes?: string[];
+	enforcementDeviceNameParts?: string[];
+	enforcementTagParts?: string[];
+	intent?: string;
+	maxCandidates?: number;
+	maxResults?: number;
+	maxReturnPathResults?: number;
+	maxSeconds?: number;
+	maxOverallSeconds?: number;
+	includeTags?: boolean;
+	includeNetworkFunctions?: boolean;
+};
+
+export type PolicyReportPathsEnforcementBypassStoreRequest =
+	PolicyReportPathsEnforcementBypassRequest & {
+		title?: string;
+	};
+
+export type PolicyReportPathsEnforcementBypassStoreResponse = {
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+	results?: Record<string, PolicyReportNQEResponse>;
+};
+
+export type PolicyReportCustomRunCheckSpec = {
+	checkId: string;
+	parameters?: JSONMap;
+};
+
+export type PolicyReportCreateCustomRunRequest = {
+	forwardNetworkId: string;
+	snapshotId?: string;
+	packId?: string;
+	title?: string;
+	checks: PolicyReportCustomRunCheckSpec[];
+	queryOptions?: JSONMap;
+	maxPerCheck?: number;
+	maxTotal?: number;
+};
+
+export type PolicyReportCreateCustomRunResponse = {
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+	results?: Record<string, PolicyReportNQEResponse>;
+};
+
+export type PolicyReportFlowTuple = {
+	srcIp: string;
+	dstIp: string;
+	ipProto?: number;
+	dstPort?: number;
+};
+
+export type PolicyReportProposedRule = {
+	index: number;
+	action: string;
+	ipv4Src?: string[];
+	ipv4Dst?: string[];
+	ipProto?: number[];
+	tpDst?: string[];
+};
+
+export type PolicyReportRuleChange = {
+	op: string;
+	rule: PolicyReportProposedRule;
+};
+
+export type PolicyReportChangePlanningRequest = {
+	networkId: string;
+	snapshotId?: string;
+	firewallsOnly?: boolean;
+	includeImplicitDefault?: boolean;
+	deviceName?: string;
+	flows: PolicyReportFlowTuple[];
+	change: PolicyReportRuleChange;
+};
+
+export type PolicyReportFlowImpact = {
+	device: string;
+	flow: PolicyReportFlowTuple;
+	beforeDecision: string;
+	afterDecision: string;
+	beforeRule?: string;
+	afterRule?: string;
+	beforeIndex?: number;
+	afterIndex?: number;
+	changed: boolean;
+	reason?: string;
+};
+
+export type PolicyReportChangePlanningResponse = {
+	totalFlows: number;
+	totalDevices: number;
+	changedCount: number;
+	impacts: PolicyReportFlowImpact[];
+};
+
+export async function getWorkspacePolicyReportChecks(
+	workspaceId: string,
+): Promise<PolicyReportChecksResponse> {
+	return apiFetch<PolicyReportChecksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks`,
+	);
+}
+
+export async function getWorkspacePolicyReportCheck(
+	workspaceId: string,
+	checkId: string,
+): Promise<PolicyReportCheckResponse> {
+	return apiFetch<PolicyReportCheckResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks/${encodeURIComponent(checkId)}`,
+	);
+}
+
+export async function getWorkspacePolicyReportPacks(
+	workspaceId: string,
+): Promise<PolicyReportPacks> {
+	return apiFetch<PolicyReportPacks>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs`,
+	);
+}
+
+export async function getWorkspacePolicyReportSnapshots(
+	workspaceId: string,
+	networkId: string,
+	maxResults?: number,
+): Promise<PolicyReportSnapshotsResponse> {
+	const qs = new URLSearchParams();
+	qs.set("networkId", networkId);
+	if (typeof maxResults === "number") {
+		qs.set("maxResults", String(maxResults));
+	}
+	return apiFetch<PolicyReportSnapshotsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/snapshots?${qs.toString()}`,
+	);
+}
+
+export async function runWorkspacePolicyReportCheck(
+	workspaceId: string,
+	body: PolicyReportRunCheckRequest,
+): Promise<PolicyReportNQEResponse> {
+	return apiFetch<PolicyReportNQEResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks/run`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function runWorkspacePolicyReportPack(
+	workspaceId: string,
+	body: PolicyReportRunPackRequest,
+): Promise<PolicyReportRunPackResponse> {
+	return apiFetch<PolicyReportRunPackResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs/run`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function runWorkspacePolicyReportPackDelta(
+	workspaceId: string,
+	body: PolicyReportPackDeltaRequest,
+): Promise<PolicyReportPackDeltaResponse> {
+	return apiFetch<PolicyReportPackDeltaResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs/delta`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function createWorkspacePolicyReportRecertCampaign(
+	workspaceId: string,
+	body: PolicyReportCreateRecertCampaignRequest,
+): Promise<PolicyReportRecertCampaignWithCounts> {
+	return apiFetch<PolicyReportRecertCampaignWithCounts>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspacePolicyReportRecertCampaigns(
+	workspaceId: string,
+	status?: string,
+	limit?: number,
+): Promise<PolicyReportListRecertCampaignsResponse> {
+	const qs = new URLSearchParams();
+	if (status) qs.set("status", status);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListRecertCampaignsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns?${qs.toString()}`,
+	);
+}
+
+export async function getWorkspacePolicyReportRecertCampaign(
+	workspaceId: string,
+	campaignId: string,
+): Promise<PolicyReportRecertCampaignWithCounts> {
+	return apiFetch<PolicyReportRecertCampaignWithCounts>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}`,
+	);
+}
+
+export async function generateWorkspacePolicyReportRecertAssignments(
+	workspaceId: string,
+	campaignId: string,
+	body: PolicyReportGenerateRecertAssignmentsRequest,
+): Promise<PolicyReportGenerateRecertAssignmentsResponse> {
+	return apiFetch<PolicyReportGenerateRecertAssignmentsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}/generate`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspacePolicyReportRecertAssignments(
+	workspaceId: string,
+	campaignId?: string,
+	status?: string,
+	assignee?: string,
+	limit?: number,
+): Promise<PolicyReportListRecertAssignmentsResponse> {
+	const qs = new URLSearchParams();
+	if (campaignId) qs.set("campaignId", campaignId);
+	if (status) qs.set("status", status);
+	if (assignee) qs.set("assignee", assignee);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListRecertAssignmentsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments?${qs.toString()}`,
+	);
+}
+
+export async function attestWorkspacePolicyReportRecertAssignment(
+	workspaceId: string,
+	assignmentId: string,
+	body: PolicyReportAttestAssignmentRequest,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/attest`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function waiveWorkspacePolicyReportRecertAssignment(
+	workspaceId: string,
+	assignmentId: string,
+	body: PolicyReportAttestAssignmentRequest,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/waive`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+// Forward Networks (generic workspace-saved networks; used by capacity tooling)
+
+export async function createWorkspaceForwardNetwork(
+	workspaceId: string,
+	body: PolicyReportCreateForwardNetworkRequest,
+): Promise<PolicyReportForwardNetwork> {
+	return apiFetch<PolicyReportForwardNetwork>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspaceForwardNetworks(
+	workspaceId: string,
+): Promise<PolicyReportListForwardNetworksResponse> {
+	return apiFetch<PolicyReportListForwardNetworksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks`,
+	);
+}
+
+export async function deleteWorkspaceForwardNetwork(
+	workspaceId: string,
+	networkRef: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function createWorkspacePolicyReportForwardNetwork(
+	workspaceId: string,
+	body: PolicyReportCreateForwardNetworkRequest,
+): Promise<PolicyReportForwardNetwork> {
+	return apiFetch<PolicyReportForwardNetwork>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspacePolicyReportForwardNetworks(
+	workspaceId: string,
+): Promise<PolicyReportListForwardNetworksResponse> {
+	return apiFetch<PolicyReportListForwardNetworksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks`,
+	);
+}
+
+export async function deleteWorkspacePolicyReportForwardNetwork(
+	workspaceId: string,
+	networkRef: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(networkRef)}`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function getWorkspacePolicyReportForwardNetworkCredentials(
+	workspaceId: string,
+	forwardNetworkId: string,
+): Promise<PolicyReportForwardCredentialsStatus> {
+	return apiFetch<PolicyReportForwardCredentialsStatus>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+	);
+}
+
+export async function putWorkspacePolicyReportForwardNetworkCredentials(
+	workspaceId: string,
+	forwardNetworkId: string,
+	body: PolicyReportPutForwardCredentialsRequest,
+): Promise<PolicyReportForwardCredentialsStatus> {
+	return apiFetch<PolicyReportForwardCredentialsStatus>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		{ method: "PUT", body: JSON.stringify(body) },
+	);
+}
+
+export async function deleteWorkspacePolicyReportForwardNetworkCredentials(
+	workspaceId: string,
+	forwardNetworkId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function createWorkspacePolicyReportZone(
+	workspaceId: string,
+	forwardNetworkId: string,
+	body: PolicyReportCreateZoneRequest,
+): Promise<PolicyReportZone> {
+	return apiFetch<PolicyReportZone>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function listWorkspacePolicyReportZones(
+	workspaceId: string,
+	forwardNetworkId: string,
+): Promise<PolicyReportListZonesResponse> {
+	return apiFetch<PolicyReportListZonesResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
+	);
+}
+
+export async function updateWorkspacePolicyReportZone(
+	workspaceId: string,
+	forwardNetworkId: string,
+	zoneId: string,
+	body: PolicyReportUpdateZoneRequest,
+): Promise<PolicyReportZone> {
+	return apiFetch<PolicyReportZone>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
+		{ method: "PUT", body: JSON.stringify(body) },
+	);
+}
+
+export async function deleteWorkspacePolicyReportZone(
+	workspaceId: string,
+	forwardNetworkId: string,
+	zoneId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function createWorkspacePolicyReportPreset(
+	workspaceId: string,
+	body: PolicyReportCreatePresetRequest,
+): Promise<PolicyReportPreset> {
+	return apiFetch<PolicyReportPreset>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function listWorkspacePolicyReportPresets(
+	workspaceId: string,
+	forwardNetworkId?: string,
+	enabled?: boolean,
+	limit?: number,
+): Promise<PolicyReportListPresetsResponse> {
+	const qs = new URLSearchParams();
+	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
+	if (typeof enabled === "boolean") qs.set("enabled", enabled ? "true" : "false");
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	const q = qs.toString();
+	return apiFetch<PolicyReportListPresetsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets${q ? `?${q}` : ""}`,
+	);
+}
+
+export async function deleteWorkspacePolicyReportPreset(
+	workspaceId: string,
+	presetId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function runWorkspacePolicyReportPreset(
+	workspaceId: string,
+	presetId: string,
+): Promise<PolicyReportRunPresetResponse> {
+	return apiFetch<PolicyReportRunPresetResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}/run`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function runWorkspacePolicyReportPathsEnforcementBypass(
+	workspaceId: string,
+	body: PolicyReportPathsEnforcementBypassRequest,
+): Promise<PolicyReportNQEResponse> {
+	return apiFetch<PolicyReportNQEResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/paths/enforcement-bypass`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function storeWorkspacePolicyReportPathsEnforcementBypass(
+	workspaceId: string,
+	body: PolicyReportPathsEnforcementBypassStoreRequest,
+): Promise<PolicyReportPathsEnforcementBypassStoreResponse> {
+	return apiFetch<PolicyReportPathsEnforcementBypassStoreResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/paths/enforcement-bypass/store`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function createWorkspacePolicyReportRun(
+	workspaceId: string,
+	body: PolicyReportCreateRunRequest,
+): Promise<PolicyReportCreateRunResponse> {
+	return apiFetch<PolicyReportCreateRunResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function createWorkspacePolicyReportCustomRun(
+	workspaceId: string,
+	body: PolicyReportCreateCustomRunRequest,
+): Promise<PolicyReportCreateCustomRunResponse> {
+	return apiFetch<PolicyReportCreateCustomRunResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/custom`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function listWorkspacePolicyReportRuns(
+	workspaceId: string,
+	forwardNetworkId?: string,
+	packId?: string,
+	status?: string,
+	limit?: number,
+): Promise<PolicyReportListRunsResponse> {
+	const qs = new URLSearchParams();
+	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
+	if (packId) qs.set("packId", packId);
+	if (status) qs.set("status", status);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListRunsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs?${qs.toString()}`,
+	);
+}
+
+export async function getWorkspacePolicyReportRun(
+	workspaceId: string,
+	runId: string,
+): Promise<PolicyReportGetRunResponse> {
+	return apiFetch<PolicyReportGetRunResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}`,
+	);
+}
+
+export async function listWorkspacePolicyReportRunFindings(
+	workspaceId: string,
+	runId: string,
+	checkId?: string,
+	limit?: number,
+): Promise<PolicyReportListRunFindingsResponse> {
+	const qs = new URLSearchParams();
+	if (checkId) qs.set("checkId", checkId);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	const q = qs.toString();
+	return apiFetch<PolicyReportListRunFindingsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}/findings${q ? `?${q}` : ""}`,
+	);
+}
+
+export async function listWorkspacePolicyReportFindings(
+	workspaceId: string,
+	forwardNetworkId?: string,
+	checkId?: string,
+	status?: string,
+	limit?: number,
+): Promise<PolicyReportListFindingsResponse> {
+	const qs = new URLSearchParams();
+	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
+	if (checkId) qs.set("checkId", checkId);
+	if (status) qs.set("status", status);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListFindingsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/findings?${qs.toString()}`,
+	);
+}
+
+export async function createWorkspacePolicyReportException(
+	workspaceId: string,
+	body: PolicyReportCreateExceptionRequest,
+): Promise<PolicyReportException> {
+	return apiFetch<PolicyReportException>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function listWorkspacePolicyReportExceptions(
+	workspaceId: string,
+	forwardNetworkId?: string,
+	status?: string,
+	limit?: number,
+): Promise<PolicyReportListExceptionsResponse> {
+	const qs = new URLSearchParams();
+	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
+	if (status) qs.set("status", status);
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	return apiFetch<PolicyReportListExceptionsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions?${qs.toString()}`,
+	);
+}
+
+export async function approveWorkspacePolicyReportException(
+	workspaceId: string,
+	exceptionId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/approve`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function rejectWorkspacePolicyReportException(
+	workspaceId: string,
+	exceptionId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/reject`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function simulateWorkspacePolicyReportChangePlanning(
+	workspaceId: string,
+	body: PolicyReportChangePlanningRequest,
+): Promise<PolicyReportChangePlanningResponse> {
+	return apiFetch<PolicyReportChangePlanningResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/change-planning/simulate`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
 		},
 	);
 }

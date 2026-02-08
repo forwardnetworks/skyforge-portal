@@ -6,10 +6,10 @@ export default defineConfig({
 	build: {
 		// Build directly into the Skyforge Encore service so it can embed + serve the SPA
 		// without a separate nginx/frontend container.
-		outDir: "../server/skyforge/frontend_dist",
+		outDir: "../skyforge-server/skyforge/frontend_dist",
 		emptyOutDir: true,
-		// Avoid clobbering Coder's `/assets/*` paths routed by Traefik.
-		// The Helm chart routes `/assets/skyforge/*` to `skyforge-server` (Encore).
+		// Avoid clobbering other apps' `/assets/*` paths.
+		// Skyforge serves the SPA under `/assets/skyforge/*`.
 		assetsDir: "assets/skyforge",
 		rollupOptions: {
 			output: {

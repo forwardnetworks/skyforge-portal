@@ -12,6 +12,7 @@ import {
 	StopCircle,
 	Terminal,
 	Trash2,
+	TrendingUp,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -466,6 +467,14 @@ function DeploymentDetailPage() {
 				</div>
 
 				<div className="flex items-center gap-2">
+					<Link
+						to="/dashboard/deployments/$deploymentId/capacity"
+						params={{ deploymentId }}
+						className={buttonVariants({ variant: "outline", size: "sm" })}
+						title="Capacity rollups and forecasting"
+					>
+						<TrendingUp className="mr-2 h-4 w-4" /> Capacity
+					</Link>
 					<Button
 						variant="outline"
 						size="sm"

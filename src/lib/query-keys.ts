@@ -8,6 +8,70 @@ export const queryKeys = {
 		["deploymentTopology", workspaceId, deploymentId] as const,
 	deploymentUIEvents: (workspaceId: string, deploymentId: string) =>
 		["deploymentUIEvents", workspaceId, deploymentId] as const,
+	deploymentCapacitySummary: (workspaceId: string, deploymentId: string) =>
+		["deploymentCapacitySummary", workspaceId, deploymentId] as const,
+	deploymentCapacityInventory: (workspaceId: string, deploymentId: string) =>
+		["deploymentCapacityInventory", workspaceId, deploymentId] as const,
+	deploymentCapacityGrowth: (
+		workspaceId: string,
+		deploymentId: string,
+		window: string,
+		metric: string,
+		compareHours: number,
+		objectType: string,
+	) =>
+		[
+			"deploymentCapacityGrowth",
+			workspaceId,
+			deploymentId,
+			window,
+			metric,
+			String(compareHours),
+			objectType,
+		] as const,
+	workspaceForwardNetworks: (workspaceId: string) =>
+		["workspaceForwardNetworks", workspaceId] as const,
+	forwardNetworkCapacitySummary: (workspaceId: string, networkRef: string) =>
+		["forwardNetworkCapacitySummary", workspaceId, networkRef] as const,
+	forwardNetworkCapacityInventory: (workspaceId: string, networkRef: string) =>
+		["forwardNetworkCapacityInventory", workspaceId, networkRef] as const,
+	forwardNetworkCapacityCoverage: (workspaceId: string, networkRef: string) =>
+		["forwardNetworkCapacityCoverage", workspaceId, networkRef] as const,
+	forwardNetworkCapacitySnapshotDelta: (
+		workspaceId: string,
+		networkRef: string,
+	) =>
+		["forwardNetworkCapacitySnapshotDelta", workspaceId, networkRef] as const,
+	forwardNetworkCapacityUpgradeCandidates: (
+		workspaceId: string,
+		networkRef: string,
+		window: string,
+	) =>
+		[
+			"forwardNetworkCapacityUpgradeCandidates",
+			workspaceId,
+			networkRef,
+			window,
+		] as const,
+	workspaceForwardNetworkCapacityPortfolio: (workspaceId: string) =>
+		["workspaceForwardNetworkCapacityPortfolio", workspaceId] as const,
+	forwardNetworkCapacityGrowth: (
+		workspaceId: string,
+		networkRef: string,
+		window: string,
+		metric: string,
+		compareHours: number,
+		objectType: string,
+	) =>
+		[
+			"forwardNetworkCapacityGrowth",
+			workspaceId,
+			networkRef,
+			window,
+			metric,
+			String(compareHours),
+			objectType,
+		] as const,
 	workspaces: () => ["workspaces"] as const,
 	workspaceForwardConfig: (workspaceId: string) =>
 		["workspaceForwardConfig", workspaceId] as const,
@@ -39,6 +103,8 @@ export const queryKeys = {
 	userServiceNowPdiStatus: () => ["userServiceNowPdiStatus"] as const,
 	userServiceNowSchemaStatus: () => ["userServiceNowSchemaStatus"] as const,
 	userGeminiConfig: () => ["userGeminiConfig"] as const,
+	userElasticConfig: () => ["userElasticConfig"] as const,
+	elasticToolsStatus: () => ["elasticToolsStatus"] as const,
 	userAIHistory: () => ["userAIHistory"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	workspaceArtifacts: (workspaceId: string) =>
@@ -98,4 +164,73 @@ export const queryKeys = {
 	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,
 	registryRepos: (q: string) => ["registryRepos", q] as const,
 	registryTags: (repo: string, q: string) => ["registryTags", repo, q] as const,
+	policyReportsChecks: (workspaceId: string) =>
+		["policyReportsChecks", workspaceId] as const,
+	policyReportsPacks: (workspaceId: string) =>
+		["policyReportsPacks", workspaceId] as const,
+	policyReportsSnapshots: (workspaceId: string, networkId: string) =>
+		["policyReportsSnapshots", workspaceId, networkId] as const,
+	policyReportsRecertCampaigns: (workspaceId: string, status?: string) =>
+		["policyReportsRecertCampaigns", workspaceId, status ?? ""] as const,
+	policyReportsRecertCampaign: (workspaceId: string, campaignId: string) =>
+		["policyReportsRecertCampaign", workspaceId, campaignId] as const,
+	policyReportsRecertAssignments: (
+		workspaceId: string,
+		campaignId?: string,
+		status?: string,
+		assignee?: string,
+	) =>
+		[
+			"policyReportsRecertAssignments",
+			workspaceId,
+			campaignId ?? "",
+			status ?? "",
+			assignee ?? "",
+		] as const,
+	policyReportsExceptions: (
+		workspaceId: string,
+		forwardNetworkId?: string,
+		status?: string,
+	) =>
+		[
+			"policyReportsExceptions",
+			workspaceId,
+			forwardNetworkId ?? "",
+			status ?? "",
+		] as const,
+	policyReportsZones: (workspaceId: string, forwardNetworkId: string) =>
+		["policyReportsZones", workspaceId, forwardNetworkId] as const,
+	policyReportsRuns: (
+		workspaceId: string,
+		forwardNetworkId?: string,
+		packId?: string,
+		status?: string,
+	) =>
+		[
+			"policyReportsRuns",
+			workspaceId,
+			forwardNetworkId ?? "",
+			packId ?? "",
+			status ?? "",
+		] as const,
+	policyReportsRun: (workspaceId: string, runId: string) =>
+		["policyReportsRun", workspaceId, runId] as const,
+	policyReportsRunFindings: (
+		workspaceId: string,
+		runId: string,
+		checkId?: string,
+	) => ["policyReportsRunFindings", workspaceId, runId, checkId ?? ""] as const,
+	policyReportsFindings: (
+		workspaceId: string,
+		forwardNetworkId?: string,
+		checkId?: string,
+		status?: string,
+	) =>
+		[
+			"policyReportsFindings",
+			workspaceId,
+			forwardNetworkId ?? "",
+			checkId ?? "",
+			status ?? "",
+		] as const,
 };
