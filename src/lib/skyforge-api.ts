@@ -682,6 +682,38 @@ export async function testUserElasticConfig(): Promise<UserElasticTestResponse> 
 	);
 }
 
+export type ElasticToolServiceStatus = {
+	id: "elasticsearch" | "kibana" | string;
+	kind: "statefulset" | "deployment" | string;
+	desiredReplicas: number;
+	availableReplicas: number;
+};
+
+export type ElasticToolsStatusResponse = {
+	enabled: boolean;
+	autosleepEnabled: boolean;
+	idleMinutes: number;
+	now: string;
+	lastActivityAt?: string;
+	services: ElasticToolServiceStatus[];
+};
+
+export async function getElasticToolsStatus(): Promise<ElasticToolsStatusResponse> {
+	return apiFetch<ElasticToolsStatusResponse>("/api/system/elastic/tools/status");
+}
+
+export async function wakeElasticTools(): Promise<{
+	status: ElasticToolsStatusResponse;
+}> {
+	return apiFetch<{ status: ElasticToolsStatusResponse }>(
+		"/api/system/elastic/tools/wake",
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
 export type UserAIGenerateRequest = {
 	provider?: "gemini";
 	kind: "netlab" | "containerlab";
@@ -1367,6 +1399,21 @@ export type ForwardNetworkCapacitySnapshotDeltaResponse = {
 	prevSnapshotId?: string;
 	routeDelta: CapacityRouteScaleDeltaRow[];
 	bgpDelta: CapacityBgpNeighborDeltaRow[];
+	deviceDelta?: Array<{
+		deviceName: string;
+		changeType: string;
+		changes?: string[];
+		prev?: CapacityDeviceInventoryRow;
+		now?: CapacityDeviceInventoryRow;
+	}>;
+	interfaceDelta?: Array<{
+		deviceName: string;
+		interfaceName: string;
+		changeType: string;
+		changes?: string[];
+		prev?: CapacityInterfaceInventoryRow;
+		now?: CapacityInterfaceInventoryRow;
+	}>;
 };
 
 export async function getForwardNetworkCapacitySnapshotDelta(
@@ -1783,6 +1830,106 @@ export async function postForwardNetworkCapacityUnhealthyInterfaces(
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export type CapacityPathSearchQuery = {
+	from?: string;
+	srcIp?: string;
+	dstIp: string;
+	ipProto?: number;
+	srcPort?: string;
+	dstPort?: string;
+	icmpType?: number;
+	fin?: number;
+	syn?: number;
+	rst?: number;
+	psh?: number;
+	ack?: number;
+	urg?: number;
+	appId?: string;
+	userId?: string;
+	userGroupId?: string;
+	url?: string;
+};
+
+export type ForwardNetworkCapacityPathBottlenecksRequest = {
+	window: string;
+	snapshotId?: string;
+	includeHops?: boolean;
+	queries: CapacityPathSearchQuery[];
+};
+
+export type ForwardNetworkCapacityPathHop = {
+	deviceName?: string;
+	ingressInterface?: string;
+	egressInterface?: string;
+};
+
+export type ForwardNetworkCapacityPathBottleneck = {
+	deviceName: string;
+	interfaceName: string;
+	direction: string;
+	source?: string;
+	speedMbps?: number | null;
+	threshold?: number | null;
+	p95Util?: number | null;
+	maxUtil?: number | null;
+	p95Gbps?: number | null;
+	maxGbps?: number | null;
+	headroomGbps?: number | null;
+	headroomUtil?: number | null;
+	forecastCrossingTs?: string | null;
+};
+
+export type CapacityNote = {
+	code: string;
+	message: string;
+};
+
+export type ForwardNetworkCapacityPathBottleneckItem = {
+	index: number;
+	query: CapacityPathSearchQuery;
+	timedOut?: boolean;
+	totalHits?: number;
+	forwardQueryUrl?: string;
+	forwardingOutcome?: string;
+	securityOutcome?: string;
+	bottleneck?: ForwardNetworkCapacityPathBottleneck | null;
+	hops?: ForwardNetworkCapacityPathHop[];
+	unmatchedHopInterfacesSample?: string[];
+	notes?: CapacityNote[];
+	error?: string;
+};
+
+export type ForwardNetworkCapacityPathBottlenecksCoverage = {
+	hopInterfaceKeys: number;
+	rollupMatched: number;
+	perfFallbackUsed: number;
+	unknown: number;
+	truncated?: boolean;
+	unmatchedHopInterfacesSample?: string[];
+};
+
+export type ForwardNetworkCapacityPathBottlenecksResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	asOf?: string;
+	window: string;
+	snapshotId?: string;
+	coverage?: ForwardNetworkCapacityPathBottlenecksCoverage | null;
+	items: ForwardNetworkCapacityPathBottleneckItem[];
+};
+
+export async function postForwardNetworkCapacityPathBottlenecks(
+	workspaceId: string,
+	networkRef: string,
+	body: ForwardNetworkCapacityPathBottlenecksRequest,
+): Promise<ForwardNetworkCapacityPathBottlenecksResponse> {
+	return apiFetch<ForwardNetworkCapacityPathBottlenecksResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/path-bottlenecks`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -3613,6 +3760,103 @@ export type PolicyReportListFindingsResponse = {
 	findings: PolicyReportFindingAgg[];
 };
 
+export type PolicyReportPresetCheckSpec = {
+	checkId: string;
+	parameters?: JSONMap;
+};
+
+export type PolicyReportPreset = {
+	id: string;
+	workspaceId: string;
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	kind: string;
+	packId?: string;
+	titleTemplate?: string;
+	snapshotId?: string;
+	checks?: PolicyReportPresetCheckSpec[];
+	queryOptions?: JSONMap;
+	maxPerCheck?: number;
+	maxTotal?: number;
+	enabled: boolean;
+	intervalMinutes: number;
+	nextRunAt?: string;
+	lastRunId?: string;
+	lastRunAt?: string;
+	lastError?: string;
+	ownerUsername: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type PolicyReportCreatePresetRequest = {
+	forwardNetworkId: string;
+	name: string;
+	description?: string;
+	kind?: string;
+	packId?: string;
+	titleTemplate?: string;
+	snapshotId?: string;
+	checks?: PolicyReportPresetCheckSpec[];
+	queryOptions?: JSONMap;
+	maxPerCheck?: number;
+	maxTotal?: number;
+	enabled?: boolean;
+	intervalMinutes?: number;
+};
+
+export type PolicyReportListPresetsResponse = {
+	presets: PolicyReportPreset[];
+};
+
+export type PolicyReportRunPresetResponse = {
+	preset: PolicyReportPreset;
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+	results?: Record<string, PolicyReportNQEResponse>;
+};
+
+export type PolicyReportPathQuery = {
+	from?: string;
+	srcIp?: string;
+	dstIp: string;
+	ipProto?: number;
+	srcPort?: string;
+	dstPort?: string;
+};
+
+export type PolicyReportPathsEnforcementBypassRequest = {
+	forwardNetworkId: string;
+	snapshotId?: string;
+	queries: PolicyReportPathQuery[];
+	requireEnforcement?: boolean;
+	requireSymmetricDelivery?: boolean;
+	requireReturnEnforcement?: boolean;
+	enforcementDeviceTypes?: string[];
+	enforcementDeviceNameParts?: string[];
+	enforcementTagParts?: string[];
+	intent?: string;
+	maxCandidates?: number;
+	maxResults?: number;
+	maxReturnPathResults?: number;
+	maxSeconds?: number;
+	maxOverallSeconds?: number;
+	includeTags?: boolean;
+	includeNetworkFunctions?: boolean;
+};
+
+export type PolicyReportPathsEnforcementBypassStoreRequest =
+	PolicyReportPathsEnforcementBypassRequest & {
+		title?: string;
+	};
+
+export type PolicyReportPathsEnforcementBypassStoreResponse = {
+	run: PolicyReportRun;
+	checks: PolicyReportRunCheck[];
+	results?: Record<string, PolicyReportNQEResponse>;
+};
+
 export type PolicyReportCustomRunCheckSpec = {
 	checkId: string;
 	parameters?: JSONMap;
@@ -3993,6 +4237,72 @@ export async function deleteWorkspacePolicyReportZone(
 	return apiFetch<PolicyReportDecisionResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
 		{ method: "DELETE" },
+	);
+}
+
+export async function createWorkspacePolicyReportPreset(
+	workspaceId: string,
+	body: PolicyReportCreatePresetRequest,
+): Promise<PolicyReportPreset> {
+	return apiFetch<PolicyReportPreset>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function listWorkspacePolicyReportPresets(
+	workspaceId: string,
+	forwardNetworkId?: string,
+	enabled?: boolean,
+	limit?: number,
+): Promise<PolicyReportListPresetsResponse> {
+	const qs = new URLSearchParams();
+	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
+	if (typeof enabled === "boolean") qs.set("enabled", enabled ? "true" : "false");
+	if (typeof limit === "number") qs.set("limit", String(limit));
+	const q = qs.toString();
+	return apiFetch<PolicyReportListPresetsResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets${q ? `?${q}` : ""}`,
+	);
+}
+
+export async function deleteWorkspacePolicyReportPreset(
+	workspaceId: string,
+	presetId: string,
+): Promise<PolicyReportDecisionResponse> {
+	return apiFetch<PolicyReportDecisionResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}`,
+		{ method: "DELETE" },
+	);
+}
+
+export async function runWorkspacePolicyReportPreset(
+	workspaceId: string,
+	presetId: string,
+): Promise<PolicyReportRunPresetResponse> {
+	return apiFetch<PolicyReportRunPresetResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}/run`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function runWorkspacePolicyReportPathsEnforcementBypass(
+	workspaceId: string,
+	body: PolicyReportPathsEnforcementBypassRequest,
+): Promise<PolicyReportNQEResponse> {
+	return apiFetch<PolicyReportNQEResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/paths/enforcement-bypass`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function storeWorkspacePolicyReportPathsEnforcementBypass(
+	workspaceId: string,
+	body: PolicyReportPathsEnforcementBypassStoreRequest,
+): Promise<PolicyReportPathsEnforcementBypassStoreResponse> {
+	return apiFetch<PolicyReportPathsEnforcementBypassStoreResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/paths/enforcement-bypass/store`,
+		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 

@@ -25,9 +25,11 @@ import { queryKeys } from "@/lib/query-keys";
 import {
 	type PutUserElasticConfigRequest,
 	clearUserElasticConfig,
+	getElasticToolsStatus,
 	getUserElasticConfig,
 	putUserElasticConfig,
 	testUserElasticConfig,
+	wakeElasticTools,
 } from "@/lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/elastic")({
@@ -35,6 +37,28 @@ export const Route = createFileRoute("/dashboard/elastic")({
 });
 
 type AuthType = "none" | "api_key" | "basic";
+
+function findSvc(
+	st: Awaited<ReturnType<typeof getElasticToolsStatus>> | undefined,
+	id: string,
+) {
+	return st?.services?.find((s) => String(s.id) === id);
+}
+
+function isAsleep(
+	st: Awaited<ReturnType<typeof getElasticToolsStatus>> | undefined,
+) {
+	const es = findSvc(st, "elasticsearch");
+	const kb = findSvc(st, "kibana");
+	return (es?.desiredReplicas ?? 0) === 0 && (kb?.desiredReplicas ?? 0) === 0;
+}
+
+function isElasticsearchReady(
+	st: Awaited<ReturnType<typeof getElasticToolsStatus>> | undefined,
+) {
+	const es = findSvc(st, "elasticsearch");
+	return (es?.desiredReplicas ?? 0) > 0 && (es?.availableReplicas ?? 0) > 0;
+}
 
 function ElasticIntegrationPage() {
 	const qc = useQueryClient();
@@ -51,12 +75,21 @@ function ElasticIntegrationPage() {
 	const defaultUrl = initial?.defaultUrl ?? "";
 	const defaultIndexPrefix = initial?.defaultIndexPrefix ?? "";
 
+	const toolsQ = useQuery({
+		queryKey: queryKeys.elasticToolsStatus(),
+		queryFn: getElasticToolsStatus,
+		retry: false,
+		staleTime: 5_000,
+		enabled,
+	});
+
 	const [url, setUrl] = useState("");
 	const [indexPrefix, setIndexPrefix] = useState("");
 	const [authType, setAuthType] = useState<AuthType>("none");
 	const [apiKey, setApiKey] = useState("");
 	const [basicUsername, setBasicUsername] = useState("");
 	const [basicPassword, setBasicPassword] = useState("");
+	const [wakeAttempted, setWakeAttempted] = useState(false);
 
 	useEffect(() => {
 		if (!initial) return;
@@ -83,8 +116,10 @@ function ElasticIntegrationPage() {
 	}, [apiKey, authType, basicPassword, basicUsername, indexPrefix, url]);
 
 	const canSave = useMemo(() => {
-		if (!url.trim()) return false;
-		if (!indexPrefix.trim()) return false;
+		// Allow leaving URL blank if the instance default is set.
+		if (!url.trim() && !defaultUrl.trim()) return false;
+		// Allow leaving indexPrefix blank if the instance default is set.
+		if (!indexPrefix.trim() && !defaultIndexPrefix.trim()) return false;
 		if (authType === "api_key" && !apiKey.trim() && !initial?.hasApiKey)
 			return false;
 		if (authType === "basic" && !basicUsername.trim()) return false;
@@ -100,10 +135,47 @@ function ElasticIntegrationPage() {
 		authType,
 		basicPassword,
 		basicUsername,
+		defaultIndexPrefix,
+		defaultUrl,
 		indexPrefix,
 		initial,
 		url,
 	]);
+
+	const wake = useMutation({
+		mutationFn: async () => wakeElasticTools(),
+		onSuccess: async () => {
+			await qc.invalidateQueries({ queryKey: queryKeys.elasticToolsStatus() });
+		},
+	});
+
+	const ensureAwake = async () => {
+		let st: Awaited<ReturnType<typeof getElasticToolsStatus>> | undefined;
+		try {
+			st = await getElasticToolsStatus();
+		} catch {
+			return;
+		}
+		if (!st?.autosleepEnabled) return;
+		if (!isAsleep(st)) return;
+
+		try {
+			await wakeElasticTools();
+		} catch {
+			return;
+		}
+
+		const deadline = Date.now() + 60_000;
+		while (Date.now() < deadline) {
+			try {
+				const cur = await getElasticToolsStatus();
+				if (!isAsleep(cur) && isElasticsearchReady(cur)) return;
+			} catch {
+				// ignore
+			}
+			await new Promise((r) => setTimeout(r, 2000));
+		}
+	};
 
 	const save = useMutation({
 		mutationFn: async () => putUserElasticConfig(savePayload),
@@ -130,7 +202,10 @@ function ElasticIntegrationPage() {
 	});
 
 	const test = useMutation({
-		mutationFn: async () => testUserElasticConfig(),
+		mutationFn: async () => {
+			await ensureAwake();
+			return testUserElasticConfig();
+		},
 		onSuccess: (resp) => {
 			if (String(resp.status).toLowerCase() === "ok") {
 				toast.success("Elastic reachable");
@@ -145,6 +220,17 @@ function ElasticIntegrationPage() {
 				description: (e as Error).message,
 			}),
 	});
+
+	// Page visit should wake tools when autosleep is enabled.
+	useEffect(() => {
+		if (!enabled) return;
+		if (!toolsQ.data?.autosleepEnabled) return;
+		if (!isAsleep(toolsQ.data)) return;
+		if (wake.isPending || wakeAttempted) return;
+		setWakeAttempted(true);
+		wake.mutate();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [enabled, toolsQ.data, wakeAttempted]);
 
 	return (
 		<div className="space-y-6 p-6 pb-20">
@@ -191,9 +277,30 @@ function ElasticIntegrationPage() {
 							enable `skyforge.elastic.enabled` in the Helm values.
 						</div>
 					) : (
-						<div className="text-muted-foreground">
-							{cfgQ.data?.configured ? "Configured" : "Not configured"} ·
-							Default: <span className="font-mono">{defaultUrl || "—"}</span>
+						<div className="space-y-1 text-muted-foreground">
+							<div>
+								{cfgQ.data?.configured ? "Configured" : "Not configured"} ·
+								Default: <span className="font-mono">{defaultUrl || "—"}</span>
+							</div>
+							{toolsQ.isLoading ? (
+								<div>Tools: loading…</div>
+							) : toolsQ.isError ? (
+								<div>Tools: status unavailable</div>
+							) : toolsQ.data ? (
+								<div>
+									Tools:{" "}
+									{isAsleep(toolsQ.data)
+										? wake.isPending
+											? "waking…"
+											: "asleep"
+										: isElasticsearchReady(toolsQ.data)
+											? "ready"
+											: "starting…"}
+									{toolsQ.data.autosleepEnabled
+										? ` · autosleep ${toolsQ.data.idleMinutes}m`
+										: ""}
+								</div>
+							) : null}
 						</div>
 					)}
 
@@ -201,7 +308,12 @@ function ElasticIntegrationPage() {
 						<Button
 							size="sm"
 							variant="secondary"
-							disabled={cfgQ.isLoading || cfgQ.isError || test.isPending}
+							disabled={
+								cfgQ.isLoading ||
+								cfgQ.isError ||
+								test.isPending ||
+								wake.isPending
+							}
 							onClick={() => test.mutate()}
 						>
 							<RefreshCw className="mr-2 h-4 w-4" />
@@ -239,7 +351,7 @@ function ElasticIntegrationPage() {
 							placeholder={defaultUrl || "http://elasticsearch:9200"}
 						/>
 						<div className="text-xs text-muted-foreground">
-							In-cluster default is{" "}
+							Leave blank to use the instance default{" "}
 							<span className="font-mono">
 								{defaultUrl || "http://elasticsearch:9200"}
 							</span>
@@ -255,6 +367,13 @@ function ElasticIntegrationPage() {
 							onChange={(e) => setIndexPrefix(e.target.value)}
 							placeholder={defaultIndexPrefix || "skyforge"}
 						/>
+						<div className="text-xs text-muted-foreground">
+							Leave blank to use the instance default{" "}
+							<span className="font-mono">
+								{defaultIndexPrefix || "skyforge"}
+							</span>
+							.
+						</div>
 					</div>
 
 					<div className="grid gap-4 md:grid-cols-2">
@@ -331,7 +450,12 @@ function ElasticIntegrationPage() {
 						</Button>
 						<Button
 							variant="secondary"
-							disabled={test.isPending || cfgQ.isLoading || cfgQ.isError}
+							disabled={
+								test.isPending ||
+								wake.isPending ||
+								cfgQ.isLoading ||
+								cfgQ.isError
+							}
 							onClick={() => test.mutate()}
 						>
 							Test

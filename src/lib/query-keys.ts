@@ -104,6 +104,7 @@ export const queryKeys = {
 	userServiceNowSchemaStatus: () => ["userServiceNowSchemaStatus"] as const,
 	userGeminiConfig: () => ["userGeminiConfig"] as const,
 	userElasticConfig: () => ["userElasticConfig"] as const,
+	elasticToolsStatus: () => ["elasticToolsStatus"] as const,
 	userAIHistory: () => ["userAIHistory"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	workspaceArtifacts: (workspaceId: string) =>
