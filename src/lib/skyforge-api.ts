@@ -699,7 +699,9 @@ export type ElasticToolsStatusResponse = {
 };
 
 export async function getElasticToolsStatus(): Promise<ElasticToolsStatusResponse> {
-	return apiFetch<ElasticToolsStatusResponse>("/api/system/elastic/tools/status");
+	return apiFetch<ElasticToolsStatusResponse>(
+		"/api/system/elastic/tools/status",
+	);
 }
 
 export async function wakeElasticTools(): Promise<{
@@ -4258,7 +4260,8 @@ export async function listWorkspacePolicyReportPresets(
 ): Promise<PolicyReportListPresetsResponse> {
 	const qs = new URLSearchParams();
 	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
-	if (typeof enabled === "boolean") qs.set("enabled", enabled ? "true" : "false");
+	if (typeof enabled === "boolean")
+		qs.set("enabled", enabled ? "true" : "false");
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	const q = qs.toString();
 	return apiFetch<PolicyReportListPresetsResponse>(
