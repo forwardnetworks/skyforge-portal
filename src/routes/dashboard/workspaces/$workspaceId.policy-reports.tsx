@@ -10,8 +10,9 @@ import {
 	Settings2,
 	Shield,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import {
@@ -65,19 +66,23 @@ import {
 	type PolicyReportPackDeltaResponse,
 	type PolicyReportRecertAssignment,
 	type PolicyReportRecertCampaignWithCounts,
+	type PolicyReportPathQuery,
 	type PolicyReportRun,
 	type PolicyReportRunCheck,
 	type PolicyReportRunFinding,
 	type PolicyReportRunPackResponse,
+	type PolicyReportPreset,
 	type PolicyReportZone,
 	approveWorkspacePolicyReportException,
 	attestWorkspacePolicyReportRecertAssignment,
 	createWorkspacePolicyReportCustomRun,
 	createWorkspacePolicyReportException,
 	createWorkspacePolicyReportForwardNetwork,
+	createWorkspacePolicyReportPreset,
 	createWorkspacePolicyReportRecertCampaign,
 	createWorkspacePolicyReportRun,
 	createWorkspacePolicyReportZone,
+	deleteWorkspacePolicyReportPreset,
 	deleteWorkspacePolicyReportForwardNetwork,
 	deleteWorkspacePolicyReportForwardNetworkCredentials,
 	deleteWorkspacePolicyReportZone,
@@ -95,12 +100,17 @@ import {
 	listWorkspacePolicyReportRecertCampaigns,
 	listWorkspacePolicyReportRunFindings,
 	listWorkspacePolicyReportRuns,
+	listWorkspacePolicyReportPresets,
 	listWorkspacePolicyReportZones,
+	listUserForwardCredentialSets,
 	putWorkspacePolicyReportForwardNetworkCredentials,
 	rejectWorkspacePolicyReportException,
+	runWorkspacePolicyReportPreset,
 	runWorkspacePolicyReportCheck,
 	runWorkspacePolicyReportPack,
 	runWorkspacePolicyReportPackDelta,
+	runWorkspacePolicyReportPathsEnforcementBypass,
+	storeWorkspacePolicyReportPathsEnforcementBypass,
 	simulateWorkspacePolicyReportChangePlanning,
 	waiveWorkspacePolicyReportRecertAssignment,
 } from "../../../lib/skyforge-api";
@@ -108,6 +118,16 @@ import {
 export const Route = createFileRoute(
 	"/dashboard/workspaces/$workspaceId/policy-reports",
 )({
+	validateSearch: (search) =>
+		z
+			.object({
+				embed: z.string().optional().catch(""),
+				forwardNetworkId: z.string().optional().catch(""),
+				snapshotId: z.string().optional().catch(""),
+				flows: z.string().optional().catch(""),
+				tab: z.string().optional().catch(""),
+			})
+			.parse(search),
 	component: PolicyReportsPage,
 });
 
@@ -284,8 +304,20 @@ function isListType(paramType: string | undefined): boolean {
 	return t.startsWith("list<") || t.startsWith("list[") || t.endsWith("[]");
 }
 
-function PolicyReportsPage() {
-	const { workspaceId } = Route.useParams();
+	function PolicyReportsPage() {
+		const { workspaceId } = Route.useParams();
+		const {
+			embed,
+			forwardNetworkId,
+			snapshotId: snapshotFromSearch,
+			flows,
+			tab,
+		} = Route.useSearch();
+		const embedded =
+			String(embed ?? "").trim() === "1" ||
+			String(embed ?? "")
+				.trim()
+			.toLowerCase() === "true";
 
 	const [networkId, setNetworkId] = useState("");
 	const [snapshotId, setSnapshotId] = useState<string>("");
@@ -301,6 +333,8 @@ function PolicyReportsPage() {
 	const [credsSkipTLSVerify, setCredsSkipTLSVerify] = useState<boolean>(false);
 	const [credsUsername, setCredsUsername] = useState<string>("");
 	const [credsPassword, setCredsPassword] = useState<string>("");
+	const [credsCredentialSetMode, setCredsCredentialSetMode] =
+		useState<string>("custom");
 	const [flowSrcIp, setFlowSrcIp] = useState<string>("");
 	const [flowDstIp, setFlowDstIp] = useState<string>("");
 	const [flowIpProto, setFlowIpProto] = useState<string>("6");
@@ -322,6 +356,23 @@ function PolicyReportsPage() {
 	>([]);
 	const [intentDetailOpen, setIntentDetailOpen] = useState<boolean>(false);
 	const [intentDetail, setIntentDetail] = useState<any>(null);
+
+	// Paths assurance (Forward Paths API): enforcement bypass detection.
+	const [pathsRequireEnforcement, setPathsRequireEnforcement] =
+		useState<boolean>(true);
+	const [pathsIncludeReturnPath, setPathsIncludeReturnPath] =
+		useState<boolean>(false);
+	const [pathsRequireSymmetricDelivery, setPathsRequireSymmetricDelivery] =
+		useState<boolean>(false);
+	const [pathsRequireReturnEnforcement, setPathsRequireReturnEnforcement] =
+		useState<boolean>(false);
+	const [pathsEnfNamePartsText, setPathsEnfNamePartsText] =
+		useState<string>("fw, firewall");
+	const [pathsEnfTagPartsText, setPathsEnfTagPartsText] = useState<string>("");
+	const [pathsIncludeNetworkFunctions, setPathsIncludeNetworkFunctions] =
+		useState<boolean>(true);
+	const [pathsBypassResp, setPathsBypassResp] =
+		useState<PolicyReportNQEResponse | null>(null);
 	const [baselineSnapshotId, setBaselineSnapshotId] = useState<string>("");
 	const [compareSnapshotId, setCompareSnapshotId] = useState<string>("");
 	const [deltaPackId, setDeltaPackId] = useState<string>("");
@@ -334,9 +385,41 @@ function PolicyReportsPage() {
 		| "deltas"
 		| "segmentation"
 		| "runs"
+		| "presets"
 		| "governance"
 		| "change"
 	>("flow");
+
+	// Embedded mode: allow deep-linking into a pre-scoped view.
+		useEffect(() => {
+			if (!embedded) return;
+			const net = String(forwardNetworkId ?? "").trim();
+			const snap = String(snapshotFromSearch ?? "").trim();
+			const ft = String(flows ?? "");
+			const requestedTab = String(tab ?? "").trim().toLowerCase();
+
+			if (net) setNetworkId(net);
+			if (snap) setSnapshotId(snap);
+			if (ft.trim()) setIntentFlowsText(ft);
+			const allowed = new Set([
+				"flow",
+				"intent",
+				"segmentation",
+				"checks",
+				"packs",
+				"runs",
+				"presets",
+				"deltas",
+				"governance",
+				"change",
+			]);
+			if (requestedTab && allowed.has(requestedTab)) {
+				setActiveTab(requestedTab as any);
+			} else {
+				// Default to the "intent" tab since it includes Paths Assurance.
+				setActiveTab("intent");
+			}
+		}, [embedded, forwardNetworkId, snapshotFromSearch, flows, tab]);
 	const [resultsByCheck, setResultsByCheck] = useState<
 		Record<string, PolicyReportNQEResponse>
 	>({});
@@ -444,6 +527,14 @@ function PolicyReportsPage() {
 	const [runDialogId, setRunDialogId] = useState<string>("");
 	const [runDialogCheckId, setRunDialogCheckId] = useState<string>("");
 
+	// Presets (schedules)
+	const [presetName, setPresetName] = useState<string>("");
+	const [presetKind, setPresetKind] = useState<string>("PACK");
+	const [presetPackId, setPresetPackId] = useState<string>("");
+	const [presetIntervalMinutes, setPresetIntervalMinutes] =
+		useState<string>("1440");
+	const [presetEnabled, setPresetEnabled] = useState<boolean>(true);
+
 	const checks = useQuery({
 		queryKey: queryKeys.policyReportsChecks(workspaceId),
 		queryFn: () => getWorkspacePolicyReportChecks(workspaceId),
@@ -527,12 +618,51 @@ function PolicyReportsPage() {
 		staleTime: 10_000,
 	});
 
+	const forwardCredentialSetsQ = useQuery({
+		queryKey: queryKeys.userForwardCredentialSets(),
+		queryFn: listUserForwardCredentialSets,
+		staleTime: 30_000,
+	});
+	const forwardCredentialSets = useMemo(
+		() => forwardCredentialSetsQ.data?.credentialSets ?? [],
+		[forwardCredentialSetsQ.data?.credentialSets],
+	);
+	const selectedForwardCredentialSet = useMemo(() => {
+		if (credsCredentialSetMode === "custom") return null;
+		return (
+			forwardCredentialSets.find((c) => c.id === credsCredentialSetMode) ??
+			null
+		);
+	}, [credsCredentialSetMode, forwardCredentialSets]);
+
+	useEffect(() => {
+		if (credsCredentialSetMode === "custom") return;
+		const cs = selectedForwardCredentialSet;
+		if (!cs) return;
+		setCredsBaseUrl(cs.baseUrl ?? "https://fwd.app");
+		setCredsSkipTLSVerify(Boolean(cs.skipTlsVerify));
+		setCredsUsername(cs.username ?? "");
+		setCredsPassword("");
+	}, [credsCredentialSetMode, selectedForwardCredentialSet]);
+
 	const zones = useQuery({
 		queryKey: queryKeys.policyReportsZones(workspaceId, networkId.trim()),
 		queryFn: async () => {
 			const net = networkId.trim();
 			if (!net) throw new Error("Network ID is required");
 			return listWorkspacePolicyReportZones(workspaceId, net);
+		},
+		enabled: networkId.trim().length > 0,
+		retry: false,
+		staleTime: 10_000,
+	});
+
+	const presets = useQuery({
+		queryKey: ["policyReportsPresets", workspaceId, networkId.trim()],
+		queryFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			return listWorkspacePolicyReportPresets(workspaceId, net, undefined, 200);
 		},
 		enabled: networkId.trim().length > 0,
 		retry: false,
@@ -877,6 +1007,132 @@ function PolicyReportsPage() {
 			}),
 	});
 
+	const runPathsBypassSuite = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const flows = parseFlowSuiteText(intentFlowsText);
+			if (flows.length === 0)
+				throw new Error(
+					"Add at least one flow (srcIp dstIp [ipProto] [dstPort])",
+				);
+			if (flows.length > 200) throw new Error("Limit is 200 flows");
+
+			const queries: PolicyReportPathQuery[] = flows.map((f) => ({
+				srcIp: f.srcIp,
+				dstIp: f.dstIp,
+				ipProto: f.ipProto >= 0 ? f.ipProto : undefined,
+				dstPort: f.dstPort >= 0 ? String(f.dstPort) : undefined,
+			}));
+
+			const nameParts = pathsEnfNamePartsText
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+			const tagParts = pathsEnfTagPartsText
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+
+			return runWorkspacePolicyReportPathsEnforcementBypass(workspaceId, {
+				forwardNetworkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				queries,
+				requireEnforcement: pathsRequireEnforcement,
+				requireSymmetricDelivery: pathsIncludeReturnPath
+					? pathsRequireSymmetricDelivery
+					: undefined,
+				requireReturnEnforcement: pathsIncludeReturnPath
+					? pathsRequireReturnEnforcement
+					: undefined,
+				enforcementDeviceNameParts:
+					nameParts.length > 0 ? nameParts : undefined,
+				enforcementTagParts: tagParts.length > 0 ? tagParts : undefined,
+				intent: "PREFER_DELIVERED",
+				includeTags: true,
+				includeNetworkFunctions: pathsIncludeNetworkFunctions,
+				maxCandidates: 5000,
+				maxResults: 1,
+				maxReturnPathResults: pathsIncludeReturnPath ? 1 : 0,
+				maxSeconds: 30,
+				maxOverallSeconds: 300,
+			});
+		},
+		onSuccess: (resp) => {
+			setPathsBypassResp(resp);
+			toast.success("Paths assurance completed", {
+				description: `${resp.total} violation(s)`,
+			});
+		},
+		onError: (e) =>
+			toast.error("Paths assurance failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const storePathsBypassSuiteAsRun = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const flows = parseFlowSuiteText(intentFlowsText);
+			if (flows.length === 0)
+				throw new Error(
+					"Add at least one flow (srcIp dstIp [ipProto] [dstPort])",
+				);
+			if (flows.length > 200) throw new Error("Limit is 200 flows");
+
+			const queries: PolicyReportPathQuery[] = flows.map((f) => ({
+				srcIp: f.srcIp,
+				dstIp: f.dstIp,
+				ipProto: f.ipProto >= 0 ? f.ipProto : undefined,
+				dstPort: f.dstPort >= 0 ? String(f.dstPort) : undefined,
+			}));
+
+			const nameParts = pathsEnfNamePartsText
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+			const tagParts = pathsEnfTagPartsText
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+
+			const title = `Paths assurance (${queries.length} flows)`;
+			return storeWorkspacePolicyReportPathsEnforcementBypass(workspaceId, {
+				title,
+				forwardNetworkId: net,
+				snapshotId: snapshotId.trim() || undefined,
+				queries,
+				requireEnforcement: pathsRequireEnforcement,
+				requireSymmetricDelivery: pathsIncludeReturnPath
+					? pathsRequireSymmetricDelivery
+					: undefined,
+				requireReturnEnforcement: pathsIncludeReturnPath
+					? pathsRequireReturnEnforcement
+					: undefined,
+				enforcementDeviceNameParts:
+					nameParts.length > 0 ? nameParts : undefined,
+				enforcementTagParts: tagParts.length > 0 ? tagParts : undefined,
+				intent: "PREFER_DELIVERED",
+				includeTags: true,
+				includeNetworkFunctions: pathsIncludeNetworkFunctions,
+				maxCandidates: 5000,
+				maxResults: 1,
+				maxReturnPathResults: pathsIncludeReturnPath ? 1 : 0,
+				maxSeconds: 30,
+				maxOverallSeconds: 300,
+			});
+		},
+		onSuccess: async (resp) => {
+			toast.success("Paths assurance stored", { description: resp.run.id });
+			await runs.refetch();
+		},
+		onError: (e) =>
+			toast.error("Store paths assurance failed", {
+				description: (e as Error).message,
+			}),
+	});
+
 	const runPack = useMutation({
 		mutationFn: async (packId: string) => {
 			const net = networkId.trim();
@@ -1002,8 +1258,25 @@ function PolicyReportsPage() {
 			const net = networkId.trim();
 			if (!net) throw new Error("Network ID is required");
 			const baseUrl = credsBaseUrl.trim();
-			if (!baseUrl) throw new Error("Forward URL is required");
 			const username = credsUsername.trim();
+
+			if (credsCredentialSetMode !== "custom") {
+				if (!credsCredentialSetMode.trim())
+					throw new Error("Select a credential set");
+				if (!selectedForwardCredentialSet)
+					throw new Error("Selected credential set not found");
+				if (!selectedForwardCredentialSet.hasPassword)
+					throw new Error("Selected credential set has no stored password");
+				return putWorkspacePolicyReportForwardNetworkCredentials(workspaceId, net, {
+					credentialId: credsCredentialSetMode,
+					baseUrl: baseUrl || "https://fwd.app",
+					skipTlsVerify: credsSkipTLSVerify,
+					username: username || selectedForwardCredentialSet.username || "",
+					password: undefined,
+				});
+			}
+
+			if (!baseUrl) throw new Error("Forward URL is required");
 			if (!username) throw new Error("Forward username is required");
 			return putWorkspacePolicyReportForwardNetworkCredentials(
 				workspaceId,
@@ -1204,6 +1477,139 @@ function PolicyReportsPage() {
 		},
 		onError: (e) =>
 			toast.error("Store segmentation report failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const createPreset = useMutation({
+		mutationFn: async () => {
+			const net = networkId.trim();
+			if (!net) throw new Error("Network ID is required");
+			const name = presetName.trim();
+			if (!name) throw new Error("Preset name is required");
+			const interval = Number(presetIntervalMinutes.trim() || "0");
+			if (!Number.isFinite(interval) || interval <= 0)
+				throw new Error("Interval minutes must be > 0");
+
+			if (presetKind === "PACK") {
+				const packId = presetPackId.trim();
+				if (!packId) throw new Error("Pack is required");
+				return createWorkspacePolicyReportPreset(workspaceId, {
+					forwardNetworkId: net,
+					name,
+					kind: "PACK",
+					packId,
+					snapshotId: snapshotId.trim() || undefined,
+					enabled: presetEnabled,
+					intervalMinutes: interval,
+				});
+			}
+
+			if (presetKind === "PATHS") {
+				const flows = parseFlowSuiteText(intentFlowsText);
+				if (flows.length === 0)
+					throw new Error(
+						"Add at least one flow (srcIp dstIp [ipProto] [dstPort])",
+					);
+				if (flows.length > 200) throw new Error("Limit is 200 flows");
+
+				const queries: PolicyReportPathQuery[] = flows.map((f) => ({
+					srcIp: f.srcIp,
+					dstIp: f.dstIp,
+					...(f.ipProto >= 0 ? { ipProto: f.ipProto } : {}),
+					...(f.dstPort >= 0 ? { dstPort: String(f.dstPort) } : {}),
+				}));
+
+				const nameParts = pathsEnfNamePartsText
+					.split(",")
+					.map((s) => s.trim())
+					.filter(Boolean);
+				const tagParts = pathsEnfTagPartsText
+					.split(",")
+					.map((s) => s.trim())
+					.filter(Boolean);
+
+				return createWorkspacePolicyReportPreset(workspaceId, {
+					forwardNetworkId: net,
+					name,
+					kind: "PATHS",
+					snapshotId: snapshotId.trim() || undefined,
+					enabled: presetEnabled,
+					intervalMinutes: interval,
+					checks: [
+						{
+							checkId: "paths-enforcement-bypass",
+							parameters: {
+								queries,
+								requireEnforcement: pathsRequireEnforcement,
+								...(pathsIncludeReturnPath
+									? {
+											requireSymmetricDelivery: pathsRequireSymmetricDelivery,
+											requireReturnEnforcement: pathsRequireReturnEnforcement,
+										}
+									: {}),
+								...(nameParts.length > 0
+									? { enforcementDeviceNameParts: nameParts }
+									: {}),
+								...(tagParts.length > 0
+									? { enforcementTagParts: tagParts }
+									: {}),
+								intent: "PREFER_DELIVERED",
+								includeTags: true,
+								includeNetworkFunctions: pathsIncludeNetworkFunctions,
+								maxCandidates: 5000,
+								maxResults: 1,
+								maxReturnPathResults: pathsIncludeReturnPath ? 1 : 0,
+								maxSeconds: 30,
+								maxOverallSeconds: 300,
+							},
+						},
+					],
+				});
+			}
+
+			throw new Error(`Unsupported preset kind: ${presetKind}`);
+		},
+		onSuccess: async () => {
+			toast.success("Preset created");
+			setPresetName("");
+			setPresetKind("PACK");
+			setPresetPackId("");
+			setPresetIntervalMinutes("1440");
+			setPresetEnabled(true);
+			await presets.refetch();
+		},
+		onError: (e) =>
+			toast.error("Create preset failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const deletePreset = useMutation({
+		mutationFn: async (presetId: string) => {
+			return deleteWorkspacePolicyReportPreset(workspaceId, presetId);
+		},
+		onSuccess: async () => {
+			toast.success("Preset deleted");
+			await presets.refetch();
+		},
+		onError: (e) =>
+			toast.error("Delete preset failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runPresetNow = useMutation({
+		mutationFn: async (presetId: string) => {
+			return runWorkspacePolicyReportPreset(workspaceId, presetId);
+		},
+		onSuccess: async (resp) => {
+			toast.success("Preset run stored", { description: resp.run.id });
+			await runs.refetch();
+			await presets.refetch();
+		},
+		onError: (e) =>
+			toast.error("Preset run failed", {
 				description: (e as Error).message,
 			}),
 	});
@@ -1675,153 +2081,316 @@ function PolicyReportsPage() {
 		return { applicable: true, suppressed, results: kept };
 	}
 
+	function packRunToFlatRows(
+		packRun: PolicyReportRunPackResponse,
+	): Array<Record<string, unknown>> {
+		const out: Array<Record<string, unknown>> = [];
+		for (const [checkId, resp] of Object.entries(packRun.results ?? {})) {
+			const itemsRaw = asArray((resp as any)?.results);
+			const sup = applyExceptionSuppression(checkId, itemsRaw);
+			const usedItems = sup.applicable ? asArray(sup.results) : itemsRaw;
+			for (const it of usedItems) {
+				if (it && typeof it === "object" && !Array.isArray(it)) {
+					out.push({ checkId, ...(it as any) });
+				} else {
+					out.push({ checkId, value: it });
+				}
+			}
+		}
+		return out;
+	}
+
+	function packRunToMarkdown(
+		pack: PolicyReportPack,
+		packRun: PolicyReportRunPackResponse,
+		checksMeta: PolicyReportCatalogCheck[],
+	): string {
+		const net = String(packRun.networkId ?? "").trim() || "(unknown)";
+		const snap = String(packRun.snapshotId ?? "").trim() || "latest";
+
+		const metaById = checksMeta.reduce(
+			(acc, c) => {
+				acc[c.id] = c;
+				return acc;
+			},
+			{} as Record<string, PolicyReportCatalogCheck>,
+		);
+
+		const perDevice = new Map<string, number>();
+		const perDeviceRisk = new Map<string, number>();
+		const perCheck: Array<{
+			checkId: string;
+			title: string;
+			rawTotal: number;
+			suppressed: number;
+			remaining: number;
+		}> = [];
+
+		for (const [checkId, resp] of Object.entries(packRun.results ?? {})) {
+			const itemsRaw = asArray((resp as any)?.results);
+			const rawTotal = Number((resp as any)?.total ?? itemsRaw.length ?? 0);
+			const sup = applyExceptionSuppression(checkId, itemsRaw);
+			const usedItems = sup.applicable ? asArray(sup.results) : itemsRaw;
+
+			perCheck.push({
+				checkId,
+				title: metaById[checkId]?.title ?? "",
+				rawTotal,
+				suppressed: sup.applicable ? sup.suppressed : 0,
+				remaining: usedItems.length,
+			});
+
+			for (const it of usedItems) {
+				const dev =
+					typeof (it as any)?.device === "string"
+						? (it as any).device
+						: typeof (it as any)?.Device === "string"
+							? (it as any).Device
+							: "";
+				if (!dev) continue;
+				perDevice.set(dev, (perDevice.get(dev) ?? 0) + 1);
+				const rs = Number((it as any)?.riskScore ?? 0);
+				if (Number.isFinite(rs) && rs > 0) {
+					perDeviceRisk.set(dev, (perDeviceRisk.get(dev) ?? 0) + rs);
+				}
+			}
+		}
+
+		perCheck.sort((a, b) => b.remaining - a.remaining);
+		const topDevices = Array.from(perDevice.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 15);
+		const topRisk = Array.from(perDeviceRisk.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 15);
+
+		const lines: string[] = [];
+		lines.push(`# Policy Pack Report: ${pack.title ?? pack.id}`);
+		lines.push("");
+		lines.push(`- Pack ID: \`${pack.id}\``);
+		lines.push(`- Network ID: \`${net}\``);
+		lines.push(`- Snapshot: \`${snap}\``);
+		lines.push(
+			`- Exception suppression: \`${suppressApprovedExceptions ? "ON" : "OFF"}\``,
+		);
+		lines.push(`- Generated: \`${new Date().toISOString()}\``);
+		lines.push("");
+
+		lines.push("## By Check");
+		lines.push("");
+		lines.push("| Check | Title | Total | Suppressed | Remaining |");
+		lines.push("|---|---|---:|---:|---:|");
+		for (const r of perCheck) {
+			lines.push(
+				`| \`${r.checkId}\` | ${r.title || ""} | ${r.rawTotal} | ${r.suppressed} | ${r.remaining} |`,
+			);
+		}
+		lines.push("");
+
+		lines.push("## Top Devices (By Findings)");
+		lines.push("");
+		lines.push("| Device | Findings |");
+		lines.push("|---|---:|");
+		for (const [dev, n] of topDevices) {
+			lines.push(`| \`${dev}\` | ${n} |`);
+		}
+		lines.push("");
+
+		lines.push("## Top Devices (By Risk Sum)");
+		lines.push("");
+		lines.push("| Device | Risk Sum |");
+		lines.push("|---|---:|");
+		for (const [dev, n] of topRisk) {
+			lines.push(`| \`${dev}\` | ${Math.round(n)} |`);
+		}
+		lines.push("");
+
+		lines.push("## Notes");
+		lines.push("");
+		lines.push("- This report is generated from Forward-modeled data via NQE.");
+		lines.push(
+			"- Totals reflect returned items; some checks are analytics (not strictly 'violations').",
+		);
+		lines.push("");
+
+		return lines.join("\n");
+	}
+
+	function packDeltaToMarkdown(delta: PolicyReportPackDeltaResponse): string {
+		const lines: string[] = [];
+		lines.push(`# Policy Pack Delta: ${delta.packId}`);
+		lines.push("");
+		lines.push(`- Network ID: \`${delta.networkId}\``);
+		lines.push(`- Baseline snapshot: \`${delta.baselineSnapshotId}\``);
+		lines.push(`- Compare snapshot: \`${delta.compareSnapshotId}\``);
+		lines.push(`- Generated: \`${new Date().toISOString()}\``);
+		lines.push("");
+		lines.push("| Check | Baseline | Compare | New | Resolved | Changed |");
+		lines.push("|---|---:|---:|---:|---:|---:|");
+		for (const c of delta.checks ?? []) {
+			lines.push(
+				`| \`${c.checkId}\` | ${c.baselineTotal} | ${c.compareTotal} | ${c.newCount} | ${c.resolvedCount} | ${c.changedCount ?? 0} |`,
+			);
+		}
+		lines.push("");
+		return lines.join("\n");
+	}
+
 	const activeParamsCheck = useMemo(() => {
 		if (!paramsDialogCheckId) return null;
 		return checksList.find((c) => c.id === paramsDialogCheckId) ?? null;
 	}, [checksList, paramsDialogCheckId]);
 
 	return (
-		<div className="space-y-6 p-6">
-			<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b pb-6">
-				<div className="space-y-1">
-					<div className="flex items-center gap-2">
-						<Shield className="h-5 w-5 text-muted-foreground" />
-						<h1 className="text-2xl font-bold tracking-tight">
-							Policy Reports
-						</h1>
-						<Badge variant="secondary">Demo</Badge>
-					</div>
-					<p className="text-muted-foreground text-sm">
-						Run parameterized NQE checks and packs against a Forward network and
-						snapshot. Export findings as JSON for lightweight reporting.
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
-					<Link
-						to="/dashboard/workspaces/$workspaceId"
-						params={{ workspaceId }}
-						className={buttonVariants({ variant: "outline" })}
-					>
-						<ArrowLeft className="mr-2 h-4 w-4" />
-						Workspace
-					</Link>
-					<div className="flex items-center gap-2 rounded-md border px-3 py-2">
-						<div className="text-xs text-muted-foreground">
-							Suppress approved exceptions
-							{approvedExceptionsByKey.size > 0
-								? ` (${approvedExceptionsByKey.size} active)`
-								: ""}
+		<div className={embedded ? "space-y-6" : "space-y-6 p-6"}>
+			{!embedded ? (
+				<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b pb-6">
+					<div className="space-y-1">
+						<div className="flex items-center gap-2">
+							<Shield className="h-5 w-5 text-muted-foreground" />
+							<h1 className="text-2xl font-bold tracking-tight">
+								Policy Reports
+							</h1>
+							<Badge variant="secondary">Demo</Badge>
 						</div>
-						<Switch
-							checked={suppressApprovedExceptions}
-							onCheckedChange={setSuppressApprovedExceptions}
-						/>
+						<p className="text-muted-foreground text-sm">
+							Run parameterized NQE checks and packs against a Forward network
+							and snapshot. Export findings as JSON for lightweight reporting.
+						</p>
 					</div>
-					<Button
-						variant="outline"
-						onClick={() => {
-							const net = networkId.trim();
-							downloadJSON(
-								`policy-reports_${workspaceId}_${net || "network"}_${snapshotId.trim() || "latest"}.json`,
-								{
-									workspaceId,
-									networkId: net,
-									snapshotId: snapshotId.trim() || undefined,
-									generatedAt: new Date().toISOString(),
-									resultsByCheck,
-									lastPackRun,
-									paramsByCheck,
-								},
-							);
-						}}
-						disabled={Object.keys(resultsByCheck).length === 0}
-					>
-						<Download className="mr-2 h-4 w-4" />
-						Export results
-					</Button>
-					<Button
-						variant="outline"
-						onClick={() => {
-							const net = networkId.trim();
-							const esc = (s: unknown) =>
-								String(s ?? "")
-									.replaceAll("&", "&amp;")
-									.replaceAll("<", "&lt;")
-									.replaceAll(">", "&gt;")
-									.replaceAll('"', "&quot;")
-									.replaceAll("'", "&#39;");
-							const cap = (s: unknown, n: number) => {
-								const t = String(s ?? "");
-								if (t.length <= n) return t;
-								return `${t.slice(0, n)}…`;
-							};
-							const netId = net || "";
-							const snap = snapshotId.trim() || "latest";
-							const generatedAt = new Date().toISOString();
-							const suppress = suppressApprovedExceptions;
-
-							// Build a lightweight auditor-friendly report.
-							const checksMeta = checksList.reduce(
-								(acc, c) => {
-									acc[c.id] = c;
-									return acc;
-								},
-								{} as Record<string, PolicyReportCatalogCheck>,
-							);
-
-							const byCheck = Object.entries(resultsByCheck).map(([id, r]) => {
-								const rawTotal = Number((r as any)?.total ?? 0);
-								const itemsRaw = asArray((r as any)?.results);
-								const supd = applyExceptionSuppression(id, itemsRaw);
-								const total = supd.applicable
-									? asArray(supd.results).length
-									: rawTotal;
-								return { id, total };
-							});
-							byCheck.sort((a, b) => b.total - a.total);
-
-							const exceptionsByKey = approvedExceptionsByKey as any;
-
-							const renderRow = (checkId: string, obj: any, cols: string[]) => {
-								const fid = String(obj?.findingId ?? "").trim();
-								const exKey = fid ? `${checkId}|${fid}` : "";
-								const ex = exKey ? exceptionsByKey.get(exKey) : null;
-								const exHTML = ex
-									? `<div><div class="mono">${esc(String(ex.status ?? ""))}</div>${
-											ex.expiresAt
-												? `<div class="hint">expires ${esc(String(ex.expiresAt).slice(0, 10))}</div>`
-												: ""
-										}</div>`
-									: "";
-								const ev = evidenceFields(obj);
-								const evText = ev[0]?.value ?? "";
-								const evHTML = evText
-									? `<details><summary>Evidence</summary><pre>${esc(cap(evText, 4000))}</pre></details>`
-									: "";
-								return `<tr>${cols
-									.map(
-										(k) => `<td class=\"mono\">${esc(fmtValue(obj?.[k]))}</td>`,
-									)
-									.join("")}<td>${exHTML}</td><td>${evHTML}</td></tr>`;
-							};
-
-							let bodyHTML = "";
-							for (const { id } of byCheck.slice(0, 30)) {
-								const r = resultsByCheck[id];
-								const itemsRaw = asArray((r as any)?.results);
-								const rawTotal = Number(
-									(r as any)?.total ?? itemsRaw.length ?? 0,
+					<div className="flex items-center gap-2">
+						<Link
+							to="/dashboard/workspaces/$workspaceId"
+							params={{ workspaceId }}
+							className={buttonVariants({ variant: "outline" })}
+						>
+							<ArrowLeft className="mr-2 h-4 w-4" />
+							Workspace
+						</Link>
+						<div className="flex items-center gap-2 rounded-md border px-3 py-2">
+							<div className="text-xs text-muted-foreground">
+								Suppress approved exceptions
+								{approvedExceptionsByKey.size > 0
+									? ` (${approvedExceptionsByKey.size} active)`
+									: ""}
+							</div>
+							<Switch
+								checked={suppressApprovedExceptions}
+								onCheckedChange={setSuppressApprovedExceptions}
+							/>
+						</div>
+						<Button
+							variant="outline"
+							onClick={() => {
+								const net = networkId.trim();
+								downloadJSON(
+									`policy-reports_${workspaceId}_${net || "network"}_${snapshotId.trim() || "latest"}.json`,
+									{
+										workspaceId,
+										networkId: net,
+										snapshotId: snapshotId.trim() || undefined,
+										generatedAt: new Date().toISOString(),
+										resultsByCheck,
+										lastPackRun,
+										paramsByCheck,
+									},
 								);
-								const supd = applyExceptionSuppression(id, itemsRaw);
-								const items = supd.applicable
-									? asArray(supd.results)
-									: itemsRaw;
-								const cols = pickColumns(items).slice(0, 10);
-								const meta = checksMeta[id];
-								const totalText = supd.applicable
-									? `${items.length} (suppressed ${supd.suppressed} of ${rawTotal})`
-									: String(rawTotal);
-								bodyHTML += `<section class=\"card\">
+							}}
+							disabled={Object.keys(resultsByCheck).length === 0}
+						>
+							<Download className="mr-2 h-4 w-4" />
+							Export results
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => {
+								const net = networkId.trim();
+								const esc = (s: unknown) =>
+									String(s ?? "")
+										.replaceAll("&", "&amp;")
+										.replaceAll("<", "&lt;")
+										.replaceAll(">", "&gt;")
+										.replaceAll('"', "&quot;")
+										.replaceAll("'", "&#39;");
+								const cap = (s: unknown, n: number) => {
+									const t = String(s ?? "");
+									if (t.length <= n) return t;
+									return `${t.slice(0, n)}…`;
+								};
+								const netId = net || "";
+								const snap = snapshotId.trim() || "latest";
+								const generatedAt = new Date().toISOString();
+								const suppress = suppressApprovedExceptions;
+
+								// Build a lightweight auditor-friendly report.
+								const checksMeta = checksList.reduce(
+									(acc, c) => {
+										acc[c.id] = c;
+										return acc;
+									},
+									{} as Record<string, PolicyReportCatalogCheck>,
+								);
+
+								const byCheck = Object.entries(resultsByCheck).map(
+									([id, r]) => {
+										const rawTotal = Number((r as any)?.total ?? 0);
+										const itemsRaw = asArray((r as any)?.results);
+										const supd = applyExceptionSuppression(id, itemsRaw);
+										const total = supd.applicable
+											? asArray(supd.results).length
+											: rawTotal;
+										return { id, total };
+									},
+								);
+								byCheck.sort((a, b) => b.total - a.total);
+
+								const exceptionsByKey = approvedExceptionsByKey as any;
+
+								const renderRow = (
+									checkId: string,
+									obj: any,
+									cols: string[],
+								) => {
+									const fid = String(obj?.findingId ?? "").trim();
+									const exKey = fid ? `${checkId}|${fid}` : "";
+									const ex = exKey ? exceptionsByKey.get(exKey) : null;
+									const exHTML = ex
+										? `<div><div class="mono">${esc(String(ex.status ?? ""))}</div>${
+												ex.expiresAt
+													? `<div class="hint">expires ${esc(String(ex.expiresAt).slice(0, 10))}</div>`
+													: ""
+											}</div>`
+										: "";
+									const ev = evidenceFields(obj);
+									const evText = ev[0]?.value ?? "";
+									const evHTML = evText
+										? `<details><summary>Evidence</summary><pre>${esc(cap(evText, 4000))}</pre></details>`
+										: "";
+									return `<tr>${cols
+										.map(
+											(k) =>
+												`<td class=\"mono\">${esc(fmtValue(obj?.[k]))}</td>`,
+										)
+										.join("")}<td>${exHTML}</td><td>${evHTML}</td></tr>`;
+								};
+
+								let bodyHTML = "";
+								for (const { id } of byCheck.slice(0, 30)) {
+									const r = resultsByCheck[id];
+									const itemsRaw = asArray((r as any)?.results);
+									const rawTotal = Number(
+										(r as any)?.total ?? itemsRaw.length ?? 0,
+									);
+									const supd = applyExceptionSuppression(id, itemsRaw);
+									const items = supd.applicable
+										? asArray(supd.results)
+										: itemsRaw;
+									const cols = pickColumns(items).slice(0, 10);
+									const meta = checksMeta[id];
+									const totalText = supd.applicable
+										? `${items.length} (suppressed ${supd.suppressed} of ${rawTotal})`
+										: String(rawTotal);
+									bodyHTML += `<section class=\"card\">
   <div class=\"h2\">${esc(meta?.title ?? id)}</div>
   <div class=\"sub\">checkId=<span class=\"mono\">${esc(id)}</span> • category=${esc(meta?.category ?? "")} • severity=${esc(meta?.severity ?? "")} • total=${esc(totalText)}</div>
   ${
@@ -1841,9 +2410,9 @@ function PolicyReportsPage() {
 			: `<div class=\"hint\">No findings.</div>`
 	}
 </section>`;
-							}
+								}
 
-							const html = `<!doctype html>
+								const html = `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -1896,19 +2465,20 @@ function PolicyReportsPage() {
   ${bodyHTML}
 </body>
 </html>`;
-							downloadText(
-								`policy-reports_${workspaceId}_${net || "network"}_${snapshotId.trim() || "latest"}.html`,
-								"text/html",
-								html,
-							);
-						}}
-						disabled={Object.keys(resultsByCheck).length === 0}
-					>
-						<Download className="mr-2 h-4 w-4" />
-						Export HTML
-					</Button>
+								downloadText(
+									`policy-reports_${workspaceId}_${net || "network"}_${snapshotId.trim() || "latest"}.html`,
+									"text/html",
+									html,
+								);
+							}}
+							disabled={Object.keys(resultsByCheck).length === 0}
+						>
+							<Download className="mr-2 h-4 w-4" />
+							Export HTML
+						</Button>
+					</div>
 				</div>
-			</div>
+			) : null}
 
 			<Card>
 				<CardHeader>
@@ -1992,6 +2562,7 @@ function PolicyReportsPage() {
 									size="sm"
 									onClick={() => {
 										const st = forwardCredsStatus;
+										setCredsCredentialSetMode("custom");
 										setCredsBaseUrl(st?.baseUrl ?? "https://fwd.app");
 										setCredsSkipTLSVerify(Boolean(st?.skipTlsVerify ?? false));
 										setCredsUsername(st?.username ?? "");
@@ -2027,7 +2598,13 @@ function PolicyReportsPage() {
 						<div className="text-sm font-medium">Forward Network ID</div>
 						<Input
 							value={networkId}
-							onChange={(e) => setNetworkId(e.target.value)}
+							onChange={(e) => {
+								if (embedded && String(forwardNetworkId ?? "").trim()) return;
+								setNetworkId(e.target.value);
+							}}
+							readOnly={
+								embedded && Boolean(String(forwardNetworkId ?? "").trim())
+							}
 							placeholder="e.g. 235216"
 						/>
 						<p className="text-xs text-muted-foreground">
@@ -2079,6 +2656,7 @@ function PolicyReportsPage() {
 					<TabsTrigger value="checks">Checks</TabsTrigger>
 					<TabsTrigger value="packs">Packs</TabsTrigger>
 					<TabsTrigger value="runs">Runs</TabsTrigger>
+					<TabsTrigger value="presets">Presets</TabsTrigger>
 					<TabsTrigger value="deltas">Deltas</TabsTrigger>
 					<TabsTrigger value="governance">Governance</TabsTrigger>
 					<TabsTrigger value="change">Change Planning</TabsTrigger>
@@ -2697,6 +3275,278 @@ function PolicyReportsPage() {
 									</span>
 								</Badge>
 							</div>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Paths Assurance (Enforcement Bypass)</CardTitle>
+							<CardDescription>
+								Uses Forward Paths API to detect when flows don’t traverse
+								expected enforcement points (or Forward reports delivery
+								anomalies). This highlights Forward’s topology-aware value
+								rather than re-implementing paths.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="grid gap-4 md:grid-cols-4">
+								<div className="space-y-2">
+									<div className="text-sm font-medium">Require enforcement</div>
+									<Select
+										value={pathsRequireEnforcement ? "true" : "false"}
+										onValueChange={(v) =>
+											setPathsRequireEnforcement(v === "true")
+										}
+									>
+										<SelectTrigger>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="true">true</SelectItem>
+											<SelectItem value="false">false</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<div className="text-sm font-medium">Return path</div>
+									<div className="flex items-center gap-2 rounded-md border px-3 py-2">
+										<div className="text-xs text-muted-foreground">
+											Include return path
+										</div>
+										<Switch
+											checked={pathsIncludeReturnPath}
+											onCheckedChange={setPathsIncludeReturnPath}
+										/>
+									</div>
+									{pathsIncludeReturnPath ? (
+										<div className="flex flex-col gap-2 pt-1">
+											<div className="flex items-center gap-2">
+												<Switch
+													checked={pathsRequireSymmetricDelivery}
+													onCheckedChange={setPathsRequireSymmetricDelivery}
+												/>
+												<div className="text-xs text-muted-foreground">
+													Require symmetric delivery
+												</div>
+											</div>
+											<div className="flex items-center gap-2">
+												<Switch
+													checked={pathsRequireReturnEnforcement}
+													onCheckedChange={setPathsRequireReturnEnforcement}
+												/>
+												<div className="text-xs text-muted-foreground">
+													Require return enforcement
+												</div>
+											</div>
+										</div>
+									) : null}
+								</div>
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										Enforcement device name parts (comma-separated)
+									</div>
+									<Input
+										value={pathsEnfNamePartsText}
+										onChange={(e) => setPathsEnfNamePartsText(e.target.value)}
+										placeholder="fw, firewall"
+									/>
+									<p className="text-xs text-muted-foreground">
+										Matched against hop{" "}
+										<span className="font-mono">deviceName</span> and{" "}
+										<span className="font-mono">displayName</span>.
+									</p>
+								</div>
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										Enforcement tag parts (comma-separated)
+									</div>
+									<Input
+										value={pathsEnfTagPartsText}
+										onChange={(e) => setPathsEnfTagPartsText(e.target.value)}
+										placeholder="enforcement, inspection"
+									/>
+								</div>
+							</div>
+
+							<div className="flex flex-wrap items-center gap-2">
+								<Button
+									onClick={() => runPathsBypassSuite.mutate()}
+									disabled={runPathsBypassSuite.isPending}
+								>
+									<Play className="mr-2 h-4 w-4" />
+									Run Paths Assurance
+								</Button>
+								<Button
+									variant="secondary"
+									onClick={() => storePathsBypassSuiteAsRun.mutate()}
+									disabled={storePathsBypassSuiteAsRun.isPending}
+								>
+									<FolderClock className="mr-2 h-4 w-4" />
+									Store as run
+								</Button>
+								<Badge variant="outline">
+									Include networkFunctions:{" "}
+									<span className="font-mono">
+										{pathsIncludeNetworkFunctions ? "true" : "false"}
+									</span>
+								</Badge>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setPathsIncludeNetworkFunctions((v) => !v)}
+								>
+									Toggle networkFunctions
+								</Button>
+							</div>
+
+							{pathsBypassResp ? (
+								<div className="space-y-2">
+									<div className="text-sm">
+										Violations:{" "}
+										<span className="font-mono">{pathsBypassResp.total}</span>
+									</div>
+									{(() => {
+										const rows = asArray((pathsBypassResp as any)?.results);
+										const viols = rows.filter(
+											(r) => (r as any)?.violation === true,
+										);
+										if (viols.length === 0) return null;
+										const counts = new Map<string, number>();
+										for (const v of viols) {
+											const reasons: string[] = Array.isArray(
+												(v as any)?.riskReasons,
+											)
+												? (v as any).riskReasons
+												: [];
+											if (reasons.length === 0) {
+												counts.set(
+													"(no reason)",
+													(counts.get("(no reason)") ?? 0) + 1,
+												);
+												continue;
+											}
+											for (const r of reasons) {
+												const key = String(r || "(empty)");
+												counts.set(key, (counts.get(key) ?? 0) + 1);
+											}
+										}
+										const top = Array.from(counts.entries())
+											.sort((a, b) => b[1] - a[1])
+											.slice(0, 8);
+										return (
+											<div className="flex flex-wrap gap-2">
+												{top.map(([k, n]) => (
+													<Badge key={k} variant="secondary">
+														<span className="font-mono">{n}</span>{" "}
+														<span className="text-muted-foreground">{k}</span>
+													</Badge>
+												))}
+											</div>
+										);
+									})()}
+									{(() => {
+										const rows = asArray((pathsBypassResp as any)?.results);
+										const viols = rows
+											.filter((r) => (r as any)?.violation === true)
+											.slice(0, 20);
+										if (viols.length === 0) return null;
+										return (
+											<div className="rounded-md border">
+												<Table>
+													<TableHeader>
+														<TableRow>
+															<TableHead>Flow</TableHead>
+															<TableHead>Outcome</TableHead>
+															<TableHead>Return</TableHead>
+															<TableHead>Enforced</TableHead>
+															<TableHead>Termination</TableHead>
+															<TableHead>Reason</TableHead>
+														</TableRow>
+													</TableHeader>
+													<TableBody>
+														{viols.map((r, idx) => {
+															const src = String((r as any)?.srcIp ?? "");
+															const dst = String((r as any)?.dstIp ?? "");
+															const proto = (r as any)?.ipProto;
+															const port = String((r as any)?.dstPort ?? "");
+															const fo = String(
+																(r as any)?.forwardingOutcome ?? "",
+															);
+															const rfo = String(
+																(r as any)?.returnForwardingOutcome ?? "",
+															);
+															const enforced = Boolean((r as any)?.enforced);
+															const term = (r as any)?.termination;
+															const termDev =
+																term && typeof term === "object"
+																	? String((term as any)?.deviceName ?? "")
+																	: "";
+															const reasons: string[] = Array.isArray(
+																(r as any)?.riskReasons,
+															)
+																? (r as any).riskReasons
+																: [];
+															return (
+																<TableRow key={`${src}->${dst}:${idx}`}>
+																	<TableCell className="font-mono text-xs">
+																		{src} → {dst}{" "}
+																		{proto != null ? `p=${String(proto)}` : ""}{" "}
+																		{port ? `dport=${port}` : ""}
+																	</TableCell>
+																	<TableCell className="font-mono text-xs">
+																		{fo || "—"}
+																	</TableCell>
+																	<TableCell className="font-mono text-xs">
+																		{rfo || "—"}
+																	</TableCell>
+																	<TableCell className="font-mono text-xs">
+																		{enforced ? "true" : "false"}
+																	</TableCell>
+																	<TableCell className="font-mono text-xs">
+																		{termDev || "—"}
+																	</TableCell>
+																	<TableCell className="text-xs text-muted-foreground">
+																		{reasons.length > 0 ? reasons[0] : "—"}
+																	</TableCell>
+																</TableRow>
+															);
+														})}
+													</TableBody>
+												</Table>
+											</div>
+										);
+									})()}
+									<div className="flex flex-wrap gap-2">
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => {
+												const net = networkId.trim();
+												downloadJSON(
+													`paths-assurance_${net || "network"}_${snapshotId.trim() || "latest"}.json`,
+													pathsBypassResp,
+												);
+											}}
+										>
+											<Download className="mr-2 h-4 w-4" />
+											Export JSON
+										</Button>
+									</div>
+									<details>
+										<summary className="cursor-pointer text-xs text-muted-foreground">
+											Show raw JSON
+										</summary>
+										<div className="pt-2">
+											<Textarea
+												readOnly
+												className="font-mono text-xs"
+												rows={10}
+												value={jsonPretty(pathsBypassResp)}
+											/>
+										</div>
+									</details>
+								</div>
+							) : null}
 						</CardContent>
 					</Card>
 
@@ -3788,6 +4638,47 @@ function PolicyReportsPage() {
 										<Download className="mr-2 h-4 w-4" />
 										Export pack
 									</Button>
+									<Button
+										variant="outline"
+										onClick={() => {
+											if (!lastPackRun || lastPackRun.packId !== p.id) return;
+											const net = networkId.trim();
+											const md = packRunToMarkdown(p, lastPackRun, checksList);
+											downloadText(
+												`policy-pack_${p.id}_${net || "network"}_${snapshotId.trim() || "latest"}.md`,
+												"text/markdown",
+												md,
+											);
+										}}
+										disabled={!lastPackRun || lastPackRun.packId !== p.id}
+									>
+										<Download className="mr-2 h-4 w-4" />
+										MD
+									</Button>
+									<Button
+										variant="outline"
+										onClick={() => {
+											if (!lastPackRun || lastPackRun.packId !== p.id) return;
+											const net = networkId.trim();
+											const rows = packRunToFlatRows(lastPackRun);
+											const csv = resultsToCSV(rows);
+											if (!csv) {
+												toast.error(
+													"CSV export only supports array-of-object results",
+												);
+												return;
+											}
+											downloadText(
+												`policy-pack_${p.id}_${net || "network"}_${snapshotId.trim() || "latest"}.csv`,
+												"text/csv",
+												csv,
+											);
+										}}
+										disabled={!lastPackRun || lastPackRun.packId !== p.id}
+									>
+										<Download className="mr-2 h-4 w-4" />
+										CSV
+									</Button>
 								</div>
 							</CardHeader>
 						</Card>
@@ -4011,6 +4902,212 @@ function PolicyReportsPage() {
 					) : null}
 				</TabsContent>
 
+				<TabsContent value="presets" className="space-y-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Presets (Schedules)</CardTitle>
+							<CardDescription>
+								Save a recurring pack run (NQE) or Paths Assurance suite for
+								this Forward network. The server cron will execute due presets
+								automatically and store runs.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="grid gap-4 md:grid-cols-2">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Name</div>
+								<Input
+									value={presetName}
+									onChange={(e) => setPresetName(e.target.value)}
+									placeholder="e.g. Daily Hygiene"
+								/>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Kind</div>
+								<Select value={presetKind} onValueChange={setPresetKind}>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="PACK">PACK (NQE pack)</SelectItem>
+										<SelectItem value="PATHS">
+											PATHS (Paths Assurance)
+										</SelectItem>
+									</SelectContent>
+								</Select>
+								{presetKind === "PATHS" ? (
+									<p className="text-xs text-muted-foreground">
+										Uses the current flow suite from the “Intent Suite” section
+										plus the Paths Assurance toggles.
+									</p>
+								) : null}
+							</div>
+							{presetKind === "PACK" ? (
+								<div className="space-y-2">
+									<div className="text-sm font-medium">Pack</div>
+									<Select value={presetPackId} onValueChange={setPresetPackId}>
+										<SelectTrigger>
+											<SelectValue placeholder="Choose a pack" />
+										</SelectTrigger>
+										<SelectContent>
+											{packsList.map((p) => (
+												<SelectItem key={p.id} value={p.id}>
+													{p.title ?? p.id}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							) : (
+								<div className="space-y-2">
+									<div className="text-sm font-medium">Pack</div>
+									<Input value="(not applicable)" readOnly />
+								</div>
+							)}
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Interval (minutes)</div>
+								<Input
+									value={presetIntervalMinutes}
+									onChange={(e) => setPresetIntervalMinutes(e.target.value)}
+									placeholder="1440"
+								/>
+								<p className="text-xs text-muted-foreground">
+									Default is daily (<span className="font-mono">1440</span>).
+								</p>
+							</div>
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Enabled</div>
+								<Select
+									value={presetEnabled ? "true" : "false"}
+									onValueChange={(v) => setPresetEnabled(v === "true")}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="true">true</SelectItem>
+										<SelectItem value="false">false</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="md:col-span-2 flex items-center gap-2">
+								<Button
+									onClick={() => createPreset.mutate()}
+									disabled={createPreset.isPending}
+								>
+									{createPreset.isPending ? "Creating…" : "Create Preset"}
+								</Button>
+								<Button
+									variant="outline"
+									onClick={() => presets.refetch()}
+									disabled={!networkId.trim() || presets.isFetching}
+								>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Refresh
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Configured Presets</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							{presets.isLoading ? (
+								<div className="text-sm text-muted-foreground">
+									Loading presets…
+								</div>
+							) : null}
+							{presets.isError ? (
+								<div className="text-sm text-destructive">
+									Failed to load presets: {(presets.error as Error).message}
+								</div>
+							) : null}
+							{(() => {
+								const list: PolicyReportPreset[] = presets.data?.presets ?? [];
+								if (list.length === 0) {
+									return (
+										<div className="text-sm text-muted-foreground">
+											No presets yet.
+										</div>
+									);
+								}
+								return (
+									<div className="rounded-md border">
+										<Table>
+											<TableHeader>
+												<TableRow>
+													<TableHead>Name</TableHead>
+													<TableHead>Pack</TableHead>
+													<TableHead>Enabled</TableHead>
+													<TableHead>Interval</TableHead>
+													<TableHead>Next</TableHead>
+													<TableHead>Last Run</TableHead>
+													<TableHead className="text-right">Actions</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{list.map((p) => (
+													<TableRow key={p.id}>
+														<TableCell className="font-medium">
+															{p.name}
+														</TableCell>
+														<TableCell>
+															<Badge variant="secondary">
+																{p.packId || p.kind}
+															</Badge>
+														</TableCell>
+														<TableCell>
+															<Badge
+																variant={p.enabled ? "secondary" : "outline"}
+															>
+																{String(p.enabled)}
+															</Badge>
+														</TableCell>
+														<TableCell className="font-mono text-xs">
+															{p.intervalMinutes}m
+														</TableCell>
+														<TableCell className="text-xs text-muted-foreground">
+															{p.nextRunAt || "—"}
+														</TableCell>
+														<TableCell className="text-xs text-muted-foreground">
+															{p.lastRunAt || "—"}
+														</TableCell>
+														<TableCell className="text-right">
+															<div className="flex justify-end gap-2">
+																<Button
+																	size="sm"
+																	variant="outline"
+																	onClick={() => runPresetNow.mutate(p.id)}
+																	disabled={runPresetNow.isPending}
+																>
+																	Run Now
+																</Button>
+																<Button
+																	size="sm"
+																	variant="destructive"
+																	onClick={() => {
+																		if (confirm(`Delete preset "${p.name}"?`)) {
+																			deletePreset.mutate(p.id);
+																		}
+																	}}
+																	disabled={deletePreset.isPending}
+																>
+																	Delete
+																</Button>
+															</div>
+														</TableCell>
+													</TableRow>
+												))}
+											</TableBody>
+										</Table>
+									</div>
+								);
+							})()}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
 				<TabsContent value="deltas" className="space-y-4">
 					<Card>
 						<CardHeader>
@@ -4078,6 +5175,23 @@ function PolicyReportsPage() {
 							>
 								<Play className="mr-2 h-4 w-4" />
 								Run delta
+							</Button>
+							<Button
+								variant="outline"
+								onClick={() => {
+									if (!lastDeltaRun) return;
+									const net = networkId.trim();
+									const md = packDeltaToMarkdown(lastDeltaRun);
+									downloadText(
+										`policy-pack-delta_${lastDeltaRun.packId}_${net || "network"}_${lastDeltaRun.baselineSnapshotId}_to_${lastDeltaRun.compareSnapshotId}.md`,
+										"text/markdown",
+										md,
+									);
+								}}
+								disabled={!lastDeltaRun}
+							>
+								<Download className="mr-2 h-4 w-4" />
+								MD
 							</Button>
 							<Button
 								variant="outline"
@@ -5465,6 +6579,36 @@ function PolicyReportsPage() {
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-3">
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Credential set</div>
+							<Select
+								value={credsCredentialSetMode}
+								onValueChange={setCredsCredentialSetMode}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Custom (manual)" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="custom">Custom (manual)</SelectItem>
+									{forwardCredentialSets.map((cs) => (
+										<SelectItem key={cs.id} value={cs.id}>
+											{cs.name}
+											{cs.username ? ` (${cs.username})` : ""}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							{forwardCredentialSetsQ.isError ? (
+								<p className="text-xs text-destructive">
+									Failed to load credential sets:{" "}
+									{(forwardCredentialSetsQ.error as Error).message}
+								</p>
+							) : null}
+							<p className="text-xs text-muted-foreground">
+								Select an existing Forward credential set, or leave as Custom to
+								store per-network credentials.
+							</p>
+						</div>
 						<div className="grid gap-3 md:grid-cols-2">
 							<div className="space-y-2">
 								<div className="text-sm font-medium">Forward URL</div>
@@ -5472,6 +6616,7 @@ function PolicyReportsPage() {
 									value={credsBaseUrl}
 									onChange={(e) => setCredsBaseUrl(e.target.value)}
 									placeholder="https://fwd.app"
+									disabled={credsCredentialSetMode !== "custom"}
 								/>
 							</div>
 							<div className="space-y-2">
@@ -5479,6 +6624,7 @@ function PolicyReportsPage() {
 								<Select
 									value={credsSkipTLSVerify ? "true" : "false"}
 									onValueChange={(v) => setCredsSkipTLSVerify(v === "true")}
+									disabled={credsCredentialSetMode !== "custom"}
 								>
 									<SelectTrigger>
 										<SelectValue />
@@ -5497,6 +6643,7 @@ function PolicyReportsPage() {
 									value={credsUsername}
 									onChange={(e) => setCredsUsername(e.target.value)}
 									placeholder="Forward username"
+									disabled={credsCredentialSetMode !== "custom"}
 								/>
 							</div>
 							<div className="space-y-2">
@@ -5505,8 +6652,15 @@ function PolicyReportsPage() {
 									type="password"
 									value={credsPassword}
 									onChange={(e) => setCredsPassword(e.target.value)}
+									disabled={credsCredentialSetMode !== "custom"}
 									placeholder={
-										forwardCredsStatus?.hasPassword ? "(stored)" : "••••••••"
+										credsCredentialSetMode !== "custom"
+											? selectedForwardCredentialSet?.hasPassword
+												? "(stored in credential set)"
+												: "(missing)"
+											: forwardCredsStatus?.hasPassword
+												? "(stored)"
+												: "••••••••"
 									}
 								/>
 								<p className="text-xs text-muted-foreground">
@@ -5524,7 +6678,12 @@ function PolicyReportsPage() {
 							</Button>
 							<Button
 								onClick={() => putForwardCreds.mutate()}
-								disabled={putForwardCreds.isPending}
+								disabled={
+									putForwardCreds.isPending ||
+									(credsCredentialSetMode !== "custom" &&
+										(!selectedForwardCredentialSet ||
+											!selectedForwardCredentialSet.hasPassword))
+								}
 							>
 								Save
 							</Button>

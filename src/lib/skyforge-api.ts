@@ -2659,6 +2659,40 @@ export type DeleteUserForwardCollectorConfigResponse = {
 	deleted: boolean;
 };
 
+export type ForwardCredentialSetSummary = {
+	id: string;
+	name: string;
+	baseUrl?: string;
+	skipTlsVerify: boolean;
+	username?: string;
+	hasPassword: boolean;
+	updatedAt?: ISO8601;
+};
+
+export type ListForwardCredentialSetsResponse = {
+	credentialSets: ForwardCredentialSetSummary[];
+};
+
+export type CreateForwardCredentialSetRequest = {
+	name: string;
+	baseUrl: string;
+	skipTlsVerify: boolean;
+	username: string;
+	password: string;
+};
+
+export type UpdateForwardCredentialSetRequest = {
+	name: string;
+	baseUrl: string;
+	skipTlsVerify: boolean;
+	username: string;
+	password?: string;
+};
+
+export type DeleteForwardCredentialSetResponse = {
+	deleted: boolean;
+};
+
 export async function listUserForwardCollectorConfigs(): Promise<ListUserForwardCollectorConfigsResponse> {
 	return apiFetch<ListUserForwardCollectorConfigsResponse>(
 		"/api/forward/collector-configs",
@@ -2721,6 +2755,41 @@ export async function restartUserForwardCollectorConfig(
 			method: "POST",
 			body: "{}",
 		},
+	);
+}
+
+export async function listUserForwardCredentialSets(): Promise<ListForwardCredentialSetsResponse> {
+	return apiFetch<ListForwardCredentialSetsResponse>("/api/forward/credential-sets");
+}
+
+export async function createUserForwardCredentialSet(
+	body: CreateForwardCredentialSetRequest,
+): Promise<ForwardCredentialSetSummary> {
+	return apiFetch<ForwardCredentialSetSummary>("/api/forward/credential-sets", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function updateUserForwardCredentialSet(
+	id: string,
+	body: UpdateForwardCredentialSetRequest,
+): Promise<ForwardCredentialSetSummary> {
+	return apiFetch<ForwardCredentialSetSummary>(
+		`/api/forward/credential-sets/${encodeURIComponent(id)}`,
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function deleteUserForwardCredentialSet(
+	id: string,
+): Promise<DeleteForwardCredentialSetResponse> {
+	return apiFetch<DeleteForwardCredentialSetResponse>(
+		`/api/forward/credential-sets/${encodeURIComponent(id)}`,
+		{ method: "DELETE" },
 	);
 }
 
@@ -3738,6 +3807,7 @@ export type PolicyReportForwardCredentialsStatus = {
 };
 
 export type PolicyReportPutForwardCredentialsRequest = {
+	credentialId?: string;
 	baseUrl: string;
 	skipTlsVerify: boolean;
 	username: string;

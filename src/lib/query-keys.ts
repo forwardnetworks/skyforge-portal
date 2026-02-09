@@ -124,6 +124,7 @@ export const queryKeys = {
 	userGcpCredentials: () => ["userGcpCredentials"] as const,
 	userIbmCredentials: () => ["userIbmCredentials"] as const,
 	userForwardCollectorConfigs: () => ["userForwardCollectorConfigs"] as const,
+	userForwardCredentialSets: () => ["userForwardCredentialSets"] as const,
 	userForwardCollectorConfigRuntime: (id: string) =>
 		["userForwardCollectorConfigRuntime", id] as const,
 	userForwardCollectorConfigLogs: (id: string) =>
