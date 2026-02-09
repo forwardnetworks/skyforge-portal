@@ -33,6 +33,7 @@ import {
 	type ForwardAssuranceSummaryResponse,
 	type PolicyReportNQEResponse,
 	type PolicyReportPathQuery,
+	listUserForwardNetworks,
 	listWorkspaceForwardNetworks,
 	refreshForwardNetworkAssurance,
 	seedForwardNetworkAssuranceDemo,
@@ -300,10 +301,21 @@ function AssuranceStudioPage() {
 		staleTime: 30_000,
 	});
 
+	const userNetworksQ = useQuery({
+		queryKey: queryKeys.userForwardNetworks(),
+		queryFn: listUserForwardNetworks,
+		retry: false,
+		staleTime: 30_000,
+	});
+
 	const networkRow = useMemo(() => {
 		const ns = (networksQ.data?.networks ?? []) as any[];
-		return ns.find((n) => String(n?.id ?? "") === String(networkRef));
-	}, [networksQ.data?.networks, networkRef]);
+		const us = (userNetworksQ.data?.networks ?? []) as any[];
+		return (
+			ns.find((n) => String(n?.id ?? "") === String(networkRef)) ??
+			us.find((n) => String(n?.id ?? "") === String(networkRef))
+		);
+	}, [networksQ.data?.networks, userNetworksQ.data?.networks, networkRef]);
 
 	const forwardNetworkId = String(networkRow?.forwardNetworkId ?? "");
 	const networkName = String(networkRow?.name ?? "") || String(networkRef);

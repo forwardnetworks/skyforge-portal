@@ -25,8 +25,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryKeys } from "@/lib/query-keys";
 import {
 	type CapacityRollupRow,
+	type CapacityPathSearchQuery,
 	type ForwardNetworkCapacityCoverageResponse,
 	type ForwardNetworkCapacityInventoryResponse,
+	type ForwardNetworkCapacityPathHop,
+	type ForwardNetworkCapacityPathBottlenecksResponse,
 	type ForwardNetworkCapacitySnapshotDeltaResponse,
 	type ForwardNetworkCapacityUpgradeCandidate,
 	type ForwardNetworkCapacityUpgradeCandidatesResponse,
@@ -37,7 +40,9 @@ import {
 	getForwardNetworkCapacitySummary,
 	getForwardNetworkCapacityUnhealthyDevices,
 	getForwardNetworkCapacityUpgradeCandidates,
+	listUserForwardNetworks,
 	listWorkspaceForwardNetworks,
+	postForwardNetworkCapacityPathBottlenecks,
 	postForwardNetworkCapacityDeviceMetricsHistory,
 	postForwardNetworkCapacityInterfaceMetricsHistory,
 	refreshForwardNetworkCapacityRollups,
@@ -45,12 +50,13 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 const searchSchema = z.object({
 	workspace: z.string().optional().catch(""),
+	embed: z.string().optional().catch(""),
 });
 
 export const Route = createFileRoute(
@@ -81,6 +87,33 @@ function downloadText(filename: string, contentType: string, content: string) {
 	}
 }
 
+async function copyToClipboard(text: string): Promise<boolean> {
+	try {
+		if (
+			typeof navigator !== "undefined" &&
+			navigator.clipboard &&
+			typeof navigator.clipboard.writeText === "function"
+		) {
+			await navigator.clipboard.writeText(text);
+			return true;
+		}
+	} catch {
+		// ignore
+	}
+	return false;
+}
+
+function randomId(): string {
+	try {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const c = (globalThis as any).crypto;
+		if (c && typeof c.randomUUID === "function") return c.randomUUID();
+	} catch {
+		// ignore
+	}
+	return `id_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
+}
+
 function csvEscape(value: unknown): string {
 	const s = value === null || value === undefined ? "" : String(value);
 	if (
@@ -98,6 +131,15 @@ function toCSV(headers: string[], rows: Array<Array<unknown>>): string {
 	const lines = [headers.map(csvEscape).join(",")];
 	for (const r of rows) lines.push(r.map(csvEscape).join(","));
 	return lines.join("\n") + "\n";
+}
+
+function protoLabel(protoNum: unknown): string {
+	const n = Number(protoNum ?? NaN);
+	if (!Number.isFinite(n)) return "";
+	if (n === 6) return "tcp";
+	if (n === 17) return "udp";
+	if (n === 1) return "icmp";
+	return String(n);
 }
 
 function parseRFC3339(s: string | undefined): Date | null {
@@ -143,6 +185,46 @@ function quantile(values: number[], q: number): number | null {
 	return cp[lo]! * (1 - frac) + cp[hi]! * frac;
 }
 
+function normalizeIfaceForJoin(name: string): string {
+	let s = String(name ?? "")
+		.trim()
+		.toLowerCase();
+	if (!s) return "";
+	s = s.replaceAll(" ", "");
+	const repl: Array<[string, string]> = [
+		["port-channel", "po"],
+		["portchannel", "po"],
+		["bundle-ether", "be"],
+		["bundleether", "be"],
+		["gigabitethernet", "gi"],
+		["tengigabitethernet", "te"],
+		["twentyfivegigabitethernet", "twe"],
+		["fortygigabitethernet", "fo"],
+		["hundredgigabitethernet", "hu"],
+		["tengige", "te"],
+		["twentyfivegige", "twe"],
+		["fortygige", "fo"],
+		["hundredgige", "hu"],
+		["twohundredgige", "twohu"],
+		["fourhundredgige", "fourhu"],
+		["managementethernet", "mgmt"],
+		["mgmtethernet", "mgmt"],
+		["management", "mgmt"],
+		["fastethernet", "fa"],
+		["ethernet", "eth"],
+		["loopback", "lo"],
+		["vlan", "vl"],
+	];
+	for (const [from, to] of repl) {
+		if (s.startsWith(from)) {
+			s = to + s.slice(from.length);
+			break;
+		}
+	}
+	if (s.endsWith(".0")) s = s.slice(0, -2);
+	return s;
+}
+
 function metricToInterfaceType(
 	metric: string,
 ): "UTILIZATION" | "ERROR" | "PACKET_LOSS" {
@@ -154,6 +236,252 @@ function metricToInterfaceType(
 function metricToDeviceType(metric: string): "CPU" | "MEMORY" {
 	if (metric.includes("memory")) return "MEMORY";
 	return "CPU";
+}
+
+function parseCapacityPathQueries(text: string): {
+	queries: CapacityPathSearchQuery[];
+	error?: string;
+} {
+	const raw = String(text ?? "").trim();
+	if (!raw)
+		return { queries: [], error: "Enter at least one flow or JSON payload." };
+
+	if (raw.startsWith("{") || raw.startsWith("[")) {
+		try {
+			const parsed = JSON.parse(raw) as any;
+			if (Array.isArray(parsed)) {
+				const queries = parsed as CapacityPathSearchQuery[];
+				return {
+					queries: queries.filter((q) => String(q?.dstIp ?? "").trim()),
+				};
+			}
+			if (parsed && Array.isArray(parsed.queries)) {
+				const queries = parsed.queries as CapacityPathSearchQuery[];
+				return {
+					queries: queries.filter((q) => String(q?.dstIp ?? "").trim()),
+				};
+			}
+			return {
+				queries: [],
+				error:
+					"JSON must be an array of queries or an object with { queries: [...] }.",
+			};
+		} catch (e) {
+			return {
+				queries: [],
+				error:
+					e instanceof Error ? `Invalid JSON: ${e.message}` : "Invalid JSON.",
+			};
+		}
+	}
+
+	const queries: CapacityPathSearchQuery[] = [];
+	for (const line0 of raw.split(/\r?\n/g)) {
+		const line = line0.trim();
+		if (!line || line.startsWith("#")) continue;
+
+		// Accept common formats:
+		// - "srcIp dstIp tcp 443"
+		// - "srcIp:srcPort -> dstIp:dstPort tcp"
+		// - "dstIp" or "dstIp:dstPort" or "dstIp tcp/443"
+		// - CSV-ish: "srcIp,dstIp,tcp,443"
+		const cleaned = line.replaceAll("\t", " ").replaceAll("->", " ");
+		const csvish = cleaned.includes(",") && !cleaned.includes(" ");
+		const parts = (
+			csvish ? cleaned.split(",") : cleaned.replaceAll(",", " ").split(/\s+/g)
+		)
+			.map((p) => p.trim())
+			.filter(Boolean);
+		if (!parts.length) continue;
+
+		const splitHostPort = (s: string): { host: string; port?: string } => {
+			const v = String(s ?? "").trim();
+			// Very basic: "ip:port" (do not attempt to parse IPv6 bracket forms for now).
+			const m = v.match(/^([^:]+):([^:]+)$/);
+			if (!m) return { host: v };
+			return { host: m[1]!, port: m[2]! };
+		};
+
+		if (parts.length === 1) {
+			const hp = splitHostPort(parts[0]!);
+			const q: CapacityPathSearchQuery = { dstIp: hp.host };
+			if (hp.port) q.dstPort = hp.port;
+			queries.push(q);
+			continue;
+		}
+
+		let srcHp: { host: string; port?: string } | null = null;
+		let dstHp: { host: string; port?: string } | null = null;
+
+		// Identify src/dst tokens with optional ports.
+		// If the first token looks like a bare dst (no src), allow "-" or "*" placeholders.
+		const t0 = parts[0]!;
+		const t1 = parts[1]!;
+		if (t0 === "-" || t0 === "*" || t0.toLowerCase() === "any") {
+			dstHp = splitHostPort(t1);
+		} else {
+			srcHp = splitHostPort(t0);
+			dstHp = splitHostPort(t1);
+		}
+
+		let ipProto: number | undefined;
+		let dstPort: string | undefined = dstHp?.port;
+		let srcPort: string | undefined = srcHp?.port;
+
+		const parseProto = (tok: string) => {
+			const p = String(tok ?? "")
+				.trim()
+				.toLowerCase();
+			if (!p) return;
+			if (p.includes("/")) {
+				const [pp, port] = p.split("/", 2);
+				if (pp === "tcp") ipProto = 6;
+				else if (pp === "udp") ipProto = 17;
+				else if (pp === "icmp") ipProto = 1;
+				else if (/^\d+$/.test(pp)) ipProto = Number(pp);
+				if (port) dstPort = port;
+				return;
+			}
+			if (p === "tcp") ipProto = 6;
+			else if (p === "udp") ipProto = 17;
+			else if (p === "icmp") ipProto = 1;
+			else if (/^\d+$/.test(p)) ipProto = Number(p);
+			else if (/^\d+(-\d+)?$/.test(p)) dstPort = p;
+		};
+
+		parseProto(parts[2] ?? "");
+		// Allow explicit dstPort after proto
+		if (parts[3]) dstPort = String(parts[3]).trim() || dstPort;
+
+		const q: CapacityPathSearchQuery = { dstIp: dstHp?.host ?? "" };
+		if (srcHp?.host) q.srcIp = srcHp.host;
+		if (srcPort) q.srcPort = srcPort;
+		if (ipProto !== undefined && Number.isFinite(ipProto)) q.ipProto = ipProto;
+		if (dstPort) q.dstPort = dstPort;
+
+		if (String(q.dstIp ?? "").trim()) queries.push(q);
+	}
+
+	if (!queries.length) {
+		return {
+			queries: [],
+			error:
+				"No valid flows parsed. Try JSON or lines like: 10.0.0.1 10.0.0.2 tcp 443",
+		};
+	}
+	return { queries };
+}
+
+type SavedPathBatch = {
+	id: string;
+	name: string;
+	text: string;
+	createdAt: string;
+};
+
+type PathBottleneckSummaryRow = {
+	id: string;
+	deviceName: string;
+	interfaceName: string;
+	direction: string;
+	count: number;
+	minHeadroomGbps?: number;
+	minHeadroomUtil?: number;
+	worstMaxUtil?: number;
+	soonestForecast?: string;
+};
+
+type PathsUpgradeImpactRow = {
+	id: string;
+	deviceName: string;
+	interfaceName: string;
+	direction: string;
+	flows: number;
+	minHeadroomGbps?: number;
+	minHeadroomUtil?: number;
+	recommendedSpeedMbps?: number | null;
+	requiredSpeedMbps?: number | null;
+	reason?: string;
+};
+
+type PathsUpgradeImpactFlowRow = {
+	id: string;
+	index: number;
+	src: string;
+	dst: string;
+	proto: string;
+	port: string;
+	outcome: string;
+	headroomGbps?: number | null;
+	headroomUtil?: number | null;
+	forwardQueryUrl?: string;
+};
+
+type PathsPlanSimItem = {
+	index: number;
+	beforeHeadroomGbps?: number | null;
+	beforeHeadroomUtil?: number | null;
+	afterHeadroomGbps?: number | null;
+	afterHeadroomUtil?: number | null;
+	appliedUpgradeId?: string;
+	appliedSpeedMbps?: number;
+	reason?: string;
+};
+
+type PathsPlanSimSummary = {
+	totalFlows: number;
+	withBottleneck: number;
+	simulated: number;
+	cannotSimulate: number;
+	atRiskBefore: number;
+	atRiskAfter: number;
+	improved: number;
+};
+
+function storageKeyPathBatches(
+	workspaceId: string,
+	networkRef: string,
+): string {
+	return `skyforge:capacity:path-batches:${encodeURIComponent(workspaceId)}:${encodeURIComponent(networkRef)}`;
+}
+
+function loadSavedPathBatches(
+	workspaceId: string,
+	networkRef: string,
+): SavedPathBatch[] {
+	try {
+		const raw = localStorage.getItem(
+			storageKeyPathBatches(workspaceId, networkRef),
+		);
+		if (!raw) return [];
+		const parsed = JSON.parse(raw) as any;
+		if (!Array.isArray(parsed)) return [];
+		return parsed
+			.map((v) => ({
+				id: String(v?.id ?? "").trim(),
+				name: String(v?.name ?? "").trim(),
+				text: String(v?.text ?? ""),
+				createdAt: String(v?.createdAt ?? "").trim(),
+			}))
+			.filter((b) => b.id && b.name && b.text);
+	} catch {
+		return [];
+	}
+}
+
+function savePathBatches(
+	workspaceId: string,
+	networkRef: string,
+	batches: SavedPathBatch[],
+) {
+	try {
+		localStorage.setItem(
+			storageKeyPathBatches(workspaceId, networkRef),
+			JSON.stringify(batches),
+		);
+	} catch {
+		// ignore
+	}
 }
 
 type InterfaceRow = {
@@ -273,7 +601,12 @@ type VrfSummaryRow = {
 
 function ForwardNetworkCapacityPage() {
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
+	const { workspace, embed } = Route.useSearch();
+	const embedded =
+		String(embed ?? "").trim() === "1" ||
+		String(embed ?? "")
+			.trim()
+			.toLowerCase() === "true";
 	const qc = useQueryClient();
 	const [windowLabel, setWindowLabel] = useState<"24h" | "7d" | "30d">("24h");
 	const [ifaceMetric, setIfaceMetric] = useState<
@@ -315,7 +648,59 @@ function ForwardNetworkCapacityPage() {
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
 	const [planFilter, setPlanFilter] = useState("");
+	const [lagDialogOpen, setLagDialogOpen] = useState(false);
+	const [lagDialog, setLagDialog] = useState<{
+		deviceName: string;
+		lagName: string;
+		totalSpeedMbps?: number;
+		members: Array<{
+			interfaceName: string;
+			speedMbps?: number;
+			worstDirection?: string;
+			p95Util?: number;
+			maxUtil?: number;
+			forecast?: string;
+		}>;
+	} | null>(null);
+
+	const [pathsInput, setPathsInput] = useState("");
+	const [pathsSnapshotId, setPathsSnapshotId] = useState("");
+	const [pathsIncludeHops, setPathsIncludeHops] = useState(false);
+	const [pathsDemoMode, setPathsDemoMode] = useState(false);
+	const [pathsResult, setPathsResult] =
+		useState<ForwardNetworkCapacityPathBottlenecksResponse | null>(null);
+	const [pathsBatchName, setPathsBatchName] = useState("");
+	const [savedPathBatches, setSavedPathBatches] = useState<SavedPathBatch[]>(
+		[],
+	);
+	const [pathsHopsDialogOpen, setPathsHopsDialogOpen] = useState(false);
+	const [pathsHopsDialog, setPathsHopsDialog] = useState<{
+		title: string;
+		hops: ForwardNetworkCapacityPathHop[];
+	} | null>(null);
+	const [pathsCoverageDialogOpen, setPathsCoverageDialogOpen] = useState(false);
+	const [pathsPayloadDialogOpen, setPathsPayloadDialogOpen] = useState(false);
+	const [pathsUpgradeDialogOpen, setPathsUpgradeDialogOpen] = useState(false);
+	const [pathsUpgradeDialog, setPathsUpgradeDialog] = useState<{
+		title: string;
+		upgrade: PathsUpgradeImpactRow;
+		flows: PathsUpgradeImpactFlowRow[];
+	} | null>(null);
+	const [pathsWhyDialogOpen, setPathsWhyDialogOpen] = useState(false);
+	const [pathsWhyDialog, setPathsWhyDialog] = useState<{
+		title: string;
+		unmatched: string[];
+		notesText: string;
+		forwardQueryUrl?: string;
+	} | null>(null);
+	const [pathsPlanSelected, setPathsPlanSelected] = useState<string[]>([]);
+
 	const workspaceId = String(workspace ?? "").trim();
+
+	useEffect(() => {
+		if (!workspaceId || !networkRef) return;
+		setSavedPathBatches(loadSavedPathBatches(workspaceId, networkRef));
+	}, [workspaceId, networkRef]);
 
 	const networksQ = useQuery({
 		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
@@ -325,11 +710,21 @@ function ForwardNetworkCapacityPage() {
 		staleTime: 30_000,
 	});
 
+	const userNetworksQ = useQuery({
+		queryKey: queryKeys.userForwardNetworks(),
+		queryFn: listUserForwardNetworks,
+		retry: false,
+		staleTime: 30_000,
+	});
+
 	const networkName = useMemo(() => {
 		const ns = (networksQ.data?.networks ?? []) as any[];
-		const hit = ns.find((n) => String(n?.id ?? "") === String(networkRef));
+		const us = (userNetworksQ.data?.networks ?? []) as any[];
+		const hit =
+			ns.find((n) => String(n?.id ?? "") === String(networkRef)) ??
+			us.find((n) => String(n?.id ?? "") === String(networkRef));
 		return String(hit?.name ?? "");
-	}, [networksQ.data?.networks, networkRef]);
+	}, [networksQ.data?.networks, userNetworksQ.data?.networks, networkRef]);
 
 	const summary = useQuery({
 		queryKey: queryKeys.forwardNetworkCapacitySummary(workspaceId, networkRef),
@@ -409,6 +804,199 @@ function ForwardNetworkCapacityPage() {
 		return m;
 	}, [inventory.data?.interfaces]);
 
+	const lagImbalanceRows = useMemo(() => {
+		const ifaces = inventory.data?.interfaces ?? [];
+		const rollups = summary.data?.rollups ?? [];
+
+		const speedByKey = new Map<string, number>();
+		for (const r of ifaces) {
+			const dev = String(r.deviceName ?? "").trim();
+			const ifn = String(r.interfaceName ?? "").trim();
+			if (!dev || !ifn) continue;
+			const sp = Number(r.speedMbps ?? 0);
+			if (sp > 0) speedByKey.set(`${dev}|${ifn}`, sp);
+		}
+
+		const groups = new Map<
+			string,
+			{ deviceName: string; lagName: string; members: Set<string> }
+		>();
+
+		const addMember = (deviceName: string, lagName: string, member: string) => {
+			const dev = String(deviceName ?? "").trim();
+			const lag = String(lagName ?? "").trim();
+			const mem = String(member ?? "").trim();
+			if (!dev || !lag || !mem) return;
+			const k = `${dev}|${lag}`;
+			const g = groups.get(k) ?? {
+				deviceName: dev,
+				lagName: lag,
+				members: new Set<string>(),
+			};
+			g.members.add(mem);
+			groups.set(k, g);
+		};
+
+		for (const r of ifaces) {
+			const dev = String(r.deviceName ?? "").trim();
+			const ifn = String(r.interfaceName ?? "").trim();
+			if (!dev || !ifn) continue;
+
+			const aggId = String(r.aggregateId ?? "").trim();
+			if (aggId) addMember(dev, aggId, ifn);
+
+			const mems =
+				(r.aggregationConfiguredMemberNames?.length
+					? r.aggregationConfiguredMemberNames
+					: r.aggregationMemberNames) ?? [];
+			for (const m of mems) addMember(dev, ifn, String(m ?? "").trim());
+		}
+
+		const utilByKey = new Map<
+			string,
+			{
+				maxUtil: number;
+				p95Util: number;
+				worstDirection: string;
+				speedMbps?: number;
+				forecast?: string;
+			}
+		>();
+
+		for (const r of rollups as any[]) {
+			if (String(r?.objectType ?? "") !== "interface") continue;
+			if (String(r?.window ?? "") !== windowLabel) continue;
+			const metric = String(r?.metric ?? "");
+			if (metric !== "util_ingress" && metric !== "util_egress") continue;
+
+			const det = (r?.details ?? {}) as any;
+			let dev = String(det?.deviceName ?? "").trim();
+			let ifn = String(det?.interfaceName ?? "").trim();
+			let dir = String(det?.direction ?? "").trim();
+			if (!dev || !ifn) {
+				const parts = String(r?.objectId ?? "").split(":");
+				dev = String(parts[0] ?? "").trim();
+				ifn = String(parts[1] ?? "").trim();
+				if (!dir) dir = String(parts[2] ?? "").trim();
+			}
+			if (!dev || !ifn) continue;
+
+			const k = `${dev}|${ifn}`;
+			const maxUtil = Number(r?.max ?? 0);
+			const p95Util = Number(r?.p95 ?? 0);
+			const speedMbps = Number(det?.speedMbps ?? 0) || speedByKey.get(k);
+			const forecast = String(r?.forecastCrossingTs ?? "").trim();
+			const dirNorm =
+				String(dir || (metric === "util_egress" ? "EGRESS" : "INGRESS"))
+					.toUpperCase()
+					.trim() || "—";
+
+			const prev = utilByKey.get(k);
+			if (!prev || maxUtil > prev.maxUtil) {
+				utilByKey.set(k, {
+					maxUtil,
+					p95Util,
+					worstDirection: dirNorm,
+					speedMbps: speedMbps || undefined,
+					forecast: forecast || undefined,
+				});
+			}
+		}
+
+		const rows: Array<{
+			id: string;
+			deviceName: string;
+			lagName: string;
+			memberCount: number;
+			totalSpeedMbps?: number;
+			worstMemberMaxUtil?: number;
+			spread?: number;
+			hotMembers?: number;
+			soonestForecast?: string;
+			members: Array<{
+				interfaceName: string;
+				speedMbps?: number;
+				worstDirection?: string;
+				p95Util?: number;
+				maxUtil?: number;
+				forecast?: string;
+			}>;
+		}> = [];
+
+		for (const g of groups.values()) {
+			const members = Array.from(g.members).filter(Boolean).sort();
+			if (members.length < 2) continue;
+
+			const memberRows = members.map((m) => {
+				const k = `${g.deviceName}|${m}`;
+				const u = utilByKey.get(k);
+				return {
+					interfaceName: m,
+					speedMbps: speedByKey.get(k) || u?.speedMbps,
+					worstDirection: u?.worstDirection,
+					p95Util: u?.p95Util,
+					maxUtil: u?.maxUtil,
+					forecast: u?.forecast,
+				};
+			});
+
+			const maxes = memberRows
+				.map((r) => Number(r.maxUtil ?? 0))
+				.filter((n) => Number.isFinite(n));
+			if (!maxes.length) continue;
+			const worst = Math.max(...maxes);
+			const sorted = [...maxes].sort((a, b) => a - b);
+			const median = sorted[Math.floor(sorted.length / 2)];
+			const spread = worst - median;
+
+			const hotMembers = memberRows.filter(
+				(r) => Number(r.maxUtil ?? 0) >= 0.85,
+			).length;
+
+			let soonestForecast = "";
+			for (const r of memberRows) {
+				const f = String(r.forecast ?? "").trim();
+				if (!f) continue;
+				if (!soonestForecast || f < soonestForecast) soonestForecast = f;
+			}
+
+			const totalSpeedMbps = memberRows.reduce(
+				(acc, r) => acc + Number(r.speedMbps ?? 0),
+				0,
+			);
+
+			// Keep it a high-signal showcase list.
+			if (!(worst >= 0.85 || spread >= 0.25)) continue;
+
+			rows.push({
+				id: `${g.deviceName}|${g.lagName}`,
+				deviceName: g.deviceName,
+				lagName: g.lagName,
+				memberCount: members.length,
+				totalSpeedMbps: totalSpeedMbps || undefined,
+				worstMemberMaxUtil: worst,
+				spread,
+				hotMembers,
+				soonestForecast: soonestForecast || undefined,
+				members: memberRows,
+			});
+		}
+
+		rows.sort((a, b) => {
+			const aw = Number(a.worstMemberMaxUtil ?? 0);
+			const bw = Number(b.worstMemberMaxUtil ?? 0);
+			if (aw !== bw) return bw - aw;
+			const as = Number(a.spread ?? 0);
+			const bs = Number(b.spread ?? 0);
+			if (as !== bs) return bs - as;
+			if (a.deviceName !== b.deviceName)
+				return a.deviceName.localeCompare(b.deviceName);
+			return a.lagName.localeCompare(b.lagName);
+		});
+
+		return rows.slice(0, 50);
+	}, [inventory.data?.interfaces, summary.data?.rollups, windowLabel]);
+
 	const refresh = useMutation({
 		mutationFn: async () => {
 			if (!workspaceId) throw new Error("workspace not found");
@@ -477,6 +1065,27 @@ function ForwardNetworkCapacityPage() {
 			}),
 	});
 
+	const runPathBottlenecks = useMutation({
+		mutationFn: async (body: {
+			window: "24h" | "7d" | "30d";
+			snapshotId?: string;
+			includeHops?: boolean;
+			queries: CapacityPathSearchQuery[];
+		}) => {
+			if (!workspaceId) throw new Error("workspace not found");
+			return postForwardNetworkCapacityPathBottlenecks(
+				workspaceId,
+				networkRef,
+				body,
+			);
+		},
+		onSuccess: (resp) => setPathsResult(resp),
+		onError: (e) =>
+			toast.error("Failed to compute paths", {
+				description: (e as Error).message,
+			}),
+	});
+
 	const groupingOptions = useMemo(() => {
 		const devices = inventory.data?.devices ?? [];
 		const ifaceVrfs = inventory.data?.interfaceVrfs ?? [];
@@ -511,6 +1120,390 @@ function ForwardNetworkCapacityPage() {
 	const windowDays = windowLabel === "24h" ? 1 : windowLabel === "7d" ? 7 : 30;
 
 	const rollups = summary.data?.rollups ?? [];
+
+	const pathsParsed = useMemo(
+		() => parseCapacityPathQueries(pathsInput),
+		[pathsInput],
+	);
+	const forwardPathsBulkPayloadPreview = useMemo(() => {
+		if (pathsParsed.error || !pathsParsed.queries.length) return "";
+		const snapshotId = pathsSnapshotId.trim();
+		const body = {
+			queries: pathsParsed.queries,
+			intent: "PREFER_DELIVERED",
+			maxCandidates: 5000,
+			maxResults: 1,
+			maxReturnPathResults: 0,
+			maxSeconds: 30,
+			maxOverallSeconds: 300,
+			includeTags: false,
+			includeNetworkFunctions: false,
+		};
+		return jsonPretty({
+			method: "POST",
+			path: `/networks/${forwardNetworkId || "{networkId}"}/paths-bulk`,
+			query: snapshotId ? { snapshotId } : {},
+			body,
+		});
+	}, [
+		pathsParsed.error,
+		pathsParsed.queries,
+		pathsSnapshotId,
+		forwardNetworkId,
+	]);
+
+	const pathsSummaryRows = useMemo((): PathBottleneckSummaryRow[] => {
+		const items = pathsResult?.items ?? [];
+		const m = new Map<string, PathBottleneckSummaryRow>();
+		for (const it of items) {
+			const b = (it as any)?.bottleneck ?? null;
+			if (!b) continue;
+			const key = `${String(b.deviceName ?? "")}|${String(b.interfaceName ?? "")}|${String(b.direction ?? "")}`;
+			const row = m.get(key) ?? {
+				id: key,
+				deviceName: String(b.deviceName ?? ""),
+				interfaceName: String(b.interfaceName ?? ""),
+				direction: String(b.direction ?? ""),
+				count: 0,
+			};
+			row.count += 1;
+
+			const h = Number(b.headroomGbps ?? NaN);
+			if (Number.isFinite(h)) {
+				if (row.minHeadroomGbps === undefined) row.minHeadroomGbps = h;
+				else row.minHeadroomGbps = Math.min(row.minHeadroomGbps, h);
+			}
+			const hu = Number((b as any).headroomUtil ?? NaN);
+			if (Number.isFinite(hu)) {
+				if (row.minHeadroomUtil === undefined) row.minHeadroomUtil = hu;
+				else row.minHeadroomUtil = Math.min(row.minHeadroomUtil, hu);
+			}
+
+			const mu = Number(b.maxUtil ?? NaN);
+			if (Number.isFinite(mu)) {
+				if (row.worstMaxUtil === undefined) row.worstMaxUtil = mu;
+				else row.worstMaxUtil = Math.max(row.worstMaxUtil, mu);
+			}
+
+			const ts = String(b.forecastCrossingTs ?? "").trim();
+			if (ts) {
+				if (!row.soonestForecast) row.soonestForecast = ts;
+				else if (Date.parse(ts) < Date.parse(row.soonestForecast))
+					row.soonestForecast = ts;
+			}
+
+			m.set(key, row);
+		}
+		const rows = Array.from(m.values());
+		rows.sort((a, b) => {
+			if (a.count !== b.count) return b.count - a.count;
+			const ah = a.minHeadroomGbps ?? Number.POSITIVE_INFINITY;
+			const bh = b.minHeadroomGbps ?? Number.POSITIVE_INFINITY;
+			if (ah !== bh) return ah - bh;
+			const au = a.minHeadroomUtil ?? Number.POSITIVE_INFINITY;
+			const bu = b.minHeadroomUtil ?? Number.POSITIVE_INFINITY;
+			if (au !== bu) return au - bu;
+			return a.id.localeCompare(b.id);
+		});
+		return rows;
+	}, [pathsResult?.items]);
+
+	const pathsUpgradeImpactRows = useMemo((): PathsUpgradeImpactRow[] => {
+		const cands = (upgradeCandidates.data?.items ??
+			[]) as ForwardNetworkCapacityUpgradeCandidate[];
+		if (!pathsSummaryRows.length || !cands.length) return [];
+
+		const index = new Map<string, ForwardNetworkCapacityUpgradeCandidate>();
+		for (const c of cands) {
+			const dev = String(c.device ?? "").trim();
+			const ifn = String(c.name ?? "").trim();
+			const dir = String(c.worstDirection ?? "")
+				.trim()
+				.toUpperCase();
+			if (!dev || !ifn) continue;
+			const k = `${dev.toLowerCase()}|${normalizeIfaceForJoin(ifn)}|${dir}`;
+			if (!index.has(k)) index.set(k, c);
+		}
+
+		const rows: PathsUpgradeImpactRow[] = [];
+		for (const r of pathsSummaryRows) {
+			const dev = String(r.deviceName ?? "").trim();
+			const ifn = String(r.interfaceName ?? "").trim();
+			const dir = String(r.direction ?? "")
+				.trim()
+				.toUpperCase();
+			if (!dev || !ifn) continue;
+			const k = `${dev.toLowerCase()}|${normalizeIfaceForJoin(ifn)}|${dir}`;
+			const c = index.get(k);
+			if (!c) continue;
+			rows.push({
+				id: k,
+				deviceName: dev,
+				interfaceName: ifn,
+				direction: dir || String(c.worstDirection ?? "").trim(),
+				flows: r.count,
+				minHeadroomGbps: r.minHeadroomGbps,
+				minHeadroomUtil: r.minHeadroomUtil,
+				recommendedSpeedMbps: c.recommendedSpeedMbps ?? null,
+				requiredSpeedMbps: c.requiredSpeedMbps ?? null,
+				reason: String(c.reason ?? "").trim() || undefined,
+			});
+		}
+
+		rows.sort((a, b) => {
+			if (a.flows !== b.flows) return b.flows - a.flows;
+			const ah = a.minHeadroomGbps ?? Number.POSITIVE_INFINITY;
+			const bh = b.minHeadroomGbps ?? Number.POSITIVE_INFINITY;
+			if (ah !== bh) return ah - bh;
+			const au = a.minHeadroomUtil ?? Number.POSITIVE_INFINITY;
+			const bu = b.minHeadroomUtil ?? Number.POSITIVE_INFINITY;
+			if (au !== bu) return au - bu;
+			return a.id.localeCompare(b.id);
+		});
+		return rows;
+	}, [pathsSummaryRows, upgradeCandidates.data?.items]);
+
+	useEffect(() => {
+		// Auto-select top upgrades for convenience in demos, but do not override an existing selection.
+		if (pathsPlanSelected.length) return;
+		if (!pathsUpgradeImpactRows.length) return;
+		setPathsPlanSelected(pathsUpgradeImpactRows.slice(0, 3).map((r) => r.id));
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pathsUpgradeImpactRows.length]);
+
+	const pathsPlanSim = useMemo((): {
+		summary: PathsPlanSimSummary;
+		items: PathsPlanSimItem[];
+	} => {
+		const items = pathsResult?.items ?? [];
+		const sel = new Set(pathsPlanSelected);
+		const upgrades = new Map<string, PathsUpgradeImpactRow>();
+		for (const u of pathsUpgradeImpactRows) upgrades.set(u.id, u);
+
+		const out: PathsPlanSimItem[] = [];
+		let withBottleneck = 0;
+		let simulated = 0;
+		let cannotSimulate = 0;
+		let atRiskBefore = 0;
+		let atRiskAfter = 0;
+		let improved = 0;
+
+		for (const it of items) {
+			const b = it.bottleneck ?? null;
+			const beforeGbps = b?.headroomGbps ?? null;
+			const beforeHu = (b as any)?.headroomUtil ?? null;
+			const row: PathsPlanSimItem = {
+				index: it.index,
+				beforeHeadroomGbps: beforeGbps,
+				beforeHeadroomUtil: beforeHu,
+				afterHeadroomGbps: beforeGbps,
+				afterHeadroomUtil: beforeHu,
+			};
+			if (b) withBottleneck += 1;
+			const beforeRisk = Number(beforeHu ?? NaN);
+			if (Number.isFinite(beforeRisk) && beforeRisk < 0) atRiskBefore += 1;
+
+			if (!b) {
+				out.push(row);
+				continue;
+			}
+
+			const dev = String(b.deviceName ?? "")
+				.trim()
+				.toLowerCase();
+			const ifn = normalizeIfaceForJoin(String(b.interfaceName ?? ""));
+			const dir = String(b.direction ?? "")
+				.trim()
+				.toUpperCase();
+			const id = `${dev}|${ifn}|${dir}`;
+			if (!sel.has(id)) {
+				out.push(row);
+				const afterRisk = Number(row.afterHeadroomUtil ?? NaN);
+				if (Number.isFinite(afterRisk) && afterRisk < 0) atRiskAfter += 1;
+				continue;
+			}
+
+			const u = upgrades.get(id);
+			const newSpeed = Number(
+				u?.recommendedSpeedMbps ?? u?.requiredSpeedMbps ?? NaN,
+			);
+			const thr = Number((b as any)?.threshold ?? 0.85);
+			const speed = Number((b as any)?.speedMbps ?? NaN);
+			const p95Gbps = Number((b as any)?.p95Gbps ?? NaN);
+			const p95Util = Number((b as any)?.p95Util ?? NaN);
+
+			if (!Number.isFinite(newSpeed) || newSpeed <= 0) {
+				row.reason = "upgrade missing recommended speed";
+				cannotSimulate += 1;
+				out.push(row);
+				const afterRisk = Number(row.afterHeadroomUtil ?? NaN);
+				if (Number.isFinite(afterRisk) && afterRisk < 0) atRiskAfter += 1;
+				continue;
+			}
+
+			// Approximation: assume traffic (Gbps) stays constant; utilization changes inversely with speed.
+			let trafficGbps = Number.NaN;
+			if (Number.isFinite(p95Gbps)) trafficGbps = p95Gbps;
+			else if (
+				Number.isFinite(p95Util) &&
+				Number.isFinite(speed) &&
+				speed > 0
+			) {
+				trafficGbps = (p95Util * speed) / 1000.0;
+			}
+			if (!Number.isFinite(trafficGbps)) {
+				row.reason = "missing speed/util (cannot estimate traffic)";
+				cannotSimulate += 1;
+				out.push(row);
+				const afterRisk = Number(row.afterHeadroomUtil ?? NaN);
+				if (Number.isFinite(afterRisk) && afterRisk < 0) atRiskAfter += 1;
+				continue;
+			}
+
+			const newSpeedGbps = newSpeed / 1000.0;
+			const newUtil =
+				newSpeedGbps > 0 ? trafficGbps / newSpeedGbps : Number.NaN;
+			const newHeadroomUtil = thr - newUtil;
+			const newHeadroomGbps = thr * newSpeedGbps - trafficGbps;
+
+			row.afterHeadroomUtil = Number.isFinite(newHeadroomUtil)
+				? newHeadroomUtil
+				: row.afterHeadroomUtil;
+			row.afterHeadroomGbps = Number.isFinite(newHeadroomGbps)
+				? newHeadroomGbps
+				: row.afterHeadroomGbps;
+			row.appliedUpgradeId = id;
+			row.appliedSpeedMbps = newSpeed;
+			row.reason = "simulated using constant traffic (p95)";
+			simulated += 1;
+
+			const afterRisk = Number(row.afterHeadroomUtil ?? NaN);
+			if (Number.isFinite(afterRisk) && afterRisk < 0) atRiskAfter += 1;
+
+			const b0 = Number(beforeHu ?? NaN);
+			if (Number.isFinite(b0) && Number.isFinite(afterRisk) && afterRisk > b0)
+				improved += 1;
+
+			out.push(row);
+		}
+
+		return {
+			summary: {
+				totalFlows: items.length,
+				withBottleneck,
+				simulated,
+				cannotSimulate,
+				atRiskBefore,
+				atRiskAfter,
+				improved,
+			},
+			items: out,
+		};
+	}, [pathsResult?.items, pathsPlanSelected, pathsUpgradeImpactRows]);
+
+	const pathsBatchReportMarkdown = useMemo(() => {
+		if (!pathsResult) return "";
+		const lines: string[] = [];
+		const netLabel = networkName
+			? `${networkName} (${networkRef})`
+			: networkRef;
+		lines.push(`# Capacity Memo (Art of the Possible)`);
+		lines.push("");
+		lines.push(`- Network: \`${netLabel}\``);
+		lines.push(`- Forward Network ID: \`${forwardNetworkId || "—"}\``);
+		lines.push(`- Window: \`${windowLabel}\``);
+		lines.push(`- Paths snapshot: \`${pathsResult.snapshotId || "latest"}\``);
+		lines.push(
+			`- Rollups as-of: \`${summary.data?.asOf ?? "—"}\`${summary.data?.stale ? " (stale)" : ""}`,
+		);
+		lines.push(`- Inventory as-of: \`${inventory.data?.asOf ?? "—"}\``);
+		lines.push("");
+		lines.push(`## Guardrails / Non-Goals`);
+		lines.push("");
+		lines.push(
+			`- This is capacity-only. No alerting/on-call, no ticketing, no event correlation.`,
+		);
+		lines.push(
+			`- This does not replicate Forward path workflows; each flow links back to Forward for deeper analysis.`,
+		);
+		lines.push("");
+		lines.push(`## Coverage`);
+		lines.push("");
+		if (pathsResult.coverage) {
+			const c = pathsResult.coverage;
+			lines.push(`- hop-keys: ${c.hopInterfaceKeys}`);
+			lines.push(`- rollup matched: ${c.rollupMatched}`);
+			lines.push(`- perf fallback used: ${c.perfFallbackUsed}`);
+			lines.push(`- unknown: ${c.unknown}`);
+			lines.push(`- fallback truncated: ${c.truncated ? "yes" : "no"}`);
+			lines.push("");
+			if ((c.unmatchedHopInterfacesSample ?? []).length) {
+				lines.push(`Unmatched hop interfaces (sample):`);
+				lines.push("```");
+				for (const s of c.unmatchedHopInterfacesSample ?? [])
+					lines.push(String(s));
+				lines.push("```");
+				lines.push("");
+			}
+		} else {
+			lines.push(`- (no coverage data)`);
+			lines.push("");
+		}
+		lines.push(`## Top Bottlenecks (Batch)`);
+		lines.push("");
+		lines.push(
+			`| device | interface | dir | flows | min headroom | soonest forecast |`,
+		);
+		lines.push(`|---|---|---:|---:|---:|---:|`);
+		for (const r of pathsSummaryRows.slice(0, 20)) {
+			const headroom =
+				r.minHeadroomGbps !== undefined
+					? `${Number(r.minHeadroomGbps).toFixed(2)}G`
+					: r.minHeadroomUtil !== undefined
+						? `${fmtPct01(Number(r.minHeadroomUtil))} util`
+						: "—";
+			lines.push(
+				`| \`${r.deviceName}\` | \`${r.interfaceName}\` | \`${r.direction}\` | ${r.count} | ${headroom} | \`${(r.soonestForecast ?? "").slice(0, 10) || "—"}\` |`,
+			);
+		}
+		lines.push("");
+
+		if (pathsUpgradeImpactRows.length) {
+			lines.push(`## Implied Upgrades (From This Batch)`);
+			lines.push("");
+			lines.push(`| device | interface | dir | flows | rec | reason |`);
+			lines.push(`|---|---|---:|---:|---:|---|`);
+			for (const r of pathsUpgradeImpactRows.slice(0, 10)) {
+				lines.push(
+					`| \`${r.deviceName}\` | \`${r.interfaceName}\` | \`${r.direction}\` | ${r.flows} | \`${fmtSpeedMbps(r.recommendedSpeedMbps)}\` | ${r.reason ? `\`${r.reason}\`` : "—"} |`,
+				);
+			}
+			lines.push("");
+		}
+
+		lines.push(`## Notes`);
+		lines.push("");
+		lines.push(
+			`- Forward paths are computed against a (possibly older) snapshot; perf/rollups are time-windowed and may reflect more recent utilization.`,
+		);
+		lines.push(
+			`- Unknown coverage usually indicates missing rollups and/or missing perf for hop interfaces; use Coverage details to see samples.`,
+		);
+		lines.push("");
+
+		return lines.join("\n");
+	}, [
+		pathsResult,
+		pathsSummaryRows,
+		pathsUpgradeImpactRows,
+		networkName,
+		networkRef,
+		forwardNetworkId,
+		windowLabel,
+		summary.data?.asOf,
+		summary.data?.stale,
+		inventory.data?.asOf,
+	]);
 
 	const ifaceRows: InterfaceRow[] = useMemo(() => {
 		const q = ifaceFilter.trim().toLowerCase();
@@ -1566,21 +2559,23 @@ function ForwardNetworkCapacityPage() {
 
 	if (!workspaceId) {
 		return (
-			<div className="space-y-6 p-6">
-				<div className="flex items-center gap-3">
-					<Link
-						to="/dashboard/forward-networks"
-						search={{ workspace: "" } as any}
-						className={buttonVariants({
-							variant: "outline",
-							size: "icon",
-							className: "h-9 w-9",
-						})}
-					>
-						<ArrowLeft className="h-4 w-4" />
-					</Link>
-					<h1 className="text-2xl font-bold tracking-tight">Capacity</h1>
-				</div>
+			<div className={embedded ? "space-y-6" : "space-y-6 p-6"}>
+				{!embedded ? (
+					<div className="flex items-center gap-3">
+						<Link
+							to="/dashboard/forward-networks"
+							search={{ workspace: "" } as any}
+							className={buttonVariants({
+								variant: "outline",
+								size: "icon",
+								className: "h-9 w-9",
+							})}
+						>
+							<ArrowLeft className="h-4 w-4" />
+						</Link>
+						<h1 className="text-2xl font-bold tracking-tight">Capacity</h1>
+					</div>
+				) : null}
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
 						Workspace is required.
@@ -1591,135 +2586,137 @@ function ForwardNetworkCapacityPage() {
 	}
 
 	return (
-		<div className="space-y-6 p-6 pb-20">
-			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-				<div className="flex items-center gap-3">
-					<Link
-						to="/dashboard/forward-networks"
-						search={{ workspace: workspaceId } as any}
-						className={buttonVariants({
-							variant: "outline",
-							size: "icon",
-							className: "h-9 w-9",
-						})}
-						title="Back to Forward networks"
-					>
-						<ArrowLeft className="h-4 w-4" />
-					</Link>
-					<div>
-						<h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-							<TrendingUp className="h-5 w-5" /> Capacity
-						</h1>
-						<p className="text-sm text-muted-foreground mt-1">
-							Forward network:{" "}
-							<span className="font-medium">{networkName || networkRef}</span>
-							{forwardNetworkId ? (
-								<span className="ml-2 font-mono text-xs">
-									{forwardNetworkId}
-								</span>
-							) : null}
-						</p>
+		<div className={embedded ? "space-y-6" : "space-y-6 p-6 pb-20"}>
+			{!embedded ? (
+				<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+					<div className="flex items-center gap-3">
+						<Link
+							to="/dashboard/forward-networks"
+							search={{ workspace: workspaceId } as any}
+							className={buttonVariants({
+								variant: "outline",
+								size: "icon",
+								className: "h-9 w-9",
+							})}
+							title="Back to Forward networks"
+						>
+							<ArrowLeft className="h-4 w-4" />
+						</Link>
+						<div>
+							<h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+								<TrendingUp className="h-5 w-5" /> Capacity
+							</h1>
+							<p className="text-sm text-muted-foreground mt-1">
+								Forward network:{" "}
+								<span className="font-medium">{networkName || networkRef}</span>
+								{forwardNetworkId ? (
+									<span className="ml-2 font-mono text-xs">
+										{forwardNetworkId}
+									</span>
+								) : null}
+							</p>
+						</div>
+					</div>
+					<div className="flex flex-wrap items-center gap-2">
+						<Select
+							value={windowLabel}
+							onValueChange={(v) => setWindowLabel(v as any)}
+						>
+							<SelectTrigger className="w-[110px]">
+								<SelectValue placeholder="Window" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="24h">24h</SelectItem>
+								<SelectItem value="7d">7d</SelectItem>
+								<SelectItem value="30d">30d</SelectItem>
+							</SelectContent>
+						</Select>
+
+						<Select value={locationFilter} onValueChange={setLocationFilter}>
+							<SelectTrigger className="w-[190px]">
+								<SelectValue placeholder="Location" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All locations</SelectItem>
+								{groupingOptions.locations.map((loc) => (
+									<SelectItem key={loc} value={loc}>
+										{loc}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+
+						<Select value={vrfFilter} onValueChange={setVrfFilter}>
+							<SelectTrigger className="w-[170px]">
+								<SelectValue placeholder="VRF" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All VRFs</SelectItem>
+								{groupingOptions.vrfs.map((v) => (
+									<SelectItem key={v} value={v}>
+										{v}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+
+						<Select value={tagFilter} onValueChange={setTagFilter}>
+							<SelectTrigger className="w-[170px]">
+								<SelectValue placeholder="Tag" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All tags</SelectItem>
+								{groupingOptions.tags.map((t) => (
+									<SelectItem key={t} value={t}>
+										{t}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+
+						<Select value={groupFilter} onValueChange={setGroupFilter}>
+							<SelectTrigger className="w-[170px]">
+								<SelectValue placeholder="Group" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All groups</SelectItem>
+								{groupingOptions.groups.map((g) => (
+									<SelectItem key={g} value={g}>
+										{g}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+
+						<Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
+							<SelectTrigger className="w-[140px]">
+								<SelectValue placeholder="Group by" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="none">No grouping</SelectItem>
+								<SelectItem value="location">Location</SelectItem>
+								<SelectItem value="tag">Tag</SelectItem>
+								<SelectItem value="group">Group</SelectItem>
+								<SelectItem value="vrf">VRF</SelectItem>
+							</SelectContent>
+						</Select>
+
+						<Button
+							variant="outline"
+							onClick={() => refresh.mutate()}
+							disabled={refresh.isPending || !forwardNetworkId}
+							title={
+								!forwardNetworkId
+									? "Load the saved Forward network first"
+									: "Enqueue a background rollup task"
+							}
+						>
+							<RefreshCw className="mr-2 h-4 w-4" />
+							{refresh.isPending ? "Queueing…" : "Refresh"}
+						</Button>
 					</div>
 				</div>
-				<div className="flex flex-wrap items-center gap-2">
-					<Select
-						value={windowLabel}
-						onValueChange={(v) => setWindowLabel(v as any)}
-					>
-						<SelectTrigger className="w-[110px]">
-							<SelectValue placeholder="Window" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="24h">24h</SelectItem>
-							<SelectItem value="7d">7d</SelectItem>
-							<SelectItem value="30d">30d</SelectItem>
-						</SelectContent>
-					</Select>
-
-					<Select value={locationFilter} onValueChange={setLocationFilter}>
-						<SelectTrigger className="w-[190px]">
-							<SelectValue placeholder="Location" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All locations</SelectItem>
-							{groupingOptions.locations.map((loc) => (
-								<SelectItem key={loc} value={loc}>
-									{loc}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					<Select value={vrfFilter} onValueChange={setVrfFilter}>
-						<SelectTrigger className="w-[170px]">
-							<SelectValue placeholder="VRF" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All VRFs</SelectItem>
-							{groupingOptions.vrfs.map((v) => (
-								<SelectItem key={v} value={v}>
-									{v}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					<Select value={tagFilter} onValueChange={setTagFilter}>
-						<SelectTrigger className="w-[170px]">
-							<SelectValue placeholder="Tag" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All tags</SelectItem>
-							{groupingOptions.tags.map((t) => (
-								<SelectItem key={t} value={t}>
-									{t}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					<Select value={groupFilter} onValueChange={setGroupFilter}>
-						<SelectTrigger className="w-[170px]">
-							<SelectValue placeholder="Group" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All groups</SelectItem>
-							{groupingOptions.groups.map((g) => (
-								<SelectItem key={g} value={g}>
-									{g}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					<Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
-						<SelectTrigger className="w-[140px]">
-							<SelectValue placeholder="Group by" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="none">No grouping</SelectItem>
-							<SelectItem value="location">Location</SelectItem>
-							<SelectItem value="tag">Tag</SelectItem>
-							<SelectItem value="group">Group</SelectItem>
-							<SelectItem value="vrf">VRF</SelectItem>
-						</SelectContent>
-					</Select>
-
-					<Button
-						variant="outline"
-						onClick={() => refresh.mutate()}
-						disabled={refresh.isPending || !forwardNetworkId}
-						title={
-							!forwardNetworkId
-								? "Load the saved Forward network first"
-								: "Enqueue a background rollup task"
-						}
-					>
-						<RefreshCw className="mr-2 h-4 w-4" />
-						{refresh.isPending ? "Queueing…" : "Refresh"}
-					</Button>
-				</div>
-			</div>
+			) : null}
 
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
 				<Card>
@@ -1834,6 +2831,7 @@ function ForwardNetworkCapacityPage() {
 					<TabsTrigger value="devices">Devices</TabsTrigger>
 					<TabsTrigger value="growth">Growth</TabsTrigger>
 					<TabsTrigger value="plan">Plan</TabsTrigger>
+					<TabsTrigger value="paths">Paths (Capacity)</TabsTrigger>
 					<TabsTrigger value="routing">Routing/BGP</TabsTrigger>
 					<TabsTrigger value="changes">Changes</TabsTrigger>
 					<TabsTrigger value="health">Health</TabsTrigger>
@@ -3164,6 +4162,1274 @@ function ForwardNetworkCapacityPage() {
 					</Card>
 				</TabsContent>
 
+				<TabsContent value="paths" className="space-y-4">
+					<Card>
+						<CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+							<CardTitle className="text-base">
+								Path Bottlenecks (Capacity)
+							</CardTitle>
+							<div className="flex flex-col gap-2 md:flex-row md:items-center">
+								<Input
+									placeholder="snapshotId (optional)"
+									value={pathsSnapshotId}
+									onChange={(e) => setPathsSnapshotId(e.target.value)}
+									className="w-[260px] font-mono text-xs"
+								/>
+								<label className="flex items-center gap-2 text-xs text-muted-foreground">
+									<input
+										type="checkbox"
+										checked={pathsIncludeHops}
+										onChange={(e) => setPathsIncludeHops(e.target.checked)}
+									/>
+									include hops
+								</label>
+								<label className="flex items-center gap-2 text-xs text-muted-foreground">
+									<input
+										type="checkbox"
+										checked={pathsDemoMode}
+										onChange={(e) => setPathsDemoMode(e.target.checked)}
+									/>
+									demo mode
+								</label>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setPathsPayloadDialogOpen(true)}
+									disabled={
+										Boolean(pathsParsed.error) || !pathsParsed.queries.length
+									}
+								>
+									Payload
+								</Button>
+								<Button
+									onClick={() => {
+										const parsed = pathsParsed;
+										if (parsed.error) {
+											toast.error("Invalid path input", {
+												description: parsed.error,
+											});
+											return;
+										}
+										setPathsResult(null);
+										runPathBottlenecks.mutate({
+											window: windowLabel,
+											snapshotId: pathsSnapshotId.trim() || undefined,
+											includeHops: pathsIncludeHops,
+											queries: parsed.queries,
+										});
+									}}
+									disabled={runPathBottlenecks.isPending}
+								>
+									Run
+								</Button>
+								<Button
+									variant="outline"
+									disabled={!pathsResult?.items?.length}
+									onClick={() => {
+										const headers = [
+											"index",
+											"srcIp",
+											"dstIp",
+											"ipProto",
+											"dstPort",
+											"forwardingOutcome",
+											"securityOutcome",
+											"forwardQueryUrl",
+											"bottleneckDevice",
+											"bottleneckInterface",
+											"direction",
+											"source",
+											"speedMbps",
+											"headroomGbps",
+											"headroomUtil",
+											"p95Util",
+											"maxUtil",
+											"forecastCrossingTs",
+											"error",
+										];
+										const rows = (pathsResult?.items ?? []).map((it) => {
+											const q = it.query ?? {};
+											const b = it.bottleneck ?? null;
+											return [
+												it.index,
+												q.srcIp ?? "",
+												q.dstIp ?? "",
+												q.ipProto ?? "",
+												q.dstPort ?? "",
+												it.forwardingOutcome ?? "",
+												it.securityOutcome ?? "",
+												it.forwardQueryUrl ?? "",
+												b?.deviceName ?? "",
+												b?.interfaceName ?? "",
+												b?.direction ?? "",
+												(b as any)?.source ?? "",
+												b?.speedMbps ?? "",
+												b?.headroomGbps ?? "",
+												(b as any)?.headroomUtil ?? "",
+												b?.p95Util ?? "",
+												b?.maxUtil ?? "",
+												b?.forecastCrossingTs ?? "",
+												it.error ?? "",
+											];
+										});
+										downloadText(
+											`path_bottlenecks_${networkRef}_${windowLabel}.csv`,
+											"text/csv",
+											toCSV(headers, rows),
+										);
+									}}
+								>
+									Export CSV
+								</Button>
+								<Button
+									variant="outline"
+									disabled={!pathsResult?.items?.length}
+									onClick={() => {
+										if (!pathsBatchReportMarkdown) return;
+										downloadText(
+											`capacity_memo_${networkRef}_${windowLabel}.md`,
+											"text/markdown",
+											pathsBatchReportMarkdown,
+										);
+									}}
+								>
+									Report
+								</Button>
+							</div>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							<div className="text-xs text-muted-foreground">
+								This uses Forward bulk paths to find candidate paths, then joins
+								hop interfaces to Skyforge capacity rollups (window{" "}
+								{windowLabel}) to highlight the tightest headroom along each
+								flow.
+							</div>
+							<div className="text-xs text-muted-foreground">
+								Guardrails: this is not a Forward path-analysis UI. It only
+								returns a capacity bottleneck per flow (plus optional minimal
+								hops).
+							</div>
+							<div className="text-xs text-muted-foreground">
+								Input formats:{" "}
+								<span className="font-mono">srcIp dstIp tcp 443</span>
+								{" · "}
+								<span className="font-mono">dstIp</span>
+								{" · "}
+								<span className="font-mono">{"{ queries: [...] }"}</span>
+							</div>
+							{pathsDemoMode ? (
+								<div className="rounded-md border p-3 space-y-2">
+									<div className="flex items-center justify-between gap-2">
+										<div className="text-xs text-muted-foreground">
+											Demo templates
+										</div>
+										<div className="text-xs text-muted-foreground">
+											Forward network:{" "}
+											<span className="font-mono">
+												{forwardNetworkId || "—"}
+											</span>
+										</div>
+									</div>
+									<div className="flex flex-wrap gap-2">
+										<Button
+											variant="secondary"
+											size="sm"
+											onClick={() =>
+												setPathsInput(
+													[
+														"10.10.10.10 10.10.10.64/28 tcp 80",
+														"10.10.20.10 10.10.30.10 tcp 443",
+														"- 10.10.40.0/24 udp 53",
+													].join("\\n"),
+												)
+											}
+										>
+											Load basic (lines)
+										</Button>
+										<Button
+											variant="secondary"
+											size="sm"
+											onClick={() =>
+												setPathsInput(
+													jsonPretty({
+														queries: [
+															{
+																srcIp: "10.10.10.10",
+																dstIp: "10.10.10.64/28",
+																ipProto: 6,
+																dstPort: "8080-8088",
+																appId: "ssh",
+																url: "*.example.com",
+															},
+															{
+																srcIp: "10.10.20.10",
+																dstIp: "10.10.30.10",
+																ipProto: 6,
+																dstPort: "443",
+															},
+														],
+													}),
+												)
+											}
+										>
+											Load advanced (JSON)
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => {
+												setPathsInput("");
+												setPathsBatchName("");
+												setPathsResult(null);
+											}}
+										>
+											Clear input
+										</Button>
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Tip: use JSON input to set{" "}
+										<span className="font-mono">appId</span>,{" "}
+										<span className="font-mono">url</span>,{" "}
+										<span className="font-mono">userId</span>, etc.
+									</div>
+								</div>
+							) : null}
+							<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+								<div className="flex flex-col gap-2 md:flex-row md:items-center">
+									<Input
+										placeholder="Save batch name"
+										value={pathsBatchName}
+										onChange={(e) => setPathsBatchName(e.target.value)}
+										className="w-[260px]"
+									/>
+									<Button
+										variant="outline"
+										onClick={() => {
+											const name = pathsBatchName.trim();
+											if (!name) {
+												toast.error("Batch name required");
+												return;
+											}
+											if (!workspaceId || !networkRef) {
+												toast.error("Workspace/network missing");
+												return;
+											}
+											const b: SavedPathBatch = {
+												id: randomId(),
+												name,
+												text: pathsInput,
+												createdAt: new Date().toISOString(),
+											};
+											const next = [b, ...(savedPathBatches ?? [])].slice(
+												0,
+												25,
+											);
+											setSavedPathBatches(next);
+											savePathBatches(workspaceId, networkRef, next);
+											toast.success("Saved batch", { description: name });
+										}}
+										disabled={!pathsInput.trim()}
+									>
+										Save
+									</Button>
+								</div>
+								<div className="text-xs text-muted-foreground flex items-center gap-3">
+									<span>
+										{pathsParsed.queries.length
+											? `${pathsParsed.queries.length} flows parsed`
+											: pathsParsed.error
+												? pathsParsed.error
+												: "—"}
+									</span>
+									<span>
+										Saved batches are stored in your browser for this
+										workspace/network.
+									</span>
+								</div>
+							</div>
+							{savedPathBatches.length ? (
+								<div className="rounded-md border p-3 space-y-2">
+									<div className="text-xs text-muted-foreground">
+										Saved batches
+									</div>
+									<div className="flex flex-wrap gap-2">
+										{savedPathBatches.map((b) => (
+											<div
+												key={b.id}
+												className="flex items-center gap-2 rounded-md border px-2 py-1"
+											>
+												<button
+													type="button"
+													className="text-xs font-mono hover:underline"
+													onClick={() => {
+														setPathsInput(b.text);
+														setPathsBatchName(b.name);
+														toast.success("Loaded batch", {
+															description: b.name,
+														});
+													}}
+												>
+													{b.name}
+												</button>
+												<button
+													type="button"
+													className="text-xs text-muted-foreground hover:underline"
+													onClick={() => {
+														if (!workspaceId || !networkRef) return;
+														const next = savedPathBatches.filter(
+															(x) => x.id !== b.id,
+														);
+														setSavedPathBatches(next);
+														savePathBatches(workspaceId, networkRef, next);
+													}}
+												>
+													delete
+												</button>
+											</div>
+										))}
+									</div>
+								</div>
+							) : null}
+							<textarea
+								className="min-h-[140px] w-full rounded-md border bg-background px-3 py-2 font-mono text-xs"
+								placeholder={
+									"10.0.0.1 10.0.0.2 tcp 443\n10.0.0.3 10.0.0.4 udp 53\n10.0.0.0/24"
+								}
+								value={pathsInput}
+								onChange={(e) => setPathsInput(e.target.value)}
+							/>
+
+							{runPathBottlenecks.isPending ? (
+								<Skeleton className="h-24 w-full" />
+							) : pathsResult ? (
+								<div className="space-y-4">
+									<div className="flex items-center justify-between gap-2">
+										<div className="text-xs text-muted-foreground">Results</div>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => setPathsResult(null)}
+										>
+											Clear
+										</Button>
+									</div>
+									{pathsResult.coverage ? (
+										<div className="text-xs text-muted-foreground flex flex-wrap items-center gap-3">
+											<span className="font-mono">
+												snapshot{" "}
+												{String(pathsResult.snapshotId ?? "").trim() ||
+													"latest"}
+											</span>
+											<span className="font-mono">
+												hop-keys{" "}
+												{Number(pathsResult.coverage.hopInterfaceKeys ?? 0)}
+											</span>
+											<span className="font-mono">
+												rollup {Number(pathsResult.coverage.rollupMatched ?? 0)}
+											</span>
+											<span className="font-mono">
+												perf{" "}
+												{Number(pathsResult.coverage.perfFallbackUsed ?? 0)}
+											</span>
+											<span className="font-mono">
+												unknown {Number(pathsResult.coverage.unknown ?? 0)}
+											</span>
+											{pathsResult.coverage.truncated ? (
+												<Badge variant="destructive">truncated</Badge>
+											) : null}
+											<button
+												type="button"
+												className="text-xs text-muted-foreground hover:underline"
+												onClick={() => setPathsCoverageDialogOpen(true)}
+											>
+												details
+											</button>
+										</div>
+									) : null}
+									<DataTable
+										columns={[
+											{
+												id: "flow",
+												header: "Flow",
+												cell: (r) => {
+													const q = r.query ?? {};
+													const src = String(q.srcIp ?? "").trim();
+													const dst = String(q.dstIp ?? "").trim();
+													const protoNum = Number(q.ipProto ?? NaN);
+													const proto =
+														protoNum === 6
+															? "tcp"
+															: protoNum === 17
+																? "udp"
+																: protoNum === 1
+																	? "icmp"
+																	: Number.isFinite(protoNum)
+																		? String(protoNum)
+																		: "";
+													const port = String(q.dstPort ?? "").trim();
+													return (
+														<div className="text-xs">
+															<div className="font-mono">
+																{src ? `${src} -> ` : ""}
+																{dst || "—"}
+															</div>
+															<div className="text-muted-foreground">
+																{[proto, port].filter(Boolean).join(" ")}
+															</div>
+														</div>
+													);
+												},
+												width: 320,
+											},
+											{
+												id: "outcome",
+												header: "Outcome",
+												cell: (r) => {
+													const f = String(r.forwardingOutcome ?? "").trim();
+													const s = String(r.securityOutcome ?? "").trim();
+													const ok = f === "DELIVERED" && s !== "DENIED";
+													return (
+														<div className="text-xs">
+															<div
+																className={
+																	ok
+																		? "text-muted-foreground"
+																		: "text-destructive font-medium"
+																}
+															>
+																{[f, s].filter(Boolean).join(" / ") || "—"}
+															</div>
+															{r.timedOut ? (
+																<div className="text-muted-foreground">
+																	timed out
+																</div>
+															) : null}
+														</div>
+													);
+												},
+												width: 200,
+											},
+											{
+												id: "forward",
+												header: "Forward",
+												cell: (r) => {
+													const u = String(r.forwardQueryUrl ?? "").trim();
+													return u ? (
+														<a
+															href={u}
+															target="_blank"
+															rel="noreferrer"
+															className="text-xs text-muted-foreground hover:underline"
+															onClick={(e) => e.stopPropagation()}
+														>
+															open
+														</a>
+													) : (
+														<span className="text-xs text-muted-foreground">
+															—
+														</span>
+													);
+												},
+												width: 90,
+											},
+											{
+												id: "hops",
+												header: "Hops",
+												cell: (r) => {
+													const hops = Array.isArray((r as any)?.hops)
+														? ((r as any)
+																.hops as ForwardNetworkCapacityPathHop[])
+														: [];
+													if (!hops.length)
+														return (
+															<span className="text-xs text-muted-foreground">
+																—
+															</span>
+														);
+													return (
+														<Button
+															variant="outline"
+															size="sm"
+															onClick={(e) => {
+																e.preventDefault();
+																e.stopPropagation();
+																const q = (r as any).query ?? {};
+																const src = String(q.srcIp ?? "").trim();
+																const dst = String(q.dstIp ?? "").trim();
+																const title = `${src ? `${src} -> ` : ""}${dst || "—"}`;
+																setPathsHopsDialog({
+																	title,
+																	hops,
+																});
+																setPathsHopsDialogOpen(true);
+															}}
+														>
+															{hops.length}
+														</Button>
+													);
+												},
+												width: 90,
+											},
+											{
+												id: "bottleneck",
+												header: "Bottleneck",
+												cell: (r) => {
+													const b = r.bottleneck ?? null;
+													if (!b)
+														return (
+															<span className="text-xs text-muted-foreground">
+																—
+															</span>
+														);
+													const src = String((b as any).source ?? "").trim();
+													return (
+														<div className="text-xs">
+															<div className="flex items-center gap-2">
+																<div className="font-mono">
+																	{b.deviceName} {b.interfaceName}
+																</div>
+																{src ? (
+																	<Badge
+																		variant="secondary"
+																		className="text-[10px]"
+																	>
+																		{src === "perf_fallback" ? "perf" : src}
+																	</Badge>
+																) : null}
+															</div>
+															<div className="text-muted-foreground">
+																{b.direction} ·{" "}
+																{fmtSpeedMbps(b.speedMbps ?? null)}
+															</div>
+														</div>
+													);
+												},
+												width: 320,
+											},
+											{
+												id: "headroom",
+												header: "Headroom",
+												align: "right",
+												cell: (r) => {
+													const b = r.bottleneck ?? null;
+													if (!b)
+														return (
+															<span className="text-xs text-muted-foreground">
+																—
+															</span>
+														);
+													if (
+														b.headroomGbps !== undefined &&
+														b.headroomGbps !== null
+													) {
+														const n = Number(b.headroomGbps);
+														return (
+															<span
+																className={
+																	n < 0
+																		? "text-xs font-medium text-destructive tabular-nums"
+																		: "text-xs tabular-nums"
+																}
+															>
+																{n.toFixed(2)}G
+															</span>
+														);
+													}
+													if (
+														(b as any).headroomUtil !== undefined &&
+														(b as any).headroomUtil !== null
+													) {
+														const hu = Number((b as any).headroomUtil);
+														return (
+															<span
+																className={
+																	hu < 0
+																		? "text-xs font-medium text-destructive tabular-nums"
+																		: "text-xs tabular-nums"
+																}
+															>
+																{fmtPct01(hu)}{" "}
+																<span className="text-muted-foreground">
+																	util
+																</span>
+															</span>
+														);
+													}
+													return (
+														<span className="text-xs text-muted-foreground">
+															—
+														</span>
+													);
+												},
+												width: 110,
+											},
+											{
+												id: "util",
+												header: "p95 / max",
+												align: "right",
+												cell: (r) => {
+													const b = r.bottleneck ?? null;
+													if (!b)
+														return (
+															<span className="text-xs text-muted-foreground">
+																—
+															</span>
+														);
+													return (
+														<span className="text-xs tabular-nums">
+															{fmtPct01(b.p95Util ?? undefined)} /{" "}
+															{fmtPct01(b.maxUtil ?? undefined)}
+														</span>
+													);
+												},
+												width: 130,
+											},
+											{
+												id: "forecast",
+												header: "Forecast",
+												cell: (r) => {
+													const b = r.bottleneck ?? null;
+													const ts = String(b?.forecastCrossingTs ?? "").trim();
+													return (
+														<span className="font-mono text-xs">
+															{ts ? ts.slice(0, 10) : "—"}
+														</span>
+													);
+												},
+												width: 120,
+											},
+											{
+												id: "err",
+												header: "Notes",
+												cell: (r) => {
+													const ns = Array.isArray((r as any)?.notes)
+														? ((r as any).notes as Array<{
+																code?: string;
+																message?: string;
+															}>)
+														: [];
+													const msgs = ns
+														.map((n) => String(n?.message ?? "").trim())
+														.filter(Boolean);
+													const err = String((r as any)?.error ?? "").trim();
+													const text = [...msgs, err]
+														.filter(Boolean)
+														.join(" · ");
+													const unmatched = Array.isArray(
+														(r as any)?.unmatchedHopInterfacesSample,
+													)
+														? (
+																(r as any)
+																	.unmatchedHopInterfacesSample as unknown[]
+															)
+																.map((x) => String(x ?? "").trim())
+																.filter(Boolean)
+														: [];
+													const fwdUrl =
+														String((r as any)?.forwardQueryUrl ?? "").trim() ||
+														undefined;
+													return (
+														<div className="flex items-center gap-2">
+															<span className="text-xs text-muted-foreground">
+																{text || "—"}
+															</span>
+															{unmatched.length ? (
+																<button
+																	type="button"
+																	className="text-xs text-muted-foreground hover:underline"
+																	onClick={(e) => {
+																		e.preventDefault();
+																		e.stopPropagation();
+																		const q = (r as any).query ?? {};
+																		const src = String(q.srcIp ?? "").trim();
+																		const dst = String(q.dstIp ?? "").trim();
+																		const title = `${src ? `${src} -> ` : ""}${dst || "—"}`;
+																		setPathsWhyDialog({
+																			title,
+																			unmatched,
+																			notesText: text,
+																			forwardQueryUrl: fwdUrl,
+																		});
+																		setPathsWhyDialogOpen(true);
+																	}}
+																>
+																	why
+																</button>
+															) : null}
+														</div>
+													);
+												},
+												width: 260,
+											},
+										]}
+										rows={pathsResult.items ?? []}
+										getRowId={(r) => String(r.index)}
+										onRowClick={(r) => {
+											const b = r.bottleneck ?? null;
+											if (!b) return;
+											setIfaceMetric(
+												b.direction === "EGRESS"
+													? "util_egress"
+													: "util_ingress",
+											);
+											setSelectedIface({
+												id: `${b.deviceName}:${b.interfaceName}:${b.direction}:paths`,
+												device: b.deviceName,
+												iface: b.interfaceName,
+												dir: b.direction,
+												speedMbps: b.speedMbps ?? null,
+												p95: b.p95Util ?? undefined,
+												max: b.maxUtil ?? undefined,
+												threshold: b.threshold ?? undefined,
+												forecastCrossingTs: b.forecastCrossingTs ?? undefined,
+												samples: 0,
+											});
+										}}
+										emptyText="No results."
+										maxHeightClassName="max-h-[520px]"
+										minWidthClassName="min-w-0"
+									/>
+
+									{pathsSummaryRows.length ? (
+										<div className="space-y-2">
+											<div className="flex items-center justify-between gap-2">
+												<div className="text-xs text-muted-foreground">
+													Top bottlenecks in this batch
+												</div>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => {
+														const headers = [
+															"deviceName",
+															"interfaceName",
+															"direction",
+															"flows",
+															"minHeadroomGbps",
+															"minHeadroomUtil",
+															"worstMaxUtil",
+															"soonestForecast",
+														];
+														const rows = pathsSummaryRows.map((r) => [
+															r.deviceName,
+															r.interfaceName,
+															r.direction,
+															r.count,
+															r.minHeadroomGbps ?? "",
+															r.minHeadroomUtil ?? "",
+															r.worstMaxUtil ?? "",
+															r.soonestForecast ?? "",
+														]);
+														downloadText(
+															`path_bottlenecks_summary_${networkRef}_${windowLabel}.csv`,
+															"text/csv",
+															toCSV(headers, rows),
+														);
+													}}
+												>
+													Export summary CSV
+												</Button>
+											</div>
+											<DataTable
+												columns={[
+													{
+														id: "device",
+														header: "Device",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.deviceName}
+															</span>
+														),
+														width: 240,
+													},
+													{
+														id: "iface",
+														header: "Interface",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.interfaceName}
+															</span>
+														),
+														width: 220,
+													},
+													{
+														id: "dir",
+														header: "Dir",
+														cell: (r) => (
+															<span className="text-xs">{r.direction}</span>
+														),
+														width: 90,
+													},
+													{
+														id: "count",
+														header: "Flows",
+														align: "right",
+														cell: (r) => (
+															<span className="text-xs tabular-nums">
+																{r.count}
+															</span>
+														),
+														width: 80,
+													},
+													{
+														id: "headroom",
+														header: "Min headroom",
+														align: "right",
+														cell: (r) => {
+															const n = Number(r.minHeadroomGbps ?? NaN);
+															if (Number.isFinite(n)) {
+																return (
+																	<span
+																		className={
+																			n < 0
+																				? "text-xs font-medium text-destructive tabular-nums"
+																				: "text-xs tabular-nums"
+																		}
+																	>
+																		{n.toFixed(2)}G
+																	</span>
+																);
+															}
+															const hu = Number(r.minHeadroomUtil ?? NaN);
+															if (Number.isFinite(hu)) {
+																return (
+																	<span
+																		className={
+																			hu < 0
+																				? "text-xs font-medium text-destructive tabular-nums"
+																				: "text-xs tabular-nums"
+																		}
+																	>
+																		{fmtPct01(hu)}{" "}
+																		<span className="text-muted-foreground">
+																			util
+																		</span>
+																	</span>
+																);
+															}
+															return (
+																<span className="text-xs text-muted-foreground">
+																	—
+																</span>
+															);
+														},
+														width: 130,
+													},
+													{
+														id: "worst",
+														header: "Worst max",
+														align: "right",
+														cell: (r) => fmtPct01(r.worstMaxUtil ?? undefined),
+														width: 110,
+													},
+													{
+														id: "forecast",
+														header: "Soonest",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.soonestForecast
+																	? r.soonestForecast.slice(0, 10)
+																	: "—"}
+															</span>
+														),
+														width: 120,
+													},
+												]}
+												rows={pathsSummaryRows.slice(0, 20)}
+												getRowId={(r) => r.id}
+												onRowClick={(r) => {
+													setIfaceMetric(
+														r.direction === "EGRESS"
+															? "util_egress"
+															: "util_ingress",
+													);
+													setSelectedIface({
+														id: `${r.deviceName}:${r.interfaceName}:${r.direction}:paths-sum`,
+														device: r.deviceName,
+														iface: r.interfaceName,
+														dir: r.direction,
+														samples: 0,
+													});
+												}}
+												emptyText="—"
+												maxHeightClassName="max-h-[260px]"
+												minWidthClassName="min-w-0"
+											/>
+										</div>
+									) : null}
+
+									{pathsUpgradeImpactRows.length ? (
+										<div className="space-y-2">
+											<div className="flex items-center justify-between gap-2">
+												<div className="text-xs text-muted-foreground">
+													Upgrade opportunities implied by this batch
+												</div>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => {
+														const headers = [
+															"deviceName",
+															"interfaceName",
+															"direction",
+															"flows",
+															"minHeadroomGbps",
+															"minHeadroomUtil",
+															"requiredSpeedMbps",
+															"recommendedSpeedMbps",
+															"reason",
+														];
+														const rows = pathsUpgradeImpactRows.map((r) => [
+															r.deviceName,
+															r.interfaceName,
+															r.direction,
+															r.flows,
+															r.minHeadroomGbps ?? "",
+															r.minHeadroomUtil ?? "",
+															r.requiredSpeedMbps ?? "",
+															r.recommendedSpeedMbps ?? "",
+															r.reason ?? "",
+														]);
+														downloadText(
+															`path_bottlenecks_upgrades_${networkRef}_${windowLabel}.csv`,
+															"text/csv",
+															toCSV(headers, rows),
+														);
+													}}
+												>
+													Export upgrades CSV
+												</Button>
+											</div>
+											<div className="text-xs text-muted-foreground">
+												Derived by joining bottleneck interfaces to existing
+												Upgrade Candidates (window {windowLabel}); this does not
+												replace Forward workflows.
+											</div>
+											<DataTable
+												columns={[
+													{
+														id: "device",
+														header: "Device",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.deviceName}
+															</span>
+														),
+														width: 240,
+													},
+													{
+														id: "iface",
+														header: "Interface",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.interfaceName}
+															</span>
+														),
+														width: 220,
+													},
+													{
+														id: "dir",
+														header: "Dir",
+														cell: (r) => (
+															<span className="text-xs">{r.direction}</span>
+														),
+														width: 90,
+													},
+													{
+														id: "flows",
+														header: "Flows",
+														align: "right",
+														cell: (r) => (
+															<span className="text-xs tabular-nums">
+																{r.flows}
+															</span>
+														),
+														width: 80,
+													},
+													{
+														id: "headroom",
+														header: "Min headroom",
+														align: "right",
+														cell: (r) => {
+															const n = Number(r.minHeadroomGbps ?? NaN);
+															if (Number.isFinite(n)) {
+																return (
+																	<span
+																		className={
+																			n < 0
+																				? "text-xs font-medium text-destructive tabular-nums"
+																				: "text-xs tabular-nums"
+																		}
+																	>
+																		{n.toFixed(2)}G
+																	</span>
+																);
+															}
+															const hu = Number(r.minHeadroomUtil ?? NaN);
+															if (Number.isFinite(hu)) {
+																return (
+																	<span
+																		className={
+																			hu < 0
+																				? "text-xs font-medium text-destructive tabular-nums"
+																				: "text-xs tabular-nums"
+																		}
+																	>
+																		{fmtPct01(hu)}{" "}
+																		<span className="text-muted-foreground">
+																			util
+																		</span>
+																	</span>
+																);
+															}
+															return (
+																<span className="text-xs text-muted-foreground">
+																	—
+																</span>
+															);
+														},
+														width: 130,
+													},
+													{
+														id: "rec",
+														header: "Rec",
+														align: "right",
+														cell: (r) => (
+															<span className="text-xs">
+																{fmtSpeedMbps(r.recommendedSpeedMbps)}
+															</span>
+														),
+														width: 90,
+													},
+													{
+														id: "reason",
+														header: "Reason",
+														cell: (r) => (
+															<span className="text-xs text-muted-foreground">
+																{r.reason || "—"}
+															</span>
+														),
+														width: 220,
+													},
+												]}
+												rows={pathsUpgradeImpactRows.slice(0, 10)}
+												getRowId={(r) => r.id}
+												onRowClick={(r) => {
+													const items = pathsResult?.items ?? [];
+													const devNeed = String(r.deviceName ?? "")
+														.trim()
+														.toLowerCase();
+													const ifNeed = normalizeIfaceForJoin(
+														String(r.interfaceName ?? ""),
+													);
+													const dirNeed = String(r.direction ?? "")
+														.trim()
+														.toUpperCase();
+													const flows: PathsUpgradeImpactFlowRow[] = [];
+													for (const it of items) {
+														const b = it.bottleneck ?? null;
+														if (!b) continue;
+														const devGot = String(b.deviceName ?? "")
+															.trim()
+															.toLowerCase();
+														const ifGot = normalizeIfaceForJoin(
+															String(b.interfaceName ?? ""),
+														);
+														const dirGot = String(b.direction ?? "")
+															.trim()
+															.toUpperCase();
+														if (
+															devGot !== devNeed ||
+															ifGot !== ifNeed ||
+															dirGot !== dirNeed
+														) {
+															continue;
+														}
+														const q = it.query ?? ({} as any);
+														const src = String(q.srcIp ?? "").trim();
+														const dst = String(q.dstIp ?? "").trim();
+														const proto = protoLabel(q.ipProto ?? undefined);
+														const port = String(q.dstPort ?? "").trim();
+														const f = String(it.forwardingOutcome ?? "").trim();
+														const s = String(it.securityOutcome ?? "").trim();
+														flows.push({
+															id: String(it.index),
+															index: it.index,
+															src,
+															dst,
+															proto,
+															port,
+															outcome: [f, s].filter(Boolean).join(" / "),
+															headroomGbps: b.headroomGbps ?? null,
+															headroomUtil: (b as any).headroomUtil ?? null,
+															forwardQueryUrl: it.forwardQueryUrl,
+														});
+													}
+													const title = `${r.deviceName} ${r.interfaceName} ${r.direction}`;
+													setPathsUpgradeDialog({
+														title,
+														upgrade: r,
+														flows,
+													});
+													setPathsUpgradeDialogOpen(true);
+												}}
+												emptyText="—"
+												maxHeightClassName="max-h-[260px]"
+												minWidthClassName="min-w-0"
+											/>
+										</div>
+									) : null}
+
+									{pathsUpgradeImpactRows.length &&
+									pathsResult?.items?.length ? (
+										<div className="space-y-2">
+											<div className="flex items-center justify-between gap-2">
+												<div className="text-xs text-muted-foreground">
+													Plan impact (simulation)
+												</div>
+												<div className="flex items-center gap-2">
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={() =>
+															setPathsPlanSelected(
+																pathsUpgradeImpactRows
+																	.slice(0, 3)
+																	.map((r) => r.id),
+															)
+														}
+													>
+														Select top 3
+													</Button>
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={() => setPathsPlanSelected([])}
+													>
+														Clear
+													</Button>
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={() => {
+															const headers = [
+																"index",
+																"beforeHeadroomGbps",
+																"beforeHeadroomUtil",
+																"afterHeadroomGbps",
+																"afterHeadroomUtil",
+																"appliedSpeedMbps",
+																"reason",
+															];
+															const rows = pathsPlanSim.items.map((r) => [
+																r.index,
+																r.beforeHeadroomGbps ?? "",
+																r.beforeHeadroomUtil ?? "",
+																r.afterHeadroomGbps ?? "",
+																r.afterHeadroomUtil ?? "",
+																r.appliedSpeedMbps ?? "",
+																r.reason ?? "",
+															]);
+															downloadText(
+																`path_plan_sim_${networkRef}_${windowLabel}.csv`,
+																"text/csv",
+																toCSV(headers, rows),
+															);
+														}}
+													>
+														Export sim CSV
+													</Button>
+												</div>
+											</div>
+
+											<div className="rounded-md border p-3 space-y-2">
+												<div className="text-xs text-muted-foreground">
+													Assumption: keep traffic constant (estimate traffic
+													from p95 util and speed), then recompute
+													utilization/headroom at the upgraded speed. This is a
+													planning approximation.
+												</div>
+												<div className="flex flex-wrap items-center gap-3 text-xs">
+													<div>
+														Selected upgrades:{" "}
+														<span className="font-medium tabular-nums">
+															{pathsPlanSelected.length}
+														</span>
+													</div>
+													<div>
+														Simulated:{" "}
+														<span className="font-medium tabular-nums">
+															{pathsPlanSim.summary.simulated}
+														</span>
+														{" · "}
+														<span className="text-muted-foreground">
+															cannot simulate:{" "}
+															{pathsPlanSim.summary.cannotSimulate}
+														</span>
+													</div>
+													<div>
+														At-risk (headroom util &lt; 0):{" "}
+														<span className="font-medium tabular-nums">
+															{pathsPlanSim.summary.atRiskBefore}
+														</span>{" "}
+														<span className="text-muted-foreground">
+															before
+														</span>{" "}
+														<span className="font-medium tabular-nums">
+															{pathsPlanSim.summary.atRiskAfter}
+														</span>{" "}
+														<span className="text-muted-foreground">after</span>
+													</div>
+												</div>
+
+												<div className="flex flex-wrap gap-2">
+													{pathsUpgradeImpactRows.slice(0, 10).map((u) => {
+														const checked = pathsPlanSelected.includes(u.id);
+														return (
+															<label
+																key={u.id}
+																className="flex items-center gap-2 rounded-md border px-2 py-1"
+															>
+																<input
+																	type="checkbox"
+																	checked={checked}
+																	onChange={(e) => {
+																		const on = e.target.checked;
+																		setPathsPlanSelected((prev) => {
+																			const p = new Set(prev);
+																			if (on) p.add(u.id);
+																			else p.delete(u.id);
+																			return Array.from(p.values());
+																		});
+																	}}
+																/>
+																<span className="text-xs font-mono">
+																	{u.deviceName} {u.interfaceName} {u.direction}
+																</span>
+																<span className="text-xs text-muted-foreground">
+																	{fmtSpeedMbps(u.recommendedSpeedMbps)}
+																</span>
+																<span className="text-xs text-muted-foreground">
+																	({u.flows} flows)
+																</span>
+															</label>
+														);
+													})}
+												</div>
+											</div>
+										</div>
+									) : null}
+								</div>
+							) : (
+								<div className="text-xs text-muted-foreground">
+									Run a batch to see bottlenecks. If everything is "—", click
+									Refresh to compute rollups first.
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
 				<TabsContent value="routing" className="space-y-4">
 					<Card>
 						<CardHeader>
@@ -3770,6 +6036,245 @@ function ForwardNetworkCapacityPage() {
 							)}
 						</CardContent>
 					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Inventory Changes</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							{snapshotDelta.isLoading ? (
+								<Skeleton className="h-24 w-full" />
+							) : snapshotDelta.isError ? (
+								<div className="text-destructive text-sm">
+									Failed to load inventory delta:{" "}
+									{snapshotDelta.error instanceof Error
+										? snapshotDelta.error.message
+										: String(snapshotDelta.error)}
+								</div>
+							) : (
+								<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+									<Card>
+										<CardHeader className="pb-2">
+											<CardTitle className="text-sm">Devices</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<DataTable
+												columns={[
+													{
+														id: "device",
+														header: "Device",
+														cell: (r) => (
+															<span className="font-mono text-xs">
+																{r.deviceName}
+															</span>
+														),
+														width: 220,
+													},
+													{
+														id: "type",
+														header: "Change",
+														cell: (r) => (
+															<Badge
+																variant={
+																	r.changeType === "added"
+																		? "secondary"
+																		: r.changeType === "removed"
+																			? "destructive"
+																			: "outline"
+																}
+															>
+																{String(r.changeType || "changed")}
+															</Badge>
+														),
+														width: 110,
+													},
+													{
+														id: "changes",
+														header: "Details",
+														cell: (r) => (
+															<span className="text-xs text-muted-foreground">
+																{(r.changes ?? []).length
+																	? (r.changes ?? []).join(", ")
+																	: "—"}
+															</span>
+														),
+														width: 420,
+													},
+												]}
+												rows={snapshotDelta.data?.deviceDelta ?? []}
+												getRowId={(r) => `${r.deviceName}:${r.changeType}`}
+												emptyText="No device inventory changes between last two snapshots."
+												maxHeightClassName="max-h-[360px]"
+												minWidthClassName="min-w-0"
+											/>
+										</CardContent>
+									</Card>
+
+									<Card>
+										<CardHeader className="pb-2">
+											<CardTitle className="text-sm">Interfaces</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<DataTable
+												columns={[
+													{
+														id: "iface",
+														header: "Interface",
+														cell: (r) => (
+															<div className="space-y-0.5">
+																<div className="font-mono text-xs">
+																	{r.deviceName}:{r.interfaceName}
+																</div>
+																<div className="text-xs text-muted-foreground">
+																	{(r.changes ?? []).length
+																		? (r.changes ?? []).join(", ")
+																		: "—"}
+																</div>
+															</div>
+														),
+														width: 420,
+													},
+													{
+														id: "type",
+														header: "Change",
+														cell: (r) => (
+															<Badge
+																variant={
+																	r.changeType === "added"
+																		? "secondary"
+																		: r.changeType === "removed"
+																			? "destructive"
+																			: "outline"
+																}
+															>
+																{String(r.changeType || "changed")}
+															</Badge>
+														),
+														width: 110,
+													},
+												]}
+												rows={snapshotDelta.data?.interfaceDelta ?? []}
+												getRowId={(r) =>
+													`${r.deviceName}:${r.interfaceName}:${r.changeType}`
+												}
+												emptyText="No interface inventory changes between last two snapshots."
+												maxHeightClassName="max-h-[360px]"
+												minWidthClassName="min-w-0"
+											/>
+										</CardContent>
+									</Card>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">LAG Member Imbalance</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-2">
+							<div className="text-sm text-muted-foreground">
+								Highlights port-channels / LAGs where one member is running hot
+								or disproportionately loaded (based on rollups for {windowLabel}
+								).
+							</div>
+							{inventory.isLoading || summary.isLoading ? (
+								<Skeleton className="h-24 w-full" />
+							) : inventory.isError || summary.isError ? (
+								<div className="text-destructive text-sm">
+									Failed to compute LAG imbalance.
+								</div>
+							) : (
+								<DataTable
+									columns={[
+										{
+											id: "lag",
+											header: "LAG",
+											cell: (r: any) => (
+												<div className="space-y-0.5">
+													<div className="font-mono text-xs">
+														{r.deviceName}:{r.lagName}
+													</div>
+													<div className="text-xs text-muted-foreground">
+														{r.memberCount} members
+														{r.totalSpeedMbps
+															? ` • ${fmtSpeedMbps(r.totalSpeedMbps)}`
+															: ""}
+													</div>
+												</div>
+											),
+											width: 360,
+										},
+										{
+											id: "worst",
+											header: "Worst member",
+											align: "right",
+											cell: (r: any) => (
+												<span
+													className={
+														Number(r.worstMemberMaxUtil ?? 0) >= 0.85
+															? "text-destructive font-medium"
+															: "text-foreground"
+													}
+												>
+													{fmtPct01(Number(r.worstMemberMaxUtil ?? 0))}
+												</span>
+											),
+											width: 120,
+										},
+										{
+											id: "spread",
+											header: "Spread",
+											align: "right",
+											cell: (r: any) => (
+												<span className="text-xs tabular-nums">
+													{fmtPct01(Number(r.spread ?? 0))}
+												</span>
+											),
+											width: 90,
+										},
+										{
+											id: "hot",
+											header: "Hot",
+											align: "right",
+											cell: (r: any) => (
+												<span className="text-xs tabular-nums">
+													{Number(r.hotMembers ?? 0)}
+												</span>
+											),
+											width: 70,
+										},
+										{
+											id: "forecast",
+											header: "Soonest",
+											cell: (r: any) => (
+												<span className="font-mono text-xs">
+													{r.soonestForecast
+														? String(r.soonestForecast).slice(0, 10)
+														: "—"}
+												</span>
+											),
+											width: 110,
+										},
+									]}
+									rows={lagImbalanceRows}
+									getRowId={(r: any) => r.id}
+									onRowClick={(r: any) => {
+										setLagDialog({
+											deviceName: String(r.deviceName ?? ""),
+											lagName: String(r.lagName ?? ""),
+											totalSpeedMbps: r.totalSpeedMbps,
+											members: (r.members ?? []) as any[],
+										});
+										setLagDialogOpen(true);
+									}}
+									emptyText="No LAG imbalance signals in this window."
+									maxHeightClassName="max-h-[420px]"
+									minWidthClassName="min-w-0"
+								/>
+							)}
+						</CardContent>
+					</Card>
 				</TabsContent>
 
 				<TabsContent value="health" className="space-y-4">
@@ -4267,6 +6772,526 @@ function ForwardNetworkCapacityPage() {
 						<div className="text-xs text-muted-foreground">
 							Loads a trend directly from Forward perf history.
 						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+			<Dialog
+				open={lagDialogOpen}
+				onOpenChange={(v) => !v && setLagDialogOpen(false)}
+			>
+				<DialogContent className="max-w-3xl">
+					<DialogHeader>
+						<DialogTitle className="text-base">LAG Details</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="text-sm">
+							<span className="font-mono text-xs">
+								{lagDialog
+									? `${lagDialog.deviceName}:${lagDialog.lagName}`
+									: "—"}
+							</span>
+							{lagDialog?.totalSpeedMbps ? (
+								<span className="text-muted-foreground text-xs">
+									{" "}
+									{" · "}Σ speed {fmtSpeedMbps(lagDialog.totalSpeedMbps)}
+								</span>
+							) : null}
+						</div>
+						<DataTable
+							columns={[
+								{
+									id: "iface",
+									header: "Member",
+									cell: (r: any) => (
+										<span className="font-mono text-xs">
+											{String(r.interfaceName ?? "")}
+										</span>
+									),
+									width: 240,
+								},
+								{
+									id: "speed",
+									header: "Speed",
+									align: "right",
+									cell: (r: any) => (
+										<span className="text-xs">
+											{fmtSpeedMbps(Number(r.speedMbps ?? 0) || null)}
+										</span>
+									),
+									width: 90,
+								},
+								{
+									id: "dir",
+									header: "Worst",
+									cell: (r: any) => (
+										<span className="text-xs">
+											{String(r.worstDirection ?? "—")}
+										</span>
+									),
+									width: 90,
+								},
+								{
+									id: "max",
+									header: "Max",
+									align: "right",
+									cell: (r: any) => (
+										<span
+											className={
+												Number(r.maxUtil ?? 0) >= 0.85
+													? "text-destructive font-medium"
+													: ""
+											}
+										>
+											{fmtPct01(Number(r.maxUtil ?? 0))}
+										</span>
+									),
+									width: 90,
+								},
+								{
+									id: "p95",
+									header: "p95",
+									align: "right",
+									cell: (r: any) => fmtPct01(Number(r.p95Util ?? 0)),
+									width: 90,
+								},
+								{
+									id: "forecast",
+									header: "Forecast",
+									cell: (r: any) => (
+										<span className="font-mono text-xs">
+											{r.forecast ? String(r.forecast).slice(0, 10) : "—"}
+										</span>
+									),
+									width: 110,
+								},
+							]}
+							rows={lagDialog?.members ?? []}
+							getRowId={(r: any) => String(r.interfaceName ?? "")}
+							emptyText="No member rows."
+							maxHeightClassName="max-h-[55vh]"
+							minWidthClassName="min-w-0"
+						/>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={pathsCoverageDialogOpen}
+				onOpenChange={setPathsCoverageDialogOpen}
+			>
+				<DialogContent className="max-w-3xl">
+					<DialogHeader>
+						<DialogTitle className="text-sm">Paths Coverage</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="text-xs text-muted-foreground">
+							Paths are computed against a Forward snapshot (can be older than
+							perf). Interface utilization is joined from Skyforge rollups, with
+							bounded on-demand perf fallback when rollups are missing.
+						</div>
+						<div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+							<div className="rounded-md border p-3 space-y-1">
+								<div className="text-xs text-muted-foreground">Snapshot</div>
+								<div className="font-mono text-xs">
+									{String(pathsResult?.snapshotId ?? "").trim() || "latest"}
+								</div>
+								<div className="text-xs text-muted-foreground mt-2">Window</div>
+								<div className="font-mono text-xs">
+									{String(pathsResult?.window ?? windowLabel)}
+								</div>
+								<div className="text-xs text-muted-foreground mt-2">
+									Rollups as-of
+								</div>
+								<div className="font-mono text-xs">
+									{String(summary.data?.asOf ?? "—")}
+									{summary.data?.stale ? (
+										<span className="ml-2">
+											<Badge variant="destructive">stale</Badge>
+										</span>
+									) : null}
+								</div>
+								<div className="text-xs text-muted-foreground mt-2">
+									Inventory as-of
+								</div>
+								<div className="font-mono text-xs">
+									{String(inventory.data?.asOf ?? "—")}
+								</div>
+							</div>
+							<div className="rounded-md border p-3 space-y-1">
+								<div className="text-xs text-muted-foreground">
+									Hop interface keys
+								</div>
+								<div className="font-mono text-xs">
+									{Number(pathsResult?.coverage?.hopInterfaceKeys ?? 0)}
+								</div>
+								<div className="text-xs text-muted-foreground mt-2">
+									Rollup matched / Perf fallback / Unknown
+								</div>
+								<div className="font-mono text-xs">
+									{Number(pathsResult?.coverage?.rollupMatched ?? 0)} /{" "}
+									{Number(pathsResult?.coverage?.perfFallbackUsed ?? 0)} /{" "}
+									{Number(pathsResult?.coverage?.unknown ?? 0)}
+								</div>
+								{pathsResult?.coverage?.truncated ? (
+									<div className="mt-2">
+										<Badge variant="destructive">fallback truncated</Badge>
+									</div>
+								) : null}
+							</div>
+						</div>
+
+						{(pathsResult?.coverage?.unmatchedHopInterfacesSample ?? [])
+							.length ? (
+							<div className="rounded-md border p-3 space-y-2">
+								<div className="text-xs text-muted-foreground">
+									Unmatched hop interfaces (sample)
+								</div>
+								<pre className="max-h-[260px] overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-2 font-mono text-xs">
+									{(pathsResult?.coverage?.unmatchedHopInterfacesSample ?? [])
+										.map(String)
+										.join("\n")}
+								</pre>
+							</div>
+						) : null}
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={pathsPayloadDialogOpen}
+				onOpenChange={setPathsPayloadDialogOpen}
+			>
+				<DialogContent className="max-w-3xl">
+					<DialogHeader>
+						<DialogTitle className="text-sm">
+							Forward /paths-bulk Payload
+						</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="text-xs text-muted-foreground">
+							This is the exact bulk-path request shape Skyforge uses
+							(guardrails applied). Use it to reproduce results or hand off
+							deeper analysis to Forward without duplicating Forward UI.
+						</div>
+						<div className="flex items-center gap-2">
+							<Button
+								size="sm"
+								onClick={async () => {
+									const text = forwardPathsBulkPayloadPreview;
+									if (!text) {
+										toast.error("Nothing to copy", {
+											description: "Enter/parse at least one flow first.",
+										});
+										return;
+									}
+									const ok = await copyToClipboard(text);
+									if (ok) toast.success("Copied payload");
+									else {
+										downloadText(
+											`forward_paths_bulk_payload_${networkRef}.json`,
+											"application/json",
+											text,
+										);
+										toast.message("Clipboard not available", {
+											description: "Downloaded JSON instead.",
+										});
+									}
+								}}
+							>
+								Copy
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => {
+									const text = forwardPathsBulkPayloadPreview;
+									if (!text) return;
+									downloadText(
+										`forward_paths_bulk_payload_${networkRef}.json`,
+										"application/json",
+										text,
+									);
+								}}
+								disabled={!forwardPathsBulkPayloadPreview}
+							>
+								Download
+							</Button>
+						</div>
+						<pre className="max-h-[55vh] overflow-auto whitespace-pre rounded-md border bg-muted p-3 font-mono text-xs">
+							{forwardPathsBulkPayloadPreview ||
+								"Enter at least one flow (or JSON with { queries: [...] })."}
+						</pre>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={pathsUpgradeDialogOpen}
+				onOpenChange={setPathsUpgradeDialogOpen}
+			>
+				<DialogContent className="max-w-4xl">
+					<DialogHeader>
+						<DialogTitle className="text-sm">
+							Upgrade Impact (Batch)
+						</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="text-xs text-muted-foreground">
+							{pathsUpgradeDialog?.title ?? "—"}
+						</div>
+						<div className="flex flex-wrap items-center gap-3">
+							<div className="text-xs">
+								Flows:{" "}
+								<span className="font-medium tabular-nums">
+									{pathsUpgradeDialog?.flows.length ?? 0}
+								</span>
+							</div>
+							<div className="text-xs text-muted-foreground">
+								Rec:{" "}
+								<span className="font-mono">
+									{fmtSpeedMbps(
+										pathsUpgradeDialog?.upgrade.recommendedSpeedMbps,
+									)}
+								</span>
+							</div>
+							{pathsUpgradeDialog?.upgrade.reason ? (
+								<div className="text-xs text-muted-foreground">
+									Reason:{" "}
+									<span className="font-mono">
+										{pathsUpgradeDialog.upgrade.reason}
+									</span>
+								</div>
+							) : null}
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={!pathsUpgradeDialog?.flows.length}
+								onClick={() => {
+									const u = pathsUpgradeDialog?.upgrade;
+									const flows = pathsUpgradeDialog?.flows ?? [];
+									if (!u || !flows.length) return;
+									const headers = [
+										"deviceName",
+										"interfaceName",
+										"direction",
+										"index",
+										"srcIp",
+										"dstIp",
+										"proto",
+										"dstPort",
+										"outcome",
+										"headroomGbps",
+										"headroomUtil",
+										"forwardQueryUrl",
+									];
+									const rows = flows.map((f) => [
+										u.deviceName,
+										u.interfaceName,
+										u.direction,
+										f.index,
+										f.src,
+										f.dst,
+										f.proto,
+										f.port,
+										f.outcome,
+										f.headroomGbps ?? "",
+										f.headroomUtil ?? "",
+										f.forwardQueryUrl ?? "",
+									]);
+									downloadText(
+										`upgrade_impact_flows_${networkRef}_${windowLabel}.csv`,
+										"text/csv",
+										toCSV(headers, rows),
+									);
+								}}
+							>
+								Export flows CSV
+							</Button>
+						</div>
+						<DataTable
+							columns={[
+								{
+									id: "flow",
+									header: "Flow",
+									cell: (r) => (
+										<div className="text-xs">
+											<div className="font-mono">
+												{r.src ? `${r.src} -> ` : ""}
+												{r.dst || "—"}
+											</div>
+											<div className="text-muted-foreground">
+												{[r.proto, r.port].filter(Boolean).join(" ")}
+											</div>
+										</div>
+									),
+									width: 360,
+								},
+								{
+									id: "outcome",
+									header: "Outcome",
+									cell: (r) => (
+										<span className="text-xs text-muted-foreground">
+											{r.outcome || "—"}
+										</span>
+									),
+									width: 200,
+								},
+								{
+									id: "headroom",
+									header: "Headroom",
+									align: "right",
+									cell: (r) => {
+										const n = Number(r.headroomGbps ?? NaN);
+										if (Number.isFinite(n)) {
+											return (
+												<span
+													className={
+														n < 0
+															? "text-xs font-medium text-destructive tabular-nums"
+															: "text-xs tabular-nums"
+													}
+												>
+													{n.toFixed(2)}G
+												</span>
+											);
+										}
+										const hu = Number(r.headroomUtil ?? NaN);
+										if (Number.isFinite(hu)) {
+											return (
+												<span
+													className={
+														hu < 0
+															? "text-xs font-medium text-destructive tabular-nums"
+															: "text-xs tabular-nums"
+													}
+												>
+													{fmtPct01(hu)}{" "}
+													<span className="text-muted-foreground">util</span>
+												</span>
+											);
+										}
+										return (
+											<span className="text-xs text-muted-foreground">—</span>
+										);
+									},
+									width: 120,
+								},
+								{
+									id: "forward",
+									header: "Forward",
+									cell: (r) => {
+										const u = String(r.forwardQueryUrl ?? "").trim();
+										return u ? (
+											<a
+												href={u}
+												target="_blank"
+												rel="noreferrer"
+												className="text-xs text-muted-foreground hover:underline"
+											>
+												open
+											</a>
+										) : (
+											<span className="text-xs text-muted-foreground">—</span>
+										);
+									},
+									width: 90,
+								},
+							]}
+							rows={pathsUpgradeDialog?.flows ?? []}
+							getRowId={(r) => r.id}
+							emptyText="No matching flows (this can happen if interface naming differs)."
+							maxHeightClassName="max-h-[55vh]"
+							minWidthClassName="min-w-0"
+						/>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={pathsWhyDialogOpen} onOpenChange={setPathsWhyDialogOpen}>
+				<DialogContent className="max-w-3xl">
+					<DialogHeader>
+						<DialogTitle className="text-sm">Why Unknown?</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="text-xs text-muted-foreground">
+							{pathsWhyDialog?.title ?? "—"}
+						</div>
+						{pathsWhyDialog?.notesText ? (
+							<div className="text-xs text-muted-foreground">
+								{pathsWhyDialog.notesText}
+							</div>
+						) : null}
+						{pathsWhyDialog?.forwardQueryUrl ? (
+							<div>
+								<a
+									href={pathsWhyDialog.forwardQueryUrl}
+									target="_blank"
+									rel="noreferrer"
+									className="text-xs text-muted-foreground hover:underline"
+								>
+									Open in Forward
+								</a>
+							</div>
+						) : null}
+						<div className="rounded-md border p-3 space-y-2">
+							<div className="text-xs text-muted-foreground">
+								Hop interfaces missing utilization stats (sample)
+							</div>
+							<pre className="max-h-[320px] overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-2 font-mono text-xs">
+								{(pathsWhyDialog?.unmatched ?? []).join("\n") || "—"}
+							</pre>
+						</div>
+						<div className="text-xs text-muted-foreground">
+							Common causes: missing rollups (run Refresh), interface naming
+							mismatches (vendor quirks), or Forward perf history unavailable
+							for the hop interface.
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={pathsHopsDialogOpen} onOpenChange={setPathsHopsDialogOpen}>
+				<DialogContent className="max-w-3xl">
+					<DialogHeader>
+						<DialogTitle className="text-sm">Hops</DialogTitle>
+					</DialogHeader>
+					<div className="text-xs text-muted-foreground">
+						{pathsHopsDialog?.title ?? "—"}
+					</div>
+					<div className="max-h-[420px] overflow-auto rounded-md border">
+						<table className="w-full text-xs">
+							<thead className="sticky top-0 bg-background border-b">
+								<tr>
+									<th className="text-left p-2 w-[60px]">#</th>
+									<th className="text-left p-2">Device</th>
+									<th className="text-left p-2">Ingress</th>
+									<th className="text-left p-2">Egress</th>
+								</tr>
+							</thead>
+							<tbody>
+								{(pathsHopsDialog?.hops ?? []).map((h, idx) => (
+									<tr key={`${idx}:${h.deviceName ?? ""}`} className="border-b">
+										<td className="p-2 text-muted-foreground">{idx + 1}</td>
+										<td className="p-2 font-mono">
+											{String(h.deviceName ?? "")}
+										</td>
+										<td className="p-2 font-mono">
+											{String(h.ingressInterface ?? "") || "—"}
+										</td>
+										<td className="p-2 font-mono">
+											{String(h.egressInterface ?? "") || "—"}
+										</td>
+									</tr>
+								))}
+								{(pathsHopsDialog?.hops ?? []).length === 0 ? (
+									<tr>
+										<td className="p-3 text-muted-foreground" colSpan={4}>
+											No hops in response. Enable “include hops” and re-run.
+										</td>
+									</tr>
+								) : null}
+							</tbody>
+						</table>
 					</div>
 				</DialogContent>
 			</Dialog>
