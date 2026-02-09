@@ -2650,9 +2650,10 @@ export type CreateUserForwardCollectorConfigRequest = {
 	name: string;
 	baseUrl: string;
 	skipTlsVerify: boolean;
-	username: string;
-	password: string;
+	username?: string;
+	password?: string;
 	setDefault?: boolean;
+	sourceCredentialId?: string;
 };
 
 export type DeleteUserForwardCollectorConfigResponse = {
