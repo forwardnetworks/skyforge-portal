@@ -1473,6 +1473,22 @@ export async function listForwardNetworkAssuranceHistory(
 	);
 }
 
+export type ForwardAssuranceDemoSeedResponse = {
+	status: string;
+	syslogCidr: string;
+	inserted: { syslog: number; snmpTraps: number; webhooks: number };
+};
+
+export async function seedForwardNetworkAssuranceDemo(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardAssuranceDemoSeedResponse> {
+	return apiFetch<ForwardAssuranceDemoSeedResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/demo/seed`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
 export type ForwardNetworkCapacityCoverageResponse = {
 	workspaceId: string;
 	networkRef: string;

@@ -26,11 +26,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/query-keys";
 import {
+	getForwardNetworkAssuranceSummary,
+	getSession,
 	type ForwardNetworkCapacityPathBottlenecksResponse,
 	type ForwardNetworkCapacityUpgradeCandidatesResponse,
+	type ForwardAssuranceSummaryResponse,
 	type PolicyReportNQEResponse,
 	type PolicyReportPathQuery,
 	listWorkspaceForwardNetworks,
+	refreshForwardNetworkAssurance,
+	seedForwardNetworkAssuranceDemo,
 	storeWorkspacePolicyReportPathsEnforcementBypass,
 } from "@/lib/skyforge-api";
 import {
@@ -72,6 +77,24 @@ export const Route = createFileRoute(
 	validateSearch: (search) => searchSchema.parse(search),
 	component: AssuranceStudioPage,
 });
+
+function fmtRFC3339(s: string | undefined): string {
+	const v = String(s ?? "").trim();
+	if (!v) return "—";
+	const t = Date.parse(v);
+	if (!Number.isFinite(t)) return v;
+	return new Date(t).toISOString();
+}
+
+function fmtAgeSeconds(ageSeconds: number | undefined): string {
+	const s = Number(ageSeconds ?? NaN);
+	if (!Number.isFinite(s) || s < 0) return "—";
+	const mins = Math.floor(s / 60);
+	const hrs = Math.floor(mins / 60);
+	if (hrs > 0) return `${hrs}h ${mins % 60}m`;
+	if (mins > 0) return `${mins}m`;
+	return `${Math.floor(s)}s`;
+}
 
 function splitParts(text: string): string[] {
 	return String(text ?? "")
@@ -202,6 +225,14 @@ function AssuranceStudioPage() {
 	const selectedScenarioId = String(scenario ?? "").trim();
 	const activeTab = String(tab ?? "routing") || "routing";
 
+	const sessionQ = useQuery({
+		queryKey: queryKeys.session(),
+		queryFn: getSession,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const isAdmin = !!sessionQ.data?.isAdmin;
+
 	const [newOpen, setNewOpen] = useState(false);
 	const [newName, setNewName] = useState("");
 	const [newDesc, setNewDesc] = useState("");
@@ -276,6 +307,49 @@ function AssuranceStudioPage() {
 
 	const forwardNetworkId = String(networkRow?.forwardNetworkId ?? "");
 	const networkName = String(networkRow?.name ?? "") || String(networkRef);
+
+	const assuranceQ = useQuery({
+		queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+		queryFn: () => getForwardNetworkAssuranceSummary(workspaceId, networkRef),
+		enabled: Boolean(workspaceId && networkRef),
+		staleTime: 5_000,
+		retry: false,
+	});
+	const assurance = assuranceQ.data as ForwardAssuranceSummaryResponse | undefined;
+
+	const refreshAssuranceM = useMutation({
+		mutationFn: () => refreshForwardNetworkAssurance(workspaceId, networkRef),
+		onSuccess: async (res) => {
+			toast.success("Assurance refreshed");
+			qc.setQueryData(
+				queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+				res,
+			);
+			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkAssuranceHistory(workspaceId, networkRef),
+			});
+		},
+		onError: (e: any) =>
+			toast.error("Assurance refresh failed", {
+				description: String(e?.message ?? e ?? "unknown error"),
+			}),
+	});
+
+	const seedDemoM = useMutation({
+		mutationFn: () => seedForwardNetworkAssuranceDemo(workspaceId, networkRef),
+		onSuccess: async (res) => {
+			toast.success("Seeded demo signals", {
+				description: `syslog CIDR ${res.syslogCidr}`,
+			});
+			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+			});
+		},
+		onError: (e: any) =>
+			toast.error("Seed failed", {
+				description: String(e?.message ?? e ?? "unknown error"),
+			}),
+	});
 
 	const scenariosQ = useQuery({
 		queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
@@ -980,16 +1054,182 @@ function AssuranceStudioPage() {
 						<div className="text-lg font-semibold">{networkName}</div>
 					</div>
 				</div>
-				<div className="flex items-center gap-2">
-					<Badge variant="secondary">Forward Paths + NQE</Badge>
-					{networksQ.isLoading ? <Skeleton className="h-6 w-24" /> : null}
+					<div className="flex items-center gap-2">
+						<Badge variant="secondary">Forward Paths + NQE</Badge>
+						{networksQ.isLoading ? <Skeleton className="h-6 w-24" /> : null}
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => refreshAssuranceM.mutate()}
+							disabled={!workspaceId || refreshAssuranceM.isPending}
+						>
+							<RefreshCw className="h-4 w-4 mr-2" />
+							{refreshAssuranceM.isPending ? "Refreshing…" : "Refresh Assurance"}
+						</Button>
+						{isAdmin ? (
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => seedDemoM.mutate()}
+								disabled={!workspaceId || seedDemoM.isPending}
+							>
+								{seedDemoM.isPending ? "Seeding…" : "Seed demo signals"}
+							</Button>
+						) : null}
+						<Button asChild variant="outline" size="sm">
+							<Link
+								to="/dashboard/forward-networks/$networkRef/assurance"
+								params={{ networkRef }}
+								search={{ workspace: workspaceId } as any}
+							>
+								Assurance page
+							</Link>
+						</Button>
+					</div>
 				</div>
-			</div>
 
 			<Card>
 				<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
 					<div className="space-y-1">
-						<CardTitle>Scenario</CardTitle>
+						<CardTitle>Assurance Summary</CardTitle>
+						<CardDescription>
+							Live Forward snapshot health, vulnerabilities, capacity cache, and
+							inbox signals.
+						</CardDescription>
+					</div>
+					<div className="flex flex-wrap items-center gap-2">
+						{assuranceQ.isLoading ? (
+							<Skeleton className="h-9 w-36" />
+						) : assuranceQ.isError ? (
+							<Badge variant="destructive">summary unavailable</Badge>
+						) : assurance ? (
+							<Badge variant="outline" className="font-mono text-xs">
+								as of {fmtRFC3339(assurance.generatedAt)}
+							</Badge>
+						) : null}
+					</div>
+				</CardHeader>
+				<CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 text-sm">
+					<div className="rounded-md border p-3">
+						<div className="text-xs text-muted-foreground">Snapshot</div>
+						<div className="font-mono text-xs mt-1 truncate">
+							{assurance?.snapshot.snapshotId || "—"}
+						</div>
+						<div className="text-xs text-muted-foreground mt-1">
+							age {fmtAgeSeconds(assurance?.snapshot.ageSeconds)} · state{" "}
+							<span className="font-mono">
+								{assurance?.snapshot.state || "—"}
+							</span>
+						</div>
+					</div>
+
+					<div className="rounded-md border p-3">
+						<div className="text-xs text-muted-foreground">Indexing</div>
+						<div className="mt-1">
+							<Badge
+								variant={
+									assurance?.indexingHealth.overall === "ok"
+										? "default"
+										: assurance?.indexingHealth.overall === "warn"
+											? "secondary"
+											: "outline"
+								}
+							>
+								{assurance?.indexingHealth.overall || "unknown"}
+							</Badge>
+						</div>
+						<div className="text-xs text-muted-foreground mt-1 font-mono">
+							pathSearch={assurance?.indexingHealth.pathSearchIndexingStatus || "—"}
+						</div>
+					</div>
+
+					<div className="rounded-md border p-3">
+						<div className="text-xs text-muted-foreground">Vulnerabilities</div>
+						<div className="mt-1">
+							<span className="font-mono text-xs">
+								{assurance?.vulnerabilities.total ?? "—"}
+							</span>
+							{assurance?.vulnerabilities.partial ? (
+								<Badge variant="secondary" className="ml-2">
+									partial
+								</Badge>
+							) : null}
+						</div>
+						<div className="text-xs text-muted-foreground mt-1">
+							known exploit{" "}
+							<span className="font-mono text-xs">
+								{assurance?.vulnerabilities.knownExploitCount ?? "—"}
+							</span>
+						</div>
+					</div>
+
+					<div className="rounded-md border p-3">
+						<div className="text-xs text-muted-foreground">Capacity cache</div>
+						<div className="mt-1 text-xs">
+							hot ifaces ({">="}85% max):{" "}
+							<span className="font-mono">{assurance?.capacity.hotInterfaces ?? 0}</span>
+						</div>
+						<div className="text-xs text-muted-foreground mt-1">
+							stale{" "}
+							<Badge variant={assurance?.capacity.stale ? "secondary" : "default"}>
+								{assurance?.capacity.stale ? "yes" : "no"}
+							</Badge>
+						</div>
+					</div>
+
+					<div className="rounded-md border p-3">
+						<div className="text-xs text-muted-foreground">Live signals (60m)</div>
+						<div className="mt-1 text-xs text-muted-foreground">
+							syslog{" "}
+							<span className="font-mono text-xs">
+								{assurance?.liveSignals.syslog.total ?? 0}
+							</span>{" "}
+							(crit{" "}
+							<span className="font-mono text-xs">
+								{assurance?.liveSignals.syslog.critical ?? 0}
+							</span>
+							)
+						</div>
+						<div className="text-xs text-muted-foreground">
+							snmp{" "}
+							<span className="font-mono text-xs">
+								{assurance?.liveSignals.snmpTraps.total ?? 0}
+							</span>{" "}
+							webhooks{" "}
+							<span className="font-mono text-xs">
+								{assurance?.liveSignals.webhooks.total ?? 0}
+							</span>
+						</div>
+					</div>
+
+					<div className="rounded-md border p-3">
+						<div className="text-xs text-muted-foreground">Notes</div>
+						{(assurance?.missing ?? []).length > 0 ? (
+							<div className="mt-1 flex flex-wrap gap-2">
+								{(assurance?.missing ?? []).slice(0, 6).map((m) => (
+									<Badge key={m} variant="secondary">
+										missing:{m}
+									</Badge>
+								))}
+							</div>
+						) : (
+							<div className="mt-1 text-xs text-muted-foreground">
+								No missing evidence detected.
+							</div>
+						)}
+						{(assurance?.warnings ?? []).length > 0 ? (
+							<div className="mt-2 text-xs text-muted-foreground">
+								{(assurance?.warnings ?? []).slice(0, 3).join(" · ")}
+							</div>
+						) : null}
+					</div>
+				</CardContent>
+			</Card>
+
+				<Card>
+					<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+						<div className="space-y-1">
+							<CardTitle>Scenario</CardTitle>
 						<CardDescription>
 							One saved scenario feeds Routing, Capacity, and Security tabs.
 						</CardDescription>
