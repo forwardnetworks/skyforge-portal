@@ -4289,28 +4289,6 @@ export async function waiveWorkspacePolicyReportRecertAssignment(
 
 // Forward Networks (generic workspace-saved networks; used by capacity tooling)
 
-export async function createUserForwardNetwork(
-	body: PolicyReportCreateForwardNetworkRequest,
-): Promise<PolicyReportForwardNetwork> {
-	return apiFetch<PolicyReportForwardNetwork>(`/api/forward-networks`, {
-		method: "POST",
-		body: JSON.stringify(body),
-	});
-}
-
-export async function listUserForwardNetworks(): Promise<PolicyReportListForwardNetworksResponse> {
-	return apiFetch<PolicyReportListForwardNetworksResponse>(`/api/forward-networks`);
-}
-
-export async function deleteUserForwardNetwork(
-	networkRef: string,
-): Promise<PolicyReportDecisionResponse> {
-	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/forward-networks/${encodeURIComponent(networkRef)}`,
-		{ method: "DELETE" },
-	);
-}
-
 export async function createWorkspaceForwardNetwork(
 	workspaceId: string,
 	body: PolicyReportCreateForwardNetworkRequest,
