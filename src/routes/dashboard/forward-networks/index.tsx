@@ -336,6 +336,33 @@ function ForwardNetworksPage() {
 										Capacity
 									</Link>
 								</Button>
+								<Button asChild variant="outline" size="sm">
+									<Link
+										to="/dashboard/forward-networks/$networkRef/assurance-studio"
+										params={{ networkRef: n.id }}
+										search={{ workspace: selectedWorkspaceId } as any}
+									>
+										Assurance Studio
+									</Link>
+								</Button>
+								<Button asChild variant="outline" size="sm">
+									<Link
+										to="/dashboard/forward-networks/$networkRef/assurance"
+										params={{ networkRef: n.id }}
+										search={{ workspace: selectedWorkspaceId } as any}
+									>
+										Assurance
+									</Link>
+								</Button>
+								<Button asChild variant="outline" size="sm">
+									<Link
+										to="/dashboard/forward-networks/$networkRef/traffic-scenarios"
+										params={{ networkRef: n.id }}
+										search={{ workspace: selectedWorkspaceId } as any}
+									>
+										Traffic Scenarios
+									</Link>
+								</Button>
 								<Button
 									variant="outline"
 									size="sm"

@@ -31,6 +31,34 @@ export const queryKeys = {
 		] as const,
 	workspaceForwardNetworks: (workspaceId: string) =>
 		["workspaceForwardNetworks", workspaceId] as const,
+	assuranceStudioScenarios: (workspaceId: string, networkRef: string) =>
+		["assuranceStudioScenarios", workspaceId, networkRef] as const,
+	assuranceStudioScenario: (
+		workspaceId: string,
+		networkRef: string,
+		scenarioId: string,
+	) =>
+		["assuranceStudioScenario", workspaceId, networkRef, scenarioId] as const,
+	assuranceStudioRuns: (workspaceId: string, networkRef: string) =>
+		["assuranceStudioRuns", workspaceId, networkRef] as const,
+	assuranceStudioRun: (
+		workspaceId: string,
+		networkRef: string,
+		runId: string,
+	) => ["assuranceStudioRun", workspaceId, networkRef, runId] as const,
+	forwardNetworkAssuranceSummary: (workspaceId: string, networkRef: string) =>
+		["forwardNetworkAssuranceSummary", workspaceId, networkRef] as const,
+	forwardNetworkAssuranceHistory: (
+		workspaceId: string,
+		networkRef: string,
+		limit?: string,
+	) =>
+		[
+			"forwardNetworkAssuranceHistory",
+			workspaceId,
+			networkRef,
+			limit ?? "",
+		] as const,
 	forwardNetworkCapacitySummary: (workspaceId: string, networkRef: string) =>
 		["forwardNetworkCapacitySummary", workspaceId, networkRef] as const,
 	forwardNetworkCapacityInventory: (workspaceId: string, networkRef: string) =>

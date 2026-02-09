@@ -699,7 +699,9 @@ export type ElasticToolsStatusResponse = {
 };
 
 export async function getElasticToolsStatus(): Promise<ElasticToolsStatusResponse> {
-	return apiFetch<ElasticToolsStatusResponse>("/api/system/elastic/tools/status");
+	return apiFetch<ElasticToolsStatusResponse>(
+		"/api/system/elastic/tools/status",
+	);
 }
 
 export async function wakeElasticTools(): Promise<{
@@ -1325,6 +1327,101 @@ export type ForwardNetworkCapacityRefreshResponse = {
 	run: JSONMap;
 };
 
+export type ForwardAssuranceFailureReason = {
+	kind: string;
+	key: string;
+	count: number;
+};
+
+export type ForwardAssuranceSnapshotTile = {
+	snapshotId: string;
+	processedAt?: string;
+	state?: string;
+	ageSeconds?: number;
+	sourceImportItemId?: number;
+};
+
+export type ForwardAssuranceCollectionHealthTile = {
+	numSuccessfulDevices?: number;
+	numCollectionFailureDevices?: number;
+	numProcessingFailureDevices?: number;
+	numSuccessfulEndpoints?: number;
+	numCollectionFailureEndpoints?: number;
+	numProcessingFailureEndpoints?: number;
+	collectionDurationMs?: number;
+	processingDurationMs?: number;
+	topFailureReasons?: ForwardAssuranceFailureReason[];
+	sourceImportItemId?: number;
+};
+
+export type ForwardAssuranceIndexingHealthTile = {
+	pathSearchIndexingStatus?: string;
+	searchIndexingStatus?: string;
+	l2IndexingStatus?: string;
+	hostComputationStatus?: string;
+	ipLocationIndexingStatus?: string;
+	overall: string;
+	sourceImportItemId?: number;
+};
+
+export type ForwardAssuranceVulnerabilitiesTile = {
+	total?: number;
+	offset?: number;
+	limitUsed: number;
+	bySeverity?: Record<string, number>;
+	knownExploitCount?: number;
+	indexCreatedAt?: string;
+	partial: boolean;
+	sourceImportItemId?: number;
+};
+
+export type ForwardAssuranceCapacityTile = {
+	asOf?: string;
+	stale: boolean;
+	hotInterfaces: number;
+	maxUtilMax?: number;
+	source: string;
+};
+
+export type ForwardAssuranceLiveSignalsTile = {
+	windowMinutes: number;
+	syslog: { total: number; critical: number };
+	snmpTraps: { total: number };
+	webhooks: { total: number };
+};
+
+export type ForwardAssuranceEvidence = {
+	importItemIdsByKind?: Record<string, number>;
+	importId?: string;
+};
+
+export type ForwardAssuranceSummaryResponse = {
+	workspaceId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	generatedAt: string;
+	snapshot: ForwardAssuranceSnapshotTile;
+	collectionHealth: ForwardAssuranceCollectionHealthTile;
+	indexingHealth: ForwardAssuranceIndexingHealthTile;
+	vulnerabilities: ForwardAssuranceVulnerabilitiesTile;
+	capacity: ForwardAssuranceCapacityTile;
+	liveSignals: ForwardAssuranceLiveSignalsTile;
+	evidence: ForwardAssuranceEvidence;
+	warnings?: string[];
+	missing?: string[];
+};
+
+export type ForwardAssuranceHistoryItem = {
+	id: number;
+	generatedAt: string;
+	snapshotId?: string;
+	summary: ForwardAssuranceSummaryResponse;
+};
+
+export type ForwardAssuranceHistoryResponse = {
+	items: ForwardAssuranceHistoryItem[];
+};
+
 export async function getForwardNetworkCapacitySummary(
 	workspaceId: string,
 	networkRef: string,
@@ -1341,6 +1438,38 @@ export async function refreshForwardNetworkCapacityRollups(
 	return apiFetch<ForwardNetworkCapacityRefreshResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/rollups/refresh`,
 		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function getForwardNetworkAssuranceSummary(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardAssuranceSummaryResponse> {
+	return apiFetch<ForwardAssuranceSummaryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/summary`,
+	);
+}
+
+export async function refreshForwardNetworkAssurance(
+	workspaceId: string,
+	networkRef: string,
+): Promise<ForwardAssuranceSummaryResponse> {
+	return apiFetch<ForwardAssuranceSummaryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/refresh`,
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function listForwardNetworkAssuranceHistory(
+	workspaceId: string,
+	networkRef: string,
+	limit?: string,
+): Promise<ForwardAssuranceHistoryResponse> {
+	const qs = new URLSearchParams();
+	if (limit) qs.set("limit", limit);
+	const suffix = qs.toString() ? `?${qs.toString()}` : "";
+	return apiFetch<ForwardAssuranceHistoryResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/summary/history${suffix}`,
 	);
 }
 
@@ -4258,7 +4387,8 @@ export async function listWorkspacePolicyReportPresets(
 ): Promise<PolicyReportListPresetsResponse> {
 	const qs = new URLSearchParams();
 	if (forwardNetworkId) qs.set("forwardNetworkId", forwardNetworkId);
-	if (typeof enabled === "boolean") qs.set("enabled", enabled ? "true" : "false");
+	if (typeof enabled === "boolean")
+		qs.set("enabled", enabled ? "true" : "false");
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	const q = qs.toString();
 	return apiFetch<PolicyReportListPresetsResponse>(
