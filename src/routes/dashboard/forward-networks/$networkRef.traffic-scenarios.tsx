@@ -12,7 +12,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryKeys } from "@/lib/query-keys";
-import { listWorkspaceForwardNetworks } from "@/lib/skyforge-api";
+import { listUserForwardNetworks, listWorkspaceForwardNetworks } from "@/lib/skyforge-api";
 import {
 	type AssuranceTrafficDemand,
 	type AssuranceTrafficSeedRequest,
@@ -204,11 +204,21 @@ function ForwardNetworkTrafficScenariosPage() {
 		staleTime: 30_000,
 	});
 
+	const userNetworksQ = useQuery({
+		queryKey: queryKeys.userForwardNetworks(),
+		queryFn: listUserForwardNetworks,
+		retry: false,
+		staleTime: 30_000,
+	});
+
 	const networkName = useMemo(() => {
 		const ns = (networksQ.data?.networks ?? []) as any[];
-		const hit = ns.find((n) => String(n?.id ?? "") === String(networkRef));
+		const us = (userNetworksQ.data?.networks ?? []) as any[];
+		const hit =
+			ns.find((n) => String(n?.id ?? "") === String(networkRef)) ??
+			us.find((n) => String(n?.id ?? "") === String(networkRef));
 		return String(hit?.name ?? "");
-	}, [networksQ.data?.networks, networkRef]);
+	}, [networksQ.data?.networks, userNetworksQ.data?.networks, networkRef]);
 
 	const seedMutation = useMutation({
 		mutationFn: async () => {
