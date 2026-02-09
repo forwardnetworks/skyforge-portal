@@ -49,10 +49,10 @@ import {
 	getUserAWSStaticCredentials,
 	getUserAzureCredentials,
 	getUserGCPCredentials,
-	getUserGeminiConfig,
 	getUserIBMCredentials,
 	getUserServiceNowConfig,
 	getUserSettings,
+	listUserApiTokens,
 	listUserContainerlabServers,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
@@ -64,6 +64,8 @@ import {
 	putUserGCPCredentials,
 	putUserIBMCredentials,
 	putUserSettings,
+	createUserApiToken,
+	revokeUserApiToken,
 	startAwsSso,
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
@@ -236,11 +238,45 @@ function UserSettingsPage() {
 		retry: false,
 	});
 
-	const geminiQ = useQuery({
-		queryKey: queryKeys.userGeminiConfig(),
-		queryFn: getUserGeminiConfig,
+	const apiTokensQ = useQuery({
+		queryKey: queryKeys.userApiTokens(),
+		queryFn: listUserApiTokens,
 		staleTime: 10_000,
 		retry: false,
+	});
+
+	const [newApiTokenName, setNewApiTokenName] = useState("");
+	const [createdApiTokenSecret, setCreatedApiTokenSecret] = useState<
+		string | null
+	>(null);
+	const createApiTokenM = useMutation({
+		mutationFn: async () =>
+			createUserApiToken({ name: newApiTokenName.trim() || undefined }),
+		onSuccess: async (res) => {
+			setCreatedApiTokenSecret(res.secret ?? "");
+			setNewApiTokenName("");
+			await queryClient.invalidateQueries({ queryKey: queryKeys.userApiTokens() });
+			toast.success("API token created", {
+				description: "Secret shown once. Copy it now.",
+			});
+		},
+		onError: (err) => {
+			toast.error("Failed to create API token", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		},
+	});
+	const revokeApiTokenM = useMutation({
+		mutationFn: async (id: string) => revokeUserApiToken(id),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.userApiTokens() });
+			toast.success("API token revoked");
+		},
+		onError: (err) => {
+			toast.error("Failed to revoke API token", {
+				description: err instanceof Error ? err.message : String(err),
+			});
+		},
 	});
 
 	const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
@@ -687,21 +723,118 @@ function UserSettingsPage() {
 									<Link to="/dashboard/servicenow">Open</Link>
 								</Button>
 							</div>
+						</CardContent>
+					</Card>
 
-							<div className="flex items-center justify-between gap-3">
-								<div className="min-w-0">
-									<div className="text-sm font-medium">Connect AI (Gemini)</div>
-									<div className="text-sm text-muted-foreground">
-										{geminiQ.data?.enabled
-											? geminiQ.data?.configured
-												? "Connected"
-												: "Not connected"
-											: "Disabled"}
+					<Card>
+						<CardHeader>
+							<CardTitle>API Tokens</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3 text-sm">
+							<div className="text-muted-foreground">
+								For MCP clients and scripts. Token secrets are shown once at
+								creation time.
+							</div>
+
+							<div className="flex flex-col gap-2 md:flex-row md:items-center">
+								<Input
+									placeholder="Token name (optional)"
+									value={newApiTokenName}
+									onChange={(e) => setNewApiTokenName(e.target.value)}
+								/>
+								<Button
+									onClick={() => createApiTokenM.mutate()}
+									disabled={createApiTokenM.isPending}
+								>
+									{createApiTokenM.isPending ? (
+										<>
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											Creating…
+										</>
+									) : (
+										"Create token"
+									)}
+								</Button>
+							</div>
+
+							{createdApiTokenSecret ? (
+								<div className="rounded-md border p-3">
+									<div className="text-xs font-medium">New token secret</div>
+									<div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
+										<Input readOnly value={createdApiTokenSecret} />
+										<Button
+											variant="secondary"
+											onClick={async () => {
+												try {
+													await navigator.clipboard.writeText(createdApiTokenSecret);
+													toast.success("Copied token secret");
+												} catch (e) {
+													toast.error("Copy failed", {
+														description:
+															e instanceof Error ? e.message : String(e),
+													});
+												}
+											}}
+										>
+											Copy
+										</Button>
+										<Button
+											variant="outline"
+											onClick={() => setCreatedApiTokenSecret(null)}
+										>
+											Dismiss
+										</Button>
 									</div>
 								</div>
-								<Button asChild variant="outline">
-									<Link to="/dashboard/gemini">Open</Link>
-								</Button>
+							) : null}
+
+							<div className="space-y-2">
+								<div className="text-xs font-medium">Your tokens</div>
+								{apiTokensQ.isLoading ? (
+									<div className="text-xs text-muted-foreground">Loading…</div>
+								) : apiTokensQ.isError ? (
+									<div className="text-xs text-destructive">
+										Failed to load API tokens.
+									</div>
+								) : (apiTokensQ.data?.tokens ?? []).length === 0 ? (
+									<div className="text-xs text-muted-foreground">
+										No tokens yet.
+									</div>
+								) : (
+									<div className="divide-y rounded-md border">
+										{(apiTokensQ.data?.tokens ?? []).map((t) => (
+											<div
+												key={t.id}
+												className="flex items-center justify-between gap-3 px-3 py-2"
+											>
+												<div className="min-w-0">
+													<div className="truncate text-sm font-medium">
+														{t.name || "API token"}
+													</div>
+													<div className="text-xs text-muted-foreground">
+														<span className="font-mono">{t.prefix}</span>
+													</div>
+												</div>
+												<Button
+													variant="outline"
+													disabled={revokeApiTokenM.isPending}
+													onClick={() => revokeApiTokenM.mutate(t.id)}
+												>
+													Revoke
+												</Button>
+											</div>
+										))}
+									</div>
+								)}
+							</div>
+
+							<div className="text-xs text-muted-foreground">
+								MCP endpoint:{" "}
+								<span className="font-mono">/api/mcp/rpc</span> or{" "}
+								<span className="font-mono">
+									/api/workspaces/&lt;workspace&gt;/mcp/forward/&lt;networkId&gt;/rpc
+								</span>
+								.
 							</div>
 						</CardContent>
 					</Card>

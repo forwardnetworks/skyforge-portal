@@ -16,7 +16,6 @@ import {
 	Server,
 	Settings,
 	ShieldCheck,
-	Sparkles,
 	Users,
 	Webhook,
 	Workflow,
@@ -113,7 +112,6 @@ const items: NavItem[] = [
 		href: "",
 		icon: Database,
 		children: [
-			{ label: "AI", href: "/dashboard/ai", icon: Sparkles },
 			{
 				label: "Policy Reports",
 				href: "/dashboard/policy-reports",

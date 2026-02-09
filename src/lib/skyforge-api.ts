@@ -73,23 +73,6 @@ export type ServiceNowSchemaStatusResponse = {
 	checkedAt?: ISO8601;
 };
 
-export type UserGeminiConfigResponse = {
-	enabled: boolean;
-	aiEnabled: boolean;
-	oauthConfigured: boolean;
-	vertexConfigured: boolean;
-	configured: boolean;
-	email?: string;
-	scopes?: string;
-	hasToken: boolean;
-	updatedAt?: ISO8601;
-	redirectUrl?: string;
-	projectId?: string;
-	location?: string;
-	model?: string;
-	fallbackModel?: string;
-};
-
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
 // This type reflects the fields Skyforge currently emits in the dashboard snapshot and related APIs.
 export type WorkspaceDeployment = {
@@ -610,17 +593,6 @@ export async function configureForwardServiceNowTicketing(): Promise<ConfigureFo
 	);
 }
 
-export async function getUserGeminiConfig(): Promise<UserGeminiConfigResponse> {
-	return apiFetch<UserGeminiConfigResponse>("/api/user/integrations/gemini");
-}
-
-export async function disconnectUserGemini(): Promise<void> {
-	await apiFetch<void>("/api/user/integrations/gemini/disconnect", {
-		method: "POST",
-		body: "{}",
-	});
-}
-
 export type UserElasticConfigResponse = {
 	enabled: boolean;
 	configured: boolean;
@@ -682,109 +654,8 @@ export async function testUserElasticConfig(): Promise<UserElasticTestResponse> 
 	);
 }
 
-export type ElasticToolServiceStatus = {
-	id: "elasticsearch" | "kibana" | string;
-	kind: "statefulset" | "deployment" | string;
-	desiredReplicas: number;
-	availableReplicas: number;
-};
-
-export type ElasticToolsStatusResponse = {
-	enabled: boolean;
-	autosleepEnabled: boolean;
-	idleMinutes: number;
-	now: string;
-	lastActivityAt?: string;
-	services: ElasticToolServiceStatus[];
-};
-
-export async function getElasticToolsStatus(): Promise<ElasticToolsStatusResponse> {
-	return apiFetch<ElasticToolsStatusResponse>(
-		"/api/system/elastic/tools/status",
-	);
-}
-
-export async function wakeElasticTools(): Promise<{
-	status: ElasticToolsStatusResponse;
-}> {
-	return apiFetch<{ status: ElasticToolsStatusResponse }>(
-		"/api/system/elastic/tools/wake",
-		{
-			method: "POST",
-			body: "{}",
-		},
-	);
-}
-
-export type UserAIGenerateRequest = {
-	provider?: "gemini";
-	kind: "netlab" | "containerlab";
-	prompt: string;
-	constraints?: string[];
-	seedTemplate?: string;
-	maxOutputTokens?: number;
-	temperature?: number;
-};
-
-export type UserAIGenerateResponse = {
-	id: string;
-	provider: string;
-	kind: string;
-	filename: string;
-	content: string;
-	warnings?: string[];
-	createdAt: string;
-};
-
-export type UserAIHistoryResponse = {
-	items: Array<{
-		id: string;
-		provider: string;
-		kind: string;
-		filename: string;
-		createdAt: string;
-	}>;
-};
-
-export async function generateUserAITemplate(
-	payload: UserAIGenerateRequest,
-	opts?: { signal?: AbortSignal },
-): Promise<UserAIGenerateResponse> {
-	return apiFetch<UserAIGenerateResponse>("/api/user/ai/generate", {
-		method: "POST",
-		body: JSON.stringify(payload),
-		signal: opts?.signal,
-	});
-}
-
-export async function getUserAIHistory(): Promise<UserAIHistoryResponse> {
-	return apiFetch<UserAIHistoryResponse>("/api/user/ai/history");
-}
-
-export type UserAISaveRequest = {
-	kind: "netlab" | "containerlab";
-	content: string;
-	pathHint?: string;
-	filename?: string;
-	message?: string;
-};
-
-export type UserAISaveResponse = {
-	workspaceId: string;
-	repo: string;
-	branch: string;
-	path: string;
-};
-
-export async function saveUserAITemplate(
-	payload: UserAISaveRequest,
-): Promise<UserAISaveResponse> {
-	return apiFetch<UserAISaveResponse>("/api/user/ai/save", {
-		method: "POST",
-		body: JSON.stringify(payload),
-	});
-}
-
+// Legacy endpoints used by the labs/designer UI. These are deterministic validators/autofixers
+// and do not call any AI provider.
 export type UserAIValidateRequest = {
 	kind: "netlab" | "containerlab";
 	content: string;
@@ -833,6 +704,40 @@ export async function autofixUserAITemplate(
 		method: "POST",
 		body: JSON.stringify(payload),
 	});
+}
+
+export type ElasticToolServiceStatus = {
+	id: "elasticsearch" | "kibana" | string;
+	kind: "statefulset" | "deployment" | string;
+	desiredReplicas: number;
+	availableReplicas: number;
+};
+
+export type ElasticToolsStatusResponse = {
+	enabled: boolean;
+	autosleepEnabled: boolean;
+	idleMinutes: number;
+	now: string;
+	lastActivityAt?: string;
+	services: ElasticToolServiceStatus[];
+};
+
+export async function getElasticToolsStatus(): Promise<ElasticToolsStatusResponse> {
+	return apiFetch<ElasticToolsStatusResponse>(
+		"/api/system/elastic/tools/status",
+	);
+}
+
+export async function wakeElasticTools(): Promise<{
+	status: ElasticToolsStatusResponse;
+}> {
+	return apiFetch<{ status: ElasticToolsStatusResponse }>(
+		"/api/system/elastic/tools/wake",
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
 }
 
 export type UserGitCredentialsResponse = {
@@ -887,6 +792,44 @@ export async function putUserSettings(payload: {
 	return apiFetch<UserSettingsResponse>("/api/user/settings", {
 		method: "PUT",
 		body: JSON.stringify(payload),
+	});
+}
+
+export type UserAPIToken = {
+	id: string;
+	name: string;
+	prefix: string;
+	usedCount: number;
+	createdAt: ISO8601;
+	lastUsedAt?: ISO8601;
+	revokedAt?: ISO8601;
+};
+
+export type ListUserAPITokensResponse = {
+	tokens: UserAPIToken[];
+};
+
+export type CreateUserAPITokenResponse = {
+	token: UserAPIToken;
+	secret: string;
+};
+
+export async function listUserApiTokens(): Promise<ListUserAPITokensResponse> {
+	return apiFetch<ListUserAPITokensResponse>("/api/user/api-tokens");
+}
+
+export async function createUserApiToken(payload: {
+	name?: string;
+}): Promise<CreateUserAPITokenResponse> {
+	return apiFetch<CreateUserAPITokenResponse>("/api/user/api-tokens", {
+		method: "POST",
+		body: JSON.stringify(payload ?? {}),
+	});
+}
+
+export async function revokeUserApiToken(tokenId: string): Promise<void> {
+	await apiFetch<void>(`/api/user/api-tokens/${encodeURIComponent(tokenId)}`, {
+		method: "DELETE",
 	});
 }
 
