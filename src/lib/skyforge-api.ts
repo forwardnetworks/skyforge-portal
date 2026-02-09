@@ -30,6 +30,7 @@ export type UserServiceNowConfigResponse = {
 	adminUsername?: string;
 	hasAdminPassword: boolean;
 	forwardCollectorConfigId?: string;
+	forwardCredentialId?: string;
 	forwardUsername?: string;
 	hasForwardPassword: boolean;
 	updatedAt?: ISO8601;
@@ -44,6 +45,7 @@ export type PutUserServiceNowConfigRequest = {
 	adminUsername: string;
 	adminPassword: string;
 	forwardCollectorConfigId?: string;
+	forwardCredentialId?: string;
 	forwardUsername?: string;
 	forwardPassword?: string;
 };
@@ -2951,6 +2953,29 @@ export async function putWorkspaceForwardConfig(
 	return apiFetch<PutWorkspaceForwardConfigResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward`,
 		{ method: "PUT", body: JSON.stringify(body) },
+	);
+}
+
+export type ApplyWorkspaceForwardCredentialSetRequest = {
+	credentialId: string;
+};
+
+export async function applyWorkspaceForwardCredentialSet(
+	workspaceId: string,
+	body: ApplyWorkspaceForwardCredentialSetRequest,
+): Promise<GetWorkspaceForwardConfigResponse> {
+	return apiFetch<GetWorkspaceForwardConfigResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward/apply-credential-set`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function deleteWorkspaceForwardConfig(
+	workspaceId: string,
+): Promise<GetWorkspaceForwardConfigResponse> {
+	return apiFetch<GetWorkspaceForwardConfigResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward`,
+		{ method: "DELETE" },
 	);
 }
 

@@ -204,6 +204,17 @@ function WorkspaceAccessPage() {
 						Policy Reports
 					</Button>
 					<Button
+						variant="outline"
+						onClick={() =>
+							navigate({
+								to: "/dashboard/workspaces/$workspaceId/integrations",
+								params: { workspaceId },
+							})
+						}
+					>
+						Integrations
+					</Button>
+					<Button
 						variant="destructive"
 						onClick={() => setDeleteOpen(true)}
 						disabled={save.isPending || del.isPending}

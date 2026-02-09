@@ -28,6 +28,7 @@ import {
 	getUserServiceNowSchemaStatus,
 	installUserServiceNowDemo,
 	listUserForwardCollectorConfigs,
+	listUserForwardCredentialSets,
 	putUserServiceNowConfig,
 	wakeUserServiceNowPdi,
 } from "../../lib/skyforge-api";
@@ -55,8 +56,9 @@ function ServiceNowPage() {
 	const [adminUsername, setAdminUsername] = useState("");
 	const [adminPassword, setAdminPassword] = useState("");
 	const [forwardCollectorConfigId, setForwardCollectorConfigId] = useState("");
+	const [forwardCredentialId, setForwardCredentialId] = useState("");
 	const [forwardCredSource, setForwardCredSource] = useState<
-		"collector" | "custom"
+		"collector" | "credentialSet" | "custom"
 	>("collector");
 	const [forwardUsername, setForwardUsername] = useState(""); // custom
 	const [forwardPassword, setForwardPassword] = useState(""); // custom
@@ -68,11 +70,14 @@ function ServiceNowPage() {
 		setInstanceUrl(cfg.instanceUrl ?? "");
 		setAdminUsername(cfg.adminUsername ?? "");
 		setForwardCollectorConfigId(cfg.forwardCollectorConfigId ?? "");
+		setForwardCredentialId(cfg.forwardCredentialId ?? "");
 		// Prefer using an existing collector by default; fall back to custom only
-		// when the user previously configured custom creds.
+		// when the user previously configured custom creds (or a credential set).
 		setForwardCredSource(
 			cfg.forwardCollectorConfigId
 				? "collector"
+				: cfg.forwardCredentialId
+					? "credentialSet"
 				: cfg.forwardUsername
 					? "custom"
 					: "collector",
@@ -89,6 +94,17 @@ function ServiceNowPage() {
 	const collectorOptions = useMemo(
 		() => collectorsQ.data?.collectors ?? [],
 		[collectorsQ.data],
+	);
+
+	const forwardCredentialSetsQ = useQuery({
+		queryKey: queryKeys.userForwardCredentialSets(),
+		queryFn: listUserForwardCredentialSets,
+		retry: false,
+		staleTime: 30_000,
+	});
+	const forwardCredentialSets = useMemo(
+		() => forwardCredentialSetsQ.data?.credentialSets ?? [],
+		[forwardCredentialSetsQ.data?.credentialSets],
 	);
 
 	useEffect(() => {
@@ -156,9 +172,13 @@ function ServiceNowPage() {
 			if (!adminUsername.trim())
 				throw new Error("ServiceNow admin username is required");
 			const isCollector = forwardCredSource === "collector";
+			const isCredSet = forwardCredSource === "credentialSet";
 			if (isCollector) {
 				if (!forwardCollectorConfigId.trim())
 					throw new Error("Select a Forward collector (or choose Custom)");
+			} else if (isCredSet) {
+				if (!forwardCredentialId.trim())
+					throw new Error("Select a credential set (or choose Custom)");
 			} else {
 				if (!forwardUsername.trim())
 					throw new Error("Forward username is required");
@@ -171,8 +191,9 @@ function ServiceNowPage() {
 				forwardCollectorConfigId: isCollector
 					? forwardCollectorConfigId.trim()
 					: "",
-				forwardUsername: isCollector ? "" : forwardUsername.trim(),
-				forwardPassword: isCollector ? "" : forwardPassword,
+				forwardCredentialId: isCredSet ? forwardCredentialId.trim() : "",
+				forwardUsername: isCollector || isCredSet ? "" : forwardUsername.trim(),
+				forwardPassword: isCollector || isCredSet ? "" : forwardPassword,
 			});
 		},
 		onSuccess: async () => {
@@ -495,41 +516,72 @@ function ServiceNowPage() {
 						</div>
 					</div>
 
-					<div className="space-y-2">
-						<Label>Forward credentials</Label>
-						<div className="text-xs text-muted-foreground">
-							Uses Forward SaaS (<code>https://fwd.app</code>).
-						</div>
-						<Select
-							value={
-								forwardCredSource === "custom"
-									? "custom"
-									: forwardCollectorConfigId || ""
-							}
-							onValueChange={(v) => {
-								if (v === "custom") {
-									setForwardCredSource("custom");
-									setForwardCollectorConfigId("");
-									return;
+						<div className="space-y-2">
+							<Label>Forward credentials</Label>
+							<div className="text-xs text-muted-foreground">
+								Uses Forward SaaS (<code>https://fwd.app</code>).
+							</div>
+							<Select
+								value={
+									forwardCredSource === "custom"
+										? "custom"
+										: forwardCredSource === "credentialSet"
+											? `credset:${forwardCredentialId || ""}`
+											: forwardCollectorConfigId || ""
 								}
-								setForwardCredSource("collector");
-								setForwardCollectorConfigId(v);
-							}}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select a collector" />
-							</SelectTrigger>
-							<SelectContent>
-								{collectorOptions.map((c) => (
-									<SelectItem key={c.id} value={c.id}>
-										{c.name}
-										{c.isDefault ? " (default)" : ""}
-									</SelectItem>
-								))}
-								<SelectItem value="custom">Custom…</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
+								onValueChange={(v) => {
+									if (v === "custom") {
+										setForwardCredSource("custom");
+										setForwardCollectorConfigId("");
+										setForwardCredentialId("");
+										return;
+									}
+									if (v.startsWith("credset:")) {
+										setForwardCredSource("credentialSet");
+										setForwardCollectorConfigId("");
+										setForwardCredentialId(v.replace(/^credset:/, ""));
+										return;
+									}
+									setForwardCredSource("collector");
+									setForwardCollectorConfigId(v);
+									setForwardCredentialId("");
+								}}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="Select a collector" />
+								</SelectTrigger>
+								<SelectContent>
+									{collectorOptions.map((c) => (
+										<SelectItem key={c.id} value={c.id}>
+											{c.name}
+											{c.isDefault ? " (default)" : ""}
+										</SelectItem>
+									))}
+									{forwardCredentialSets.length ? (
+										<>
+											{forwardCredentialSets.map((cs) => (
+												<SelectItem key={cs.id} value={`credset:${cs.id}`}>
+													Credential set: {cs.name}
+													{cs.username ? ` (${cs.username})` : ""}
+												</SelectItem>
+											))}
+										</>
+									) : null}
+									<SelectItem value="custom">Custom…</SelectItem>
+								</SelectContent>
+							</Select>
+							<div className="text-xs text-muted-foreground">
+								<a className="underline" href="/dashboard/forward">
+									Manage credential sets
+								</a>
+							</div>
+							{forwardCredentialSetsQ.isError ? (
+								<p className="text-xs text-destructive">
+									Failed to load credential sets:{" "}
+									{(forwardCredentialSetsQ.error as Error).message}
+								</p>
+							) : null}
+						</div>
 
 					{forwardCredSource === "custom" ? (
 						<div className="grid gap-4 md:grid-cols-2">

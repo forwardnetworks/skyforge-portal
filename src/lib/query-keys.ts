@@ -125,6 +125,8 @@ export const queryKeys = {
 	userIbmCredentials: () => ["userIbmCredentials"] as const,
 	userForwardCollectorConfigs: () => ["userForwardCollectorConfigs"] as const,
 	userForwardCredentialSets: () => ["userForwardCredentialSets"] as const,
+	workspaceForwardConfig: (workspaceId: string) =>
+		["workspaceForwardConfig", workspaceId] as const,
 	userForwardCollectorConfigRuntime: (id: string) =>
 		["userForwardCollectorConfigRuntime", id] as const,
 	userForwardCollectorConfigLogs: (id: string) =>
