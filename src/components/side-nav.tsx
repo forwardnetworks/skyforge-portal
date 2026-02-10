@@ -122,7 +122,7 @@ const items: NavItem[] = [
 			{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
 			{
 				label: "API Docs",
-				href: "/docs/",
+				href: "/redoc/",
 				icon: BookOpen,
 				external: true,
 			},
