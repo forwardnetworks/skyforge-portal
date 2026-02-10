@@ -52,6 +52,7 @@ import {
 	getUserIBMCredentials,
 	getUserServiceNowConfig,
 	getUserSettings,
+	listUserForwardCredentialSets,
 	listUserApiTokens,
 	listUserContainerlabServers,
 	listUserEveServers,
@@ -101,6 +102,12 @@ function UserSettingsPage() {
 		queryFn: listUserForwardCollectorConfigs,
 		staleTime: 10_000,
 	});
+	const forwardCredSetsQ = useQuery({
+		queryKey: queryKeys.userForwardCredentialSets(),
+		queryFn: listUserForwardCredentialSets,
+		staleTime: 10_000,
+		retry: false,
+	});
 
 	const settingsQ = useQuery({
 		queryKey: queryKeys.userSettings(),
@@ -109,6 +116,7 @@ function UserSettingsPage() {
 	});
 
 	const collectors = collectorsQ.data?.collectors ?? [];
+	const forwardCredentialSets = forwardCredSetsQ.data?.credentialSets ?? [];
 	const defaultCollectorId = useMemo(() => {
 		const explicit = settingsQ.data?.defaultForwardCollectorConfigId;
 		if (explicit) return explicit;
@@ -703,6 +711,21 @@ function UserSettingsPage() {
 										{collectors.length
 											? `${collectors.length} configured`
 											: "None configured"}
+									</div>
+								</div>
+								<Button asChild variant="outline">
+									<Link to="/dashboard/forward">Open</Link>
+								</Button>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<div className="min-w-0">
+									<div className="text-sm font-medium">Forward credentials</div>
+									<div className="text-sm text-muted-foreground">
+										{forwardCredSetsQ.isLoading
+											? "Loading…"
+											: forwardCredentialSets.length
+												? `${forwardCredentialSets.length} credential set(s)`
+												: "None configured"}
 									</div>
 								</div>
 								<Button asChild variant="outline">

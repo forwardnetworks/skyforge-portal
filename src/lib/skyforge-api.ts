@@ -272,7 +272,9 @@ export type DashboardSnapshot = {
 export { buildLoginUrl, SKYFORGE_API, SKYFORGE_PROXY_ROOT };
 
 export type SessionResponseEnvelope =
-	operations["GET:skyforge.Session"]["responses"][200]["content"]["application/json"];
+	operations["GET:skyforge.Session"]["responses"][200]["content"]["application/json"] & {
+		authProvider?: string;
+	};
 
 export async function getSession(): Promise<SessionResponseEnvelope> {
 	return apiFetch<SessionResponseEnvelope>("/api/session");

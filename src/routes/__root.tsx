@@ -138,6 +138,7 @@ function RootLayout() {
 	}, [location.pathname]);
 
 	const who = session.data?.displayName || session.data?.username || "";
+	const authProvider = String((session.data as any)?.authProvider ?? "").trim();
 	const isAdmin = !!session.data?.isAdmin;
 	const showLoginGate =
 		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
@@ -245,7 +246,7 @@ function RootLayout() {
 								<div className="flex items-center gap-3">
 									<div className="hidden md:flex flex-col items-end">
 										<span className="text-[10px] text-muted-foreground uppercase leading-none">
-											Signed in as
+											{authProvider ? `Signed in with ${authProvider}` : "Signed in as"}
 										</span>
 										<span className="text-xs font-medium leading-none mt-1">
 											{who}

@@ -88,7 +88,7 @@ function ForwardNetworksPage() {
 
 	const handleWorkspaceChange = (id: string) => {
 		void navigate({
-			search: { workspace: id === "__none__" ? "" : id } as any,
+			search: { workspace: id } as any,
 			replace: true,
 		});
 	};
@@ -241,7 +241,9 @@ function ForwardNetworksPage() {
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
 						<Select
-							value={selectedWorkspaceId || "__none__"}
+							// Avoid Radix Select crashing if the controlled value doesn't match
+							// an item (e.g. initial render before workspaces load).
+							value={selectedWorkspaceId || undefined}
 							onValueChange={handleWorkspaceChange}
 						>
 							<SelectTrigger className="w-[240px] h-8 bg-transparent border-0 focus:ring-0 shadow-none">
