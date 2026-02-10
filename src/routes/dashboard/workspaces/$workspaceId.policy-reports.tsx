@@ -2049,7 +2049,9 @@ function PolicyReportsPage() {
 		const id = addNetworkForwardId.trim();
 		if (!id) return "__none__";
 		if (
-			availableForwardNetworks.some((n: any) => String(n.id ?? "").trim() === id)
+			availableForwardNetworks.some(
+				(n: any) => String(n.id ?? "").trim() === id,
+			)
 		) {
 			return id;
 		}
@@ -2661,7 +2663,9 @@ function PolicyReportsPage() {
 								}
 								setNetworkId(v);
 							}}
-							disabled={embedded && Boolean(String(forwardNetworkId ?? "").trim())}
+							disabled={
+								embedded && Boolean(String(forwardNetworkId ?? "").trim())
+							}
 						>
 							<SelectTrigger>
 								<SelectValue placeholder="Select a network" />
@@ -2670,7 +2674,7 @@ function PolicyReportsPage() {
 								<SelectItem value="__none__">(Select)</SelectItem>
 								{forwardNetworksList.map((n) => (
 									<SelectItem
-										key={String(n.networkRef ?? n.forwardNetworkId)}
+										key={String((n as any).id ?? n.forwardNetworkId)}
 										value={String(n.forwardNetworkId ?? "")}
 									>
 										{String(n.name ?? n.forwardNetworkId)}
@@ -2678,7 +2682,9 @@ function PolicyReportsPage() {
 								))}
 								{availableForwardNetworks.map((n: any) => (
 									<SelectItem key={String(n.id)} value={String(n.id)}>
-										{n.name ? `${String(n.name)} (${String(n.id)})` : String(n.id)}
+										{n.name
+											? `${String(n.name)} (${String(n.id)})`
+											: String(n.id)}
 									</SelectItem>
 								))}
 								<SelectItem value="__custom__">Custom network id…</SelectItem>
@@ -6579,10 +6585,14 @@ function PolicyReportsPage() {
 										<SelectItem value="__none__">(Select)</SelectItem>
 										{availableForwardNetworks.map((n: any) => (
 											<SelectItem key={String(n.id)} value={String(n.id)}>
-												{n.name ? `${String(n.name)} (${String(n.id)})` : String(n.id)}
+												{n.name
+													? `${String(n.name)} (${String(n.id)})`
+													: String(n.id)}
 											</SelectItem>
 										))}
-										<SelectItem value="__custom__">Custom network id…</SelectItem>
+										<SelectItem value="__custom__">
+											Custom network id…
+										</SelectItem>
 									</SelectContent>
 								</Select>
 								{addNetworkForwardIdSelectValue === "__custom__" ? (

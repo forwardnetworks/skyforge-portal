@@ -44,6 +44,7 @@ import {
 	deleteUserAzureCredentials,
 	deleteUserContainerlabServer,
 	deleteUserEveServer,
+	deleteUserForwardCredentialSet,
 	deleteUserGCPCredentials,
 	deleteUserIBMCredentials,
 	deleteUserNetlabServer,
@@ -294,6 +295,36 @@ function UserSettingsPage() {
 		},
 		onError: (err: any) =>
 			toast.error("Failed to save Forward account", {
+				description: String(err?.message ?? err),
+			}),
+	});
+
+	const deleteForwardCredentialSetM = useMutation({
+		mutationFn: async (id: string) => deleteUserForwardCredentialSet(id),
+		onSuccess: async () => {
+			// Clear selection and form defaults; user still needs to hit Save for settings.
+			form.setValue("defaultForwardCredentialId", "", {
+				shouldDirty: true,
+				shouldTouch: true,
+				shouldValidate: true,
+			});
+			form.setValue("defaultForwardNetworkId", "", {
+				shouldDirty: true,
+				shouldTouch: true,
+				shouldValidate: true,
+			});
+			setForwardBaseUrl("https://fwd.app");
+			setForwardSkipTlsVerify(false);
+			setForwardUsername("");
+			setForwardPassword("");
+			setForwardTouched(false);
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardCredentialSets(),
+			});
+			toast.success("Forward credential set deleted");
+		},
+		onError: (err: any) =>
+			toast.error("Failed to delete Forward credential set", {
 				description: String(err?.message ?? err),
 			}),
 	});
@@ -848,7 +879,9 @@ function UserSettingsPage() {
 									</div>
 								</div>
 								<Button asChild variant="outline">
-									<Link to="/dashboard/forward">Open</Link>
+									<Link to="/dashboard/settings" hash="forward-account">
+										Manage
+									</Link>
 								</Button>
 							</div>
 
@@ -868,7 +901,7 @@ function UserSettingsPage() {
 						</CardContent>
 					</Card>
 
-					<Card>
+					<Card id="forward-account">
 						<CardHeader>
 							<CardTitle>Forward account</CardTitle>
 						</CardHeader>
@@ -880,7 +913,38 @@ function UserSettingsPage() {
 							</div>
 
 							<div className="space-y-2">
-								<div className="text-sm font-medium">Credential set</div>
+								<div className="flex items-center justify-between gap-3">
+									<div className="text-sm font-medium">Credential set</div>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										disabled={
+											!selectedForwardCredentialId ||
+											deleteForwardCredentialSetM.isPending
+										}
+										onClick={() => {
+											if (!selectedForwardCredentialId) return;
+											const cs: any = selectedForwardCredentialSet;
+											const name = String(
+												cs?.name ?? selectedForwardCredentialId,
+											);
+											if (
+												!confirm(
+													`Delete Forward credential set "${name}"? This cannot be undone.`,
+												)
+											) {
+												return;
+											}
+											deleteForwardCredentialSetM.mutate(
+												selectedForwardCredentialId,
+											);
+										}}
+									>
+										<Trash2 className="h-4 w-4 mr-2" />
+										Delete
+									</Button>
+								</div>
 								<Select
 									value={selectedForwardCredentialId || "none"}
 									onValueChange={(v) => {

@@ -121,6 +121,12 @@ const items: NavItem[] = [
 			{ label: "Syslog", href: "/syslog", icon: Inbox },
 			{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
 			{
+				label: "API Docs",
+				href: "/docs/",
+				icon: BookOpen,
+				external: true,
+			},
+			{
 				label: "API Testing",
 				href: `${SKYFORGE_API}/yaade/sso`,
 				icon: PanelTop,

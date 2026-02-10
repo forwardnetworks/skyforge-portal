@@ -39,7 +39,12 @@ import {
 } from "../../../lib/skyforge-api";
 
 const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
+	// Be defensive: TanStack Router can hand us `unknown` search values, including
+	// empty strings or arrays. Normalize to a trimmed string or `undefined`.
+	workspace: z.preprocess(
+		(v) => (typeof v === "string" ? v.trim() : undefined),
+		z.string().min(1).optional(),
+	),
 });
 
 export const Route = createFileRoute("/dashboard/forward-networks/")({
@@ -71,21 +76,34 @@ function ForwardNetworksPage() {
 		[workspacesQ.data?.workspaces],
 	);
 
-	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
-		String(workspace ?? ""),
-	);
-
 	useEffect(() => {
-		if (selectedWorkspaceId) return;
+		// Treat the URL search param as the single source of truth.
+		// If the URL didn't specify a workspace (or specified an invalid one),
+		// pick the first workspace and persist it into the URL.
+		//
+		// This keeps the page stable even if a user opens /forward-networks with a
+		// stale bookmark, and avoids update-depth loops in controlled selects.
+		const urlWorkspaceId = String(workspace ?? "").trim();
 		if (workspaces.length === 0) return;
-		setSelectedWorkspaceId(String(workspaces[0]?.id ?? ""));
-	}, [selectedWorkspaceId, workspaces]);
+		const isValid =
+			!!urlWorkspaceId && workspaces.some((w) => String(w.id) === urlWorkspaceId);
+		const nextId = isValid ? urlWorkspaceId : String(workspaces[0]?.id ?? "");
+		if (!nextId) return;
+		if (urlWorkspaceId === nextId) return;
+		void navigate({
+			search: { workspace: nextId } as any,
+			replace: true,
+		});
+	}, [workspace, workspaces, navigate]);
 
-	useEffect(() => {
-		const w = String(workspace ?? "");
-		if (w === selectedWorkspaceId) return;
-		setSelectedWorkspaceId(w);
-	}, [workspace, selectedWorkspaceId]);
+	const selectedWorkspaceId = useMemo(() => {
+		const id = String(workspace ?? "").trim();
+		if (!id) return "";
+		// If workspaces are loaded and this workspace isn't present, treat as unset.
+		if (workspaces.length > 0 && !workspaces.some((w) => String(w.id) === id))
+			return "";
+		return id;
+	}, [workspace, workspaces]);
 
 	const handleWorkspaceChange = (id: string) => {
 		void navigate({
@@ -170,7 +188,9 @@ function ForwardNetworksPage() {
 		const id = forwardNetworkId.trim();
 		if (!id) return "__none__";
 		if (
-			availableForwardNetworks.some((n: any) => String(n.id ?? "").trim() === id)
+			availableForwardNetworks.some(
+				(n: any) => String(n.id ?? "").trim() === id,
+			)
 		) {
 			return id;
 		}
@@ -362,10 +382,14 @@ function ForwardNetworksPage() {
 										<SelectItem value="__none__">(Select)</SelectItem>
 										{availableForwardNetworks.map((n: any) => (
 											<SelectItem key={String(n.id)} value={String(n.id)}>
-												{n.name ? `${String(n.name)} (${String(n.id)})` : String(n.id)}
+												{n.name
+													? `${String(n.name)} (${String(n.id)})`
+													: String(n.id)}
 											</SelectItem>
 										))}
-										<SelectItem value="__custom__">Custom network id…</SelectItem>
+										<SelectItem value="__custom__">
+											Custom network id…
+										</SelectItem>
 									</SelectContent>
 								</Select>
 								<Button
@@ -375,7 +399,9 @@ function ForwardNetworksPage() {
 									onClick={() => void availableForwardNetworksQ.refetch()}
 									disabled={availableForwardNetworksQ.isFetching}
 								>
-									{availableForwardNetworksQ.isFetching ? "Refreshing…" : "Refresh"}
+									{availableForwardNetworksQ.isFetching
+										? "Refreshing…"
+										: "Refresh"}
 								</Button>
 							</div>
 							{forwardNetworkSelectValue === "__custom__" ? (

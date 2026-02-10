@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "../../components/ui/badge";
@@ -26,9 +26,7 @@ import {
 	type ForwardCredentialSetSummary,
 	type UserForwardCollectorConfigSummary,
 	createUserForwardCollectorConfig,
-	createUserForwardCredentialSet,
 	deleteUserForwardCollectorConfig,
-	deleteUserForwardCredentialSet,
 	getUserForwardCollectorConfigLogs,
 	getUserGitCredentials,
 	listUserForwardCollectorConfigs,
@@ -39,16 +37,6 @@ import {
 export const Route = createFileRoute("/dashboard/forward")({
 	component: ForwardCollectorPage,
 });
-
-type ForwardTarget = "cloud" | "onprem";
-
-function normalizeBaseURL(target: ForwardTarget, onPremHost: string): string {
-	if (target === "cloud") return "https://fwd.app";
-	const raw = onPremHost.trim();
-	if (!raw) return "";
-	if (/^https?:\/\//i.test(raw)) return raw;
-	return `https://${raw}`;
-}
 
 function ForwardCollectorPage() {
 	const queryClient = useQueryClient();
@@ -79,16 +67,11 @@ function ForwardCollectorPage() {
 		retry: false,
 	});
 
-	const [target, setTarget] = useState<ForwardTarget>("cloud");
-	const [onPremHost, setOnPremHost] = useState("");
-	const [skipTlsVerify, setSkipTlsVerify] = useState(true);
 	const [collectorName, setCollectorName] = useState("");
 	const [collectorNameTouched, setCollectorNameTouched] = useState(false);
-	const [username, setUsername] = useState("");
-	const [password, setPassword] = useState("");
 	const [setDefault, setSetDefault] = useState(true);
 	const [sourceCredentialSetId, setSourceCredentialSetId] =
-		useState<string>("manual");
+		useState<string>("");
 
 	const userGitQ = useQuery({
 		queryKey: queryKeys.userGitCredentials(),
@@ -96,11 +79,6 @@ function ForwardCollectorPage() {
 		staleTime: 60_000,
 		retry: false,
 	});
-
-	useEffect(() => {
-		if (target === "cloud") setSkipTlsVerify(false);
-		else setSkipTlsVerify(true);
-	}, [target]);
 
 	const credentialSetsQ = useQuery({
 		queryKey: credentialSetsKey,
@@ -114,8 +92,15 @@ function ForwardCollectorPage() {
 				[]) as ForwardCredentialSetSummary[],
 		[credentialSetsQ.data?.credentialSets],
 	);
+
+	useEffect(() => {
+		if (sourceCredentialSetId) return;
+		if (credentialSets.length === 0) return;
+		setSourceCredentialSetId(String(credentialSets[0]?.id ?? ""));
+	}, [sourceCredentialSetId, credentialSets]);
+
 	const selectedSourceCredentialSet = useMemo(() => {
-		if (sourceCredentialSetId === "manual") return null;
+		if (!sourceCredentialSetId) return null;
 		return (
 			credentialSets.find(
 				(cs) => String(cs.id) === String(sourceCredentialSetId),
@@ -124,26 +109,9 @@ function ForwardCollectorPage() {
 	}, [credentialSets, sourceCredentialSetId]);
 
 	useEffect(() => {
-		if (sourceCredentialSetId === "manual") return;
 		const cs = selectedSourceCredentialSet;
 		if (!cs) return;
-		const baseUrl = String(cs.baseUrl ?? "").trim() || "https://fwd.app";
-		if (baseUrl === "https://fwd.app" || /fwd\.app\s*$/i.test(baseUrl)) {
-			setTarget("cloud");
-			setOnPremHost("");
-		} else {
-			setTarget("onprem");
-			try {
-				const u = new URL(baseUrl);
-				setOnPremHost(u.host);
-			} catch {
-				setOnPremHost(baseUrl.replace(/^https?:\/\//i, ""));
-			}
-		}
-		setSkipTlsVerify(Boolean(cs.skipTlsVerify));
-		setUsername("");
-		setPassword("");
-	}, [selectedSourceCredentialSet, sourceCredentialSetId]);
+	}, [selectedSourceCredentialSet]);
 
 	useEffect(() => {
 		if (collectorNameTouched) return;
@@ -157,41 +125,28 @@ function ForwardCollectorPage() {
 		mutationFn: async () => {
 			const name = collectorName.trim();
 			if (!name) throw new Error("Collector name is required");
+			if (!selectedSourceCredentialSet)
+				throw new Error("Select a credential set in Settings");
+			if (!selectedSourceCredentialSet.hasPassword)
+				throw new Error("Selected credential set has no stored password");
+
 			const baseUrl =
-				selectedSourceCredentialSet?.baseUrl?.trim() ||
-				normalizeBaseURL(target, onPremHost);
+				String(selectedSourceCredentialSet?.baseUrl ?? "").trim() ||
+				"https://fwd.app";
 			if (!baseUrl) throw new Error("Forward URL is required");
 
-			if (sourceCredentialSetId !== "manual") {
-				if (!selectedSourceCredentialSet)
-					throw new Error("Selected credential set not found");
-				if (!selectedSourceCredentialSet.hasPassword)
-					throw new Error("Selected credential set has no stored password");
-				return createUserForwardCollectorConfig({
-					name,
-					baseUrl,
-					skipTlsVerify: Boolean(selectedSourceCredentialSet.skipTlsVerify),
-					username: "",
-					password: "",
-					setDefault,
-					sourceCredentialId: selectedSourceCredentialSet.id,
-				});
-			}
-
-			if (!username.trim() || !password.trim())
-				throw new Error("Forward username/password are required");
 			return createUserForwardCollectorConfig({
 				name,
 				baseUrl,
-				skipTlsVerify: target === "onprem" ? skipTlsVerify : false,
-				username: username.trim(),
-				password,
+				skipTlsVerify: Boolean(selectedSourceCredentialSet.skipTlsVerify),
+				username: "",
+				password: "",
 				setDefault,
+				sourceCredentialId: selectedSourceCredentialSet.id,
 			});
 		},
 		onSuccess: async () => {
 			toast.success("Collector created");
-			setPassword("");
 			await queryClient.invalidateQueries({ queryKey: collectorsKey });
 		},
 		onError: (e) =>
@@ -256,53 +211,6 @@ function ForwardCollectorPage() {
 			}),
 	});
 
-	// Credential set create/delete
-	const [csName, setCsName] = useState("");
-	const [csBaseUrl, setCsBaseUrl] = useState("https://fwd.app");
-	const [csSkipTlsVerify, setCsSkipTlsVerify] = useState(false);
-	const [csUsername, setCsUsername] = useState("");
-	const [csPassword, setCsPassword] = useState("");
-
-	const createCredSetMutation = useMutation({
-		mutationFn: async () => {
-			const name = csName.trim();
-			if (!name) throw new Error("Name is required");
-			const baseUrl = csBaseUrl.trim();
-			if (!baseUrl) throw new Error("Forward URL is required");
-			const u = csUsername.trim();
-			if (!u) throw new Error("Username is required");
-			if (!csPassword.trim()) throw new Error("Password is required");
-			return createUserForwardCredentialSet({
-				name,
-				baseUrl,
-				skipTlsVerify: csSkipTlsVerify,
-				username: u,
-				password: csPassword,
-			});
-		},
-		onSuccess: async () => {
-			toast.success("Credential set created");
-			setCsPassword("");
-			await queryClient.invalidateQueries({ queryKey: credentialSetsKey });
-		},
-		onError: (e) =>
-			toast.error("Failed to create credential set", {
-				description: (e as Error).message,
-			}),
-	});
-
-	const deleteCredSetMutation = useMutation({
-		mutationFn: async (id: string) => deleteUserForwardCredentialSet(id),
-		onSuccess: async () => {
-			toast.success("Credential set deleted");
-			await queryClient.invalidateQueries({ queryKey: credentialSetsKey });
-		},
-		onError: (e) =>
-			toast.error("Failed to delete credential set", {
-				description: (e as Error).message,
-			}),
-	});
-
 	return (
 		<div className="p-6 space-y-6">
 			<div className="flex items-start justify-between gap-4">
@@ -327,18 +235,18 @@ function ForwardCollectorPage() {
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="space-y-2">
-						<Label>Use credential set (optional)</Label>
+						<Label>Credential set</Label>
 						<Select
-							value={sourceCredentialSetId}
-							onValueChange={setSourceCredentialSetId}
+							value={sourceCredentialSetId || "__none__"}
+							onValueChange={(v) =>
+								setSourceCredentialSetId(v === "__none__" ? "" : v)
+							}
 						>
 							<SelectTrigger>
-								<SelectValue placeholder="Manual" />
+								<SelectValue placeholder="Select a credential set" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="manual">
-									Manual (enter username/password)
-								</SelectItem>
+								<SelectItem value="__none__">(Select)</SelectItem>
 								{credentialSets.map((cs) => (
 									<SelectItem key={cs.id} value={cs.id}>
 										{cs.name}
@@ -347,13 +255,17 @@ function ForwardCollectorPage() {
 								))}
 							</SelectContent>
 						</Select>
-						{sourceCredentialSetId !== "manual" ? (
-							<p className="text-xs text-muted-foreground">
-								Skyforge will use the selected credential set to create the
-								Forward collector, and will save a separate credential set for
-								the created collector.
-							</p>
-						) : null}
+						<div className="text-xs text-muted-foreground">
+							Manage credential sets in{" "}
+							<Link
+								className="underline"
+								to="/dashboard/settings"
+								hash="forward-account"
+							>
+								Settings
+							</Link>
+							.
+						</div>
 						{credentialSetsQ.isError ? (
 							<p className="text-xs text-destructive">
 								Failed to load credential sets:{" "}
@@ -374,76 +286,6 @@ function ForwardCollectorPage() {
 						/>
 					</div>
 
-					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label>Forward target</Label>
-							<Select
-								value={target}
-								onValueChange={(v) => setTarget(v as ForwardTarget)}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="cloud">fwd.app (cloud)</SelectItem>
-									<SelectItem value="onprem">on-prem</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						{target === "onprem" ? (
-							<div className="space-y-2">
-								<Label>On-prem host</Label>
-								<Input
-									value={onPremHost}
-									onChange={(e) => setOnPremHost(e.target.value)}
-									placeholder="forward.example.com (:port)"
-									disabled={sourceCredentialSetId !== "manual"}
-								/>
-							</div>
-						) : null}
-					</div>
-
-					{target === "onprem" ? (
-						<div className="flex items-center gap-2">
-							<Checkbox
-								checked={skipTlsVerify}
-								onCheckedChange={(v) => setSkipTlsVerify(Boolean(v))}
-								disabled={sourceCredentialSetId !== "manual"}
-							/>
-							<Label className="text-sm">Skip TLS verification</Label>
-						</div>
-					) : null}
-
-					{sourceCredentialSetId === "manual" ? (
-						<div className="grid gap-4 md:grid-cols-2">
-							<div className="space-y-2">
-								<Label>Forward username</Label>
-								<Input
-									value={username}
-									onChange={(e) => setUsername(e.target.value)}
-									placeholder="you@company.com"
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label>Forward password</Label>
-								<Input
-									type="password"
-									value={password}
-									onChange={(e) => setPassword(e.target.value)}
-									placeholder="••••••••"
-								/>
-							</div>
-						</div>
-					) : (
-						<div className="text-sm text-muted-foreground">
-							Using{" "}
-							<span className="font-mono">
-								{selectedSourceCredentialSet?.username ?? "(unknown user)"}
-							</span>{" "}
-							from the selected credential set.
-						</div>
-					)}
-
 					<div className="flex items-center gap-2">
 						<Checkbox
 							checked={setDefault}
@@ -456,139 +298,12 @@ function ForwardCollectorPage() {
 						onClick={() => createMutation.mutate()}
 						disabled={
 							createMutation.isPending ||
-							(sourceCredentialSetId !== "manual" &&
-								(!selectedSourceCredentialSet ||
-									!selectedSourceCredentialSet.hasPassword))
+							!selectedSourceCredentialSet ||
+							!selectedSourceCredentialSet.hasPassword
 						}
 					>
 						{createMutation.isPending ? "Creating…" : "Create"}
 					</Button>
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Credential sets</CardTitle>
-					<CardDescription>
-						Reusable Forward API credential sets. Stored encrypted. Use them for
-						Policy Reports, collector creation, and other Forward-backed
-						features.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label>Name</Label>
-							<Input
-								value={csName}
-								onChange={(e) => setCsName(e.target.value)}
-								placeholder="demo-forward"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Forward URL</Label>
-							<Input
-								value={csBaseUrl}
-								onChange={(e) => setCsBaseUrl(e.target.value)}
-								placeholder="https://fwd.app"
-							/>
-						</div>
-					</div>
-
-					<div className="flex items-center gap-2">
-						<Checkbox
-							checked={csSkipTlsVerify}
-							onCheckedChange={(v) => setCsSkipTlsVerify(Boolean(v))}
-						/>
-						<Label className="text-sm">Skip TLS verification</Label>
-					</div>
-
-					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label>Forward username</Label>
-							<Input
-								value={csUsername}
-								onChange={(e) => setCsUsername(e.target.value)}
-								placeholder="you@company.com"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Forward password</Label>
-							<Input
-								type="password"
-								value={csPassword}
-								onChange={(e) => setCsPassword(e.target.value)}
-								placeholder="••••••••"
-							/>
-						</div>
-					</div>
-
-					<Button
-						onClick={() => createCredSetMutation.mutate()}
-						disabled={createCredSetMutation.isPending}
-					>
-						{createCredSetMutation.isPending
-							? "Creating…"
-							: "Create credential set"}
-					</Button>
-
-					<div className="space-y-2 pt-2">
-						<div className="text-sm font-medium">Saved credential sets</div>
-						{credentialSetsQ.isLoading ? (
-							<div className="text-sm text-muted-foreground">Loading…</div>
-						) : null}
-						{credentialSetsQ.isError ? (
-							<div className="text-sm text-destructive">
-								Failed to load credential sets.
-							</div>
-						) : credentialSets.length === 0 ? (
-							<div className="text-sm text-muted-foreground">
-								No credential sets saved yet.
-							</div>
-						) : null}
-
-						{credentialSets.map((cs) => (
-							<div
-								key={cs.id}
-								className="rounded-md border p-3 flex items-start justify-between gap-3"
-							>
-								<div className="min-w-0">
-									<div className="font-medium truncate">{cs.name}</div>
-									<div className="text-xs text-muted-foreground">
-										<span className="font-mono">{cs.username ?? ""}</span>
-										{cs.baseUrl ? (
-											<>
-												{" "}
-												{"·"} <span className="font-mono">{cs.baseUrl}</span>
-											</>
-										) : null}
-									</div>
-									<div className="text-xs text-muted-foreground font-mono truncate">
-										{cs.id}
-									</div>
-								</div>
-								<div className="flex items-center gap-2">
-									{cs.hasPassword ? (
-										<Badge variant="secondary">stored</Badge>
-									) : (
-										<Badge variant="destructive">missing</Badge>
-									)}
-									<Button
-										variant="destructive"
-										size="sm"
-										onClick={() => {
-											if (!confirm(`Delete credential set "${cs.name}"?`))
-												return;
-											deleteCredSetMutation.mutate(cs.id);
-										}}
-										disabled={deleteCredSetMutation.isPending}
-									>
-										Delete
-									</Button>
-								</div>
-							</div>
-						))}
-					</div>
 				</CardContent>
 			</Card>
 
