@@ -64,14 +64,14 @@ import {
 	type PolicyReportNQEResponse,
 	type PolicyReportPack,
 	type PolicyReportPackDeltaResponse,
+	type PolicyReportPathQuery,
+	type PolicyReportPreset,
 	type PolicyReportRecertAssignment,
 	type PolicyReportRecertCampaignWithCounts,
-	type PolicyReportPathQuery,
 	type PolicyReportRun,
 	type PolicyReportRunCheck,
 	type PolicyReportRunFinding,
 	type PolicyReportRunPackResponse,
-	type PolicyReportPreset,
 	type PolicyReportZone,
 	approveWorkspacePolicyReportException,
 	attestWorkspacePolicyReportRecertAssignment,
@@ -82,9 +82,9 @@ import {
 	createWorkspacePolicyReportRecertCampaign,
 	createWorkspacePolicyReportRun,
 	createWorkspacePolicyReportZone,
-	deleteWorkspacePolicyReportPreset,
 	deleteWorkspacePolicyReportForwardNetwork,
 	deleteWorkspacePolicyReportForwardNetworkCredentials,
+	deleteWorkspacePolicyReportPreset,
 	deleteWorkspacePolicyReportZone,
 	generateWorkspacePolicyReportRecertAssignments,
 	getWorkspacePolicyReportCheck,
@@ -93,25 +93,25 @@ import {
 	getWorkspacePolicyReportPacks,
 	getWorkspacePolicyReportRun,
 	getWorkspacePolicyReportSnapshots,
+	listUserForwardCredentialSets,
 	listWorkspacePolicyReportExceptions,
 	listWorkspacePolicyReportFindings,
 	listWorkspacePolicyReportForwardNetworks,
+	listWorkspacePolicyReportPresets,
 	listWorkspacePolicyReportRecertAssignments,
 	listWorkspacePolicyReportRecertCampaigns,
 	listWorkspacePolicyReportRunFindings,
 	listWorkspacePolicyReportRuns,
-	listWorkspacePolicyReportPresets,
 	listWorkspacePolicyReportZones,
-	listUserForwardCredentialSets,
 	putWorkspacePolicyReportForwardNetworkCredentials,
 	rejectWorkspacePolicyReportException,
-	runWorkspacePolicyReportPreset,
 	runWorkspacePolicyReportCheck,
 	runWorkspacePolicyReportPack,
 	runWorkspacePolicyReportPackDelta,
 	runWorkspacePolicyReportPathsEnforcementBypass,
-	storeWorkspacePolicyReportPathsEnforcementBypass,
+	runWorkspacePolicyReportPreset,
 	simulateWorkspacePolicyReportChangePlanning,
+	storeWorkspacePolicyReportPathsEnforcementBypass,
 	waiveWorkspacePolicyReportRecertAssignment,
 } from "../../../lib/skyforge-api";
 
@@ -304,19 +304,19 @@ function isListType(paramType: string | undefined): boolean {
 	return t.startsWith("list<") || t.startsWith("list[") || t.endsWith("[]");
 }
 
-	function PolicyReportsPage() {
-		const { workspaceId } = Route.useParams();
-		const {
-			embed,
-			forwardNetworkId,
-			snapshotId: snapshotFromSearch,
-			flows,
-			tab,
-		} = Route.useSearch();
-		const embedded =
-			String(embed ?? "").trim() === "1" ||
-			String(embed ?? "")
-				.trim()
+function PolicyReportsPage() {
+	const { workspaceId } = Route.useParams();
+	const {
+		embed,
+		forwardNetworkId,
+		snapshotId: snapshotFromSearch,
+		flows,
+		tab,
+	} = Route.useSearch();
+	const embedded =
+		String(embed ?? "").trim() === "1" ||
+		String(embed ?? "")
+			.trim()
 			.toLowerCase() === "true";
 
 	const [networkId, setNetworkId] = useState("");
@@ -391,35 +391,37 @@ function isListType(paramType: string | undefined): boolean {
 	>("flow");
 
 	// Embedded mode: allow deep-linking into a pre-scoped view.
-		useEffect(() => {
-			if (!embedded) return;
-			const net = String(forwardNetworkId ?? "").trim();
-			const snap = String(snapshotFromSearch ?? "").trim();
-			const ft = String(flows ?? "");
-			const requestedTab = String(tab ?? "").trim().toLowerCase();
+	useEffect(() => {
+		if (!embedded) return;
+		const net = String(forwardNetworkId ?? "").trim();
+		const snap = String(snapshotFromSearch ?? "").trim();
+		const ft = String(flows ?? "");
+		const requestedTab = String(tab ?? "")
+			.trim()
+			.toLowerCase();
 
-			if (net) setNetworkId(net);
-			if (snap) setSnapshotId(snap);
-			if (ft.trim()) setIntentFlowsText(ft);
-			const allowed = new Set([
-				"flow",
-				"intent",
-				"segmentation",
-				"checks",
-				"packs",
-				"runs",
-				"presets",
-				"deltas",
-				"governance",
-				"change",
-			]);
-			if (requestedTab && allowed.has(requestedTab)) {
-				setActiveTab(requestedTab as any);
-			} else {
-				// Default to the "intent" tab since it includes Paths Assurance.
-				setActiveTab("intent");
-			}
-		}, [embedded, forwardNetworkId, snapshotFromSearch, flows, tab]);
+		if (net) setNetworkId(net);
+		if (snap) setSnapshotId(snap);
+		if (ft.trim()) setIntentFlowsText(ft);
+		const allowed = new Set([
+			"flow",
+			"intent",
+			"segmentation",
+			"checks",
+			"packs",
+			"runs",
+			"presets",
+			"deltas",
+			"governance",
+			"change",
+		]);
+		if (requestedTab && allowed.has(requestedTab)) {
+			setActiveTab(requestedTab as any);
+		} else {
+			// Default to the "intent" tab since it includes Paths Assurance.
+			setActiveTab("intent");
+		}
+	}, [embedded, forwardNetworkId, snapshotFromSearch, flows, tab]);
 	const [resultsByCheck, setResultsByCheck] = useState<
 		Record<string, PolicyReportNQEResponse>
 	>({});
@@ -630,8 +632,7 @@ function isListType(paramType: string | undefined): boolean {
 	const selectedForwardCredentialSet = useMemo(() => {
 		if (credsCredentialSetMode === "custom") return null;
 		return (
-			forwardCredentialSets.find((c) => c.id === credsCredentialSetMode) ??
-			null
+			forwardCredentialSets.find((c) => c.id === credsCredentialSetMode) ?? null
 		);
 	}, [credsCredentialSetMode, forwardCredentialSets]);
 
@@ -1267,13 +1268,17 @@ function isListType(paramType: string | undefined): boolean {
 					throw new Error("Selected credential set not found");
 				if (!selectedForwardCredentialSet.hasPassword)
 					throw new Error("Selected credential set has no stored password");
-				return putWorkspacePolicyReportForwardNetworkCredentials(workspaceId, net, {
-					credentialId: credsCredentialSetMode,
-					baseUrl: baseUrl || "https://fwd.app",
-					skipTlsVerify: credsSkipTLSVerify,
-					username: username || selectedForwardCredentialSet.username || "",
-					password: undefined,
-				});
+				return putWorkspacePolicyReportForwardNetworkCredentials(
+					workspaceId,
+					net,
+					{
+						credentialId: credsCredentialSetMode,
+						baseUrl: baseUrl || "https://fwd.app",
+						skipTlsVerify: credsSkipTLSVerify,
+						username: username || selectedForwardCredentialSet.username || "",
+						password: undefined,
+					},
+				);
 			}
 
 			if (!baseUrl) throw new Error("Forward URL is required");

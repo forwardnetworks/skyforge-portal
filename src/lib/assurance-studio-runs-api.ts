@@ -1,5 +1,5 @@
-import { apiFetch } from "./http";
 import type { AssuranceScenarioSpec } from "./assurance-studio-api";
+import { apiFetch } from "./http";
 
 export type AssuranceStudioRun = {
 	id: string;

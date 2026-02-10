@@ -6,7 +6,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "../../../components/ui/card";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type ForwardAssuranceSummaryResponse,
@@ -35,7 +40,7 @@ function fmtRFC3339(s: string | undefined): string {
 }
 
 function fmtAgeSeconds(ageSeconds: number | undefined): string {
-	const s = Number(ageSeconds ?? NaN);
+	const s = Number(ageSeconds ?? Number.NaN);
 	if (!Number.isFinite(s) || s < 0) return "—";
 	const mins = Math.floor(s / 60);
 	const hrs = Math.floor(mins / 60);
@@ -45,7 +50,7 @@ function fmtAgeSeconds(ageSeconds: number | undefined): string {
 }
 
 function toPct01(v: number | undefined): string {
-	const n = Number(v ?? NaN);
+	const n = Number(v ?? Number.NaN);
 	if (!Number.isFinite(n)) return "—";
 	return `${(n * 100).toFixed(1)}%`;
 }
@@ -90,7 +95,8 @@ function ForwardNetworkAssurancePage() {
 
 	const historyQ = useQuery({
 		queryKey: queryKeys.forwardNetworkAssuranceHistory(workspaceId, networkRef),
-		queryFn: () => listForwardNetworkAssuranceHistory(workspaceId, networkRef, "20"),
+		queryFn: () =>
+			listForwardNetworkAssuranceHistory(workspaceId, networkRef, "20"),
 		enabled: Boolean(workspaceId && networkRef),
 		staleTime: 10_000,
 		retry: false,
@@ -262,14 +268,16 @@ function ForwardNetworkAssurancePage() {
 								</Badge>
 							</div>
 							<div className="text-xs text-muted-foreground pt-1">
-								pathSearch={summary.indexingHealth.pathSearchIndexingStatus || "—"}
+								pathSearch=
+								{summary.indexingHealth.pathSearchIndexingStatus || "—"}
 							</div>
 							<div className="text-xs text-muted-foreground">
 								search={summary.indexingHealth.searchIndexingStatus || "—"} l2=
 								{summary.indexingHealth.l2IndexingStatus || "—"}
 							</div>
 							<div className="text-xs text-muted-foreground">
-								host={summary.indexingHealth.hostComputationStatus || "—"} ipLoc=
+								host={summary.indexingHealth.hostComputationStatus || "—"}{" "}
+								ipLoc=
 								{summary.indexingHealth.ipLocationIndexingStatus || "—"}
 							</div>
 						</CardContent>
@@ -316,13 +324,13 @@ function ForwardNetworkAssurancePage() {
 								<span className="font-mono">
 									{fmtRFC3339(summary.capacity.asOf)}
 								</span>
-								</div>
-								<div>
-									Hot ifaces ({">="}85% max):{" "}
-									<span className="font-mono">
-										{summary.capacity.hotInterfaces}
-									</span>
-								</div>
+							</div>
+							<div>
+								Hot ifaces ({">="}85% max):{" "}
+								<span className="font-mono">
+									{summary.capacity.hotInterfaces}
+								</span>
+							</div>
 							<div>
 								Max util max:{" "}
 								<span className="font-mono">
@@ -331,7 +339,9 @@ function ForwardNetworkAssurancePage() {
 							</div>
 							<div>
 								Stale:{" "}
-								<Badge variant={summary.capacity.stale ? "secondary" : "default"}>
+								<Badge
+									variant={summary.capacity.stale ? "secondary" : "default"}
+								>
 									{summary.capacity.stale ? "yes" : "no"}
 								</Badge>
 							</div>
@@ -340,7 +350,9 @@ function ForwardNetworkAssurancePage() {
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Live Signals (Last {summary.liveSignals.windowMinutes}m)</CardTitle>
+							<CardTitle>
+								Live Signals (Last {summary.liveSignals.windowMinutes}m)
+							</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-1 text-sm">
 							<div>
@@ -383,7 +395,10 @@ function ForwardNetworkAssurancePage() {
 							) : (
 								<div className="space-y-1">
 									{historyItems.slice(0, 8).map((it: any) => (
-										<div key={String(it.id)} className="flex items-center justify-between gap-3">
+										<div
+											key={String(it.id)}
+											className="flex items-center justify-between gap-3"
+										>
 											<span className="font-mono text-xs">
 												{fmtRFC3339(String(it.generatedAt ?? ""))}
 											</span>

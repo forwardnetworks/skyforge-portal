@@ -13,6 +13,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../components/ui/card";
+import { Checkbox } from "../../components/ui/checkbox";
 import {
 	Form,
 	FormField,
@@ -37,6 +38,8 @@ import {
 } from "../../lib/netlab-env";
 import { queryKeys } from "../../lib/query-keys";
 import {
+	createUserApiToken,
+	createUserForwardCredentialSet,
 	deleteUserAWSStaticCredentials,
 	deleteUserAzureCredentials,
 	deleteUserContainerlabServer,
@@ -52,11 +55,12 @@ import {
 	getUserIBMCredentials,
 	getUserServiceNowConfig,
 	getUserSettings,
-	listUserForwardCredentialSets,
+	listForwardNetworks,
 	listUserApiTokens,
 	listUserContainerlabServers,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
+	listUserForwardCredentialSets,
 	listUserNetlabServers,
 	logoutAwsSso,
 	pollAwsSso,
@@ -65,9 +69,9 @@ import {
 	putUserGCPCredentials,
 	putUserIBMCredentials,
 	putUserSettings,
-	createUserApiToken,
 	revokeUserApiToken,
 	startAwsSso,
+	updateUserForwardCredentialSet,
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
 	upsertUserNetlabServer,
@@ -79,6 +83,8 @@ export const Route = createFileRoute("/dashboard/settings")({
 
 const formSchema = z.object({
 	defaultForwardCollectorConfigId: z.string().optional(),
+	defaultForwardCredentialId: z.string().optional(),
+	defaultForwardNetworkId: z.string().optional(),
 	defaultEnv: z
 		.array(z.object({ key: z.string().min(1), value: z.string() }))
 		.optional(),
@@ -131,6 +137,10 @@ function UserSettingsPage() {
 		resolver: zodResolver(formSchema),
 		values: {
 			defaultForwardCollectorConfigId: defaultCollectorId || undefined,
+			defaultForwardCredentialId:
+				settingsQ.data?.defaultForwardCredentialId || undefined,
+			defaultForwardNetworkId:
+				settingsQ.data?.defaultForwardNetworkId || undefined,
 			defaultEnv: settingsQ.data?.defaultEnv ?? [],
 			externalTemplateRepos: settingsQ.data?.externalTemplateRepos ?? [],
 		},
@@ -163,6 +173,8 @@ function UserSettingsPage() {
 			);
 			return putUserSettings({
 				defaultForwardCollectorConfigId: values.defaultForwardCollectorConfigId,
+				defaultForwardCredentialId: values.defaultForwardCredentialId,
+				defaultForwardNetworkId: values.defaultForwardNetworkId,
 				defaultEnv: values.defaultEnv ?? [],
 				externalTemplateRepos,
 			});
@@ -182,6 +194,109 @@ function UserSettingsPage() {
 
 	const busy =
 		collectorsQ.isLoading || settingsQ.isLoading || mutation.isPending;
+
+	const selectedForwardCredentialId = String(
+		form.watch("defaultForwardCredentialId") ?? "",
+	).trim();
+	const selectedForwardCredentialSet = useMemo(() => {
+		if (!selectedForwardCredentialId) return null;
+		return (
+			forwardCredentialSets.find(
+				(cs: any) => String(cs?.id ?? "") === selectedForwardCredentialId,
+			) ?? null
+		);
+	}, [forwardCredentialSets, selectedForwardCredentialId]);
+
+	const [forwardBaseUrl, setForwardBaseUrl] = useState("https://fwd.app");
+	const [forwardSkipTlsVerify, setForwardSkipTlsVerify] = useState(false);
+	const [forwardUsername, setForwardUsername] = useState("");
+	const [forwardPassword, setForwardPassword] = useState("");
+	const [forwardTouched, setForwardTouched] = useState(false);
+
+	useEffect(() => {
+		if (forwardTouched) return;
+		const cs: any = selectedForwardCredentialSet;
+		if (!cs) return;
+		const baseUrl = String(cs.baseUrl ?? "").trim() || "https://fwd.app";
+		setForwardBaseUrl(baseUrl);
+		setForwardSkipTlsVerify(Boolean(cs.skipTlsVerify));
+		setForwardUsername(String(cs.username ?? "").trim());
+	}, [selectedForwardCredentialSet, forwardTouched]);
+
+	const forwardNetworksQ = useQuery({
+		queryKey: ["forwardNetworks", selectedForwardCredentialId],
+		queryFn: () =>
+			listForwardNetworks({ credentialId: selectedForwardCredentialId }),
+		enabled: Boolean(selectedForwardCredentialId),
+		staleTime: 30_000,
+		retry: false,
+	});
+	const forwardNetworks = useMemo(() => {
+		return (forwardNetworksQ.data?.networks ?? [])
+			.filter((n: any) => n && typeof n.id === "string" && n.id.trim())
+			.map((n: any) => ({ id: String(n.id), name: String(n.name ?? "") }));
+	}, [forwardNetworksQ.data?.networks]);
+
+	const saveForwardAccountM = useMutation({
+		mutationFn: async () => {
+			const baseUrl = forwardBaseUrl.trim() || "https://fwd.app";
+			const username = forwardUsername.trim();
+			const password = forwardPassword;
+			if (!username) throw new Error("Forward username is required");
+			const name =
+				String(selectedForwardCredentialSet?.name ?? "My Forward").trim() ||
+				"My Forward";
+
+			let credId = selectedForwardCredentialId;
+			if (credId) {
+				await updateUserForwardCredentialSet(credId, {
+					name,
+					baseUrl,
+					skipTlsVerify: forwardSkipTlsVerify,
+					username,
+					...(password.trim() ? { password } : {}),
+				} as any);
+			} else {
+				if (!password.trim()) throw new Error("Forward password is required");
+				const created = await createUserForwardCredentialSet({
+					name,
+					baseUrl,
+					skipTlsVerify: forwardSkipTlsVerify,
+					username,
+					password,
+				} as any);
+				credId = String((created as any)?.id ?? "").trim();
+				if (!credId) throw new Error("Failed to create credential set");
+				form.setValue("defaultForwardCredentialId", credId, {
+					shouldDirty: true,
+					shouldTouch: true,
+					shouldValidate: true,
+				});
+			}
+
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardCredentialSets(),
+			});
+			setForwardPassword("");
+			setForwardTouched(false);
+
+			// Persist defaultForwardCredentialId/defaultForwardNetworkId via user settings.
+			return mutation.mutateAsync(form.getValues());
+		},
+		onSuccess: async () => {
+			toast.success("Forward account saved");
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userSettings(),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: ["forwardNetworks", selectedForwardCredentialId],
+			});
+		},
+		onError: (err: any) =>
+			toast.error("Failed to save Forward account", {
+				description: String(err?.message ?? err),
+			}),
+	});
 
 	const awsStaticQ = useQuery({
 		queryKey: queryKeys.userAwsStaticCredentials(),
@@ -263,7 +378,9 @@ function UserSettingsPage() {
 		onSuccess: async (res) => {
 			setCreatedApiTokenSecret(res.secret ?? "");
 			setNewApiTokenName("");
-			await queryClient.invalidateQueries({ queryKey: queryKeys.userApiTokens() });
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userApiTokens(),
+			});
 			toast.success("API token created", {
 				description: "Secret shown once. Copy it now.",
 			});
@@ -277,7 +394,9 @@ function UserSettingsPage() {
 	const revokeApiTokenM = useMutation({
 		mutationFn: async (id: string) => revokeUserApiToken(id),
 		onSuccess: async () => {
-			await queryClient.invalidateQueries({ queryKey: queryKeys.userApiTokens() });
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userApiTokens(),
+			});
 			toast.success("API token revoked");
 		},
 		onError: (err) => {
@@ -751,6 +870,188 @@ function UserSettingsPage() {
 
 					<Card>
 						<CardHeader>
+							<CardTitle>Forward account</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="text-sm text-muted-foreground">
+								Configure Forward once here, then reuse it across Capacity,
+								Assurance, and collectors. Network selection is used as a
+								default for demos and views.
+							</div>
+
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Credential set</div>
+								<Select
+									value={selectedForwardCredentialId || "none"}
+									onValueChange={(v) => {
+										form.setValue(
+											"defaultForwardCredentialId",
+											v === "none" ? "" : v,
+											{
+												shouldDirty: true,
+												shouldTouch: true,
+												shouldValidate: true,
+											},
+										);
+										setForwardPassword("");
+										setForwardTouched(false);
+									}}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select or create" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="none">Create new</SelectItem>
+										{forwardCredentialSets.map((cs: any) => (
+											<SelectItem key={String(cs.id)} value={String(cs.id)}>
+												{String(cs.name ?? cs.id)}
+												{cs.username ? ` (${cs.username})` : ""}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								{selectedForwardCredentialSet &&
+								!(selectedForwardCredentialSet as any).hasPassword ? (
+									<div className="text-xs text-destructive">
+										Selected credential set has no stored password.
+									</div>
+								) : null}
+							</div>
+
+							<div className="grid gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<div className="text-sm font-medium">Forward URL</div>
+									<Input
+										value={forwardBaseUrl}
+										onChange={(e) => {
+											setForwardTouched(true);
+											setForwardBaseUrl(e.target.value);
+										}}
+										placeholder="https://fwd.app"
+									/>
+								</div>
+								<div className="space-y-2">
+									<div className="text-sm font-medium">Username</div>
+									<Input
+										value={forwardUsername}
+										onChange={(e) => {
+											setForwardTouched(true);
+											setForwardUsername(e.target.value);
+										}}
+										placeholder="you@company.com"
+									/>
+								</div>
+							</div>
+
+							<div className="grid gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<div className="text-sm font-medium">Password</div>
+									<Input
+										type="password"
+										value={forwardPassword}
+										onChange={(e) => {
+											setForwardTouched(true);
+											setForwardPassword(e.target.value);
+										}}
+										placeholder={
+											selectedForwardCredentialId
+												? "Leave blank to keep existing"
+												: ""
+										}
+									/>
+								</div>
+								<div className="flex items-center gap-2 mt-6">
+									<Checkbox
+										checked={forwardSkipTlsVerify}
+										onCheckedChange={(v) => {
+											setForwardTouched(true);
+											setForwardSkipTlsVerify(Boolean(v));
+										}}
+										id="forward-skip-tls-verify"
+									/>
+									<label
+										htmlFor="forward-skip-tls-verify"
+										className="text-sm leading-tight cursor-pointer"
+									>
+										Skip TLS verification
+									</label>
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<div className="flex items-center justify-between gap-3">
+									<div className="text-sm font-medium">
+										Default Forward network
+									</div>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() => void forwardNetworksQ.refetch()}
+										disabled={
+											!selectedForwardCredentialId ||
+											forwardNetworksQ.isFetching
+										}
+									>
+										{forwardNetworksQ.isFetching
+											? "Refreshing…"
+											: "Refresh list"}
+									</Button>
+								</div>
+								<Select
+									value={
+										String(form.watch("defaultForwardNetworkId") ?? "") ||
+										"none"
+									}
+									onValueChange={(v) =>
+										form.setValue(
+											"defaultForwardNetworkId",
+											v === "none" ? "" : v,
+											{
+												shouldDirty: true,
+												shouldTouch: true,
+												shouldValidate: true,
+											},
+										)
+									}
+									disabled={!selectedForwardCredentialId}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select a network" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="none">None</SelectItem>
+										{forwardNetworks.map((n) => (
+											<SelectItem key={n.id} value={n.id}>
+												{n.name ? `${n.name} (${n.id})` : n.id}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								{forwardNetworksQ.isError ? (
+									<div className="text-xs text-destructive">
+										Failed to load networks:{" "}
+										{(forwardNetworksQ.error as Error).message}
+									</div>
+								) : null}
+							</div>
+
+							<div className="flex items-center justify-end gap-2 pt-2">
+								<Button
+									type="button"
+									onClick={() => saveForwardAccountM.mutate()}
+									disabled={saveForwardAccountM.isPending || mutation.isPending}
+								>
+									{saveForwardAccountM.isPending
+										? "Saving…"
+										: "Save Forward account"}
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
 							<CardTitle>API Tokens</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-3 text-sm">
@@ -789,7 +1090,9 @@ function UserSettingsPage() {
 											variant="secondary"
 											onClick={async () => {
 												try {
-													await navigator.clipboard.writeText(createdApiTokenSecret);
+													await navigator.clipboard.writeText(
+														createdApiTokenSecret,
+													);
 													toast.success("Copied token secret");
 												} catch (e) {
 													toast.error("Copy failed", {
@@ -852,8 +1155,7 @@ function UserSettingsPage() {
 							</div>
 
 							<div className="text-xs text-muted-foreground">
-								MCP endpoint:{" "}
-								<span className="font-mono">/api/mcp/rpc</span> or{" "}
+								MCP endpoint: <span className="font-mono">/api/mcp/rpc</span> or{" "}
 								<span className="font-mono">
 									/api/workspaces/&lt;workspace&gt;/mcp/forward/&lt;networkId&gt;/rpc
 								</span>

@@ -779,6 +779,8 @@ export async function rotateUserGitDeployKey(): Promise<UserGitCredentialsRespon
 
 export type UserSettingsResponse = {
 	defaultForwardCollectorConfigId?: string;
+	defaultForwardCredentialId?: string;
+	defaultForwardNetworkId?: string;
 	defaultEnv?: Array<{ key: string; value: string }>;
 	externalTemplateRepos?: ExternalTemplateRepo[];
 	updatedAt?: string;
@@ -790,6 +792,8 @@ export async function getUserSettings(): Promise<UserSettingsResponse> {
 
 export async function putUserSettings(payload: {
 	defaultForwardCollectorConfigId?: string;
+	defaultForwardCredentialId?: string;
+	defaultForwardNetworkId?: string;
 	defaultEnv?: Array<{ key: string; value: string }>;
 	externalTemplateRepos?: ExternalTemplateRepo[];
 }): Promise<UserSettingsResponse> {
@@ -797,6 +801,21 @@ export async function putUserSettings(payload: {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
+}
+
+export type ListForwardNetworksResponse = {
+	networks: Array<{ id: string; name?: string }>;
+};
+
+export async function listForwardNetworks(params?: {
+	credentialId?: string;
+}): Promise<ListForwardNetworksResponse> {
+	const qs = new URLSearchParams();
+	if (params?.credentialId) qs.set("credentialId", params.credentialId);
+	const suffix = qs.toString();
+	return apiFetch<ListForwardNetworksResponse>(
+		`/api/forward/networks${suffix ? `?${suffix}` : ""}`,
+	);
 }
 
 export type UserAPIToken = {
@@ -2764,7 +2783,9 @@ export async function restartUserForwardCollectorConfig(
 }
 
 export async function listUserForwardCredentialSets(): Promise<ListForwardCredentialSetsResponse> {
-	return apiFetch<ListForwardCredentialSetsResponse>("/api/forward/credential-sets");
+	return apiFetch<ListForwardCredentialSetsResponse>(
+		"/api/forward/credential-sets",
+	);
 }
 
 export async function createUserForwardCredentialSet(
@@ -4301,7 +4322,9 @@ export async function createUserForwardNetwork(
 }
 
 export async function listUserForwardNetworks(): Promise<PolicyReportListForwardNetworksResponse> {
-	return apiFetch<PolicyReportListForwardNetworksResponse>(`/api/forward-networks`);
+	return apiFetch<PolicyReportListForwardNetworksResponse>(
+		`/api/forward-networks`,
+	);
 }
 
 export async function deleteUserForwardNetwork(

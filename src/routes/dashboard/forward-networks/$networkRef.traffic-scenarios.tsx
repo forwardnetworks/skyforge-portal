@@ -11,14 +11,17 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { queryKeys } from "@/lib/query-keys";
-import { listUserForwardNetworks, listWorkspaceForwardNetworks } from "@/lib/skyforge-api";
 import {
 	type AssuranceTrafficDemand,
 	type AssuranceTrafficSeedRequest,
 	postAssuranceTrafficEvaluate,
 	postAssuranceTrafficSeeds,
 } from "@/lib/assurance-traffic-api";
+import { queryKeys } from "@/lib/query-keys";
+import {
+	listUserForwardNetworks,
+	listWorkspaceForwardNetworks,
+} from "@/lib/skyforge-api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Play, Sparkles } from "lucide-react";
@@ -97,7 +100,7 @@ function parseDemandsCSV(text: string): AssuranceTrafficDemand[] {
 		lower0.includes("bandwidth") ||
 		lower0.includes("ipproto");
 
-	let headerMap = new Map<string, number>();
+	const headerMap = new Map<string, number>();
 	let start = 0;
 	if (hasHeader) {
 		const header = parseCSVLine(lines[0]!);
@@ -147,8 +150,8 @@ function parseDemandsCSV(text: string): AssuranceTrafficDemand[] {
 				? get(parts, "label", 7)
 				: get(parts, "label", 3);
 
-		const bw = bwRaw ? Number(bwRaw) : NaN;
-		const ipProto = ipProtoRaw ? Number(ipProtoRaw) : NaN;
+		const bw = bwRaw ? Number(bwRaw) : Number.NaN;
+		const ipProto = ipProtoRaw ? Number(ipProtoRaw) : Number.NaN;
 
 		out.push({
 			from: from || undefined,

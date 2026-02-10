@@ -188,7 +188,9 @@ function ForwardNetworksPage() {
 			});
 			await qc.invalidateQueries({
 				queryKey:
-					queryKeys.workspaceForwardNetworkCapacityPortfolio(selectedWorkspaceId),
+					queryKeys.workspaceForwardNetworkCapacityPortfolio(
+						selectedWorkspaceId,
+					),
 			});
 		},
 		onError: (e) =>
@@ -217,7 +219,9 @@ function ForwardNetworksPage() {
 			});
 			await qc.invalidateQueries({
 				queryKey:
-					queryKeys.workspaceForwardNetworkCapacityPortfolio(selectedWorkspaceId),
+					queryKeys.workspaceForwardNetworkCapacityPortfolio(
+						selectedWorkspaceId,
+					),
 			});
 		},
 		onError: (e) =>
@@ -469,8 +473,8 @@ function ForwardNetworksPage() {
 				<CardHeader>
 					<CardTitle>Workspace saved networks</CardTitle>
 					<CardDescription>
-						Shared with workspace collaborators. These only work in the workspace
-						they were saved to.
+						Shared with workspace collaborators. These only work in the
+						workspace they were saved to.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -546,7 +550,7 @@ function ForwardNetworksPage() {
 										</Button>
 									</div>
 								</div>
-						  ))
+							))
 						: null}
 				</CardContent>
 			</Card>

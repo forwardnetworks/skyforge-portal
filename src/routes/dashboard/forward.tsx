@@ -109,14 +109,17 @@ function ForwardCollectorPage() {
 		retry: false,
 	});
 	const credentialSets = useMemo(
-		() => (credentialSetsQ.data?.credentialSets ?? []) as ForwardCredentialSetSummary[],
+		() =>
+			(credentialSetsQ.data?.credentialSets ??
+				[]) as ForwardCredentialSetSummary[],
 		[credentialSetsQ.data?.credentialSets],
 	);
 	const selectedSourceCredentialSet = useMemo(() => {
 		if (sourceCredentialSetId === "manual") return null;
 		return (
-			credentialSets.find((cs) => String(cs.id) === String(sourceCredentialSetId)) ??
-			null
+			credentialSets.find(
+				(cs) => String(cs.id) === String(sourceCredentialSetId),
+			) ?? null
 		);
 	}, [credentialSets, sourceCredentialSetId]);
 
@@ -333,7 +336,9 @@ function ForwardCollectorPage() {
 								<SelectValue placeholder="Manual" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="manual">Manual (enter username/password)</SelectItem>
+								<SelectItem value="manual">
+									Manual (enter username/password)
+								</SelectItem>
 								{credentialSets.map((cs) => (
 									<SelectItem key={cs.id} value={cs.id}>
 										{cs.name}
@@ -344,9 +349,9 @@ function ForwardCollectorPage() {
 						</Select>
 						{sourceCredentialSetId !== "manual" ? (
 							<p className="text-xs text-muted-foreground">
-								Skyforge will use the selected credential set to create the Forward
-								collector, and will save a separate credential set for the created
-								collector.
+								Skyforge will use the selected credential set to create the
+								Forward collector, and will save a separate credential set for
+								the created collector.
 							</p>
 						) : null}
 						{credentialSetsQ.isError ? (
@@ -466,7 +471,8 @@ function ForwardCollectorPage() {
 					<CardTitle>Credential sets</CardTitle>
 					<CardDescription>
 						Reusable Forward API credential sets. Stored encrypted. Use them for
-						Policy Reports, collector creation, and other Forward-backed features.
+						Policy Reports, collector creation, and other Forward-backed
+						features.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -521,7 +527,9 @@ function ForwardCollectorPage() {
 						onClick={() => createCredSetMutation.mutate()}
 						disabled={createCredSetMutation.isPending}
 					>
-						{createCredSetMutation.isPending ? "Creating…" : "Create credential set"}
+						{createCredSetMutation.isPending
+							? "Creating…"
+							: "Create credential set"}
 					</Button>
 
 					<div className="space-y-2 pt-2">
@@ -569,7 +577,8 @@ function ForwardCollectorPage() {
 										variant="destructive"
 										size="sm"
 										onClick={() => {
-											if (!confirm(`Delete credential set "${cs.name}"?`)) return;
+											if (!confirm(`Delete credential set "${cs.name}"?`))
+												return;
 											deleteCredSetMutation.mutate(cs.id);
 										}}
 										disabled={deleteCredSetMutation.isPending}

@@ -24,41 +24,41 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	type AssuranceScenario,
+	type AssuranceScenarioSpec,
+	createAssuranceStudioScenario,
+	deleteAssuranceStudioScenario,
+	listAssuranceStudioScenarios,
+	postAssuranceStudioEvaluate,
+	updateAssuranceStudioScenario,
+} from "@/lib/assurance-studio-api";
+import {
+	type AssuranceStudioRun,
+	createAssuranceStudioRun,
+	getAssuranceStudioRun,
+	listAssuranceStudioRuns,
+} from "@/lib/assurance-studio-runs-api";
+import {
+	type AssuranceTrafficDemand,
+	type AssuranceTrafficSeedRequest,
+	postAssuranceTrafficSeeds,
+} from "@/lib/assurance-traffic-api";
 import { queryKeys } from "@/lib/query-keys";
 import {
-	getForwardNetworkAssuranceSummary,
-	getSession,
+	type ForwardAssuranceSummaryResponse,
 	type ForwardNetworkCapacityPathBottlenecksResponse,
 	type ForwardNetworkCapacityUpgradeCandidatesResponse,
-	type ForwardAssuranceSummaryResponse,
 	type PolicyReportNQEResponse,
 	type PolicyReportPathQuery,
+	getForwardNetworkAssuranceSummary,
+	getSession,
 	listUserForwardNetworks,
 	listWorkspaceForwardNetworks,
 	refreshForwardNetworkAssurance,
 	seedForwardNetworkAssuranceDemo,
 	storeWorkspacePolicyReportPathsEnforcementBypass,
 } from "@/lib/skyforge-api";
-import {
-	type AssuranceTrafficDemand,
-	type AssuranceTrafficSeedRequest,
-	postAssuranceTrafficSeeds,
-} from "@/lib/assurance-traffic-api";
-import {
-	createAssuranceStudioScenario,
-	deleteAssuranceStudioScenario,
-	listAssuranceStudioScenarios,
-	postAssuranceStudioEvaluate,
-	updateAssuranceStudioScenario,
-	type AssuranceScenario,
-	type AssuranceScenarioSpec,
-} from "@/lib/assurance-studio-api";
-import {
-	createAssuranceStudioRun,
-	getAssuranceStudioRun,
-	listAssuranceStudioRuns,
-	type AssuranceStudioRun,
-} from "@/lib/assurance-studio-runs-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Play, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
@@ -88,7 +88,7 @@ function fmtRFC3339(s: string | undefined): string {
 }
 
 function fmtAgeSeconds(ageSeconds: number | undefined): string {
-	const s = Number(ageSeconds ?? NaN);
+	const s = Number(ageSeconds ?? Number.NaN);
 	if (!Number.isFinite(s) || s < 0) return "—";
 	const mins = Math.floor(s / 60);
 	const hrs = Math.floor(mins / 60);
@@ -162,7 +162,7 @@ function parseDemandsCSV(text: string): AssuranceTrafficDemand[] {
 		lower0.includes("bandwidth") ||
 		lower0.includes("ipproto");
 
-	let start = hasHeader ? 1 : 0;
+	const start = hasHeader ? 1 : 0;
 	for (let i = start; i < lines.length; i++) {
 		const parts = lines[i]!.split(",").map((s) => s.trim());
 		if (!parts.length) continue;
@@ -180,8 +180,8 @@ function parseDemandsCSV(text: string): AssuranceTrafficDemand[] {
 		const bwRaw = isOld4 ? (parts[2] ?? "").trim() : (parts[6] ?? "").trim();
 		const label = isOld4 ? (parts[3] ?? "").trim() : (parts[7] ?? "").trim();
 
-		const bw = bwRaw ? Number(bwRaw) : NaN;
-		const ipProto = ipProtoRaw ? Number(ipProtoRaw) : NaN;
+		const bw = bwRaw ? Number(bwRaw) : Number.NaN;
+		const ipProto = ipProtoRaw ? Number(ipProtoRaw) : Number.NaN;
 
 		out.push({
 			from: from || undefined,
@@ -327,7 +327,9 @@ function AssuranceStudioPage() {
 		staleTime: 5_000,
 		retry: false,
 	});
-	const assurance = assuranceQ.data as ForwardAssuranceSummaryResponse | undefined;
+	const assurance = assuranceQ.data as
+		| ForwardAssuranceSummaryResponse
+		| undefined;
 
 	const refreshAssuranceM = useMutation({
 		mutationFn: () => refreshForwardNetworkAssurance(workspaceId, networkRef),
@@ -338,7 +340,10 @@ function AssuranceStudioPage() {
 				res,
 			);
 			await qc.invalidateQueries({
-				queryKey: queryKeys.forwardNetworkAssuranceHistory(workspaceId, networkRef),
+				queryKey: queryKeys.forwardNetworkAssuranceHistory(
+					workspaceId,
+					networkRef,
+				),
 			});
 		},
 		onError: (e: any) =>
@@ -354,7 +359,10 @@ function AssuranceStudioPage() {
 				description: `syslog CIDR ${res.syslogCidr}`,
 			});
 			await qc.invalidateQueries({
-				queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+				queryKey: queryKeys.forwardNetworkAssuranceSummary(
+					workspaceId,
+					networkRef,
+				),
 			});
 		},
 		onError: (e: any) =>
@@ -708,39 +716,39 @@ function AssuranceStudioPage() {
 		return demandsToPolicyReportsFlowSuite(demands);
 	}, [demandsText]);
 
-		const policyReportsUrl = useMemo(() => {
-			if (!workspaceId) return "";
-			if (!forwardNetworkId) return "";
-			const qs = new URLSearchParams();
-			qs.set("embed", "1");
-			qs.set("forwardNetworkId", forwardNetworkId);
-			if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
-			if (flowsText.trim()) qs.set("flows", flowsText);
-			return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-		}, [workspaceId, forwardNetworkId, snapshotId, flowsText]);
+	const policyReportsUrl = useMemo(() => {
+		if (!workspaceId) return "";
+		if (!forwardNetworkId) return "";
+		const qs = new URLSearchParams();
+		qs.set("embed", "1");
+		qs.set("forwardNetworkId", forwardNetworkId);
+		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
+		if (flowsText.trim()) qs.set("flows", flowsText);
+		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
+	}, [workspaceId, forwardNetworkId, snapshotId, flowsText]);
 
-		const policyReportsIntentUrl = useMemo(() => {
-			if (!workspaceId) return "";
-			if (!forwardNetworkId) return "";
-			const qs = new URLSearchParams();
-			qs.set("embed", "1");
-			qs.set("tab", "intent");
-			qs.set("forwardNetworkId", forwardNetworkId);
-			if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
-			if (flowsText.trim()) qs.set("flows", flowsText);
-			return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-		}, [workspaceId, forwardNetworkId, snapshotId, flowsText]);
+	const policyReportsIntentUrl = useMemo(() => {
+		if (!workspaceId) return "";
+		if (!forwardNetworkId) return "";
+		const qs = new URLSearchParams();
+		qs.set("embed", "1");
+		qs.set("tab", "intent");
+		qs.set("forwardNetworkId", forwardNetworkId);
+		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
+		if (flowsText.trim()) qs.set("flows", flowsText);
+		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
+	}, [workspaceId, forwardNetworkId, snapshotId, flowsText]);
 
-		const policyReportsSegmentationUrl = useMemo(() => {
-			if (!workspaceId) return "";
-			if (!forwardNetworkId) return "";
-			const qs = new URLSearchParams();
-			qs.set("embed", "1");
-			qs.set("tab", "segmentation");
-			qs.set("forwardNetworkId", forwardNetworkId);
-			if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
-			return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-		}, [workspaceId, forwardNetworkId, snapshotId]);
+	const policyReportsSegmentationUrl = useMemo(() => {
+		if (!workspaceId) return "";
+		if (!forwardNetworkId) return "";
+		const qs = new URLSearchParams();
+		qs.set("embed", "1");
+		qs.set("tab", "segmentation");
+		qs.set("forwardNetworkId", forwardNetworkId);
+		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
+		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
+	}, [workspaceId, forwardNetworkId, snapshotId]);
 
 	const capacityUrl = useMemo(() => {
 		if (!workspaceId) return "";
@@ -854,17 +862,17 @@ function AssuranceStudioPage() {
 			if (resp.routingBaseline) results.routingBaseline = resp.routingBaseline;
 			if (resp.routingDiff) results.routingDiff = resp.routingDiff;
 
-				if (resp.capacity) results.capacityBottlenecks = resp.capacity;
-				else
-					errors.capacityBottlenecks =
-						errors.capacityBottlenecks ?? errors.capacity ?? "capacity failed";
-				if (resp.capacityUpgradeCandidates)
-					results.capacityUpgradeCandidates = resp.capacityUpgradeCandidates;
+			if (resp.capacity) results.capacityBottlenecks = resp.capacity;
+			else
+				errors.capacityBottlenecks =
+					errors.capacityBottlenecks ?? errors.capacity ?? "capacity failed";
+			if (resp.capacityUpgradeCandidates)
+				results.capacityUpgradeCandidates = resp.capacityUpgradeCandidates;
 
-				if (includeSecurityInRun) {
-					if (resp.security) results.securityPathsAssurance = resp.security;
-					else
-						errors.securityPathsAssurance =
+			if (includeSecurityInRun) {
+				if (resp.security) results.securityPathsAssurance = resp.security;
+				else
+					errors.securityPathsAssurance =
 						errors.securityPathsAssurance ??
 						errors.security ??
 						"security failed";
@@ -919,30 +927,30 @@ function AssuranceStudioPage() {
 		onError: (e: any) => toast.error(String(e?.message ?? e ?? "run failed")),
 	});
 
-		const capBottlenecksM = useMutation({
-			mutationFn: async () => {
-				if (!workspaceId) throw new Error("workspace is required");
-				const demands = scenarioDemands
-					.filter((d) => String(d.dstIp ?? "").trim())
-					.slice(0, 200);
-				if (demands.length === 0) throw new Error("no valid demands to evaluate");
-				const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
-					window,
-					snapshotId: snapshotId.trim() || undefined,
-					demands,
-					phases: { routing: false, capacity: true, security: false },
-					capacity: { includeHops: capIncludeHops },
-				});
-				if (resp?.capacity)
-					return {
-						bottlenecks: resp.capacity,
-						upgradeCandidates: resp.capacityUpgradeCandidates,
-					};
-				throw new Error(resp?.errors?.capacity ?? "capacity evaluation failed");
-			},
-			onError: (e: any) =>
-				toast.error(String(e?.message ?? e ?? "capacity bottlenecks failed")),
-		});
+	const capBottlenecksM = useMutation({
+		mutationFn: async () => {
+			if (!workspaceId) throw new Error("workspace is required");
+			const demands = scenarioDemands
+				.filter((d) => String(d.dstIp ?? "").trim())
+				.slice(0, 200);
+			if (demands.length === 0) throw new Error("no valid demands to evaluate");
+			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
+				window,
+				snapshotId: snapshotId.trim() || undefined,
+				demands,
+				phases: { routing: false, capacity: true, security: false },
+				capacity: { includeHops: capIncludeHops },
+			});
+			if (resp?.capacity)
+				return {
+					bottlenecks: resp.capacity,
+					upgradeCandidates: resp.capacityUpgradeCandidates,
+				};
+			throw new Error(resp?.errors?.capacity ?? "capacity evaluation failed");
+		},
+		onError: (e: any) =>
+			toast.error(String(e?.message ?? e ?? "capacity bottlenecks failed")),
+	});
 
 	function parsePolicyReportResults(
 		resp: PolicyReportNQEResponse | null,
@@ -1066,39 +1074,39 @@ function AssuranceStudioPage() {
 						<div className="text-lg font-semibold">{networkName}</div>
 					</div>
 				</div>
-					<div className="flex items-center gap-2">
-						<Badge variant="secondary">Forward Paths + NQE</Badge>
-						{networksQ.isLoading ? <Skeleton className="h-6 w-24" /> : null}
+				<div className="flex items-center gap-2">
+					<Badge variant="secondary">Forward Paths + NQE</Badge>
+					{networksQ.isLoading ? <Skeleton className="h-6 w-24" /> : null}
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => refreshAssuranceM.mutate()}
+						disabled={!workspaceId || refreshAssuranceM.isPending}
+					>
+						<RefreshCw className="h-4 w-4 mr-2" />
+						{refreshAssuranceM.isPending ? "Refreshing…" : "Refresh Assurance"}
+					</Button>
+					{isAdmin ? (
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={() => refreshAssuranceM.mutate()}
-							disabled={!workspaceId || refreshAssuranceM.isPending}
+							onClick={() => seedDemoM.mutate()}
+							disabled={!workspaceId || seedDemoM.isPending}
 						>
-							<RefreshCw className="h-4 w-4 mr-2" />
-							{refreshAssuranceM.isPending ? "Refreshing…" : "Refresh Assurance"}
+							{seedDemoM.isPending ? "Seeding…" : "Seed demo signals"}
 						</Button>
-						{isAdmin ? (
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => seedDemoM.mutate()}
-								disabled={!workspaceId || seedDemoM.isPending}
-							>
-								{seedDemoM.isPending ? "Seeding…" : "Seed demo signals"}
-							</Button>
-						) : null}
-						<Button asChild variant="outline" size="sm">
-							<Link
-								to="/dashboard/forward-networks/$networkRef/assurance"
-								params={{ networkRef }}
-								search={{ workspace: workspaceId } as any}
-							>
-								Assurance page
-							</Link>
-						</Button>
-					</div>
+					) : null}
+					<Button asChild variant="outline" size="sm">
+						<Link
+							to="/dashboard/forward-networks/$networkRef/assurance"
+							params={{ networkRef }}
+							search={{ workspace: workspaceId } as any}
+						>
+							Assurance page
+						</Link>
+					</Button>
 				</div>
+			</div>
 
 			<Card>
 				<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -1151,7 +1159,8 @@ function AssuranceStudioPage() {
 							</Badge>
 						</div>
 						<div className="text-xs text-muted-foreground mt-1 font-mono">
-							pathSearch={assurance?.indexingHealth.pathSearchIndexingStatus || "—"}
+							pathSearch=
+							{assurance?.indexingHealth.pathSearchIndexingStatus || "—"}
 						</div>
 					</div>
 
@@ -1179,18 +1188,24 @@ function AssuranceStudioPage() {
 						<div className="text-xs text-muted-foreground">Capacity cache</div>
 						<div className="mt-1 text-xs">
 							hot ifaces ({">="}85% max):{" "}
-							<span className="font-mono">{assurance?.capacity.hotInterfaces ?? 0}</span>
+							<span className="font-mono">
+								{assurance?.capacity.hotInterfaces ?? 0}
+							</span>
 						</div>
 						<div className="text-xs text-muted-foreground mt-1">
 							stale{" "}
-							<Badge variant={assurance?.capacity.stale ? "secondary" : "default"}>
+							<Badge
+								variant={assurance?.capacity.stale ? "secondary" : "default"}
+							>
 								{assurance?.capacity.stale ? "yes" : "no"}
 							</Badge>
 						</div>
 					</div>
 
 					<div className="rounded-md border p-3">
-						<div className="text-xs text-muted-foreground">Live signals (60m)</div>
+						<div className="text-xs text-muted-foreground">
+							Live signals (60m)
+						</div>
 						<div className="mt-1 text-xs text-muted-foreground">
 							syslog{" "}
 							<span className="font-mono text-xs">
@@ -1238,10 +1253,10 @@ function AssuranceStudioPage() {
 				</CardContent>
 			</Card>
 
-				<Card>
-					<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-						<div className="space-y-1">
-							<CardTitle>Scenario</CardTitle>
+			<Card>
+				<CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+					<div className="space-y-1">
+						<CardTitle>Scenario</CardTitle>
 						<CardDescription>
 							One saved scenario feeds Routing, Capacity, and Security tabs.
 						</CardDescription>
@@ -2119,126 +2134,125 @@ function AssuranceStudioPage() {
 								<Skeleton className="h-20 w-full" />
 							) : null}
 
-								{capBottlenecksM.data ? (
-									<div className="space-y-4">
-										<div className="text-xs text-muted-foreground">
-											asOf={capBottlenecksM.data.bottlenecks.asOf ?? "—"}{" "}
-											coverage=
-											{capBottlenecksM.data.bottlenecks.coverage
-												? `${capBottlenecksM.data.bottlenecks.coverage.rollupMatched}/${capBottlenecksM.data.bottlenecks.coverage.hopInterfaceKeys} matched`
-												: "—"}
-										</div>
+							{capBottlenecksM.data ? (
+								<div className="space-y-4">
+									<div className="text-xs text-muted-foreground">
+										asOf={capBottlenecksM.data.bottlenecks.asOf ?? "—"}{" "}
+										coverage=
+										{capBottlenecksM.data.bottlenecks.coverage
+											? `${capBottlenecksM.data.bottlenecks.coverage.rollupMatched}/${capBottlenecksM.data.bottlenecks.coverage.hopInterfaceKeys} matched`
+											: "—"}
+									</div>
 
-										{(() => {
-											const up = capBottlenecksM.data.upgradeCandidates as
-												| ForwardNetworkCapacityUpgradeCandidatesResponse
-												| undefined;
-											if (!up?.items?.length) return null;
-											return (
-												<div className="rounded-md border p-3 space-y-2">
-													<div className="flex flex-wrap items-center justify-between gap-2">
-														<div className="text-sm font-medium">
-															Upgrade candidates
-														</div>
-														<div className="text-xs text-muted-foreground">
-															asOf={up.asOf ?? "—"}
-														</div>
-													</div>
-													<div className="overflow-x-auto">
-														<table className="w-full border-collapse text-sm">
-															<thead>
-																<tr className="border-b">
-																	<th className="p-2 text-left">Scope</th>
-																	<th className="p-2 text-left">Target</th>
-																	<th className="p-2 text-left">Speed</th>
-																	<th className="p-2 text-left">Worst</th>
-																	<th className="p-2 text-left">Max</th>
-																	<th className="p-2 text-left">P95</th>
-																	<th className="p-2 text-left">Recommend</th>
-																</tr>
-															</thead>
-															<tbody>
-																{up.items.slice(0, 5).map((it, idx) => (
-																	<tr key={idx} className="border-b">
-																		<td className="p-2 font-mono text-xs">
-																			{it.scopeType}
-																		</td>
-																		<td className="p-2 font-mono text-xs">
-																			{it.device}:{it.name}
-																			{it.members?.length ? (
-																				<span className="text-muted-foreground">
-																					{" "}
-																					({it.members.length} members)
-																				</span>
-																			) : null}
-																		</td>
-																		<td className="p-2 font-mono text-xs">
-																			{Math.round(it.speedMbps / 1000)}G
-																		</td>
-																		<td className="p-2 font-mono text-xs">
-																			{it.worstDirection}
-																		</td>
-																		<td className="p-2 font-mono text-xs">
-																			{(it.maxUtil * 100).toFixed(0)}%
-																		</td>
-																		<td className="p-2 font-mono text-xs">
-																			{(it.p95Util * 100).toFixed(0)}%
-																		</td>
-																		<td className="p-2 font-mono text-xs">
-																			{it.recommendedSpeedMbps ? (
-																				<span>
-																					{Math.round(
-																						it.recommendedSpeedMbps / 1000,
-																					)}
-																					G{" "}
-																					<span className="text-muted-foreground">
-																						({it.reason ?? "upgrade"})
-																					</span>
-																				</span>
-																			) : (
-																				<span className="text-muted-foreground">
-																					—
-																				</span>
-																			)}
-																		</td>
-																	</tr>
-																))}
-															</tbody>
-														</table>
+									{(() => {
+										const up = capBottlenecksM.data.upgradeCandidates as
+											| ForwardNetworkCapacityUpgradeCandidatesResponse
+											| undefined;
+										if (!up?.items?.length) return null;
+										return (
+											<div className="rounded-md border p-3 space-y-2">
+												<div className="flex flex-wrap items-center justify-between gap-2">
+													<div className="text-sm font-medium">
+														Upgrade candidates
 													</div>
 													<div className="text-xs text-muted-foreground">
-														Showing top 5 candidates.
+														asOf={up.asOf ?? "—"}
 													</div>
 												</div>
-											);
-										})()}
-
-										{(() => {
-											const resp =
-												capBottlenecksM.data
-													.bottlenecks as ForwardNetworkCapacityPathBottlenecksResponse;
-											const counts = new Map<string, number>();
-											for (const it of resp.items ?? []) {
-												const b = it.bottleneck;
-												if (!b) continue;
-												const k = `${b.deviceName}:${b.interfaceName}:${b.direction}`;
-												counts.set(k, (counts.get(k) ?? 0) + 1);
-											}
-											const top = Array.from(counts.entries())
-												.sort((a, b) => b[1] - a[1])
-												.slice(0, 10);
-											if (!top.length) return null;
-											return (
-												<div className="flex flex-wrap gap-2">
-													{top.map(([k, v]) => (
-														<Badge key={k} variant="secondary">
-															<span className="font-mono">{v}</span>{" "}
-															<span className="text-muted-foreground">{k}</span>
-														</Badge>
-													))}
+												<div className="overflow-x-auto">
+													<table className="w-full border-collapse text-sm">
+														<thead>
+															<tr className="border-b">
+																<th className="p-2 text-left">Scope</th>
+																<th className="p-2 text-left">Target</th>
+																<th className="p-2 text-left">Speed</th>
+																<th className="p-2 text-left">Worst</th>
+																<th className="p-2 text-left">Max</th>
+																<th className="p-2 text-left">P95</th>
+																<th className="p-2 text-left">Recommend</th>
+															</tr>
+														</thead>
+														<tbody>
+															{up.items.slice(0, 5).map((it, idx) => (
+																<tr key={idx} className="border-b">
+																	<td className="p-2 font-mono text-xs">
+																		{it.scopeType}
+																	</td>
+																	<td className="p-2 font-mono text-xs">
+																		{it.device}:{it.name}
+																		{it.members?.length ? (
+																			<span className="text-muted-foreground">
+																				{" "}
+																				({it.members.length} members)
+																			</span>
+																		) : null}
+																	</td>
+																	<td className="p-2 font-mono text-xs">
+																		{Math.round(it.speedMbps / 1000)}G
+																	</td>
+																	<td className="p-2 font-mono text-xs">
+																		{it.worstDirection}
+																	</td>
+																	<td className="p-2 font-mono text-xs">
+																		{(it.maxUtil * 100).toFixed(0)}%
+																	</td>
+																	<td className="p-2 font-mono text-xs">
+																		{(it.p95Util * 100).toFixed(0)}%
+																	</td>
+																	<td className="p-2 font-mono text-xs">
+																		{it.recommendedSpeedMbps ? (
+																			<span>
+																				{Math.round(
+																					it.recommendedSpeedMbps / 1000,
+																				)}
+																				G{" "}
+																				<span className="text-muted-foreground">
+																					({it.reason ?? "upgrade"})
+																				</span>
+																			</span>
+																		) : (
+																			<span className="text-muted-foreground">
+																				—
+																			</span>
+																		)}
+																	</td>
+																</tr>
+															))}
+														</tbody>
+													</table>
 												</div>
-											);
-										})()}
+												<div className="text-xs text-muted-foreground">
+													Showing top 5 candidates.
+												</div>
+											</div>
+										);
+									})()}
+
+									{(() => {
+										const resp = capBottlenecksM.data
+											.bottlenecks as ForwardNetworkCapacityPathBottlenecksResponse;
+										const counts = new Map<string, number>();
+										for (const it of resp.items ?? []) {
+											const b = it.bottleneck;
+											if (!b) continue;
+											const k = `${b.deviceName}:${b.interfaceName}:${b.direction}`;
+											counts.set(k, (counts.get(k) ?? 0) + 1);
+										}
+										const top = Array.from(counts.entries())
+											.sort((a, b) => b[1] - a[1])
+											.slice(0, 10);
+										if (!top.length) return null;
+										return (
+											<div className="flex flex-wrap gap-2">
+												{top.map(([k, v]) => (
+													<Badge key={k} variant="secondary">
+														<span className="font-mono">{v}</span>{" "}
+														<span className="text-muted-foreground">{k}</span>
+													</Badge>
+												))}
+											</div>
+										);
+									})()}
 
 									<div className="overflow-x-auto">
 										<table className="w-full border-collapse text-sm">
@@ -2251,46 +2265,48 @@ function AssuranceStudioPage() {
 													<th className="p-2 text-left">Headroom</th>
 													<th className="p-2 text-left">Forecast</th>
 												</tr>
-												</thead>
-												<tbody>
-													{capBottlenecksM.data.bottlenecks.items
-														.slice(0, 50)
-														.map((it) => {
+											</thead>
+											<tbody>
+												{capBottlenecksM.data.bottlenecks.items
+													.slice(0, 50)
+													.map((it) => {
 														const b = it.bottleneck;
 														return (
 															<tr key={it.index} className="border-b">
 																<td className="p-2 text-muted-foreground">
 																	{it.index + 1}
-															</td>
-															<td className="p-2 font-mono text-xs">
-																{String(it.query.srcIp ?? it.query.from ?? "")}{" "}
-																-&gt; {it.query.dstIp}
-															</td>
-															<td className="p-2 font-mono text-xs">
-																{it.forwardingOutcome ?? it.error ?? "—"}
-															</td>
-															<td className="p-2 font-mono text-xs">
-																{b
-																	? `${b.deviceName}:${b.interfaceName} (${b.direction})`
-																	: "—"}
-															</td>
-															<td className="p-2 font-mono text-xs">
-																{b?.headroomGbps !== null &&
-																b?.headroomGbps !== undefined
-																	? `${Number(b.headroomGbps).toFixed(2)}G`
-																	: "—"}
-															</td>
-															<td className="p-2 font-mono text-xs">
+																</td>
+																<td className="p-2 font-mono text-xs">
+																	{String(
+																		it.query.srcIp ?? it.query.from ?? "",
+																	)}{" "}
+																	-&gt; {it.query.dstIp}
+																</td>
+																<td className="p-2 font-mono text-xs">
+																	{it.forwardingOutcome ?? it.error ?? "—"}
+																</td>
+																<td className="p-2 font-mono text-xs">
+																	{b
+																		? `${b.deviceName}:${b.interfaceName} (${b.direction})`
+																		: "—"}
+																</td>
+																<td className="p-2 font-mono text-xs">
+																	{b?.headroomGbps !== null &&
+																	b?.headroomGbps !== undefined
+																		? `${Number(b.headroomGbps).toFixed(2)}G`
+																		: "—"}
+																</td>
+																<td className="p-2 font-mono text-xs">
 																	{String(b?.forecastCrossingTs ?? "—")}
 																</td>
 															</tr>
 														);
 													})}
-												</tbody>
-											</table>
-										</div>
-										<div className="text-xs text-muted-foreground">
-											Showing first 50 flows.
+											</tbody>
+										</table>
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Showing first 50 flows.
 									</div>
 								</div>
 							) : (
@@ -2447,38 +2463,38 @@ function AssuranceStudioPage() {
 								>
 									Store as run
 								</Button>
-									<Button asChild variant="outline">
-										<a
-											href={policyReportsUrl || "#"}
-											target="_blank"
-											rel="noreferrer noopener"
-										>
-											Open full Policy Reports
-										</a>
-									</Button>
-									<Button asChild variant="outline">
-										<a
-											href={policyReportsSegmentationUrl || "#"}
-											target="_blank"
-											rel="noreferrer noopener"
-										>
-											Segmentation posture
-										</a>
-									</Button>
-									<Button asChild variant="outline">
-										<a
-											href={policyReportsIntentUrl || "#"}
-											target="_blank"
-											rel="noreferrer noopener"
-										>
-											Intent suite
-										</a>
-									</Button>
-									{!forwardNetworkId ? (
-										<span className="text-sm text-amber-600">
-											missing forwardNetworkId for this saved network
-										</span>
-									) : null}
+								<Button asChild variant="outline">
+									<a
+										href={policyReportsUrl || "#"}
+										target="_blank"
+										rel="noreferrer noopener"
+									>
+										Open full Policy Reports
+									</a>
+								</Button>
+								<Button asChild variant="outline">
+									<a
+										href={policyReportsSegmentationUrl || "#"}
+										target="_blank"
+										rel="noreferrer noopener"
+									>
+										Segmentation posture
+									</a>
+								</Button>
+								<Button asChild variant="outline">
+									<a
+										href={policyReportsIntentUrl || "#"}
+										target="_blank"
+										rel="noreferrer noopener"
+									>
+										Intent suite
+									</a>
+								</Button>
+								{!forwardNetworkId ? (
+									<span className="text-sm text-amber-600">
+										missing forwardNetworkId for this saved network
+									</span>
+								) : null}
 							</div>
 
 							{secRunM.isPending ? <Skeleton className="h-20 w-full" /> : null}

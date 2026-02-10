@@ -28,11 +28,11 @@ import {
 	listUserForwardCredentialSets,
 } from "../../../lib/skyforge-api";
 
-export const Route = createFileRoute("/dashboard/workspaces/$workspaceId/integrations")(
-	{
-		component: WorkspaceIntegrationsPage,
-	},
-);
+export const Route = createFileRoute(
+	"/dashboard/workspaces/$workspaceId/integrations",
+)({
+	component: WorkspaceIntegrationsPage,
+});
 
 function WorkspaceIntegrationsPage() {
 	const { workspaceId } = Route.useParams();
@@ -72,7 +72,9 @@ function WorkspaceIntegrationsPage() {
 		mutationFn: async () => {
 			const id = selectedCredentialId.trim();
 			if (!id) throw new Error("Select a credential set");
-			return applyWorkspaceForwardCredentialSet(workspaceId, { credentialId: id });
+			return applyWorkspaceForwardCredentialSet(workspaceId, {
+				credentialId: id,
+			});
 		},
 		onSuccess: async () => {
 			toast.success("Applied credential set");
@@ -150,7 +152,10 @@ function WorkspaceIntegrationsPage() {
 
 					<div className="space-y-2">
 						<Label>Apply from credential set</Label>
-						<Select value={selectedCredentialId} onValueChange={setSelectedCredentialId}>
+						<Select
+							value={selectedCredentialId}
+							onValueChange={setSelectedCredentialId}
+						>
 							<SelectTrigger className="w-full">
 								<SelectValue placeholder="Select a credential set" />
 							</SelectTrigger>
@@ -203,4 +208,3 @@ function WorkspaceIntegrationsPage() {
 		</div>
 	);
 }
-

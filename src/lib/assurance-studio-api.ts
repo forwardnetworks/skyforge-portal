@@ -1,10 +1,10 @@
-import { apiFetch } from "./http";
 import type {
 	AssuranceTrafficDemand,
 	AssuranceTrafficEnforcementOptions,
 	AssuranceTrafficEvaluateResponse,
 	AssuranceTrafficForwardOptions,
 } from "./assurance-traffic-api";
+import { apiFetch } from "./http";
 import type {
 	ForwardNetworkCapacityPathBottlenecksResponse,
 	ForwardNetworkCapacityUpgradeCandidatesResponse,

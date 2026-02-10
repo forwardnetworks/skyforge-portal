@@ -246,7 +246,9 @@ function RootLayout() {
 								<div className="flex items-center gap-3">
 									<div className="hidden md:flex flex-col items-end">
 										<span className="text-[10px] text-muted-foreground uppercase leading-none">
-											{authProvider ? `Signed in with ${authProvider}` : "Signed in as"}
+											{authProvider
+												? `Signed in with ${authProvider}`
+												: "Signed in as"}
 										</span>
 										<span className="text-xs font-medium leading-none mt-1">
 											{who}
