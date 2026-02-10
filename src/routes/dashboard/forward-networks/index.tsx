@@ -32,6 +32,7 @@ import {
 	deleteWorkspaceForwardNetwork,
 	getWorkspaceForwardNetworkCapacityPortfolio,
 	getWorkspaces,
+	listForwardNetworks,
 	listUserForwardCollectorConfigs,
 	listUserForwardNetworks,
 	listWorkspaceForwardNetworks,
@@ -145,6 +146,17 @@ function ForwardNetworksPage() {
 		[collectorsQ.data?.collectors],
 	);
 
+	const availableForwardNetworksQ = useQuery({
+		queryKey: ["forwardNetworksAvailable"],
+		queryFn: () => listForwardNetworks(),
+		staleTime: 30_000,
+		retry: false,
+	});
+	const availableForwardNetworks = useMemo(
+		() => (availableForwardNetworksQ.data?.networks ?? []) as any[],
+		[availableForwardNetworksQ.data?.networks],
+	);
+
 	const [name, setName] = useState("");
 	const [forwardNetworkId, setForwardNetworkId] = useState("");
 	const [description, setDescription] = useState("");
@@ -153,6 +165,17 @@ function ForwardNetworksPage() {
 	const [saveScope, setSaveScope] = useState<"user" | "workspace">("user");
 
 	const canOpenNetworkViews = Boolean(String(selectedWorkspaceId ?? "").trim());
+
+	const forwardNetworkSelectValue = useMemo(() => {
+		const id = forwardNetworkId.trim();
+		if (!id) return "__none__";
+		if (
+			availableForwardNetworks.some((n: any) => String(n.id ?? "").trim() === id)
+		) {
+			return id;
+		}
+		return "__custom__";
+	}, [forwardNetworkId, availableForwardNetworks]);
 
 	const createM = useMutation({
 		mutationFn: async () => {
@@ -317,11 +340,57 @@ function ForwardNetworksPage() {
 						</div>
 						<div className="space-y-2">
 							<Label>Forward Network ID</Label>
-							<Input
-								value={forwardNetworkId}
-								onChange={(e) => setForwardNetworkId(e.target.value)}
-								placeholder="abc123..."
-							/>
+							<div className="flex items-center justify-between gap-3">
+								<Select
+									value={forwardNetworkSelectValue}
+									onValueChange={(v) => {
+										if (v === "__none__") {
+											setForwardNetworkId("");
+											return;
+										}
+										if (v === "__custom__") {
+											// Keep current value (if any) and allow manual entry below.
+											return;
+										}
+										setForwardNetworkId(v);
+									}}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select a network" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="__none__">(Select)</SelectItem>
+										{availableForwardNetworks.map((n: any) => (
+											<SelectItem key={String(n.id)} value={String(n.id)}>
+												{n.name ? `${String(n.name)} (${String(n.id)})` : String(n.id)}
+											</SelectItem>
+										))}
+										<SelectItem value="__custom__">Custom network id…</SelectItem>
+									</SelectContent>
+								</Select>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => void availableForwardNetworksQ.refetch()}
+									disabled={availableForwardNetworksQ.isFetching}
+								>
+									{availableForwardNetworksQ.isFetching ? "Refreshing…" : "Refresh"}
+								</Button>
+							</div>
+							{forwardNetworkSelectValue === "__custom__" ? (
+								<Input
+									value={forwardNetworkId}
+									onChange={(e) => setForwardNetworkId(e.target.value)}
+									placeholder="abc123..."
+								/>
+							) : null}
+							{availableForwardNetworksQ.isError ? (
+								<div className="text-xs text-destructive">
+									Failed to load Forward networks:{" "}
+									{(availableForwardNetworksQ.error as Error).message}
+								</div>
+							) : null}
 						</div>
 					</div>
 					<div className="space-y-2">

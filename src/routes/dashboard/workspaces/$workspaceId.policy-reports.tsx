@@ -93,6 +93,7 @@ import {
 	getWorkspacePolicyReportPacks,
 	getWorkspacePolicyReportRun,
 	getWorkspacePolicyReportSnapshots,
+	listForwardNetworks,
 	listUserForwardCredentialSets,
 	listWorkspacePolicyReportExceptions,
 	listWorkspacePolicyReportFindings,
@@ -554,6 +555,17 @@ function PolicyReportsPage() {
 		queryFn: () => listWorkspacePolicyReportForwardNetworks(workspaceId),
 		staleTime: 10_000,
 	});
+
+	const availableForwardNetworksQ = useQuery({
+		queryKey: ["forwardNetworksAvailable"],
+		queryFn: () => listForwardNetworks(),
+		staleTime: 30_000,
+		retry: false,
+	});
+	const availableForwardNetworks = useMemo(
+		() => (availableForwardNetworksQ.data?.networks ?? []) as any[],
+		[availableForwardNetworksQ.data?.networks],
+	);
 
 	const campaigns = useQuery({
 		queryKey: queryKeys.policyReportsRecertCampaigns(workspaceId),
@@ -2021,6 +2033,29 @@ function PolicyReportsPage() {
 	const forwardCredsStatus: PolicyReportForwardCredentialsStatus | null =
 		(forwardCreds.data as any) ?? null;
 
+	const networkSelectValue = useMemo(() => {
+		const id = networkId.trim();
+		if (!id) return "__none__";
+		const inSaved = forwardNetworksList.some(
+			(n) => String(n.forwardNetworkId ?? "").trim() === id,
+		);
+		const inForward = availableForwardNetworks.some(
+			(n: any) => String(n.id ?? "").trim() === id,
+		);
+		return inSaved || inForward ? id : "__custom__";
+	}, [networkId, forwardNetworksList, availableForwardNetworks]);
+
+	const addNetworkForwardIdSelectValue = useMemo(() => {
+		const id = addNetworkForwardId.trim();
+		if (!id) return "__none__";
+		if (
+			availableForwardNetworks.some((n: any) => String(n.id ?? "").trim() === id)
+		) {
+			return id;
+		}
+		return "__custom__";
+	}, [addNetworkForwardId, availableForwardNetworks]);
+
 	const approvedExceptionsByKey = useMemo(() => {
 		const now = Date.now();
 		const out = new Map<string, PolicyReportException>();
@@ -2600,22 +2635,79 @@ function PolicyReportsPage() {
 						) : null}
 					</div>
 					<div className="space-y-2">
-						<div className="text-sm font-medium">Forward Network ID</div>
-						<Input
-							value={networkId}
-							onChange={(e) => {
+						<div className="flex items-center justify-between gap-3">
+							<div className="text-sm font-medium">Forward Network ID</div>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => void availableForwardNetworksQ.refetch()}
+								disabled={availableForwardNetworksQ.isFetching}
+							>
+								{availableForwardNetworksQ.isFetching
+									? "Refreshing…"
+									: "Refresh list"}
+							</Button>
+						</div>
+						<Select
+							value={networkSelectValue}
+							onValueChange={(v) => {
 								if (embedded && String(forwardNetworkId ?? "").trim()) return;
-								setNetworkId(e.target.value);
+								if (v === "__none__") {
+									setNetworkId("");
+									return;
+								}
+								if (v === "__custom__") {
+									return;
+								}
+								setNetworkId(v);
 							}}
-							readOnly={
-								embedded && Boolean(String(forwardNetworkId ?? "").trim())
-							}
-							placeholder="e.g. 235216"
-						/>
+							disabled={embedded && Boolean(String(forwardNetworkId ?? "").trim())}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Select a network" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="__none__">(Select)</SelectItem>
+								{forwardNetworksList.map((n) => (
+									<SelectItem
+										key={String(n.networkRef ?? n.forwardNetworkId)}
+										value={String(n.forwardNetworkId ?? "")}
+									>
+										{String(n.name ?? n.forwardNetworkId)}
+									</SelectItem>
+								))}
+								{availableForwardNetworks.map((n: any) => (
+									<SelectItem key={String(n.id)} value={String(n.id)}>
+										{n.name ? `${String(n.name)} (${String(n.id)})` : String(n.id)}
+									</SelectItem>
+								))}
+								<SelectItem value="__custom__">Custom network id…</SelectItem>
+							</SelectContent>
+						</Select>
+						{networkSelectValue === "__custom__" ? (
+							<Input
+								value={networkId}
+								onChange={(e) => {
+									if (embedded && String(forwardNetworkId ?? "").trim()) return;
+									setNetworkId(e.target.value);
+								}}
+								readOnly={
+									embedded && Boolean(String(forwardNetworkId ?? "").trim())
+								}
+								placeholder="e.g. 235216"
+								className="font-mono text-xs"
+							/>
+						) : null}
 						<p className="text-xs text-muted-foreground">
 							This is the Forward network id (not the name). Policy Reports uses
 							the workspace Forward credentials on the server.
 						</p>
+						{availableForwardNetworksQ.isError ? (
+							<p className="text-xs text-destructive">
+								Failed to load Forward networks:{" "}
+								{(availableForwardNetworksQ.error as Error).message}
+							</p>
+						) : null}
 					</div>
 					<div className="space-y-2">
 						<div className="flex items-center justify-between">
@@ -6469,12 +6561,38 @@ function PolicyReportsPage() {
 						<div className="grid gap-3 md:grid-cols-2">
 							<div className="space-y-2">
 								<div className="text-sm font-medium">Forward Network ID</div>
-								<Input
-									value={addNetworkForwardId}
-									onChange={(e) => setAddNetworkForwardId(e.target.value)}
-									placeholder="e.g. 235216"
-									className="font-mono text-xs"
-								/>
+								<Select
+									value={addNetworkForwardIdSelectValue}
+									onValueChange={(v) => {
+										if (v === "__none__") {
+											setAddNetworkForwardId("");
+											return;
+										}
+										if (v === "__custom__") return;
+										setAddNetworkForwardId(v);
+									}}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select a network" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="__none__">(Select)</SelectItem>
+										{availableForwardNetworks.map((n: any) => (
+											<SelectItem key={String(n.id)} value={String(n.id)}>
+												{n.name ? `${String(n.name)} (${String(n.id)})` : String(n.id)}
+											</SelectItem>
+										))}
+										<SelectItem value="__custom__">Custom network id…</SelectItem>
+									</SelectContent>
+								</Select>
+								{addNetworkForwardIdSelectValue === "__custom__" ? (
+									<Input
+										value={addNetworkForwardId}
+										onChange={(e) => setAddNetworkForwardId(e.target.value)}
+										placeholder="e.g. 235216"
+										className="font-mono text-xs"
+									/>
+								) : null}
 							</div>
 							<div className="space-y-2">
 								<div className="text-sm font-medium">Name</div>
