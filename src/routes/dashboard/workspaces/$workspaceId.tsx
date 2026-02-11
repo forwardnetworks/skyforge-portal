@@ -201,7 +201,7 @@ function WorkspaceAccessPage() {
 							})
 						}
 					>
-						Policy Reports
+						Policy &amp; Compliance
 					</Button>
 					<Button
 						variant="outline"

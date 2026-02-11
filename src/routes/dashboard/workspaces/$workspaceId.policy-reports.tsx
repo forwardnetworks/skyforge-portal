@@ -2291,7 +2291,7 @@ function PolicyReportsPage() {
 						<div className="flex items-center gap-2">
 							<Shield className="h-5 w-5 text-muted-foreground" />
 							<h1 className="text-2xl font-bold tracking-tight">
-								Policy Reports
+								Policy &amp; Compliance
 							</h1>
 							<Badge variant="secondary">Demo</Badge>
 						</div>
@@ -2458,7 +2458,7 @@ function PolicyReportsPage() {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Policy Reports</title>
+  <title>Policy &amp; Compliance</title>
   <style>
     :root { --fg:#0b1020; --muted:#5b6477; --border:#d7dbe5; --bg:#ffffff; --chip:#f3f5fa; }
     body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 28px; color: var(--fg); background: var(--bg); }
@@ -2478,7 +2478,7 @@ function PolicyReportsPage() {
   </style>
 </head>
 <body>
-  <h1>Policy Reports</h1>
+  <h1>Policy &amp; Compliance</h1>
   <div class="meta">
     <span class="chip">workspaceId=<span class="mono">${esc(workspaceId)}</span></span>
     <span class="chip">networkId=<span class="mono">${esc(netId)}</span></span>
@@ -2705,8 +2705,9 @@ function PolicyReportsPage() {
 							/>
 						) : null}
 						<p className="text-xs text-muted-foreground">
-							This is the Forward network id (not the name). Policy Reports uses
-							the workspace Forward credentials on the server.
+							This is the Forward network id (not the name). Policy and
+							compliance checks use the workspace Forward credentials on the
+							server.
 						</p>
 						{availableForwardNetworksQ.isError ? (
 							<p className="text-xs text-destructive">
@@ -6559,8 +6560,8 @@ function PolicyReportsPage() {
 					<DialogHeader>
 						<DialogTitle>Add Forward Network</DialogTitle>
 						<DialogDescription>
-							Save one or more Forward Network IDs so Policy Reports is
-							organized per network.
+							Save one or more Forward Network IDs so policy and compliance
+							checks stay organized per network.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-3">

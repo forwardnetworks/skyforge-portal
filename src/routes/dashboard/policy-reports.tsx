@@ -27,7 +27,9 @@ function PolicyReportsIndexPage() {
 	return (
 		<div className="space-y-6 p-6">
 			<div className="space-y-1 border-b pb-6">
-				<h1 className="text-2xl font-bold tracking-tight">Policy Reports</h1>
+				<h1 className="text-2xl font-bold tracking-tight">
+					Policy &amp; Compliance
+				</h1>
 				<p className="text-muted-foreground text-sm">
 					Run security and compliance checks against a Forward snapshot, per
 					workspace.
@@ -37,7 +39,7 @@ function PolicyReportsIndexPage() {
 			{workspaces.length === 0 ? (
 				<EmptyState
 					title="No workspaces"
-					description="Create a workspace first, then run policy reports inside it."
+					description="Create a workspace first, then run policy and compliance checks inside it."
 					icon={ShieldCheck}
 				/>
 			) : (
@@ -61,7 +63,7 @@ function PolicyReportsIndexPage() {
 									params={{ workspaceId: w.id }}
 									className="text-sm text-primary underline hover:no-underline"
 								>
-									Open policy reports
+									Open policy &amp; compliance
 								</Link>
 							</CardContent>
 						</Card>

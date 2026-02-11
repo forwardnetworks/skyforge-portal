@@ -462,7 +462,7 @@ function RootLayout() {
 						)}
 					</main>
 				</div>
-				<CommandMenu />
+				<CommandMenu isAdmin={isAdmin} features={uiConfig.data?.features} />
 				<Toaster />
 			</div>
 		</ThemeProvider>

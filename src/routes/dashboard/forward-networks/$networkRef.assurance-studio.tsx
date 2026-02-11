@@ -2469,7 +2469,7 @@ function AssuranceStudioPage() {
 										target="_blank"
 										rel="noreferrer noopener"
 									>
-										Open full Policy Reports
+										Open full Policy &amp; Compliance
 									</a>
 								</Button>
 								<Button asChild variant="outline">
