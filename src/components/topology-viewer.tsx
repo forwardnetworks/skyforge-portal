@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { WebUIModal } from "@/components/webui-modal";
 import { useDownloadImage } from "@/hooks/use-download-image";
 import {
 	type DeploymentUIEventsState,
@@ -319,6 +320,10 @@ export function TopologyViewer({
 		id: string;
 		kind?: string;
 	} | null>(null);
+	const [webuiNode, setWebuiNode] = useState<{
+		id: string;
+		kind?: string;
+	} | null>(null);
 	const [logsNode, setLogsNode] = useState<{
 		id: string;
 		kind?: string;
@@ -510,6 +515,7 @@ export function TopologyViewer({
 			return;
 		}
 		if (action === "terminal") setTerminalNode({ id: node });
+		if (action === "webui") setWebuiNode({ id: node });
 		if (action === "logs") setLogsNode({ id: node });
 		if (action === "describe") setDescribeNode({ id: node });
 		if (action === "interfaces") {
@@ -1128,6 +1134,18 @@ export function TopologyViewer({
 			) : null}
 
 			{workspaceId && deploymentId ? (
+				<WebUIModal
+					open={!!webuiNode}
+					onOpenChange={(open) => {
+						if (!open) setWebuiNode(null);
+					}}
+					workspaceId={workspaceId}
+					deploymentId={deploymentId}
+					nodeId={webuiNode?.id ?? ""}
+				/>
+			) : null}
+
+			{workspaceId && deploymentId ? (
 				<NodeLogsModal
 					open={!!logsNode}
 					onOpenChange={(open) => {
@@ -1235,6 +1253,17 @@ export function TopologyViewer({
 							</Button>
 							<Button
 								size="sm"
+								variant="secondary"
+								className="w-full"
+								onClick={() => {
+									setNodeMenu(null);
+									setWebuiNode({ id: String(nodeMenu.node.id) });
+								}}
+							>
+								Open Web UI…
+							</Button>
+							<Button
+								size="sm"
 								variant="outline"
 								className="w-full"
 								disabled={!enableTerminal}
@@ -1246,6 +1275,19 @@ export function TopologyViewer({
 								}}
 							>
 								Open terminal (new tab)
+							</Button>
+							<Button
+								size="sm"
+								variant="outline"
+								className="w-full"
+								onClick={() => {
+									const id = String(nodeMenu.node.id);
+									const url = `${window.location.pathname}?node=${encodeURIComponent(id)}&action=webui`;
+									window.open(url, "_blank", "noopener,noreferrer");
+									setNodeMenu(null);
+								}}
+							>
+								Open Web UI (new tab)
 							</Button>
 							<Button
 								size="sm"

@@ -86,7 +86,8 @@ function ForwardNetworksPage() {
 		const urlWorkspaceId = String(workspace ?? "").trim();
 		if (workspaces.length === 0) return;
 		const isValid =
-			!!urlWorkspaceId && workspaces.some((w) => String(w.id) === urlWorkspaceId);
+			!!urlWorkspaceId &&
+			workspaces.some((w) => String(w.id) === urlWorkspaceId);
 		const nextId = isValid ? urlWorkspaceId : String(workspaces[0]?.id ?? "");
 		if (!nextId) return;
 		if (urlWorkspaceId === nextId) return;
