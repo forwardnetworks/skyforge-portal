@@ -12,6 +12,7 @@ import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
 	type WorkspaceDeployment,
+	getDashboardSnapshot,
 	getDeploymentTopology,
 } from "../../../lib/skyforge-api";
 
@@ -27,10 +28,9 @@ function DeploymentMapPage() {
 
 	const snap = useQuery<DashboardSnapshot | null>({
 		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: async () => null,
-		initialData: null,
+		queryFn: getDashboardSnapshot,
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 10_000,
 	});
 
 	const deployment = useMemo(() => {

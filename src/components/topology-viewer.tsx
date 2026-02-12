@@ -514,12 +514,19 @@ export function TopologyViewer({
 			deepLinkHandledRef.current = true;
 			return;
 		}
-		if (action === "terminal") setTerminalNode({ id: node });
+		// Wait until we can resolve the node metadata from the rendered topology.
+		// Standalone tool windows (terminal/logs/describe) need node kind/IP.
+		const topoNode = derived.nodes.find((n) => String(n.id) === node);
+		if (!topoNode) return;
+		const kind = String((topoNode as any)?.data?.kind ?? "");
+		const ip = String((topoNode as any)?.data?.ip ?? "");
+
+		if (action === "terminal") setTerminalNode({ id: node, kind });
 		if (action === "webui") setWebuiNode({ id: node });
-		if (action === "logs") setLogsNode({ id: node });
-		if (action === "describe") setDescribeNode({ id: node });
+		if (action === "logs") setLogsNode({ id: node, kind, ip });
+		if (action === "describe") setDescribeNode({ id: node, kind, ip });
 		if (action === "interfaces") {
-			setInterfacesNode({ id: node });
+			setInterfacesNode({ id: node, kind, ip });
 			setInterfacesOpen(true);
 		}
 		if (action === "running-config") {
@@ -532,7 +539,7 @@ export function TopologyViewer({
 		const suffix = params.toString();
 		const nextUrl = `${window.location.pathname}${suffix ? `?${suffix}` : ""}${window.location.hash || ""}`;
 		window.history.replaceState(null, "", nextUrl);
-	}, [deploymentId, workspaceId]);
+	}, [deploymentId, derived.nodes, workspaceId]);
 
 	useEffect(() => {
 		if (!edgeMenu) return;
@@ -823,6 +830,12 @@ export function TopologyViewer({
 
 		const url = `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/stats/events`;
 		const es = new EventSource(url, { withCredentials: true });
+		let opened = false;
+
+		es.onopen = () => {
+			opened = true;
+			setStatsError(null);
+		};
 
 		const onStats = (ev: MessageEvent) => {
 			try {
@@ -892,7 +905,11 @@ export function TopologyViewer({
 			}
 		};
 
-		const onError = () => setStatsError("link stats stream disconnected");
+		const onError = () => {
+			// EventSource fires `onerror` during initial connection attempts and while retrying.
+			// Only surface the "disconnected" message after we've successfully opened once.
+			if (opened) setStatsError("link stats stream disconnected");
+		};
 
 		es.addEventListener("stats", onStats as any);
 		es.onerror = onError;

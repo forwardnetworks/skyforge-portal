@@ -68,6 +68,7 @@ import {
 	type UserForwardCollectorConfigSummary,
 	type WorkspaceDeployment,
 	deleteDeployment,
+	getDashboardSnapshot,
 	getDeploymentTopology,
 	listUserForwardCollectorConfigs,
 	saveDeploymentNodeConfig,
@@ -102,10 +103,9 @@ function DeploymentDetailPage() {
 
 	const snap = useQuery<DashboardSnapshot | null>({
 		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: async () => null,
-		initialData: null,
+		queryFn: getDashboardSnapshot,
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 10_000,
 	});
 
 	const deployment = useMemo(() => {
