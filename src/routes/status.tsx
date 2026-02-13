@@ -310,7 +310,7 @@ function StatusPage() {
 							{
 								id: "coder",
 								name: "Coder",
-								path: "/coder/launch",
+								path: `${SKYFORGE_API}/coder/launch`,
 								icon: Cloud,
 								enabled: features?.coderEnabled ?? false,
 								external: true,

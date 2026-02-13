@@ -135,9 +135,11 @@ const NAV_SECTIONS: NavSection[] = [
 			{
 				id: "forward-networks",
 				label: "Forward Networks",
-				href: "/dashboard/forward-networks",
+				href: "/fwd/",
 				icon: Network,
-				matchPrefixes: ["/dashboard/forward-networks"],
+				external: true,
+				newTab: true,
+				matchPrefixes: ["/fwd"],
 				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
 			},
 			{
@@ -228,7 +230,7 @@ const NAV_SECTIONS: NavSection[] = [
 			{
 				id: "coder",
 				label: "Coder",
-				href: "/coder/launch",
+				href: `${SKYFORGE_API}/coder/launch`,
 				icon: Cloud,
 				external: true,
 				matchPrefixes: ["/coder"],
