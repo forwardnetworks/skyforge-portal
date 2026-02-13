@@ -141,6 +141,16 @@ const NAV_SECTIONS: NavSection[] = [
 				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
 			},
 			{
+				id: "forward-onprem",
+				label: "Forward On-Prem",
+				href: "/fwd/",
+				icon: Network,
+				external: true,
+				newTab: true,
+				matchPrefixes: ["/fwd"],
+				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
+			},
+			{
 				id: "policy-compliance",
 				label: "Routing & Compliance",
 				href: "/dashboard/policy-reports",
@@ -170,16 +180,6 @@ const NAV_SECTIONS: NavSection[] = [
 				href: "/dashboard/forward",
 				icon: Radio,
 				matchPrefixes: ["/dashboard/forward"],
-				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
-			},
-			{
-				id: "forward-onprem",
-				label: "Forward On-Prem",
-				href: "/fwd",
-				icon: Network,
-				external: true,
-				newTab: true,
-				matchPrefixes: ["/fwd"],
 				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
 			},
 			{
