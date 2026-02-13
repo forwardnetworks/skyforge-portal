@@ -24,16 +24,19 @@ import {
 import { queryKeys } from "../../lib/query-keys";
 import {
 	type ForwardCredentialSetSummary,
+	type ForwardOnPremStatusResponse,
 	type UserForwardCollectorConfigSummary,
 	createUserForwardCollectorConfig,
 	createUserForwardCredentialSet,
 	deleteUserForwardCollectorConfig,
 	deleteUserForwardCredentialSet,
+	getForwardOnPremStatus,
 	getUserForwardCollectorConfigLogs,
 	getUserGitCredentials,
 	listUserForwardCollectorConfigs,
 	listUserForwardCredentialSets,
 	restartUserForwardCollectorConfig,
+	wakeForwardOnPremAdmin,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/forward")({
@@ -48,6 +51,13 @@ function normalizeBaseURL(target: ForwardTarget, onPremHost: string): string {
 	if (!raw) return "";
 	if (/^https?:\/\//i.test(raw)) return raw;
 	return `https://${raw}`;
+}
+
+function fmtTs(ts?: string): string {
+	if (!ts) return "never";
+	const d = new Date(ts);
+	if (Number.isNaN(d.getTime())) return ts;
+	return d.toLocaleString();
 }
 
 function ForwardCollectorPage() {
@@ -89,6 +99,26 @@ function ForwardCollectorPage() {
 	const [setDefault, setSetDefault] = useState(true);
 	const [sourceCredentialSetId, setSourceCredentialSetId] =
 		useState<string>("manual");
+	const onPremStatusQ = useQuery({
+		queryKey: ["forward-onprem-status"],
+		queryFn: getForwardOnPremStatus,
+		refetchInterval: 5000,
+		staleTime: 2_000,
+		retry: false,
+	});
+	const wakeOnPremM = useMutation({
+		mutationFn: wakeForwardOnPremAdmin,
+		onSuccess: async () => {
+			toast.success("Forward on-prem wake requested");
+			await queryClient.invalidateQueries({
+				queryKey: ["forward-onprem-status"],
+			});
+		},
+		onError: (e) =>
+			toast.error("Failed to wake Forward on-prem", {
+				description: (e as Error).message,
+			}),
+	});
 
 	const userGitQ = useQuery({
 		queryKey: queryKeys.userGitCredentials(),
@@ -303,6 +333,19 @@ function ForwardCollectorPage() {
 			}),
 	});
 
+	const onPremStatus = onPremStatusQ.data as
+		| ForwardOnPremStatusResponse
+		| undefined;
+	const missingRbac = useMemo(() => {
+		if (!onPremStatus?.rbac) return [] as string[];
+		const out: string[] = [];
+		if (!onPremStatus.rbac.canGetDeployments) out.push("deployments.get");
+		if (!onPremStatus.rbac.canPatchDeployments) out.push("deployments.patch");
+		if (!onPremStatus.rbac.canGetStatefulSets) out.push("statefulsets.get");
+		if (!onPremStatus.rbac.canPatchStatefulSets) out.push("statefulsets.patch");
+		return out;
+	}, [onPremStatus]);
+
 	return (
 		<div className="p-6 space-y-6">
 			<div className="flex items-start justify-between gap-4">
@@ -314,6 +357,117 @@ function ForwardCollectorPage() {
 					</p>
 				</div>
 			</div>
+
+			<Card>
+				<CardHeader>
+					<div className="flex items-center justify-between gap-4">
+						<div>
+							<CardTitle>On-prem Forward status</CardTitle>
+							<CardDescription>
+								Health for `/fwd` wake/proxy path and required RBAC.
+							</CardDescription>
+						</div>
+						<div className="flex items-center gap-2">
+							{onPremStatus?.phase === "ready" ? (
+								<Badge variant="secondary">ready</Badge>
+							) : onPremStatus?.phase === "error" ? (
+								<Badge variant="destructive">error</Badge>
+							) : (
+								<Badge>waking</Badge>
+							)}
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => wakeOnPremM.mutate()}
+								disabled={wakeOnPremM.isPending}
+							>
+								{wakeOnPremM.isPending ? "Waking…" : "Wake now"}
+							</Button>
+						</div>
+					</div>
+				</CardHeader>
+				<CardContent className="space-y-3 text-sm">
+					{onPremStatusQ.isLoading ? (
+						<div className="text-muted-foreground">Loading…</div>
+					) : null}
+					{onPremStatusQ.isError ? (
+						<div className="text-destructive">
+							Failed to load on-prem status:{" "}
+							{(onPremStatusQ.error as Error).message}
+						</div>
+					) : null}
+					{onPremStatus ? (
+						<>
+							<div className="grid gap-2 md:grid-cols-2">
+								<div>
+									Last request:{" "}
+									<span className="font-mono">
+										{fmtTs(onPremStatus.lastRequestAt)}
+									</span>
+								</div>
+								<div>
+									Last wake:{" "}
+									<span className="font-mono">
+										{fmtTs(onPremStatus.lastWakeAt)}
+									</span>
+								</div>
+							</div>
+							<div className="grid gap-2 md:grid-cols-2">
+								<div>
+									Idle timeout:{" "}
+									<span className="font-mono">
+										{Math.max(0, Number(onPremStatus.idleTimeoutSeconds ?? 0))}s
+									</span>
+								</div>
+								<div>
+									Wake timeout:{" "}
+									<span className="font-mono">
+										{Math.max(0, Number(onPremStatus.wakeTimeoutSeconds ?? 0))}s
+									</span>
+								</div>
+							</div>
+							<div>
+								RBAC:{" "}
+								{missingRbac.length === 0 ? (
+									<Badge variant="secondary">ok</Badge>
+								) : (
+									<span className="text-destructive font-mono">
+										{missingRbac.join(", ")}
+									</span>
+								)}
+							</div>
+							{onPremStatus.lastError ? (
+								<div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive">
+									<div className="font-medium">Last error</div>
+									<div className="text-xs font-mono break-all">
+										{onPremStatus.lastError}
+									</div>
+									{onPremStatus.lastErrorAt ? (
+										<div className="text-xs mt-1">
+											at {fmtTs(onPremStatus.lastErrorAt)}
+										</div>
+									) : null}
+								</div>
+							) : null}
+							<div className="space-y-1">
+								<div className="font-medium">Workloads</div>
+								<div className="grid gap-1">
+									{(onPremStatus.workloads ?? []).map((w) => (
+										<div
+											key={`${w.kind}/${w.name}`}
+											className="rounded border p-2 font-mono text-xs"
+										>
+											{w.kind}/{w.name} desired={w.desired} ready={w.ready}{" "}
+											available={w.available}
+											{w.error ? ` error=${w.error}` : ""}
+										</div>
+									))}
+								</div>
+							</div>
+						</>
+					) : null}
+				</CardContent>
+			</Card>
 
 			<Card>
 				<CardHeader>

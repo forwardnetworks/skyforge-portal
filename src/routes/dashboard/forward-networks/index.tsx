@@ -69,29 +69,59 @@ function ForwardNetworksPage() {
 		() => (workspacesQ.data?.workspaces ?? []) as SkyforgeWorkspace[],
 		[workspacesQ.data?.workspaces],
 	);
+	const workspaceOptions = useMemo(
+		() =>
+			workspaces
+				.map((w) => {
+					const id = String(w?.id ?? "").trim();
+					if (!id) return null;
+					return {
+						id,
+						name: String(w?.name ?? id),
+						slug: String(w?.slug ?? ""),
+					};
+				})
+				.filter((w): w is { id: string; name: string; slug: string } =>
+					Boolean(w),
+				),
+		[workspaces],
+	);
 
 	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
 		String(workspace ?? ""),
 	);
 
 	useEffect(() => {
-		if (selectedWorkspaceId) return;
-		if (workspaces.length === 0) return;
-		setSelectedWorkspaceId(String(workspaces[0]?.id ?? ""));
-	}, [selectedWorkspaceId, workspaces]);
+		const current = selectedWorkspaceId.trim();
+		if (current && workspaceOptions.some((w) => w.id === current)) return;
+		if (workspaceOptions.length === 0) {
+			if (current) setSelectedWorkspaceId("");
+			return;
+		}
+		setSelectedWorkspaceId(workspaceOptions[0].id);
+	}, [selectedWorkspaceId, workspaceOptions]);
 
 	useEffect(() => {
-		const w = String(workspace ?? "");
+		const w = String(workspace ?? "").trim();
+		if (!w) return;
+		if (!workspaceOptions.some((x) => x.id === w)) return;
 		if (w === selectedWorkspaceId) return;
 		setSelectedWorkspaceId(w);
-	}, [workspace, selectedWorkspaceId]);
+	}, [workspace, selectedWorkspaceId, workspaceOptions]);
 
 	const handleWorkspaceChange = (id: string) => {
+		const next = String(id ?? "").trim();
+		setSelectedWorkspaceId(next);
 		void navigate({
-			search: { workspace: id } as any,
+			search: next ? ({ workspace: next } as any) : ({} as any),
 			replace: true,
 		});
 	};
+	const selectedWorkspaceValue = useMemo(() => {
+		const current = String(selectedWorkspaceId ?? "").trim();
+		if (!current) return undefined;
+		return workspaceOptions.some((w) => w.id === current) ? current : undefined;
+	}, [selectedWorkspaceId, workspaceOptions]);
 
 	const userNetworksQ = useQuery({
 		queryKey: queryKeys.userForwardNetworks(),
@@ -245,16 +275,14 @@ function ForwardNetworksPage() {
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
 						<Select
-							// Avoid Radix Select crashing if the controlled value doesn't match
-							// an item (e.g. initial render before workspaces load).
-							value={selectedWorkspaceId || undefined}
+							value={selectedWorkspaceValue}
 							onValueChange={handleWorkspaceChange}
 						>
 							<SelectTrigger className="w-[240px] h-8 bg-transparent border-0 focus:ring-0 shadow-none">
 								<SelectValue placeholder="Select workspace" />
 							</SelectTrigger>
 							<SelectContent>
-								{workspaces.map((w: SkyforgeWorkspace) => (
+								{workspaceOptions.map((w) => (
 									<SelectItem key={w.id} value={w.id}>
 										{w.name} ({w.slug})
 									</SelectItem>

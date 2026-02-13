@@ -807,6 +807,37 @@ export type ListForwardNetworksResponse = {
 	networks: Array<{ id: string; name?: string }>;
 };
 
+export type ForwardOnPremRBACStatus = {
+	canGetDeployments: boolean;
+	canPatchDeployments: boolean;
+	canGetStatefulSets: boolean;
+	canPatchStatefulSets: boolean;
+};
+
+export type ForwardOnPremWorkloadStatus = {
+	kind: string;
+	name: string;
+	optional: boolean;
+	desired: number;
+	ready: number;
+	available: number;
+	error?: string;
+};
+
+export type ForwardOnPremStatusResponse = {
+	enabled: boolean;
+	phase: "idle" | "waking" | "ready" | "error" | string;
+	idleTimeoutSeconds: number;
+	wakeTimeoutSeconds: number;
+	lastRequestAt?: string;
+	lastWakeAt?: string;
+	lastError?: string;
+	lastErrorAt?: string;
+	proxyPrefix: string;
+	rbac: ForwardOnPremRBACStatus;
+	workloads: ForwardOnPremWorkloadStatus[];
+};
+
 export async function listForwardNetworks(params?: {
 	credentialId?: string;
 }): Promise<ListForwardNetworksResponse> {
@@ -816,6 +847,17 @@ export async function listForwardNetworks(params?: {
 	return apiFetch<ListForwardNetworksResponse>(
 		`/api/forward/networks${suffix ? `?${suffix}` : ""}`,
 	);
+}
+
+export async function getForwardOnPremStatus(): Promise<ForwardOnPremStatusResponse> {
+	return apiFetch<ForwardOnPremStatusResponse>("/api/forward/onprem/status");
+}
+
+export async function wakeForwardOnPremAdmin(): Promise<void> {
+	await apiFetch<void>("/api/admin/forward/onprem/wake", {
+		method: "POST",
+		body: "{}",
+	});
 }
 
 export type UserAPIToken = {
