@@ -57,7 +57,6 @@ import {
 	listWorkspaceForwardNetworks,
 	refreshForwardNetworkAssurance,
 	seedForwardNetworkAssuranceDemo,
-	storeWorkspacePolicyReportPathsEnforcementBypass,
 } from "@/lib/skyforge-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -716,48 +715,6 @@ function AssuranceStudioPage() {
 		return demandsToPolicyReportsFlowSuite(demands);
 	}, [demandsText]);
 
-	const policyReportsUrl = useMemo(() => {
-		if (!workspaceId) return "";
-		if (!forwardNetworkId) return "";
-		const qs = new URLSearchParams();
-		qs.set("embed", "1");
-		qs.set("forwardNetworkId", forwardNetworkId);
-		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
-		if (flowsText.trim()) qs.set("flows", flowsText);
-		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-	}, [workspaceId, forwardNetworkId, snapshotId, flowsText]);
-
-	const policyReportsIntentUrl = useMemo(() => {
-		if (!workspaceId) return "";
-		if (!forwardNetworkId) return "";
-		const qs = new URLSearchParams();
-		qs.set("embed", "1");
-		qs.set("tab", "intent");
-		qs.set("forwardNetworkId", forwardNetworkId);
-		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
-		if (flowsText.trim()) qs.set("flows", flowsText);
-		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-	}, [workspaceId, forwardNetworkId, snapshotId, flowsText]);
-
-	const policyReportsSegmentationUrl = useMemo(() => {
-		if (!workspaceId) return "";
-		if (!forwardNetworkId) return "";
-		const qs = new URLSearchParams();
-		qs.set("embed", "1");
-		qs.set("tab", "segmentation");
-		qs.set("forwardNetworkId", forwardNetworkId);
-		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
-		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-	}, [workspaceId, forwardNetworkId, snapshotId]);
-
-	const capacityUrl = useMemo(() => {
-		if (!workspaceId) return "";
-		const qs = new URLSearchParams();
-		qs.set("workspace", workspaceId);
-		qs.set("embed", "1");
-		return `/dashboard/forward-networks/${encodeURIComponent(networkRef)}/capacity?${qs.toString()}`;
-	}, [workspaceId, networkRef]);
-
 	const runScenarioM = useMutation({
 		mutationFn: async () => {
 			if (!workspaceId) throw new Error("workspace is required");
@@ -1006,54 +963,6 @@ function AssuranceStudioPage() {
 			toast.error(String(e?.message ?? e ?? "paths assurance failed")),
 	});
 
-	const secStoreM = useMutation({
-		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
-			if (!forwardNetworkId) throw new Error("forwardNetworkId is required");
-			const queries: PolicyReportPathQuery[] = scenarioDemands
-				.filter((d) => String(d.dstIp ?? "").trim())
-				.slice(0, 200)
-				.map((d) => ({
-					from: d.from,
-					srcIp: d.srcIp,
-					dstIp: d.dstIp,
-					ipProto: d.ipProto,
-					srcPort: d.srcPort,
-					dstPort: d.dstPort,
-				}));
-			if (queries.length === 0) throw new Error("no valid demands to evaluate");
-			return storeWorkspacePolicyReportPathsEnforcementBypass(workspaceId, {
-				title: `Assurance Studio Paths Assurance (${queries.length} flows)`,
-				forwardNetworkId,
-				snapshotId: snapshotId.trim() || undefined,
-				queries,
-				requireEnforcement: secRequireEnforcement,
-				requireSymmetricDelivery: secIncludeReturnPath
-					? secRequireSymmetricDelivery
-					: undefined,
-				requireReturnEnforcement: secIncludeReturnPath
-					? secRequireReturnEnforcement
-					: undefined,
-				enforcementDeviceNameParts: splitParts(secEnfNamePartsText),
-				enforcementTagParts: splitParts(secEnfTagPartsText),
-				intent: "PREFER_DELIVERED",
-				includeTags: true,
-				includeNetworkFunctions: secIncludeNetworkFunctions,
-				maxCandidates: 5000,
-				maxResults: 1,
-				maxReturnPathResults: secIncludeReturnPath ? 1 : 0,
-				maxSeconds: 30,
-				maxOverallSeconds: 300,
-			});
-		},
-		onSuccess: (resp) =>
-			toast.success("Stored as Policy Report run", {
-				description: resp.run.id,
-			}),
-		onError: (e: any) =>
-			toast.error(String(e?.message ?? e ?? "store paths assurance failed")),
-	});
-
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between gap-3">
@@ -1096,15 +1005,6 @@ function AssuranceStudioPage() {
 							{seedDemoM.isPending ? "Seeding…" : "Seed demo signals"}
 						</Button>
 					) : null}
-					<Button asChild variant="outline" size="sm">
-						<Link
-							to="/dashboard/forward-networks/$networkRef/assurance"
-							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
-						>
-							Assurance page
-						</Link>
-					</Button>
 				</div>
 			</div>
 
@@ -2111,15 +2011,6 @@ function AssuranceStudioPage() {
 								>
 									Evaluate capacity bottlenecks
 								</Button>
-								<Button asChild variant="outline">
-									<a
-										href={capacityUrl || "#"}
-										target="_blank"
-										rel="noreferrer noopener"
-									>
-										Open full Capacity
-									</a>
-								</Button>
 								<label className="flex items-center gap-2 text-sm text-muted-foreground">
 									<input
 										type="checkbox"
@@ -2453,42 +2344,6 @@ function AssuranceStudioPage() {
 									onClick={() => secRunM.mutate()}
 								>
 									Run Paths Assurance
-								</Button>
-								<Button
-									variant="secondary"
-									disabled={
-										!workspaceId || secStoreM.isPending || !forwardNetworkId
-									}
-									onClick={() => secStoreM.mutate()}
-								>
-									Store as run
-								</Button>
-								<Button asChild variant="outline">
-									<a
-										href={policyReportsUrl || "#"}
-										target="_blank"
-										rel="noreferrer noopener"
-									>
-										Open full Policy &amp; Compliance
-									</a>
-								</Button>
-								<Button asChild variant="outline">
-									<a
-										href={policyReportsSegmentationUrl || "#"}
-										target="_blank"
-										rel="noreferrer noopener"
-									>
-										Segmentation posture
-									</a>
-								</Button>
-								<Button asChild variant="outline">
-									<a
-										href={policyReportsIntentUrl || "#"}
-										target="_blank"
-										rel="noreferrer noopener"
-									>
-										Intent suite
-									</a>
 								</Button>
 								{!forwardNetworkId ? (
 									<span className="text-sm text-amber-600">
