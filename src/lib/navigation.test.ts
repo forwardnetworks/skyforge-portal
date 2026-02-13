@@ -35,6 +35,8 @@ describe("navigation model", () => {
 			forwardEnabled: true,
 		});
 		expect(items.some((item) => item.id === "forward-onprem")).toBe(true);
+		const assuranceHub = getItemById(items, "forward-networks");
+		expect(assuranceHub.href).toBe("/dashboard/forward-networks");
 	});
 
 	it("hides admin-only entries for non-admin users", () => {

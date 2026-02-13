@@ -134,17 +134,15 @@ const NAV_SECTIONS: NavSection[] = [
 		items: [
 			{
 				id: "forward-networks",
-				label: "Forward Networks",
-				href: "/fwd/",
+				label: "Assurance Hub",
+				href: "/dashboard/forward-networks",
 				icon: Network,
-				external: true,
-				newTab: true,
-				matchPrefixes: ["/fwd"],
+				matchPrefixes: ["/dashboard/forward-networks"],
 				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
 			},
 			{
 				id: "policy-compliance",
-				label: "Policy & Compliance",
+				label: "Routing & Compliance",
 				href: "/dashboard/policy-reports",
 				icon: ShieldCheck,
 				matchPrefixes: ["/dashboard/policy-reports"],

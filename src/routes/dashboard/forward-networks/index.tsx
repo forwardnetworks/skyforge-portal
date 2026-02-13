@@ -24,16 +24,21 @@ import {
 } from "../../../components/ui/select";
 import { queryKeys } from "../../../lib/query-keys";
 import {
+	type ForwardCredentialSetSummary,
+	applyWorkspaceForwardCredentialSet,
 	type PolicyReportForwardNetwork,
 	type SkyforgeWorkspace,
 	createUserForwardNetwork,
 	createWorkspaceForwardNetwork,
+	deleteWorkspaceForwardConfig,
 	deleteUserForwardNetwork,
 	deleteWorkspaceForwardNetwork,
+	getWorkspaceForwardConfig,
 	getWorkspaceForwardNetworkCapacityPortfolio,
 	getWorkspaces,
 	listForwardNetworks,
 	listUserForwardCollectorConfigs,
+	listUserForwardCredentialSets,
 	listUserForwardNetworks,
 	listWorkspaceForwardNetworks,
 } from "../../../lib/skyforge-api";
@@ -176,12 +181,33 @@ function ForwardNetworksPage() {
 		[availableForwardNetworksQ.data?.networks],
 	);
 
+	const workspaceForwardConfigQ = useQuery({
+		queryKey: queryKeys.workspaceForwardConfig(selectedWorkspaceId),
+		queryFn: () => getWorkspaceForwardConfig(selectedWorkspaceId),
+		enabled: Boolean(selectedWorkspaceId),
+		staleTime: 10_000,
+		retry: false,
+	});
+
+	const credentialSetsQ = useQuery({
+		queryKey: queryKeys.userForwardCredentialSets(),
+		queryFn: listUserForwardCredentialSets,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const credentialSets = useMemo(
+		() =>
+			(credentialSetsQ.data?.credentialSets ?? []) as ForwardCredentialSetSummary[],
+		[credentialSetsQ.data?.credentialSets],
+	);
+
 	const [name, setName] = useState("");
 	const [forwardNetworkId, setForwardNetworkId] = useState("");
 	const [description, setDescription] = useState("");
 	const [collectorConfigId, setCollectorConfigId] =
 		useState<string>("__default__");
-	const [saveScope, setSaveScope] = useState<"user" | "workspace">("user");
+	const [saveScope, setSaveScope] = useState<"user" | "workspace">("workspace");
+	const [credentialSetId, setCredentialSetId] = useState<string>("");
 
 	const canOpenNetworkViews = Boolean(String(selectedWorkspaceId ?? "").trim());
 
@@ -274,6 +300,50 @@ function ForwardNetworksPage() {
 			}),
 	});
 
+	useEffect(() => {
+		if (credentialSetId) return;
+		if (credentialSets.length === 0) return;
+		setCredentialSetId(String(credentialSets[0]?.id ?? ""));
+	}, [credentialSetId, credentialSets]);
+
+	const applyCredSetM = useMutation({
+		mutationFn: async () => {
+			if (!selectedWorkspaceId) throw new Error("Select a workspace");
+			const id = credentialSetId.trim();
+			if (!id) throw new Error("Select a credential set");
+			return applyWorkspaceForwardCredentialSet(selectedWorkspaceId, {
+				credentialId: id,
+			});
+		},
+		onSuccess: async () => {
+			toast.success("Forward credentials applied to workspace");
+			await qc.invalidateQueries({
+				queryKey: queryKeys.workspaceForwardConfig(selectedWorkspaceId),
+			});
+		},
+		onError: (e) =>
+			toast.error("Failed to apply credential set", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const clearCredSetM = useMutation({
+		mutationFn: async () => {
+			if (!selectedWorkspaceId) throw new Error("Select a workspace");
+			return deleteWorkspaceForwardConfig(selectedWorkspaceId);
+		},
+		onSuccess: async () => {
+			toast.success("Workspace Forward credentials cleared");
+			await qc.invalidateQueries({
+				queryKey: queryKeys.workspaceForwardConfig(selectedWorkspaceId),
+			});
+		},
+		onError: (e) =>
+			toast.error("Failed to clear workspace credentials", {
+				description: (e as Error).message,
+			}),
+	});
+
 	return (
 		<div className="space-y-6 p-6">
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-6">
@@ -326,6 +396,86 @@ function ForwardNetworksPage() {
 
 			<Card>
 				<CardHeader>
+					<CardTitle>Assurance context</CardTitle>
+					<CardDescription>
+						Bind workspace Forward credentials, then save workspace network IDs
+						for Capacity, Routing &amp; Compliance, and Assurance Studio.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="rounded-md border p-3">
+						<div className="text-sm font-medium">Workspace Forward status</div>
+						<div className="mt-1 text-sm text-muted-foreground">
+							{!selectedWorkspaceId
+								? "Select a workspace"
+								: workspaceForwardConfigQ.isLoading
+									? "Loading…"
+									: workspaceForwardConfigQ.isError
+										? "Failed to load workspace Forward config"
+										: workspaceForwardConfigQ.data?.configured
+											? `Configured for ${workspaceForwardConfigQ.data?.username ?? ""}`
+											: "Not configured"}
+						</div>
+					</div>
+					<div className="space-y-2">
+						<Label>Apply workspace credential set</Label>
+						<Select
+							value={credentialSetId || "__none__"}
+							onValueChange={(v) =>
+								setCredentialSetId(v === "__none__" ? "" : v)
+							}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Select a credential set" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="__none__">(Select)</SelectItem>
+								{credentialSets.map((cs) => (
+									<SelectItem key={cs.id} value={cs.id}>
+										{cs.name}
+										{cs.username ? ` (${cs.username})` : ""}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<div className="text-xs text-muted-foreground">
+							Manage credential sets in{" "}
+							<Link className="underline" to="/dashboard/settings" hash="forward-account">
+								Settings
+							</Link>
+							.
+						</div>
+						{credentialSetsQ.isError ? (
+							<div className="text-xs text-destructive">
+								Failed to load credential sets:{" "}
+								{(credentialSetsQ.error as Error).message}
+							</div>
+						) : null}
+					</div>
+					<div className="flex items-center gap-2">
+						<Button
+							onClick={() => applyCredSetM.mutate()}
+							disabled={
+								applyCredSetM.isPending ||
+								!selectedWorkspaceId ||
+								!credentialSetId.trim()
+							}
+						>
+							{applyCredSetM.isPending ? "Applying…" : "Apply"}
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => clearCredSetM.mutate()}
+							disabled={clearCredSetM.isPending || !selectedWorkspaceId}
+						>
+							{clearCredSetM.isPending ? "Clearing…" : "Clear"}
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
 					<CardTitle>Add Forward network</CardTitle>
 					<CardDescription>
 						These networks are used as the scope for capacity rollups and live
@@ -345,8 +495,8 @@ function ForwardNetworksPage() {
 								<SelectValue placeholder="Select scope" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="user">My account</SelectItem>
 								<SelectItem value="workspace">Workspace (shared)</SelectItem>
+								<SelectItem value="user">My account</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -464,15 +614,122 @@ function ForwardNetworksPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>My saved networks</CardTitle>
+					<CardTitle>Workspace saved networks</CardTitle>
 					<CardDescription>
-						Open Capacity to compute rollups and explore inventory/perf data.
+						Shared with workspace collaborators. These are the primary Assurance
+						scope.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
+					{!selectedWorkspaceId ? (
+						<div className="text-sm text-muted-foreground">
+							Select a workspace to view shared networks.
+						</div>
+					) : workspaceNetworks.length === 0 ? (
+						<div className="text-sm text-muted-foreground">
+							No workspace-saved networks yet.
+						</div>
+					) : null}
+					{selectedWorkspaceId
+						? workspaceNetworks.map((n) => (
+						<div
+							key={n.id}
+							className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-lg border p-3"
+						>
+							<div className="min-w-0">
+								<div className="font-medium truncate">{n.name}</div>
+								<div className="text-sm text-muted-foreground truncate">
+									<span className="font-mono">{n.forwardNetworkId}</span>
+									{n.description ? ` · ${n.description}` : ""}
+								</div>
+							</div>
+							<div className="flex items-center gap-2">
+								{canOpenNetworkViews ? (
+									<Button asChild variant="outline" size="sm">
+										<Link
+											to="/dashboard/forward-networks/$networkRef/capacity"
+											params={{ networkRef: n.id }}
+											search={{ workspace: selectedWorkspaceId } as any}
+										>
+											Capacity
+										</Link>
+									</Button>
+								) : (
+									<Button variant="outline" size="sm" disabled>
+										Capacity
+									</Button>
+								)}
+								{canOpenNetworkViews ? (
+									<Button asChild variant="outline" size="sm">
+										<Link
+											to="/dashboard/forward-networks/$networkRef/assurance-studio"
+											params={{ networkRef: n.id }}
+											search={{ workspace: selectedWorkspaceId } as any}
+										>
+											Assurance Studio
+										</Link>
+									</Button>
+								) : (
+									<Button variant="outline" size="sm" disabled>
+										Assurance Studio
+									</Button>
+								)}
+								{canOpenNetworkViews ? (
+									<Button asChild variant="outline" size="sm">
+										<Link
+											to="/dashboard/forward-networks/$networkRef/assurance"
+											params={{ networkRef: n.id }}
+											search={{ workspace: selectedWorkspaceId } as any}
+										>
+											Routing &amp; Compliance
+										</Link>
+									</Button>
+								) : (
+									<Button variant="outline" size="sm" disabled>
+										Assurance
+									</Button>
+								)}
+								{canOpenNetworkViews ? (
+									<Button asChild variant="outline" size="sm">
+										<Link
+											to="/dashboard/forward-networks/$networkRef/traffic-scenarios"
+											params={{ networkRef: n.id }}
+											search={{ workspace: selectedWorkspaceId } as any}
+										>
+											Traffic Scenarios
+										</Link>
+									</Button>
+								) : (
+									<Button variant="outline" size="sm" disabled>
+										Traffic Scenarios
+									</Button>
+								)}
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() =>
+										deleteM.mutate({ scope: "workspace", networkRef: n.id })
+									}
+									disabled={deleteM.isPending}
+								>
+									<Trash2 className="h-4 w-4 mr-2" />
+									Delete
+								</Button>
+							</div>
+						</div>
+					))
+						: null}
+				</CardContent>
+			</Card>
+
+			<details className="rounded-lg border p-4">
+				<summary className="cursor-pointer text-sm font-medium">
+					Personal saved networks (optional)
+				</summary>
+				<div className="mt-3 space-y-3">
 					{userNetworks.length === 0 ? (
 						<div className="text-sm text-muted-foreground">
-							No saved networks yet.
+							No personal saved networks yet.
 						</div>
 					) : null}
 					{userNetworks.map((n) => (
@@ -525,27 +782,12 @@ function ForwardNetworksPage() {
 											params={{ networkRef: n.id }}
 											search={{ workspace: selectedWorkspaceId } as any}
 										>
-											Assurance
+											Routing &amp; Compliance
 										</Link>
 									</Button>
 								) : (
 									<Button variant="outline" size="sm" disabled>
-										Assurance
-									</Button>
-								)}
-								{canOpenNetworkViews ? (
-									<Button asChild variant="outline" size="sm">
-										<Link
-											to="/dashboard/forward-networks/$networkRef/traffic-scenarios"
-											params={{ networkRef: n.id }}
-											search={{ workspace: selectedWorkspaceId } as any}
-										>
-											Traffic Scenarios
-										</Link>
-									</Button>
-								) : (
-									<Button variant="outline" size="sm" disabled>
-										Traffic Scenarios
+										Routing &amp; Compliance
 									</Button>
 								)}
 								<Button
@@ -562,94 +804,8 @@ function ForwardNetworksPage() {
 							</div>
 						</div>
 					))}
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Workspace saved networks</CardTitle>
-					<CardDescription>
-						Shared with workspace collaborators. These only work in the
-						workspace they were saved to.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-3">
-					{!selectedWorkspaceId ? (
-						<div className="text-sm text-muted-foreground">
-							Select a workspace to view shared networks.
-						</div>
-					) : workspaceNetworks.length === 0 ? (
-						<div className="text-sm text-muted-foreground">
-							No workspace-saved networks yet.
-						</div>
-					) : null}
-					{selectedWorkspaceId
-						? workspaceNetworks.map((n) => (
-								<div
-									key={n.id}
-									className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-lg border p-3"
-								>
-									<div className="min-w-0">
-										<div className="font-medium truncate">{n.name}</div>
-										<div className="text-sm text-muted-foreground truncate">
-											<span className="font-mono">{n.forwardNetworkId}</span>
-											{n.description ? ` · ${n.description}` : ""}
-										</div>
-									</div>
-									<div className="flex items-center gap-2">
-										<Button asChild variant="outline" size="sm">
-											<Link
-												to="/dashboard/forward-networks/$networkRef/capacity"
-												params={{ networkRef: n.id }}
-												search={{ workspace: selectedWorkspaceId } as any}
-											>
-												Capacity
-											</Link>
-										</Button>
-										<Button asChild variant="outline" size="sm">
-											<Link
-												to="/dashboard/forward-networks/$networkRef/assurance-studio"
-												params={{ networkRef: n.id }}
-												search={{ workspace: selectedWorkspaceId } as any}
-											>
-												Assurance Studio
-											</Link>
-										</Button>
-										<Button asChild variant="outline" size="sm">
-											<Link
-												to="/dashboard/forward-networks/$networkRef/assurance"
-												params={{ networkRef: n.id }}
-												search={{ workspace: selectedWorkspaceId } as any}
-											>
-												Assurance
-											</Link>
-										</Button>
-										<Button asChild variant="outline" size="sm">
-											<Link
-												to="/dashboard/forward-networks/$networkRef/traffic-scenarios"
-												params={{ networkRef: n.id }}
-												search={{ workspace: selectedWorkspaceId } as any}
-											>
-												Traffic Scenarios
-											</Link>
-										</Button>
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={() =>
-												deleteM.mutate({ scope: "workspace", networkRef: n.id })
-											}
-											disabled={deleteM.isPending}
-										>
-											<Trash2 className="h-4 w-4 mr-2" />
-											Delete
-										</Button>
-									</div>
-								</div>
-							))
-						: null}
-				</CardContent>
-			</Card>
+				</div>
+			</details>
 
 			<Card>
 				<CardHeader>

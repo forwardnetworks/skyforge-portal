@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import {
 	Card,
 	CardContent,
+	CardDescription,
 	CardHeader,
 	CardTitle,
 } from "../../components/ui/card";
@@ -31,10 +32,28 @@ function PolicyReportsIndexPage() {
 					Policy &amp; Compliance
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Run security and compliance checks against a Forward snapshot, per
-					workspace.
+					Run routing, security, and compliance checks against a Forward
+					snapshot, per workspace.
 				</p>
 			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Need setup first?</CardTitle>
+					<CardDescription>
+						Use Assurance Hub to pick a workspace, bind Forward credentials, and
+						save Forward network IDs before running checks.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<Link
+						to="/dashboard/forward-networks"
+						className="text-sm text-primary underline hover:no-underline"
+					>
+						Open Assurance Hub
+					</Link>
+				</CardContent>
+			</Card>
 
 			{workspaces.length === 0 ? (
 				<EmptyState
