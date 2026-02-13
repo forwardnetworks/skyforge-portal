@@ -76,8 +76,9 @@ const items: NavItem[] = [
 			{ label: "Forward Collector", href: "/dashboard/forward", icon: Radio },
 			{
 				label: "Forward Networks",
-				href: "/dashboard/forward-networks",
+				href: "/fwd/",
 				icon: Network,
+				external: true,
 			},
 			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
 			{ label: "Elastic", href: "/dashboard/elastic", icon: Database },
