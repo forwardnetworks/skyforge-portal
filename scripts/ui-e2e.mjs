@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { constants, accessSync, mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
 const BASE_URL = (
@@ -16,6 +16,7 @@ const SCREENSHOTS = envBool("SKYFORGE_UI_E2E_SCREENSHOTS", true);
 const SCREENSHOT_DIR = (
 	process.env.SKYFORGE_UI_E2E_SCREENSHOT_DIR || "e2e-artifacts"
 ).trim();
+const CHROMIUM_PATH = resolveChromiumPath();
 let screenshotCounter = 0;
 
 if (!ADMIN_TOKEN) {
@@ -30,7 +31,11 @@ await assertSSE(cookieHeader);
 const workspaceId = await ensureWorkspace(cookieHeader);
 const deploymentIds = await listDeploymentIds(cookieHeader);
 
-const browser = await chromium.launch({ headless: HEADLESS });
+const launchOptions = { headless: HEADLESS };
+if (CHROMIUM_PATH) {
+	launchOptions.executablePath = CHROMIUM_PATH;
+}
+const browser = await chromium.launch(launchOptions);
 const context = await browser.newContext({
 	viewport: { width: 1440, height: 900 },
 });
@@ -67,6 +72,14 @@ page.on("response", (resp) => {
 });
 
 try {
+	await visit(
+		page,
+		"/status",
+		{ role: "heading", name: /Platform Status/i },
+		"status",
+	);
+	await assertStatusPage(page);
+	await assertForwardNavigationSection(page);
 	await visit(
 		page,
 		"/dashboard/deployments",
@@ -120,6 +133,7 @@ try {
 	);
 	await visit(page, "/dashboard/s3", /S3/i, "s3");
 	await visit(page, "/dashboard/labs/designer", /Lab Designer/i, "designer");
+	await assertDesignerWorkflow(page);
 	await visit(page, "/dashboard/labs/map", /Lab map/i, "lab-map");
 	await visit(page, "/dashboard/docs", /Docs/i, "docs");
 	await visit(page, "/dashboard/ai", { role: "heading", name: /^AI$/i }, "ai");
@@ -175,6 +189,73 @@ if (errors.length > 0 || filteredNetworkErrors.length > 0) {
 }
 
 console.log("UI E2E checks passed.");
+
+async function assertStatusPage(page) {
+	const badWebhooksLinkCount = await page
+		.locator('a[href="/dashboard/webhooks"]')
+		.count();
+	if (badWebhooksLinkCount > 0) {
+		throw new Error(
+			"Status page still links to /dashboard/webhooks (should be /webhooks).",
+		);
+	}
+	await page.locator('a[href="/webhooks"]').first().waitFor();
+	await page
+		.getByText(/Tool Integrations/i)
+		.first()
+		.waitFor();
+}
+
+async function assertForwardNavigationSection(page) {
+	const sectionButton = page
+		.getByRole("button", { name: /^Forward$/i })
+		.first();
+	await sectionButton.waitFor();
+	const assuranceHubLink = page
+		.getByRole("link", { name: "Assurance Hub" })
+		.first();
+	let assuranceVisible = false;
+	try {
+		assuranceVisible = await assuranceHubLink.isVisible();
+	} catch {
+		assuranceVisible = false;
+	}
+	if (!assuranceVisible) {
+		await sectionButton.click();
+	}
+	const expectedLinks = [
+		"Assurance Hub",
+		"Forward On-Prem",
+		"Forward Collector",
+		"Routing & Compliance",
+	];
+	for (const label of expectedLinks) {
+		await page.getByRole("link", { name: label }).first().waitFor();
+	}
+}
+
+async function assertDesignerWorkflow(page) {
+	await page
+		.getByText(/^Workflow$/i)
+		.first()
+		.waitFor();
+	await page
+		.getByText(/^Designer Actions$/i)
+		.first()
+		.waitFor();
+	await page
+		.getByRole("button", { name: /^1\. Build$/i })
+		.first()
+		.waitFor();
+	await page
+		.getByRole("button", { name: /^2\. Validate$/i })
+		.first()
+		.waitFor();
+	await page
+		.getByRole("button", { name: /^3\. Deploy$/i })
+		.first()
+		.waitFor();
+}
 
 async function visit(page, path, expected, name) {
 	const url = `${BASE_URL}${path}`;
@@ -366,4 +447,38 @@ function envInt(key, fallback) {
 	if (!raw) return fallback;
 	const parsed = Number.parseInt(raw, 10);
 	return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function resolveChromiumPath() {
+	const fromEnv = [
+		process.env.SKYFORGE_UI_E2E_CHROMIUM_PATH,
+		process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+	]
+		.map((v) => String(v || "").trim())
+		.find(Boolean);
+	if (fromEnv && isExecutablePath(fromEnv)) {
+		console.log(`UI E2E: using Chromium from env path ${fromEnv}`);
+		return fromEnv;
+	}
+
+	const candidates = [
+		"/usr/bin/chromium-browser",
+		"/snap/bin/chromium",
+		"/usr/bin/chromium",
+	];
+	const match = candidates.find((p) => isExecutablePath(p));
+	if (match) {
+		console.log(`UI E2E: using system Chromium at ${match}`);
+		return match;
+	}
+	return "";
+}
+
+function isExecutablePath(path) {
+	try {
+		accessSync(path, constants.X_OK);
+		return true;
+	} catch {
+		return false;
+	}
 }

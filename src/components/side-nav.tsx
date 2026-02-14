@@ -32,7 +32,7 @@ export function SideNav(props: {
 	);
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({
 		operate: true,
-		assurance: true,
+		forward: true,
 		integrations: true,
 	});
 

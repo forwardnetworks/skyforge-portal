@@ -114,7 +114,6 @@ const NAV_SECTIONS: NavSection[] = [
 				label: "Designer",
 				href: "/dashboard/labs/designer",
 				icon: Hammer,
-				newTab: true,
 				matchPrefixes: ["/dashboard/labs/designer"],
 			},
 			{
@@ -127,9 +126,9 @@ const NAV_SECTIONS: NavSection[] = [
 		],
 	},
 	{
-		id: "assurance",
-		label: "Assurance",
-		icon: ShieldCheck,
+		id: "forward",
+		label: "Forward",
+		icon: Network,
 		defaultExpanded: true,
 		items: [
 			{
@@ -148,6 +147,14 @@ const NAV_SECTIONS: NavSection[] = [
 				external: true,
 				newTab: true,
 				matchPrefixes: ["/fwd"],
+				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
+			},
+			{
+				id: "forward-collector",
+				label: "Forward Collector",
+				href: "/dashboard/forward",
+				icon: Radio,
+				matchPrefixes: ["/dashboard/forward"],
 				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
 			},
 			{
@@ -173,14 +180,6 @@ const NAV_SECTIONS: NavSection[] = [
 				href: "/dashboard/integrations",
 				icon: Workflow,
 				matchPrefixes: ["/dashboard/integrations"],
-			},
-			{
-				id: "forward-collector",
-				label: "Forward Collector",
-				href: "/dashboard/forward",
-				icon: Radio,
-				matchPrefixes: ["/dashboard/forward"],
-				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
 			},
 			{
 				id: "servicenow",
