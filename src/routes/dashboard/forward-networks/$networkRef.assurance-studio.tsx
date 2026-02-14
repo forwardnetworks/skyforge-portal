@@ -986,6 +986,15 @@ function AssuranceStudioPage() {
 				<div className="flex items-center gap-2">
 					<Badge variant="secondary">Forward Paths + NQE</Badge>
 					{networksQ.isLoading ? <Skeleton className="h-6 w-24" /> : null}
+					<Button asChild variant="outline" size="sm">
+						<Link
+							to="/dashboard/forward-networks/$networkRef/hub"
+							params={{ networkRef }}
+							search={{ workspace: workspaceId } as any}
+						>
+							Assurance Hub
+						</Link>
+					</Button>
 					<Button
 						variant="outline"
 						size="sm"

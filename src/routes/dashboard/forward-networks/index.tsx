@@ -25,9 +25,9 @@ import {
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type ForwardCredentialSetSummary,
-	applyWorkspaceForwardCredentialSet,
 	type PolicyReportForwardNetwork,
 	type SkyforgeWorkspace,
+	applyWorkspaceForwardCredentialSet,
 	createWorkspaceForwardNetwork,
 	deleteWorkspaceForwardConfig,
 	deleteWorkspaceForwardNetwork,
@@ -159,7 +159,8 @@ function ForwardNetworksPage() {
 	});
 	const credentialSets = useMemo(
 		() =>
-			(credentialSetsQ.data?.credentialSets ?? []) as ForwardCredentialSetSummary[],
+			(credentialSetsQ.data?.credentialSets ??
+				[]) as ForwardCredentialSetSummary[],
 		[credentialSetsQ.data?.credentialSets],
 	);
 
@@ -290,8 +291,8 @@ function ForwardNetworksPage() {
 						Forward Networks
 					</h1>
 					<p className="text-muted-foreground text-sm">
-						Manage Forward credentials, save Forward network IDs, and launch
-						Assurance Studio to create and run NQEs.
+						Manage Forward credentials, save Forward network IDs, and launch the
+						Assurance Hub for routing, capacity, and security checks.
 					</p>
 				</div>
 			</div>
@@ -342,7 +343,11 @@ function ForwardNetworksPage() {
 						</Select>
 						<div className="text-xs text-muted-foreground">
 							Manage credential sets in{" "}
-							<Link className="underline" to="/dashboard/settings" hash="forward-account">
+							<Link
+								className="underline"
+								to="/dashboard/settings"
+								hash="forward-account"
+							>
 								Settings
 							</Link>
 							.
@@ -381,7 +386,7 @@ function ForwardNetworksPage() {
 					<CardTitle>Add Forward network</CardTitle>
 					<CardDescription>
 						Save a Forward network ID, associate it with credentials, then open
-						Assurance Studio to create NQEs.
+						Assurance Hub to run preset checks.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -498,7 +503,7 @@ function ForwardNetworksPage() {
 				<CardHeader>
 					<CardTitle>Forward networks</CardTitle>
 					<CardDescription>
-						These networks are the Assurance Studio scope.
+						These networks are the Assurance Hub scope.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -513,45 +518,56 @@ function ForwardNetworksPage() {
 					) : null}
 					{selectedWorkspaceId
 						? workspaceNetworks.map((n) => (
-						<div
-							key={n.id}
-							className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-lg border p-3"
-						>
-							<div className="min-w-0">
-								<div className="font-medium truncate">{n.name}</div>
-								<div className="text-sm text-muted-foreground truncate">
-									<span className="font-mono">{n.forwardNetworkId}</span>
-									{n.description ? ` · ${n.description}` : ""}
-								</div>
-							</div>
-							<div className="flex items-center gap-2">
-								{canOpenNetworkViews ? (
-									<Button asChild variant="outline" size="sm">
-										<Link
-											to="/dashboard/forward-networks/$networkRef/assurance-studio"
-											params={{ networkRef: n.id }}
-											search={{ workspace: selectedWorkspaceId } as any}
-										>
-											Assurance Studio
-										</Link>
-									</Button>
-								) : (
-									<Button variant="outline" size="sm" disabled>
-										Assurance Studio
-									</Button>
-								)}
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => deleteM.mutate(n.id)}
-									disabled={deleteM.isPending}
+								<div
+									key={n.id}
+									className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-lg border p-3"
 								>
-									<Trash2 className="h-4 w-4 mr-2" />
-									Delete
-								</Button>
-							</div>
-						</div>
-					))
+									<div className="min-w-0">
+										<div className="font-medium truncate">{n.name}</div>
+										<div className="text-sm text-muted-foreground truncate">
+											<span className="font-mono">{n.forwardNetworkId}</span>
+											{n.description ? ` · ${n.description}` : ""}
+										</div>
+									</div>
+									<div className="flex items-center gap-2">
+										{canOpenNetworkViews ? (
+											<>
+												<Button asChild variant="outline" size="sm">
+													<Link
+														to="/dashboard/forward-networks/$networkRef/hub"
+														params={{ networkRef: n.id }}
+														search={{ workspace: selectedWorkspaceId } as any}
+													>
+														Open Hub
+													</Link>
+												</Button>
+												<Button asChild variant="ghost" size="sm">
+													<Link
+														to="/dashboard/forward-networks/$networkRef/assurance-studio"
+														params={{ networkRef: n.id }}
+														search={{ workspace: selectedWorkspaceId } as any}
+													>
+														Advanced
+													</Link>
+												</Button>
+											</>
+										) : (
+											<Button variant="outline" size="sm" disabled>
+												Open Hub
+											</Button>
+										)}
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => deleteM.mutate(n.id)}
+											disabled={deleteM.isPending}
+										>
+											<Trash2 className="h-4 w-4 mr-2" />
+											Delete
+										</Button>
+									</div>
+								</div>
+							))
 						: null}
 				</CardContent>
 			</Card>

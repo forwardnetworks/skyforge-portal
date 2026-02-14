@@ -44,6 +44,7 @@ import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './rou
 import { Route as DashboardWorkspacesWorkspaceIdPolicyReportsRouteImport } from './routes/dashboard/workspaces/$workspaceId.policy-reports'
 import { Route as DashboardWorkspacesWorkspaceIdIntegrationsRouteImport } from './routes/dashboard/workspaces/$workspaceId.integrations'
 import { Route as DashboardForwardNetworksNetworkRefTrafficScenariosRouteImport } from './routes/dashboard/forward-networks/$networkRef.traffic-scenarios'
+import { Route as DashboardForwardNetworksNetworkRefHubRouteImport } from './routes/dashboard/forward-networks/$networkRef.hub'
 import { Route as DashboardForwardNetworksNetworkRefCapacityRouteImport } from './routes/dashboard/forward-networks/$networkRef.capacity'
 import { Route as DashboardForwardNetworksNetworkRefAssuranceStudioRouteImport } from './routes/dashboard/forward-networks/$networkRef.assurance-studio'
 import { Route as DashboardForwardNetworksNetworkRefAssuranceRouteImport } from './routes/dashboard/forward-networks/$networkRef.assurance'
@@ -233,6 +234,12 @@ const DashboardForwardNetworksNetworkRefTrafficScenariosRoute =
     path: '/dashboard/forward-networks/$networkRef/traffic-scenarios',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DashboardForwardNetworksNetworkRefHubRoute =
+  DashboardForwardNetworksNetworkRefHubRouteImport.update({
+    id: '/dashboard/forward-networks/$networkRef/hub',
+    path: '/dashboard/forward-networks/$networkRef/hub',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardForwardNetworksNetworkRefCapacityRoute =
   DashboardForwardNetworksNetworkRefCapacityRouteImport.update({
     id: '/dashboard/forward-networks/$networkRef/capacity',
@@ -301,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/forward-networks/$networkRef/assurance': typeof DashboardForwardNetworksNetworkRefAssuranceRoute
   '/dashboard/forward-networks/$networkRef/assurance-studio': typeof DashboardForwardNetworksNetworkRefAssuranceStudioRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/forward-networks/$networkRef/hub': typeof DashboardForwardNetworksNetworkRefHubRoute
   '/dashboard/forward-networks/$networkRef/traffic-scenarios': typeof DashboardForwardNetworksNetworkRefTrafficScenariosRoute
   '/dashboard/workspaces/$workspaceId/integrations': typeof DashboardWorkspacesWorkspaceIdIntegrationsRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
@@ -343,6 +351,7 @@ export interface FileRoutesByTo {
   '/dashboard/forward-networks/$networkRef/assurance': typeof DashboardForwardNetworksNetworkRefAssuranceRoute
   '/dashboard/forward-networks/$networkRef/assurance-studio': typeof DashboardForwardNetworksNetworkRefAssuranceStudioRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/forward-networks/$networkRef/hub': typeof DashboardForwardNetworksNetworkRefHubRoute
   '/dashboard/forward-networks/$networkRef/traffic-scenarios': typeof DashboardForwardNetworksNetworkRefTrafficScenariosRoute
   '/dashboard/workspaces/$workspaceId/integrations': typeof DashboardWorkspacesWorkspaceIdIntegrationsRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
@@ -386,6 +395,7 @@ export interface FileRoutesById {
   '/dashboard/forward-networks/$networkRef/assurance': typeof DashboardForwardNetworksNetworkRefAssuranceRoute
   '/dashboard/forward-networks/$networkRef/assurance-studio': typeof DashboardForwardNetworksNetworkRefAssuranceStudioRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/forward-networks/$networkRef/hub': typeof DashboardForwardNetworksNetworkRefHubRoute
   '/dashboard/forward-networks/$networkRef/traffic-scenarios': typeof DashboardForwardNetworksNetworkRefTrafficScenariosRoute
   '/dashboard/workspaces/$workspaceId/integrations': typeof DashboardWorkspacesWorkspaceIdIntegrationsRoute
   '/dashboard/workspaces/$workspaceId/policy-reports': typeof DashboardWorkspacesWorkspaceIdPolicyReportsRoute
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/dashboard/forward-networks/$networkRef/assurance'
     | '/dashboard/forward-networks/$networkRef/assurance-studio'
     | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/forward-networks/$networkRef/hub'
     | '/dashboard/forward-networks/$networkRef/traffic-scenarios'
     | '/dashboard/workspaces/$workspaceId/integrations'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
@@ -472,6 +483,7 @@ export interface FileRouteTypes {
     | '/dashboard/forward-networks/$networkRef/assurance'
     | '/dashboard/forward-networks/$networkRef/assurance-studio'
     | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/forward-networks/$networkRef/hub'
     | '/dashboard/forward-networks/$networkRef/traffic-scenarios'
     | '/dashboard/workspaces/$workspaceId/integrations'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
@@ -514,6 +526,7 @@ export interface FileRouteTypes {
     | '/dashboard/forward-networks/$networkRef/assurance'
     | '/dashboard/forward-networks/$networkRef/assurance-studio'
     | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/forward-networks/$networkRef/hub'
     | '/dashboard/forward-networks/$networkRef/traffic-scenarios'
     | '/dashboard/workspaces/$workspaceId/integrations'
     | '/dashboard/workspaces/$workspaceId/policy-reports'
@@ -557,6 +570,7 @@ export interface RootRouteChildren {
   DashboardForwardNetworksNetworkRefAssuranceRoute: typeof DashboardForwardNetworksNetworkRefAssuranceRoute
   DashboardForwardNetworksNetworkRefAssuranceStudioRoute: typeof DashboardForwardNetworksNetworkRefAssuranceStudioRoute
   DashboardForwardNetworksNetworkRefCapacityRoute: typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  DashboardForwardNetworksNetworkRefHubRoute: typeof DashboardForwardNetworksNetworkRefHubRoute
   DashboardForwardNetworksNetworkRefTrafficScenariosRoute: typeof DashboardForwardNetworksNetworkRefTrafficScenariosRoute
   DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
@@ -808,6 +822,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardForwardNetworksNetworkRefTrafficScenariosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/forward-networks/$networkRef/hub': {
+      id: '/dashboard/forward-networks/$networkRef/hub'
+      path: '/dashboard/forward-networks/$networkRef/hub'
+      fullPath: '/dashboard/forward-networks/$networkRef/hub'
+      preLoaderRoute: typeof DashboardForwardNetworksNetworkRefHubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/forward-networks/$networkRef/capacity': {
       id: '/dashboard/forward-networks/$networkRef/capacity'
       path: '/dashboard/forward-networks/$networkRef/capacity'
@@ -907,6 +928,8 @@ const rootRouteChildren: RootRouteChildren = {
     DashboardForwardNetworksNetworkRefAssuranceStudioRoute,
   DashboardForwardNetworksNetworkRefCapacityRoute:
     DashboardForwardNetworksNetworkRefCapacityRoute,
+  DashboardForwardNetworksNetworkRefHubRoute:
+    DashboardForwardNetworksNetworkRefHubRoute,
   DashboardForwardNetworksNetworkRefTrafficScenariosRoute:
     DashboardForwardNetworksNetworkRefTrafficScenariosRoute,
   DashboardDeploymentsDeploymentIdIndexRoute:

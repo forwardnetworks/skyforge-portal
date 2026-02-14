@@ -28,6 +28,10 @@ pnpm install
 pnpm e2e:ui
 ```
 
+On Ubuntu 26.04 where Playwright does not yet provide a bundled Chromium,
+the script automatically uses system Chromium when available (for example
+`/usr/bin/chromium-browser`).
+
 ## Environment variables
 
 - `SKYFORGE_UI_E2E_BASE_URL` (default `http://localhost:5173`)
@@ -37,3 +41,5 @@ pnpm e2e:ui
 - `SKYFORGE_UI_E2E_HEADLESS` (default `true`)
 - `SKYFORGE_UI_E2E_TIMEOUT_MS` (default `15000`)
 - `SKYFORGE_UI_E2E_SSE_TIMEOUT_MS` (default `10000`)
+- `SKYFORGE_UI_E2E_CHROMIUM_PATH` (optional absolute Chromium path override)
+- `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` (optional alternative override)

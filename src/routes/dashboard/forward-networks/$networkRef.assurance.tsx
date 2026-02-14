@@ -139,11 +139,20 @@ function ForwardNetworkAssurancePage() {
 					</Button>
 					<Button asChild variant="outline">
 						<Link
+							to="/dashboard/forward-networks/$networkRef/hub"
+							params={{ networkRef }}
+							search={{ workspace: workspaceId } as any}
+						>
+							Assurance Hub
+						</Link>
+					</Button>
+					<Button asChild variant="ghost">
+						<Link
 							to="/dashboard/forward-networks/$networkRef/assurance-studio"
 							params={{ networkRef }}
 							search={{ workspace: workspaceId } as any}
 						>
-							Assurance Studio
+							Advanced
 						</Link>
 					</Button>
 					<Button asChild variant="outline">

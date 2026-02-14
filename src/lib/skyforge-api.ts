@@ -710,6 +710,68 @@ export async function autofixUserAITemplate(
 	});
 }
 
+export type TopologyIntentSpec = {
+	name: string;
+	defaults?: {
+		device?: string;
+		imagePolicy?: string;
+	};
+	protocols?: {
+		bgp?: boolean;
+		ospf?: boolean;
+		isis?: boolean;
+		evpn?: boolean;
+		vxlan?: boolean;
+	};
+	constraints?: {
+		runtimeTargets?: string[];
+	};
+	nodes: Array<{
+		id: string;
+		label: string;
+		role: string;
+		kind?: string;
+		image?: string;
+		x: number;
+		y: number;
+	}>;
+	links: Array<{
+		id: string;
+		a: string;
+		b: string;
+	}>;
+	assumptions?: string[];
+	warnings?: string[];
+};
+
+export type UserAIGenerateTopologySpecRequest = {
+	prompt: string;
+	hints?: {
+		preferredDevice?: string;
+		targetSize?: string;
+		includeHosts?: boolean;
+	};
+};
+
+export type UserAIGenerateTopologySpecResponse = {
+	spec: TopologyIntentSpec;
+	netlabYaml: string;
+	containerlabYaml: string;
+	generatedAt: string;
+};
+
+export async function generateTopologySpecFromPrompt(
+	payload: UserAIGenerateTopologySpecRequest,
+): Promise<UserAIGenerateTopologySpecResponse> {
+	return apiFetch<UserAIGenerateTopologySpecResponse>(
+		"/api/user/ai/generate-topology-spec",
+		{
+			method: "POST",
+			body: JSON.stringify(payload),
+		},
+	);
+}
+
 export type ElasticToolServiceStatus = {
 	id: "elasticsearch" | "kibana" | string;
 	kind: "statefulset" | "deployment" | string;
@@ -2479,6 +2541,31 @@ export async function saveContainerlabTopologyYAML(
 ): Promise<SaveContainerlabTopologyYAMLResponse> {
 	return apiFetch<SaveContainerlabTopologyYAMLResponse>(
 		`/api/workspaces/${encodeURIComponent(workspaceId)}/containerlab/topologies`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export type SaveNetlabTopologyYAMLRequest = {
+	name: string;
+	topologyYAML: string;
+	templatesDir?: string;
+	template?: string;
+};
+
+export type SaveNetlabTopologyYAMLResponse = {
+	workspaceId: string;
+	branch: string;
+	templatesDir: string;
+	template: string;
+	filePath: string;
+};
+
+export async function saveNetlabTopologyYAML(
+	workspaceId: string,
+	body: SaveNetlabTopologyYAMLRequest,
+): Promise<SaveNetlabTopologyYAMLResponse> {
+	return apiFetch<SaveNetlabTopologyYAMLResponse>(
+		`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/topologies`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
