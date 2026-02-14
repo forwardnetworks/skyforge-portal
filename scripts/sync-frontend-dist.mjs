@@ -5,6 +5,9 @@ function copyDir(src, dest) {
 	if (!fs.existsSync(src)) {
 		throw new Error(`source dir does not exist: ${src}`);
 	}
+	// Always replace the destination tree so hashed assets from prior builds
+	// cannot accumulate and shadow current entrypoints.
+	fs.rmSync(dest, { recursive: true, force: true });
 	fs.mkdirSync(dest, { recursive: true });
 	fs.cpSync(src, dest, { recursive: true, force: true });
 }
