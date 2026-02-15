@@ -17,6 +17,21 @@ export type JSONValue =
 	| { [key: string]: JSONValue };
 export type JSONMap = Record<string, JSONValue>;
 
+export type ResourceShareRecord = {
+	resourceType: string;
+	resourceId: string;
+	ownerUsername: string;
+	sharedUsername: string;
+	role: "viewer" | "editor" | string;
+	createdBy?: string;
+	createdAt?: ISO8601;
+	updatedAt?: ISO8601;
+};
+
+export type ResourceSharesResponse = {
+	items: ResourceShareRecord[];
+};
+
 export type ExternalTemplateRepo =
 	components["schemas"]["skyforge.ExternalTemplateRepo"];
 export type SkyforgeWorkspace =
@@ -296,8 +311,59 @@ export async function logout(): Promise<void> {
 export type GetWorkspacesResponse =
 	operations["GET:skyforge.GetWorkspaces"]["responses"][200]["content"]["application/json"];
 
+export const PERSONAL_SCOPE_ID = "me";
+
+export function workspaceRef(workspaceId: string): string {
+	void workspaceId;
+	return PERSONAL_SCOPE_ID;
+}
+
+export function workspaceScopeURL(workspaceId: string): string {
+	const ref = workspaceRef(workspaceId);
+	if (ref === PERSONAL_SCOPE_ID) {
+		return "/api/user/workspace";
+	}
+	return `/api/workspaces/${encodeURIComponent(ref)}`;
+}
+
 export async function getWorkspaces(): Promise<GetWorkspacesResponse> {
 	return apiFetch<GetWorkspacesResponse>("/api/workspaces");
+}
+
+export async function getResourceShares(
+	resourceType: string,
+	resourceId: string,
+): Promise<ResourceSharesResponse> {
+	const qs = new URLSearchParams();
+	qs.set("resourceType", resourceType);
+	qs.set("resourceId", resourceId);
+	return apiFetch<ResourceSharesResponse>(`/api/shares?${qs.toString()}`);
+}
+
+export async function putResourceShare(payload: {
+	resourceType: string;
+	resourceId: string;
+	sharedUsername: string;
+	role: "viewer" | "editor";
+}): Promise<ResourceSharesResponse> {
+	return apiFetch<ResourceSharesResponse>("/api/shares", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function deleteResourceShare(
+	resourceType: string,
+	resourceId: string,
+	sharedUsername: string,
+): Promise<{ ok: boolean }> {
+	const qs = new URLSearchParams();
+	qs.set("resourceType", resourceType);
+	qs.set("resourceId", resourceId);
+	qs.set("sharedUsername", sharedUsername);
+	return apiFetch<{ ok: boolean }>(`/api/shares?${qs.toString()}`, {
+		method: "DELETE",
+	});
 }
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
@@ -370,7 +436,7 @@ export async function listWorkspaceNetlabServers(
 	workspaceId: string,
 ): Promise<WorkspaceNetlabServersResponse> {
 	return apiFetch<WorkspaceNetlabServersResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/servers`,
+		`${workspaceScopeURL(workspaceId)}/netlab/servers`,
 	);
 }
 
@@ -385,7 +451,7 @@ export async function upsertWorkspaceNetlabServer(
 	},
 ): Promise<WorkspaceNetlabServerConfig> {
 	return apiFetch<WorkspaceNetlabServerConfig>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/servers`,
+		`${workspaceScopeURL(workspaceId)}/netlab/servers`,
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -398,7 +464,7 @@ export async function deleteWorkspaceNetlabServer(
 	serverId: string,
 ): Promise<void> {
 	await apiFetch<void>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/servers/${encodeURIComponent(serverId)}`,
+		`${workspaceScopeURL(workspaceId)}/netlab/servers/${encodeURIComponent(serverId)}`,
 		{
 			method: "DELETE",
 		},
@@ -469,7 +535,7 @@ export async function listWorkspaceEveServers(
 	workspaceId: string,
 ): Promise<WorkspaceEveServersResponse> {
 	return apiFetch<WorkspaceEveServersResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/servers`,
+		`${workspaceScopeURL(workspaceId)}/eve/servers`,
 	);
 }
 
@@ -483,7 +549,7 @@ export async function listWorkspaceEveLabs(
 	if (params?.recursive) qs.set("recursive", "true");
 	const suffix = qs.toString();
 	return apiFetch<WorkspaceEveLabsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/labs${suffix ? `?${suffix}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/eve/labs${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
@@ -492,7 +558,7 @@ export async function importWorkspaceEveLab(
 	payload: WorkspaceEveImportRequest,
 ): Promise<WorkspaceDeployment> {
 	return apiFetch<WorkspaceDeployment>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/import`,
+		`${workspaceScopeURL(workspaceId)}/eve/import`,
 		{ method: "POST", body: JSON.stringify(payload) },
 	);
 }
@@ -502,7 +568,7 @@ export async function convertWorkspaceEveLab(
 	payload: WorkspaceEveConvertRequest,
 ): Promise<WorkspaceEveConvertResponse> {
 	return apiFetch<WorkspaceEveConvertResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/convert`,
+		`${workspaceScopeURL(workspaceId)}/eve/convert`,
 		{ method: "POST", body: JSON.stringify(payload) },
 	);
 }
@@ -519,7 +585,7 @@ export async function upsertWorkspaceEveServer(
 	},
 ): Promise<WorkspaceEveServerConfig> {
 	return apiFetch<WorkspaceEveServerConfig>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/servers`,
+		`${workspaceScopeURL(workspaceId)}/eve/servers`,
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -532,7 +598,7 @@ export async function deleteWorkspaceEveServer(
 	serverId: string,
 ): Promise<void> {
 	await apiFetch<void>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve/servers/${encodeURIComponent(serverId)}`,
+		`${workspaceScopeURL(workspaceId)}/eve/servers/${encodeURIComponent(serverId)}`,
 		{
 			method: "DELETE",
 		},
@@ -1260,7 +1326,7 @@ export async function updateDeploymentForwardConfig(
 	body: UpdateDeploymentForwardConfigRequest,
 ): Promise<UpdateDeploymentForwardConfigResponse> {
 	return apiFetch<UpdateDeploymentForwardConfigResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
@@ -1276,7 +1342,7 @@ export async function syncDeploymentForward(
 	deploymentId: string,
 ): Promise<SyncDeploymentForwardResponse> {
 	return apiFetch<SyncDeploymentForwardResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward/sync`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward/sync`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -1326,7 +1392,7 @@ export async function getDeploymentCapacitySummary(
 	deploymentId: string,
 ): Promise<DeploymentCapacitySummaryResponse> {
 	return apiFetch<DeploymentCapacitySummaryResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/summary`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/summary`,
 	);
 }
 
@@ -1335,7 +1401,7 @@ export async function refreshDeploymentCapacityRollups(
 	deploymentId: string,
 ): Promise<DeploymentCapacityRefreshResponse> {
 	return apiFetch<DeploymentCapacityRefreshResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/rollups/refresh`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/rollups/refresh`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -1455,7 +1521,7 @@ export async function getForwardNetworkCapacitySummary(
 	networkRef: string,
 ): Promise<ForwardNetworkCapacitySummaryResponse> {
 	return apiFetch<ForwardNetworkCapacitySummaryResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/summary`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/summary`,
 	);
 }
 
@@ -1464,7 +1530,7 @@ export async function refreshForwardNetworkCapacityRollups(
 	networkRef: string,
 ): Promise<ForwardNetworkCapacityRefreshResponse> {
 	return apiFetch<ForwardNetworkCapacityRefreshResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/rollups/refresh`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/rollups/refresh`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -1474,7 +1540,7 @@ export async function getForwardNetworkAssuranceSummary(
 	networkRef: string,
 ): Promise<ForwardAssuranceSummaryResponse> {
 	return apiFetch<ForwardAssuranceSummaryResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/summary`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/summary`,
 	);
 }
 
@@ -1483,7 +1549,7 @@ export async function refreshForwardNetworkAssurance(
 	networkRef: string,
 ): Promise<ForwardAssuranceSummaryResponse> {
 	return apiFetch<ForwardAssuranceSummaryResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/refresh`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/refresh`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -1497,7 +1563,7 @@ export async function listForwardNetworkAssuranceHistory(
 	if (limit) qs.set("limit", limit);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<ForwardAssuranceHistoryResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/summary/history${suffix}`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/summary/history${suffix}`,
 	);
 }
 
@@ -1512,7 +1578,7 @@ export async function seedForwardNetworkAssuranceDemo(
 	networkRef: string,
 ): Promise<ForwardAssuranceDemoSeedResponse> {
 	return apiFetch<ForwardAssuranceDemoSeedResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/demo/seed`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/demo/seed`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -1538,7 +1604,7 @@ export async function getForwardNetworkCapacityCoverage(
 	networkRef: string,
 ): Promise<ForwardNetworkCapacityCoverageResponse> {
 	return apiFetch<ForwardNetworkCapacityCoverageResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/coverage`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/coverage`,
 	);
 }
 
@@ -1594,7 +1660,7 @@ export async function getForwardNetworkCapacitySnapshotDelta(
 	networkRef: string,
 ): Promise<ForwardNetworkCapacitySnapshotDeltaResponse> {
 	return apiFetch<ForwardNetworkCapacitySnapshotDeltaResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/snapshot-delta`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/snapshot-delta`,
 	);
 }
 
@@ -1633,7 +1699,7 @@ export async function getForwardNetworkCapacityUpgradeCandidates(
 	if (q.window) qs.set("window", q.window);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<ForwardNetworkCapacityUpgradeCandidatesResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/upgrade-candidates${suffix}`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/upgrade-candidates${suffix}`,
 	);
 }
 
@@ -1659,7 +1725,7 @@ export async function getWorkspaceForwardNetworkCapacityPortfolio(
 	workspaceId: string,
 ): Promise<ForwardNetworkCapacityPortfolioResponse> {
 	return apiFetch<ForwardNetworkCapacityPortfolioResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/capacity/forward-networks/portfolio`,
+		`${workspaceScopeURL(workspaceId)}/capacity/forward-networks/portfolio`,
 	);
 }
 
@@ -1775,7 +1841,7 @@ export async function getDeploymentCapacityInventory(
 	deploymentId: string,
 ): Promise<DeploymentCapacityInventoryResponse> {
 	return apiFetch<DeploymentCapacityInventoryResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/inventory`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/inventory`,
 	);
 }
 
@@ -1784,7 +1850,7 @@ export async function getForwardNetworkCapacityInventory(
 	networkRef: string,
 ): Promise<ForwardNetworkCapacityInventoryResponse> {
 	return apiFetch<ForwardNetworkCapacityInventoryResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/inventory`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/inventory`,
 	);
 }
 
@@ -1845,7 +1911,7 @@ export async function getDeploymentCapacityGrowth(
 	if (q.compareHours) qs.set("compareHours", String(q.compareHours));
 	if (q.limit) qs.set("limit", String(q.limit));
 	return apiFetch<DeploymentCapacityGrowthResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/growth?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/growth?${qs.toString()}`,
 	);
 }
 
@@ -1861,7 +1927,7 @@ export async function getForwardNetworkCapacityGrowth(
 	if (q.compareHours) qs.set("compareHours", String(q.compareHours));
 	if (q.limit) qs.set("limit", String(q.limit));
 	return apiFetch<ForwardNetworkCapacityGrowthResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/growth?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/growth?${qs.toString()}`,
 	);
 }
 
@@ -1886,7 +1952,7 @@ export async function postDeploymentCapacityInterfaceMetricsHistory(
 	body: PostCapacityInterfaceMetricsHistoryRequest,
 ): Promise<CapacityPerfProxyResponse> {
 	return apiFetch<CapacityPerfProxyResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/interface-metrics-history`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/interface-metrics-history`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -1897,7 +1963,7 @@ export async function postForwardNetworkCapacityInterfaceMetricsHistory(
 	body: PostCapacityInterfaceMetricsHistoryRequest,
 ): Promise<CapacityPerfProxyResponse> {
 	return apiFetch<CapacityPerfProxyResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/interface-metrics-history`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/interface-metrics-history`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -1917,7 +1983,7 @@ export async function postDeploymentCapacityDeviceMetricsHistory(
 	body: PostCapacityDeviceMetricsHistoryRequest,
 ): Promise<CapacityPerfProxyResponse> {
 	return apiFetch<CapacityPerfProxyResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/device-metrics-history`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/device-metrics-history`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -1928,7 +1994,7 @@ export async function postForwardNetworkCapacityDeviceMetricsHistory(
 	body: PostCapacityDeviceMetricsHistoryRequest,
 ): Promise<CapacityPerfProxyResponse> {
 	return apiFetch<CapacityPerfProxyResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/device-metrics-history`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/device-metrics-history`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -1948,7 +2014,7 @@ export async function getDeploymentCapacityUnhealthyDevices(
 	if (q.endTime) qs.set("endTime", q.endTime);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-devices${suffix}`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-devices${suffix}`,
 	);
 }
 
@@ -1962,7 +2028,7 @@ export async function getForwardNetworkCapacityUnhealthyDevices(
 	if (q.endTime) qs.set("endTime", q.endTime);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-devices${suffix}`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-devices${suffix}`,
 	);
 }
 
@@ -1986,7 +2052,7 @@ export async function postDeploymentCapacityUnhealthyInterfaces(
 	if (q.endTime) qs.set("endTime", q.endTime);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-interfaces${suffix}`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2002,7 +2068,7 @@ export async function postForwardNetworkCapacityUnhealthyInterfaces(
 	if (q.endTime) qs.set("endTime", q.endTime);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-interfaces${suffix}`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2102,7 +2168,7 @@ export async function postForwardNetworkCapacityPathBottlenecks(
 	body: ForwardNetworkCapacityPathBottlenecksRequest,
 ): Promise<ForwardNetworkCapacityPathBottlenecksResponse> {
 	return apiFetch<ForwardNetworkCapacityPathBottlenecksResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/path-bottlenecks`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/path-bottlenecks`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2113,7 +2179,7 @@ export async function setDeploymentLinkImpairment(
 	body: LinkImpairmentRequest,
 ): Promise<LinkImpairmentResponse> {
 	return apiFetch<LinkImpairmentResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/impair`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/impair`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2124,7 +2190,7 @@ export async function setDeploymentLinkAdmin(
 	body: LinkAdminRequest,
 ): Promise<LinkAdminResponse> {
 	return apiFetch<LinkAdminResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/admin`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/admin`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2135,7 +2201,7 @@ export async function captureDeploymentLinkPcap(
 	body: LinkCaptureRequest,
 ): Promise<LinkCaptureResponse> {
 	return apiFetch<LinkCaptureResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/capture`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/capture`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2146,7 +2212,7 @@ export async function getDeploymentNodeInterfaces(
 	nodeId: string,
 ): Promise<DeploymentNodeInterfacesResponse> {
 	return apiFetch<DeploymentNodeInterfacesResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/interfaces`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/interfaces`,
 	);
 }
 
@@ -2167,7 +2233,7 @@ export async function getDeploymentNodeRunningConfig(
 	nodeId: string,
 ): Promise<DeploymentNodeRunningConfigResponse> {
 	return apiFetch<DeploymentNodeRunningConfigResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/running-config`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/running-config`,
 	);
 }
 
@@ -2179,7 +2245,7 @@ export async function getDeploymentInventory(
 	const qs = new URLSearchParams();
 	qs.set("format", format);
 	return apiFetch<DeploymentInventoryResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/inventory?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/inventory?${qs.toString()}`,
 	);
 }
 
@@ -2193,7 +2259,7 @@ export async function listDeploymentUIEvents(
 	if (params?.limit) qs.set("limit", String(params.limit));
 	const suffix = qs.toString();
 	return apiFetch<DeploymentUIEventsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/ui-events${suffix ? `?${suffix}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/ui-events${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
@@ -2216,7 +2282,7 @@ export async function getDeploymentNodeLogs(
 	if (params?.container) qs.set("container", params.container);
 	const suffix = qs.toString();
 	return apiFetch<DeploymentNodeLogsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/logs${suffix ? `?${suffix}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/logs${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
@@ -2246,7 +2312,7 @@ export async function getDeploymentNodeDescribe(
 	nodeId: string,
 ): Promise<DeploymentNodeDescribeResponse> {
 	return apiFetch<DeploymentNodeDescribeResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/describe`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/describe`,
 	);
 }
 
@@ -2267,7 +2333,7 @@ export async function saveDeploymentNodeConfig(
 	nodeId: string,
 ): Promise<DeploymentNodeSaveConfigResponse> {
 	return apiFetch<DeploymentNodeSaveConfigResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/save-config`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/save-config`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -2301,7 +2367,7 @@ export async function getDeploymentLinkStats(
 	deploymentId: string,
 ): Promise<LinkStatsSnapshot> {
 	return apiFetch<LinkStatsSnapshot>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/stats`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/stats`,
 	);
 }
 
@@ -2332,7 +2398,7 @@ export async function getWorkspaceNetlabTemplates(
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
 	return apiFetch<WorkspaceTemplatesResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/templates${qs ? `?${qs}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/netlab/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
@@ -2357,7 +2423,7 @@ export async function getWorkspaceNetlabTemplate(
 	if (params.dir) qs.set("dir", params.dir);
 	qs.set("template", params.template);
 	return apiFetch<WorkspaceNetlabTemplateResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/template?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/netlab/template?${qs.toString()}`,
 	);
 }
 
@@ -2381,7 +2447,7 @@ export async function validateWorkspaceNetlabTemplate(
 	body: ValidateWorkspaceNetlabTemplateRequest,
 ): Promise<WorkspaceRunResponse> {
 	return apiFetch<WorkspaceRunResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/validate`,
+		`${workspaceScopeURL(workspaceId)}/netlab/validate`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2396,7 +2462,7 @@ export async function getWorkspaceContainerlabTemplates(
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
 	return apiFetch<WorkspaceTemplatesResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/containerlab/templates${qs ? `?${qs}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/containerlab/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
@@ -2410,7 +2476,7 @@ export async function getWorkspaceTerraformTemplates(
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
 	return apiFetch<WorkspaceTemplatesResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/terraform/templates${qs ? `?${qs}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/terraform/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
@@ -2435,7 +2501,7 @@ export async function getWorkspaceContainerlabTemplate(
 	if (params.dir) qs.set("dir", params.dir);
 	qs.set("file", params.file);
 	return apiFetch<WorkspaceContainerlabTemplateResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/containerlab/template?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/containerlab/template?${qs.toString()}`,
 	);
 }
 
@@ -2449,7 +2515,7 @@ export async function getWorkspaceEveNgTemplates(
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
 	return apiFetch<WorkspaceTemplatesResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/eve-ng/templates${qs ? `?${qs}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/eve-ng/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
@@ -2464,7 +2530,7 @@ export async function createWorkspaceDeployment(
 	body: CreateWorkspaceDeploymentRequest,
 ): Promise<CreateWorkspaceDeploymentResponse> {
 	return apiFetch<CreateWorkspaceDeploymentResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments`,
+		`${workspaceScopeURL(workspaceId)}/deployments`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2490,7 +2556,7 @@ export async function createContainerlabDeploymentFromYAML(
 	body: CreateContainerlabDeploymentFromYAMLRequest,
 ): Promise<CreateContainerlabDeploymentFromYAMLResponse> {
 	return apiFetch<CreateContainerlabDeploymentFromYAMLResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments-designer/containerlab/from-yaml`,
+		`${workspaceScopeURL(workspaceId)}/deployments-designer/containerlab/from-yaml`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2515,7 +2581,7 @@ export async function createClabernetesDeploymentFromYAML(
 	body: CreateClabernetesDeploymentFromYAMLRequest,
 ): Promise<CreateClabernetesDeploymentFromYAMLResponse> {
 	return apiFetch<CreateClabernetesDeploymentFromYAMLResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments-designer/clabernetes/from-yaml`,
+		`${workspaceScopeURL(workspaceId)}/deployments-designer/clabernetes/from-yaml`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2540,7 +2606,7 @@ export async function saveContainerlabTopologyYAML(
 	body: SaveContainerlabTopologyYAMLRequest,
 ): Promise<SaveContainerlabTopologyYAMLResponse> {
 	return apiFetch<SaveContainerlabTopologyYAMLResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/containerlab/topologies`,
+		`${workspaceScopeURL(workspaceId)}/containerlab/topologies`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2565,7 +2631,7 @@ export async function saveNetlabTopologyYAML(
 	body: SaveNetlabTopologyYAMLRequest,
 ): Promise<SaveNetlabTopologyYAMLResponse> {
 	return apiFetch<SaveNetlabTopologyYAMLResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/netlab/topologies`,
+		`${workspaceScopeURL(workspaceId)}/netlab/topologies`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2595,7 +2661,7 @@ export async function createClabernetesDeploymentFromTemplate(
 	body: CreateDeploymentFromTemplateRequest,
 ): Promise<CreateDeploymentFromTemplateResponse> {
 	return apiFetch<CreateDeploymentFromTemplateResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments-designer/clabernetes/from-template`,
+		`${workspaceScopeURL(workspaceId)}/deployments-designer/clabernetes/from-template`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2605,7 +2671,7 @@ export async function createContainerlabDeploymentFromTemplate(
 	body: CreateContainerlabDeploymentFromTemplateRequest,
 ): Promise<CreateDeploymentFromTemplateResponse> {
 	return apiFetch<CreateDeploymentFromTemplateResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments-designer/containerlab/from-template`,
+		`${workspaceScopeURL(workspaceId)}/deployments-designer/containerlab/from-template`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2636,7 +2702,7 @@ export async function updateWorkspaceMembers(
 	body: UpdateWorkspaceMembersRequest,
 ): Promise<UpdateWorkspaceMembersResponse> {
 	return apiFetch<UpdateWorkspaceMembersResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/members`,
+		`${workspaceScopeURL(workspaceId)}/members`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
@@ -2646,7 +2712,7 @@ export async function getDeploymentTopology(
 	deploymentId: string,
 ): Promise<DeploymentTopology> {
 	return apiFetch<DeploymentTopology>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/topology`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/topology`,
 	);
 }
 
@@ -2697,7 +2763,7 @@ export async function deleteWorkspace(
 	qs.set("confirm", params.confirm);
 	if (params.force) qs.set("force", "true");
 	return apiFetch<DeleteWorkspaceResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}?${qs.toString()}`,
 		{ method: "DELETE" },
 	);
 }
@@ -3036,7 +3102,7 @@ export async function updateWorkspaceSettings(
 	body: UpdateWorkspaceSettingsRequest,
 ): Promise<UpdateWorkspaceSettingsResponse> {
 	return apiFetch<UpdateWorkspaceSettingsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/settings`,
+		`${workspaceScopeURL(workspaceId)}/settings`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
@@ -3047,7 +3113,7 @@ export async function getWorkspaceForwardConfig(
 	workspaceId: string,
 ): Promise<GetWorkspaceForwardConfigResponse> {
 	return apiFetch<GetWorkspaceForwardConfigResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward`,
+		`${workspaceScopeURL(workspaceId)}/integrations/forward`,
 	);
 }
 
@@ -3061,7 +3127,7 @@ export async function putWorkspaceForwardConfig(
 	body: PutWorkspaceForwardConfigRequest,
 ): Promise<PutWorkspaceForwardConfigResponse> {
 	return apiFetch<PutWorkspaceForwardConfigResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward`,
+		`${workspaceScopeURL(workspaceId)}/integrations/forward`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
@@ -3075,7 +3141,7 @@ export async function applyWorkspaceForwardCredentialSet(
 	body: ApplyWorkspaceForwardCredentialSetRequest,
 ): Promise<GetWorkspaceForwardConfigResponse> {
 	return apiFetch<GetWorkspaceForwardConfigResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward/apply-credential-set`,
+		`${workspaceScopeURL(workspaceId)}/integrations/forward/apply-credential-set`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -3084,7 +3150,7 @@ export async function deleteWorkspaceForwardConfig(
 	workspaceId: string,
 ): Promise<GetWorkspaceForwardConfigResponse> {
 	return apiFetch<GetWorkspaceForwardConfigResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward`,
+		`${workspaceScopeURL(workspaceId)}/integrations/forward`,
 		{ method: "DELETE" },
 	);
 }
@@ -3095,7 +3161,7 @@ export async function listWorkspaceForwardCollectors(
 	workspaceId: string,
 ): Promise<ListWorkspaceForwardCollectorsResponse> {
 	return apiFetch<ListWorkspaceForwardCollectorsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/integrations/forward/collectors`,
+		`${workspaceScopeURL(workspaceId)}/integrations/forward/collectors`,
 	);
 }
 
@@ -3110,7 +3176,7 @@ export async function listWorkspaceArtifacts(
 	if (params?.limit) qs.set("limit", params.limit);
 	const suffix = qs.toString();
 	return apiFetch<ListWorkspaceArtifactsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts${suffix ? `?${suffix}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/artifacts${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
@@ -3122,7 +3188,7 @@ export async function downloadWorkspaceArtifact(
 ): Promise<DownloadWorkspaceArtifactResponse> {
 	const qs = new URLSearchParams({ key });
 	return apiFetch<DownloadWorkspaceArtifactResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts/download?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/artifacts/download?${qs.toString()}`,
 	);
 }
 
@@ -3131,7 +3197,7 @@ export async function putWorkspaceArtifactObject(
 	body: { key: string; contentBase64: string; contentType?: string },
 ): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts/object`,
+		`${workspaceScopeURL(workspaceId)}/artifacts/object`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -3145,7 +3211,7 @@ export async function deleteWorkspaceArtifactObject(
 ): Promise<JSONMap> {
 	const qs = new URLSearchParams({ key });
 	return apiFetch<JSONMap>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts/object?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/artifacts/object?${qs.toString()}`,
 		{
 			method: "DELETE",
 		},
@@ -3157,7 +3223,7 @@ export async function createWorkspaceArtifactFolder(
 	prefix: string,
 ): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/artifacts/folder`,
+		`${workspaceScopeURL(workspaceId)}/artifacts/folder`,
 		{
 			method: "POST",
 			body: JSON.stringify({ prefix }),
@@ -3496,7 +3562,7 @@ export async function startDeployment(
 	deploymentId: string,
 ): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/start`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/start`,
 		{
 			method: "POST",
 			body: "{}",
@@ -3509,7 +3575,7 @@ export async function stopDeployment(
 	deploymentId: string,
 ): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/stop`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/stop`,
 		{
 			method: "POST",
 			body: "{}",
@@ -3522,7 +3588,7 @@ export async function destroyDeployment(
 	deploymentId: string,
 ): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/destroy`,
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/destroy`,
 		{
 			method: "POST",
 			body: "{}",
@@ -3539,7 +3605,7 @@ export async function deleteDeployment(
 	if (params?.forwardDelete) qs.set("forward_delete", "true");
 	const suffix = qs.toString();
 	return apiFetch<JSONMap>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}${
+		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}${
 			suffix ? `?${suffix}` : ""
 		}`,
 		{
@@ -3590,7 +3656,7 @@ export async function listWorkspaceVariableGroups(
 	workspaceId: string,
 ): Promise<WorkspaceVariableGroupListResponse> {
 	return apiFetch<WorkspaceVariableGroupListResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups`,
+		`${workspaceScopeURL(workspaceId)}/variable-groups`,
 	);
 }
 
@@ -3599,7 +3665,7 @@ export async function createWorkspaceVariableGroup(
 	body: WorkspaceVariableGroupUpsertRequest,
 ): Promise<WorkspaceVariableGroup> {
 	return apiFetch<WorkspaceVariableGroup>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups`,
+		`${workspaceScopeURL(workspaceId)}/variable-groups`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -3613,7 +3679,7 @@ export async function updateWorkspaceVariableGroup(
 	body: WorkspaceVariableGroupUpsertRequest,
 ): Promise<WorkspaceVariableGroup> {
 	return apiFetch<WorkspaceVariableGroup>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`,
+		`${workspaceScopeURL(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`,
 		{
 			method: "PUT",
 			body: JSON.stringify(body),
@@ -3626,7 +3692,7 @@ export async function deleteWorkspaceVariableGroup(
 	groupId: number,
 ): Promise<WorkspaceVariableGroupListResponse> {
 	return apiFetch<WorkspaceVariableGroupListResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`,
+		`${workspaceScopeURL(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`,
 		{
 			method: "DELETE",
 		},
@@ -4228,7 +4294,7 @@ export async function getWorkspacePolicyReportChecks(
 	workspaceId: string,
 ): Promise<PolicyReportChecksResponse> {
 	return apiFetch<PolicyReportChecksResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/checks`,
 	);
 }
 
@@ -4237,7 +4303,7 @@ export async function getWorkspacePolicyReportCheck(
 	checkId: string,
 ): Promise<PolicyReportCheckResponse> {
 	return apiFetch<PolicyReportCheckResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks/${encodeURIComponent(checkId)}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/checks/${encodeURIComponent(checkId)}`,
 	);
 }
 
@@ -4245,7 +4311,7 @@ export async function getWorkspacePolicyReportPacks(
 	workspaceId: string,
 ): Promise<PolicyReportPacks> {
 	return apiFetch<PolicyReportPacks>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/packs`,
 	);
 }
 
@@ -4260,7 +4326,7 @@ export async function getWorkspacePolicyReportSnapshots(
 		qs.set("maxResults", String(maxResults));
 	}
 	return apiFetch<PolicyReportSnapshotsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/snapshots?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/snapshots?${qs.toString()}`,
 	);
 }
 
@@ -4269,7 +4335,7 @@ export async function runWorkspacePolicyReportCheck(
 	body: PolicyReportRunCheckRequest,
 ): Promise<PolicyReportNQEResponse> {
 	return apiFetch<PolicyReportNQEResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/checks/run`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/checks/run`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4282,7 +4348,7 @@ export async function runWorkspacePolicyReportPack(
 	body: PolicyReportRunPackRequest,
 ): Promise<PolicyReportRunPackResponse> {
 	return apiFetch<PolicyReportRunPackResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs/run`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/packs/run`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4295,7 +4361,7 @@ export async function runWorkspacePolicyReportPackDelta(
 	body: PolicyReportPackDeltaRequest,
 ): Promise<PolicyReportPackDeltaResponse> {
 	return apiFetch<PolicyReportPackDeltaResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/packs/delta`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/packs/delta`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4308,7 +4374,7 @@ export async function createWorkspacePolicyReportRecertCampaign(
 	body: PolicyReportCreateRecertCampaignRequest,
 ): Promise<PolicyReportRecertCampaignWithCounts> {
 	return apiFetch<PolicyReportRecertCampaignWithCounts>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/campaigns`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4325,7 +4391,7 @@ export async function listWorkspacePolicyReportRecertCampaigns(
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListRecertCampaignsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/campaigns?${qs.toString()}`,
 	);
 }
 
@@ -4334,7 +4400,7 @@ export async function getWorkspacePolicyReportRecertCampaign(
 	campaignId: string,
 ): Promise<PolicyReportRecertCampaignWithCounts> {
 	return apiFetch<PolicyReportRecertCampaignWithCounts>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}`,
 	);
 }
 
@@ -4344,7 +4410,7 @@ export async function generateWorkspacePolicyReportRecertAssignments(
 	body: PolicyReportGenerateRecertAssignmentsRequest,
 ): Promise<PolicyReportGenerateRecertAssignmentsResponse> {
 	return apiFetch<PolicyReportGenerateRecertAssignmentsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}/generate`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}/generate`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4365,7 +4431,7 @@ export async function listWorkspacePolicyReportRecertAssignments(
 	if (assignee) qs.set("assignee", assignee);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListRecertAssignmentsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/assignments?${qs.toString()}`,
 	);
 }
 
@@ -4375,7 +4441,7 @@ export async function attestWorkspacePolicyReportRecertAssignment(
 	body: PolicyReportAttestAssignmentRequest,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/attest`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/attest`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4389,7 +4455,7 @@ export async function waiveWorkspacePolicyReportRecertAssignment(
 	body: PolicyReportAttestAssignmentRequest,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/waive`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/waive`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4428,7 +4494,7 @@ export async function createWorkspaceForwardNetwork(
 	body: PolicyReportCreateForwardNetworkRequest,
 ): Promise<PolicyReportForwardNetwork> {
 	return apiFetch<PolicyReportForwardNetwork>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4440,7 +4506,7 @@ export async function listWorkspaceForwardNetworks(
 	workspaceId: string,
 ): Promise<PolicyReportListForwardNetworksResponse> {
 	return apiFetch<PolicyReportListForwardNetworksResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks`,
 	);
 }
 
@@ -4449,7 +4515,7 @@ export async function deleteWorkspaceForwardNetwork(
 	networkRef: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}`,
+		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}`,
 		{ method: "DELETE" },
 	);
 }
@@ -4459,7 +4525,7 @@ export async function createWorkspacePolicyReportForwardNetwork(
 	body: PolicyReportCreateForwardNetworkRequest,
 ): Promise<PolicyReportForwardNetwork> {
 	return apiFetch<PolicyReportForwardNetwork>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4471,7 +4537,7 @@ export async function listWorkspacePolicyReportForwardNetworks(
 	workspaceId: string,
 ): Promise<PolicyReportListForwardNetworksResponse> {
 	return apiFetch<PolicyReportListForwardNetworksResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks`,
 	);
 }
 
@@ -4480,7 +4546,7 @@ export async function deleteWorkspacePolicyReportForwardNetwork(
 	networkRef: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(networkRef)}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(networkRef)}`,
 		{ method: "DELETE" },
 	);
 }
@@ -4490,7 +4556,7 @@ export async function getWorkspacePolicyReportForwardNetworkCredentials(
 	forwardNetworkId: string,
 ): Promise<PolicyReportForwardCredentialsStatus> {
 	return apiFetch<PolicyReportForwardCredentialsStatus>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
 	);
 }
 
@@ -4500,7 +4566,7 @@ export async function putWorkspacePolicyReportForwardNetworkCredentials(
 	body: PolicyReportPutForwardCredentialsRequest,
 ): Promise<PolicyReportForwardCredentialsStatus> {
 	return apiFetch<PolicyReportForwardCredentialsStatus>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
@@ -4510,7 +4576,7 @@ export async function deleteWorkspacePolicyReportForwardNetworkCredentials(
 	forwardNetworkId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
 		{ method: "DELETE" },
 	);
 }
@@ -4521,7 +4587,7 @@ export async function createWorkspacePolicyReportZone(
 	body: PolicyReportCreateZoneRequest,
 ): Promise<PolicyReportZone> {
 	return apiFetch<PolicyReportZone>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -4531,7 +4597,7 @@ export async function listWorkspacePolicyReportZones(
 	forwardNetworkId: string,
 ): Promise<PolicyReportListZonesResponse> {
 	return apiFetch<PolicyReportListZonesResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
 	);
 }
 
@@ -4542,7 +4608,7 @@ export async function updateWorkspacePolicyReportZone(
 	body: PolicyReportUpdateZoneRequest,
 ): Promise<PolicyReportZone> {
 	return apiFetch<PolicyReportZone>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
@@ -4553,7 +4619,7 @@ export async function deleteWorkspacePolicyReportZone(
 	zoneId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
 		{ method: "DELETE" },
 	);
 }
@@ -4563,7 +4629,7 @@ export async function createWorkspacePolicyReportPreset(
 	body: PolicyReportCreatePresetRequest,
 ): Promise<PolicyReportPreset> {
 	return apiFetch<PolicyReportPreset>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/presets`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -4581,7 +4647,7 @@ export async function listWorkspacePolicyReportPresets(
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	const q = qs.toString();
 	return apiFetch<PolicyReportListPresetsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets${q ? `?${q}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/presets${q ? `?${q}` : ""}`,
 	);
 }
 
@@ -4590,7 +4656,7 @@ export async function deleteWorkspacePolicyReportPreset(
 	presetId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}`,
 		{ method: "DELETE" },
 	);
 }
@@ -4600,7 +4666,7 @@ export async function runWorkspacePolicyReportPreset(
 	presetId: string,
 ): Promise<PolicyReportRunPresetResponse> {
 	return apiFetch<PolicyReportRunPresetResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}/run`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}/run`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -4610,7 +4676,7 @@ export async function runWorkspacePolicyReportPathsEnforcementBypass(
 	body: PolicyReportPathsEnforcementBypassRequest,
 ): Promise<PolicyReportNQEResponse> {
 	return apiFetch<PolicyReportNQEResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/paths/enforcement-bypass`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/paths/enforcement-bypass`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -4620,7 +4686,7 @@ export async function storeWorkspacePolicyReportPathsEnforcementBypass(
 	body: PolicyReportPathsEnforcementBypassStoreRequest,
 ): Promise<PolicyReportPathsEnforcementBypassStoreResponse> {
 	return apiFetch<PolicyReportPathsEnforcementBypassStoreResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/paths/enforcement-bypass/store`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/paths/enforcement-bypass/store`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -4630,7 +4696,7 @@ export async function createWorkspacePolicyReportRun(
 	body: PolicyReportCreateRunRequest,
 ): Promise<PolicyReportCreateRunResponse> {
 	return apiFetch<PolicyReportCreateRunResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/runs`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -4640,7 +4706,7 @@ export async function createWorkspacePolicyReportCustomRun(
 	body: PolicyReportCreateCustomRunRequest,
 ): Promise<PolicyReportCreateCustomRunResponse> {
 	return apiFetch<PolicyReportCreateCustomRunResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/custom`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/runs/custom`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -4658,7 +4724,7 @@ export async function listWorkspacePolicyReportRuns(
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListRunsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/runs?${qs.toString()}`,
 	);
 }
 
@@ -4667,7 +4733,7 @@ export async function getWorkspacePolicyReportRun(
 	runId: string,
 ): Promise<PolicyReportGetRunResponse> {
 	return apiFetch<PolicyReportGetRunResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}`,
 	);
 }
 
@@ -4682,7 +4748,7 @@ export async function listWorkspacePolicyReportRunFindings(
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	const q = qs.toString();
 	return apiFetch<PolicyReportListRunFindingsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}/findings${q ? `?${q}` : ""}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}/findings${q ? `?${q}` : ""}`,
 	);
 }
 
@@ -4699,7 +4765,7 @@ export async function listWorkspacePolicyReportFindings(
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListFindingsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/findings?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/findings?${qs.toString()}`,
 	);
 }
 
@@ -4708,7 +4774,7 @@ export async function createWorkspacePolicyReportException(
 	body: PolicyReportCreateExceptionRequest,
 ): Promise<PolicyReportException> {
 	return apiFetch<PolicyReportException>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/exceptions`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4727,7 +4793,7 @@ export async function listWorkspacePolicyReportExceptions(
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListExceptionsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions?${qs.toString()}`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/exceptions?${qs.toString()}`,
 	);
 }
 
@@ -4736,7 +4802,7 @@ export async function approveWorkspacePolicyReportException(
 	exceptionId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/approve`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/approve`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -4746,7 +4812,7 @@ export async function rejectWorkspacePolicyReportException(
 	exceptionId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/reject`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/reject`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -4756,7 +4822,7 @@ export async function simulateWorkspacePolicyReportChangePlanning(
 	body: PolicyReportChangePlanningRequest,
 ): Promise<PolicyReportChangePlanningResponse> {
 	return apiFetch<PolicyReportChangePlanningResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/policy-reports/change-planning/simulate`,
+		`${workspaceScopeURL(workspaceId)}/policy-reports/change-planning/simulate`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),

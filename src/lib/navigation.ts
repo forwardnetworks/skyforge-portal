@@ -16,7 +16,6 @@ import {
 	Server,
 	Settings,
 	ShieldCheck,
-	Users,
 	Webhook,
 	Workflow,
 } from "lucide-react";
@@ -87,13 +86,6 @@ const NAV_SECTIONS: NavSection[] = [
 				href: "/dashboard/runs",
 				icon: Workflow,
 				matchPrefixes: ["/dashboard/runs"],
-			},
-			{
-				id: "workspaces",
-				label: "Workspaces",
-				href: "/dashboard/workspaces",
-				icon: Users,
-				matchPrefixes: ["/dashboard/workspaces"],
 			},
 			{
 				id: "notifications",

@@ -21,6 +21,7 @@ import {
 import type { JSONMap } from "../../../lib/skyforge-api";
 import {
 	type DashboardSnapshot,
+	PERSONAL_SCOPE_ID,
 	buildLoginUrl,
 	cancelRun,
 	getDashboardSnapshot,
@@ -85,23 +86,15 @@ function RunDetailPage() {
 								disabled={!run || !canCancel}
 								onClick={() => {
 									if (!run) return;
-									const ws = String(run.workspaceId ?? "");
-									if (!ws) {
-										toast.error("Cannot cancel run", {
-											description: "Missing workspace ID.",
-										});
-										return;
-									}
 									void (async () => {
 										try {
-											await cancelRun(runId, ws);
+											await cancelRun(runId, PERSONAL_SCOPE_ID);
 											toast.success("Run canceled");
 											await queryClient.invalidateQueries({
 												queryKey: queryKeys.dashboardSnapshot(),
 											});
 											navigate({
 												to: "/dashboard/deployments",
-												search: { workspace: ws } as any,
 											});
 										} catch (e) {
 											toast.error("Cancel failed", {
@@ -174,7 +167,6 @@ function RunDetailPage() {
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<Meta label="Type" value={String(run?.tpl_alias ?? "")} />
 						<Meta label="Status" value={String(run?.status ?? "")} />
-						<Meta label="Workspace" value={String(run?.workspaceId ?? "")} />
 						<Meta label="Created" value={String(run?.created ?? "")} />
 						<Meta label="Started" value={String(run?.start ?? "")} />
 						<Meta label="Finished" value={String(run?.end ?? "")} />

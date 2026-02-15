@@ -39,9 +39,7 @@ export function TerminalView({
 	const wsURL = useMemo(() => {
 		if (!workspaceId || !deploymentId || !nodeId) return "";
 		const proto = window.location.protocol === "https:" ? "wss" : "ws";
-		const base = `${proto}://${window.location.host}${SKYFORGE_PROXY_ROOT}/api/workspaces/${encodeURIComponent(
-			workspaceId,
-		)}/deployments/${encodeURIComponent(deploymentId)}/terminal/ws`;
+		const base = `${proto}://${window.location.host}${SKYFORGE_PROXY_ROOT}/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/terminal/ws`;
 		const params = new URLSearchParams();
 		params.set("node", nodeId);
 		params.set("command", command);

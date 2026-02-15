@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/query-keys";
 import {
 	type DeploymentTopology,
+	PERSONAL_SCOPE_ID,
 	getWorkspaceContainerlabTemplate,
 	getWorkspaces,
 } from "@/lib/skyforge-api";
@@ -64,7 +65,8 @@ function parseContainerlabYamlToTopology(yamlText: string): DeploymentTopology {
 
 function LabsMapPage() {
 	const search = Route.useSearch() as any;
-	const workspaceId = String(search?.workspaceId ?? "");
+	const workspaceId =
+		String(search?.workspaceId ?? "").trim() || PERSONAL_SCOPE_ID;
 	const source = String(search?.source ?? "workspace");
 	const dir = String(search?.dir ?? "containerlab/designer");
 	const file = String(search?.file ?? "");
@@ -103,7 +105,7 @@ function LabsMapPage() {
 		}
 	}, [templateQ.data?.yaml]);
 
-	if (!workspaceId || !file) {
+	if (!file) {
 		return (
 			<div className="h-screen w-screen p-6">
 				<div className="max-w-2xl space-y-4">

@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import {
@@ -25,87 +24,26 @@ import {
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type ForwardCredentialSetSummary,
+	PERSONAL_SCOPE_ID,
 	type PolicyReportForwardNetwork,
-	type SkyforgeWorkspace,
 	applyWorkspaceForwardCredentialSet,
 	createWorkspaceForwardNetwork,
 	deleteWorkspaceForwardConfig,
 	deleteWorkspaceForwardNetwork,
 	getWorkspaceForwardConfig,
-	getWorkspaces,
 	listForwardNetworks,
 	listUserForwardCollectorConfigs,
 	listUserForwardCredentialSets,
 	listWorkspaceForwardNetworks,
 } from "../../../lib/skyforge-api";
 
-const searchSchema = z.object({
-	// Be defensive: TanStack Router can hand us `unknown` search values, including
-	// empty strings or arrays. Normalize to a trimmed string or `undefined`.
-	workspace: z.preprocess(
-		(v) => (typeof v === "string" ? v.trim() : undefined),
-		z.string().min(1).optional(),
-	),
-});
-
 export const Route = createFileRoute("/dashboard/forward-networks/")({
-	validateSearch: (search) => searchSchema.parse(search),
-	loaderDeps: ({ search: { workspace } }) => ({ workspace }),
-	loader: async ({ context: { queryClient } }) => {
-		await queryClient.ensureQueryData({
-			queryKey: queryKeys.workspaces(),
-			queryFn: getWorkspaces,
-			staleTime: 30_000,
-		});
-	},
 	component: ForwardNetworksPage,
 });
 
 function ForwardNetworksPage() {
-	const navigate = useNavigate();
 	const qc = useQueryClient();
-	const { workspace } = Route.useSearch();
-
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
-		staleTime: 30_000,
-		retry: false,
-	});
-	const workspaces = useMemo(
-		() => (workspacesQ.data?.workspaces ?? []) as SkyforgeWorkspace[],
-		[workspacesQ.data?.workspaces],
-	);
-
-	useEffect(() => {
-		// Treat the URL search param as the single source of truth.
-		// If the URL didn't specify a workspace (or specified an invalid one),
-		// pick the first workspace and persist it into the URL.
-		//
-		// This keeps the page stable even if a user opens /forward-networks with a
-		// stale bookmark, and avoids update-depth loops in controlled selects.
-		const urlWorkspaceId = String(workspace ?? "").trim();
-		if (workspaces.length === 0) return;
-		const isValid =
-			!!urlWorkspaceId &&
-			workspaces.some((w) => String(w.id) === urlWorkspaceId);
-		const nextId = isValid ? urlWorkspaceId : String(workspaces[0]?.id ?? "");
-		if (!nextId) return;
-		if (urlWorkspaceId === nextId) return;
-		void navigate({
-			search: { workspace: nextId } as any,
-			replace: true,
-		});
-	}, [workspace, workspaces, navigate]);
-
-	const selectedWorkspaceId = useMemo(() => {
-		const id = String(workspace ?? "").trim();
-		if (!id) return "";
-		// If workspaces are loaded and this workspace isn't present, treat as unset.
-		if (workspaces.length > 0 && !workspaces.some((w) => String(w.id) === id))
-			return "";
-		return id;
-	}, [workspace, workspaces]);
+	const selectedWorkspaceId = PERSONAL_SCOPE_ID;
 
 	const workspaceNetworksQ = useQuery({
 		queryKey: queryKeys.workspaceForwardNetworks(selectedWorkspaceId),
@@ -201,9 +139,7 @@ function ForwardNetworksPage() {
 						? collectorConfigId
 						: undefined,
 			};
-			const ws = selectedWorkspaceId.trim();
-			if (!ws) throw new Error("No workspace is available");
-			return createWorkspaceForwardNetwork(ws, body);
+			return createWorkspaceForwardNetwork(selectedWorkspaceId, body);
 		},
 		onSuccess: async () => {
 			toast.success("Forward network saved");
@@ -223,9 +159,7 @@ function ForwardNetworksPage() {
 
 	const deleteM = useMutation({
 		mutationFn: async (networkRef: string) => {
-			const ws = selectedWorkspaceId.trim();
-			if (!ws) throw new Error("No workspace is available");
-			return deleteWorkspaceForwardNetwork(ws, networkRef);
+			return deleteWorkspaceForwardNetwork(selectedWorkspaceId, networkRef);
 		},
 		onSuccess: async () => {
 			toast.success("Forward network deleted");
@@ -247,7 +181,6 @@ function ForwardNetworksPage() {
 
 	const applyCredSetM = useMutation({
 		mutationFn: async () => {
-			if (!selectedWorkspaceId) throw new Error("Select a workspace");
 			const id = credentialSetId.trim();
 			if (!id) throw new Error("Select a credential set");
 			return applyWorkspaceForwardCredentialSet(selectedWorkspaceId, {
@@ -255,7 +188,7 @@ function ForwardNetworksPage() {
 			});
 		},
 		onSuccess: async () => {
-			toast.success("Forward credentials applied to workspace");
+			toast.success("Forward credentials applied");
 			await qc.invalidateQueries({
 				queryKey: queryKeys.workspaceForwardConfig(selectedWorkspaceId),
 			});
@@ -268,17 +201,16 @@ function ForwardNetworksPage() {
 
 	const clearCredSetM = useMutation({
 		mutationFn: async () => {
-			if (!selectedWorkspaceId) throw new Error("Select a workspace");
 			return deleteWorkspaceForwardConfig(selectedWorkspaceId);
 		},
 		onSuccess: async () => {
-			toast.success("Workspace Forward credentials cleared");
+			toast.success("Forward credentials cleared");
 			await qc.invalidateQueries({
 				queryKey: queryKeys.workspaceForwardConfig(selectedWorkspaceId),
 			});
 		},
 		onError: (e) =>
-			toast.error("Failed to clear workspace credentials", {
+			toast.error("Failed to clear credentials", {
 				description: (e as Error).message,
 			}),
 	});
@@ -309,15 +241,13 @@ function ForwardNetworksPage() {
 					<div className="rounded-md border p-3">
 						<div className="text-sm font-medium">Forward status</div>
 						<div className="mt-1 text-sm text-muted-foreground">
-							{!selectedWorkspaceId
-								? "No workspace available"
-								: workspaceForwardConfigQ.isLoading
-									? "Loading…"
-									: workspaceForwardConfigQ.isError
-										? "Failed to load Forward config"
-										: workspaceForwardConfigQ.data?.configured
-											? `Configured for ${workspaceForwardConfigQ.data?.username ?? ""}`
-											: "Not configured"}
+							{workspaceForwardConfigQ.isLoading
+								? "Loading…"
+								: workspaceForwardConfigQ.isError
+									? "Failed to load Forward config"
+									: workspaceForwardConfigQ.data?.configured
+										? `Configured for ${workspaceForwardConfigQ.data?.username ?? ""}`
+										: "Not configured"}
 						</div>
 					</div>
 					<div className="space-y-2">
@@ -362,18 +292,14 @@ function ForwardNetworksPage() {
 					<div className="flex items-center gap-2">
 						<Button
 							onClick={() => applyCredSetM.mutate()}
-							disabled={
-								applyCredSetM.isPending ||
-								!selectedWorkspaceId ||
-								!credentialSetId.trim()
-							}
+							disabled={applyCredSetM.isPending || !credentialSetId.trim()}
 						>
 							{applyCredSetM.isPending ? "Applying…" : "Apply"}
 						</Button>
 						<Button
 							variant="outline"
 							onClick={() => clearCredSetM.mutate()}
-							disabled={clearCredSetM.isPending || !selectedWorkspaceId}
+							disabled={clearCredSetM.isPending}
 						>
 							{clearCredSetM.isPending ? "Clearing…" : "Clear"}
 						</Button>
@@ -490,7 +416,7 @@ function ForwardNetworksPage() {
 					<div className="flex items-center gap-2">
 						<Button
 							onClick={() => createM.mutate()}
-							disabled={createM.isPending || !selectedWorkspaceId}
+							disabled={createM.isPending}
 						>
 							<Plus className="h-4 w-4 mr-2" />
 							Save network
@@ -507,68 +433,60 @@ function ForwardNetworksPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
-					{!selectedWorkspaceId ? (
+					{workspaceNetworks.length === 0 ? (
 						<div className="text-sm text-muted-foreground">
-							No workspace available.
-						</div>
-					) : workspaceNetworks.length === 0 ? (
-						<div className="text-sm text-muted-foreground">
-							No workspace-saved networks yet.
+							No saved networks yet.
 						</div>
 					) : null}
-					{selectedWorkspaceId
-						? workspaceNetworks.map((n) => (
-								<div
-									key={n.id}
-									className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-lg border p-3"
-								>
-									<div className="min-w-0">
-										<div className="font-medium truncate">{n.name}</div>
-										<div className="text-sm text-muted-foreground truncate">
-											<span className="font-mono">{n.forwardNetworkId}</span>
-											{n.description ? ` · ${n.description}` : ""}
-										</div>
-									</div>
-									<div className="flex items-center gap-2">
-										{canOpenNetworkViews ? (
-											<>
-												<Button asChild variant="outline" size="sm">
-													<Link
-														to="/dashboard/forward-networks/$networkRef/hub"
-														params={{ networkRef: n.id }}
-														search={{ workspace: selectedWorkspaceId } as any}
-													>
-														Open Hub
-													</Link>
-												</Button>
-												<Button asChild variant="ghost" size="sm">
-													<Link
-														to="/dashboard/forward-networks/$networkRef/assurance-studio"
-														params={{ networkRef: n.id }}
-														search={{ workspace: selectedWorkspaceId } as any}
-													>
-														Advanced
-													</Link>
-												</Button>
-											</>
-										) : (
-											<Button variant="outline" size="sm" disabled>
-												Open Hub
-											</Button>
-										)}
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={() => deleteM.mutate(n.id)}
-											disabled={deleteM.isPending}
-										>
-											<Trash2 className="h-4 w-4 mr-2" />
-											Delete
-										</Button>
-									</div>
+					{workspaceNetworks.map((n) => (
+						<div
+							key={n.id}
+							className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-lg border p-3"
+						>
+							<div className="min-w-0">
+								<div className="font-medium truncate">{n.name}</div>
+								<div className="text-sm text-muted-foreground truncate">
+									<span className="font-mono">{n.forwardNetworkId}</span>
+									{n.description ? ` · ${n.description}` : ""}
 								</div>
-							))
-						: null}
+							</div>
+							<div className="flex items-center gap-2">
+								{canOpenNetworkViews ? (
+									<>
+										<Button asChild variant="outline" size="sm">
+											<Link
+												to="/dashboard/forward-networks/$networkRef/hub"
+												params={{ networkRef: n.id }}
+											>
+												Open Hub
+											</Link>
+										</Button>
+										<Button asChild variant="ghost" size="sm">
+											<Link
+												to="/dashboard/forward-networks/$networkRef/assurance-studio"
+												params={{ networkRef: n.id }}
+											>
+												Advanced
+											</Link>
+										</Button>
+									</>
+								) : (
+									<Button variant="outline" size="sm" disabled>
+										Open Hub
+									</Button>
+								)}
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => deleteM.mutate(n.id)}
+									disabled={deleteM.isPending}
+								>
+									<Trash2 className="h-4 w-4 mr-2" />
+									Delete
+								</Button>
+							</div>
+						</div>
+					))}
 				</CardContent>
 			</Card>
 		</div>

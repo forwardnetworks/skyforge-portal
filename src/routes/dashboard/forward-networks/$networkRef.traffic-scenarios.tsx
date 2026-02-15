@@ -19,6 +19,7 @@ import {
 } from "@/lib/assurance-traffic-api";
 import { queryKeys } from "@/lib/query-keys";
 import {
+	PERSONAL_SCOPE_ID,
 	listUserForwardNetworks,
 	listWorkspaceForwardNetworks,
 } from "@/lib/skyforge-api";
@@ -29,9 +30,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
+const searchSchema = z.object({});
 
 export const Route = createFileRoute(
 	"/dashboard/forward-networks/$networkRef/traffic-scenarios",
@@ -169,8 +168,8 @@ function parseDemandsCSV(text: string): AssuranceTrafficDemand[] {
 
 function ForwardNetworkTrafficScenariosPage() {
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
-	const workspaceId = String(workspace ?? "").trim();
+	Route.useSearch();
+	const workspaceId = PERSONAL_SCOPE_ID;
 
 	const [seedMode, setSeedMode] = useState("mesh");
 	const [includeGroups, setIncludeGroups] = useState(true);
@@ -299,10 +298,7 @@ function ForwardNetworkTrafficScenariosPage() {
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex items-center gap-3">
 					<Button asChild variant="ghost" size="sm">
-						<Link
-							to="/dashboard/forward-networks"
-							search={{ workspace: workspaceId }}
-						>
+						<Link to="/dashboard/forward-networks">
 							<ArrowLeft className="h-4 w-4" />
 							<span className="ml-2">Forward Networks</span>
 						</Link>
@@ -322,7 +318,6 @@ function ForwardNetworkTrafficScenariosPage() {
 						<Link
 							to="/dashboard/forward-networks/$networkRef/assurance-studio"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Assurance Studio
 						</Link>
@@ -337,10 +332,6 @@ function ForwardNetworkTrafficScenariosPage() {
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-						<div className="space-y-1">
-							<div className="text-sm text-muted-foreground">Workspace</div>
-							<Input value={workspaceId} readOnly />
-						</div>
 						<div className="space-y-1">
 							<div className="text-sm text-muted-foreground">
 								Forward snapshotId (optional)
@@ -534,7 +525,7 @@ function ForwardNetworkTrafficScenariosPage() {
 								</div>
 								<div className="flex items-end">
 									<Button
-										disabled={!workspaceId || seedMutation.isPending}
+										disabled={seedMutation.isPending}
 										onClick={() => seedMutation.mutate()}
 									>
 										Seed demands
@@ -578,7 +569,7 @@ function ForwardNetworkTrafficScenariosPage() {
 								</div>
 								<div className="flex items-end gap-2">
 									<Button
-										disabled={!workspaceId || evalMutation.isPending}
+										disabled={evalMutation.isPending}
 										onClick={() => evalMutation.mutate()}
 									>
 										Evaluate

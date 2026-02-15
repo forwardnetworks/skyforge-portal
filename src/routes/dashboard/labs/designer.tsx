@@ -50,6 +50,7 @@ import {
 } from "@/lib/containerlab-yaml";
 import { queryKeys } from "@/lib/query-keys";
 import {
+	PERSONAL_SCOPE_ID,
 	type TopologyIntentSpec,
 	autofixUserAITemplate,
 	createClabernetesDeploymentFromTemplate,
@@ -61,7 +62,6 @@ import {
 	getWorkspaceContainerlabTemplates,
 	getWorkspaceNetlabTemplate,
 	getWorkspaceNetlabTemplates,
-	getWorkspaces,
 	listRegistryRepositories,
 	listRegistryTags,
 	listUserContainerlabServers,
@@ -93,7 +93,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const designerSearchSchema = z.object({
-	workspaceId: z.string().optional().catch(""),
 	importDeploymentId: z.string().optional().catch(""),
 });
 
@@ -530,7 +529,7 @@ function LabDesignerPage() {
 	const queryClient = useQueryClient();
 
 	const [labName, setLabName] = useState("lab");
-	const [workspaceId, setWorkspaceId] = useState("");
+	const [workspaceId, setWorkspaceId] = useState(PERSONAL_SCOPE_ID);
 	const [runtime, setRuntime] = useState<DesignerRuntime>("clabernetes");
 	const [activeStep, setActiveStep] = useState<DesignerStep>("build");
 	const [containerlabServer, setContainerlabServer] = useState("");
@@ -676,7 +675,7 @@ function LabDesignerPage() {
 		mutationFn: async () => {
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (isNetlabRuntime) {
-				if (!workspaceId) throw new Error("Select a workspace");
+				if (!workspaceId) throw new Error("Scope is not initialized");
 				if (!isNetlabTemplatesDir(effectiveTemplatesDir)) {
 					throw new Error(
 						"Repo path must be under netlab/ or blueprints/netlab/",
@@ -1112,17 +1111,16 @@ function LabDesignerPage() {
 
 	// Optional: import an existing running deployment topology into the canvas.
 	useEffect(() => {
-		const ws = String(search.workspaceId ?? "").trim();
 		const depId = String(search.importDeploymentId ?? "").trim();
-		if (!ws || !depId) return;
-		setWorkspaceId(ws);
+		if (!depId) return;
+		setWorkspaceId(PERSONAL_SCOPE_ID);
 		setUseSavedConfig(false);
 		setLastSaved(null);
 
 		let cancelled = false;
 		(async () => {
 			try {
-				const topo = await getDeploymentTopology(ws, depId);
+				const topo = await getDeploymentTopology(PERSONAL_SCOPE_ID, depId);
 				if (cancelled) return;
 				const nextNodes: Array<Node<DesignNodeData>> = (topo.nodes ?? []).map(
 					(n, idx) => ({
@@ -1169,7 +1167,7 @@ function LabDesignerPage() {
 			cancelled = true;
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [search.importDeploymentId, search.workspaceId]);
+	}, [search.importDeploymentId]);
 
 	const saveDraft = () => {
 		try {
@@ -1201,8 +1199,6 @@ function LabDesignerPage() {
 			}
 			const parsed = JSON.parse(raw) as any;
 			if (typeof parsed?.labName === "string") setLabName(parsed.labName);
-			if (typeof parsed?.workspaceId === "string")
-				setWorkspaceId(parsed.workspaceId);
 			if (
 				parsed?.runtime === "clabernetes" ||
 				parsed?.runtime === "containerlab" ||
@@ -1226,13 +1222,6 @@ function LabDesignerPage() {
 			});
 		}
 	};
-
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
-		retry: false,
-		staleTime: 30_000,
-	});
 
 	const registryReposQ = useQuery({
 		queryKey: queryKeys.registryRepos(""),
@@ -1286,7 +1275,7 @@ function LabDesignerPage() {
 				]
 			: [isNetlabRuntime ? "netlabTemplate" : "containerlabTemplate", "none"],
 		queryFn: async () => {
-			if (!workspaceId) throw new Error("missing workspace");
+			if (!workspaceId) throw new Error("missing scope");
 			if (!importFile) return null;
 			if (isNetlabRuntime) {
 				return getWorkspaceNetlabTemplate(workspaceId, {
@@ -1308,7 +1297,7 @@ function LabDesignerPage() {
 
 	const createDeployment = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Select a workspace");
+			if (!workspaceId) throw new Error("Scope is not initialized");
 			const isGeneratedDraftActive =
 				yamlSource === "generated-draft" && Boolean(activeGeneratedDraftId);
 			const generatedDraftReviewed =
@@ -1428,7 +1417,7 @@ function LabDesignerPage() {
 
 	const saveConfig = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Select a workspace");
+			if (!workspaceId) throw new Error("Scope is not initialized");
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (isNetlabRuntime) {
 				if (!isNetlabTemplatesDir(effectiveTemplatesDir)) {
@@ -1474,7 +1463,7 @@ function LabDesignerPage() {
 
 	const importTemplate = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Select a workspace");
+			if (!workspaceId) throw new Error("Scope is not initialized");
 			const file = importFile.trim();
 			if (!file) throw new Error("Select a template");
 			if (isNetlabRuntime) {
@@ -1629,7 +1618,7 @@ function LabDesignerPage() {
 
 	const openMapInNewTab = async () => {
 		if (!workspaceId) {
-			toast.error("Select a workspace first");
+			toast.error("Scope is not initialized");
 			return;
 		}
 		if (isNetlabRuntime) {
@@ -1782,13 +1771,11 @@ function LabDesignerPage() {
 		yamlSource === "generated-draft" && Boolean(activeGeneratedDraftId);
 	const generatedDraftReviewed =
 		generatedDraftInUse && reviewedGeneratedDraftId === activeGeneratedDraftId;
-	const deployBlockedReason = !workspaceId
-		? "Select a workspace"
-		: !effectiveYaml.trim()
-			? "YAML is empty"
-			: generatedDraftInUse && !generatedDraftReviewed
-				? "Review generated assumptions"
-				: "";
+	const deployBlockedReason = !effectiveYaml.trim()
+		? "YAML is empty"
+		: generatedDraftInUse && !generatedDraftReviewed
+			? "Review generated assumptions"
+			: "";
 	const validationStateLabel = validateYaml.isPending
 		? "validating"
 		: validateYaml.isError
@@ -2548,44 +2535,17 @@ function LabDesignerPage() {
 										/>
 									</div>
 									<div className="space-y-1">
-										<Label>Workspace</Label>
-										<Select
-											value={workspaceId}
-											onValueChange={(v) => setWorkspaceId(v)}
-										>
-											<SelectTrigger>
-												<SelectValue
-													placeholder={
-														workspacesQ.isLoading
-															? "Loading…"
-															: "Select workspace…"
-													}
-												/>
-											</SelectTrigger>
-											<SelectContent>
-												{(workspacesQ.data?.workspaces ?? []).map((w: any) => (
-													<SelectItem key={String(w.id)} value={String(w.id)}>
-														{String(w.name ?? w.slug ?? w.id)}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
+										<Label>Scope</Label>
+										<Input value="Personal" readOnly />
 									</div>
 									<div className="space-y-1">
 										<Label>Runtime</Label>
 										<Select
 											value={runtime}
 											onValueChange={(v) => setRuntime(v as DesignerRuntime)}
-											disabled={!workspaceId}
 										>
 											<SelectTrigger>
-												<SelectValue
-													placeholder={
-														!workspaceId
-															? "Select workspace first…"
-															: "Select runtime…"
-													}
-												/>
+												<SelectValue placeholder="Select runtime…" />
 											</SelectTrigger>
 											<SelectContent>
 												<SelectItem value="netlab-c9s">
@@ -3055,18 +3015,16 @@ function LabDesignerPage() {
 									<Select
 										value={containerlabServer}
 										onValueChange={(v) => setContainerlabServer(v)}
-										disabled={!workspaceId || runtime !== "containerlab"}
+										disabled={runtime !== "containerlab"}
 									>
 										<SelectTrigger>
 											<SelectValue
 												placeholder={
 													runtime !== "containerlab"
 														? "Not required for in-cluster runtimes…"
-														: !workspaceId
-															? "Select workspace first…"
-															: containerlabServersQ.isLoading
-																? "Loading…"
-																: "Select server…"
+														: containerlabServersQ.isLoading
+															? "Loading…"
+															: "Select server…"
 												}
 											/>
 										</SelectTrigger>
@@ -3180,7 +3138,7 @@ function LabDesignerPage() {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="blueprints">Blueprints</SelectItem>
-										<SelectItem value="workspace">Workspace repo</SelectItem>
+										<SelectItem value="workspace">Personal repo</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>

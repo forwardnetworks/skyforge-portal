@@ -445,7 +445,7 @@ function GovernancePage() {
 						gradient="green"
 					/>
 					<BentoStatCard
-						title="Workspaces tracked"
+						title="Scopes tracked"
 						value={String(summaryData?.workspacesTracked ?? "—")}
 						icon={<Layers className="h-5 w-5" />}
 						gradient="purple"

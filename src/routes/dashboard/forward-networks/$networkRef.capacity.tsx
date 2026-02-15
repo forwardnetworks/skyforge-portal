@@ -30,6 +30,7 @@ import {
 	type ForwardNetworkCapacitySnapshotDeltaResponse,
 	type ForwardNetworkCapacityUpgradeCandidate,
 	type ForwardNetworkCapacityUpgradeCandidatesResponse,
+	PERSONAL_SCOPE_ID,
 	getForwardNetworkCapacityCoverage,
 	getForwardNetworkCapacityGrowth,
 	getForwardNetworkCapacityInventory,
@@ -50,9 +51,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
+const searchSchema = z.object({});
 
 export const Route = createFileRoute(
 	"/dashboard/forward-networks/$networkRef/capacity",
@@ -274,7 +273,7 @@ type VrfSummaryRow = {
 
 function ForwardNetworkCapacityPage() {
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
+	Route.useSearch();
 	const qc = useQueryClient();
 	const [windowLabel, setWindowLabel] = useState<"24h" | "7d" | "30d">("24h");
 	const [ifaceMetric, setIfaceMetric] = useState<
@@ -316,7 +315,7 @@ function ForwardNetworkCapacityPage() {
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
 	const [planFilter, setPlanFilter] = useState("");
-	const workspaceId = String(workspace ?? "").trim();
+	const workspaceId = PERSONAL_SCOPE_ID;
 
 	const networksQ = useQuery({
 		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
@@ -422,7 +421,6 @@ function ForwardNetworkCapacityPage() {
 
 	const refresh = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace not found");
 			return refreshForwardNetworkCapacityRollups(workspaceId, networkRef);
 		},
 		onSuccess: async (resp) => {
@@ -1575,39 +1573,12 @@ function ForwardNetworkCapacityPage() {
 		windowLabel,
 	]);
 
-	if (!workspaceId) {
-		return (
-			<div className="space-y-6 p-6">
-				<div className="flex items-center gap-3">
-					<Link
-						to="/dashboard/forward-networks"
-						search={{ workspace: "" } as any}
-						className={buttonVariants({
-							variant: "outline",
-							size: "icon",
-							className: "h-9 w-9",
-						})}
-					>
-						<ArrowLeft className="h-4 w-4" />
-					</Link>
-					<h1 className="text-2xl font-bold tracking-tight">Capacity</h1>
-				</div>
-				<Card>
-					<CardContent className="pt-6 text-sm text-muted-foreground">
-						Workspace is required.
-					</CardContent>
-				</Card>
-			</div>
-		);
-	}
-
 	return (
 		<div className="space-y-6 p-6 pb-20">
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 				<div className="flex items-center gap-3">
 					<Link
 						to="/dashboard/forward-networks"
-						search={{ workspace: workspaceId } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",

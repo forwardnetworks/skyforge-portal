@@ -3,7 +3,6 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import {
@@ -27,6 +26,7 @@ import { postAssuranceTrafficSeeds } from "../../../lib/assurance-traffic-api";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type ForwardAssuranceSummaryResponse,
+	PERSONAL_SCOPE_ID,
 	type PolicyReportForwardNetwork,
 	getForwardNetworkAssuranceSummary,
 	listWorkspaceForwardNetworks,
@@ -34,14 +34,9 @@ import {
 	seedForwardNetworkAssuranceDemo,
 } from "../../../lib/skyforge-api";
 
-const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
-
 export const Route = createFileRoute(
 	"/dashboard/forward-networks/$networkRef/hub",
 )({
-	validateSearch: (search) => searchSchema.parse(search),
 	component: ForwardNetworkHubPage,
 });
 
@@ -79,8 +74,7 @@ function presetTitle(preset: PresetKind): string {
 function ForwardNetworkHubPage() {
 	const qc = useQueryClient();
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
-	const workspaceId = String(workspace ?? "").trim();
+	const workspaceId = PERSONAL_SCOPE_ID;
 
 	const [window, setWindow] = useState("24h");
 	const [thresholdUtil, setThresholdUtil] = useState("0.8");
@@ -156,7 +150,6 @@ function ForwardNetworkHubPage() {
 
 	const runPresetM = useMutation({
 		mutationFn: async (preset: PresetKind) => {
-			if (!workspaceId) throw new Error("Workspace is required");
 			if (!summary?.snapshot.snapshotId) {
 				throw new Error("No Forward snapshot available yet");
 			}
@@ -335,7 +328,6 @@ function ForwardNetworkHubPage() {
 				<div className="flex items-center gap-3 min-w-0">
 					<Link
 						to="/dashboard/forward-networks"
-						search={{ workspace: workspaceId } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -358,7 +350,7 @@ function ForwardNetworkHubPage() {
 					<Button
 						variant="outline"
 						onClick={() => refreshM.mutate()}
-						disabled={!workspaceId || refreshM.isPending}
+						disabled={refreshM.isPending}
 					>
 						<RefreshCw className="h-4 w-4 mr-2" />
 						{refreshM.isPending ? "Refreshing…" : "Refresh"}
@@ -367,7 +359,6 @@ function ForwardNetworkHubPage() {
 						<Link
 							to="/dashboard/forward-networks/$networkRef/assurance-studio"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Advanced
 						</Link>
@@ -471,7 +462,7 @@ function ForwardNetworkHubPage() {
 						<Button
 							variant="outline"
 							onClick={() => seedSignalsM.mutate()}
-							disabled={!workspaceId || seedSignalsM.isPending}
+							disabled={seedSignalsM.isPending}
 						>
 							{seedSignalsM.isPending ? "Seeding…" : "Seed SNMP/Syslog demo"}
 						</Button>
@@ -685,7 +676,6 @@ function ForwardNetworkHubPage() {
 							<Link
 								to="/dashboard/forward-networks/$networkRef/assurance"
 								params={{ networkRef }}
-								search={{ workspace: workspaceId } as any}
 							>
 								Assurance summary
 							</Link>
@@ -694,7 +684,6 @@ function ForwardNetworkHubPage() {
 							<Link
 								to="/dashboard/forward-networks/$networkRef/capacity"
 								params={{ networkRef }}
-								search={{ workspace: workspaceId } as any}
 							>
 								Capacity explorer
 							</Link>
@@ -703,7 +692,6 @@ function ForwardNetworkHubPage() {
 							<Link
 								to="/dashboard/forward-networks/$networkRef/assurance-studio"
 								params={{ networkRef }}
-								search={{ workspace: workspaceId } as any}
 							>
 								Legacy studio
 							</Link>

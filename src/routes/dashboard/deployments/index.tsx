@@ -12,14 +12,11 @@ import {
 	Play,
 	Plus,
 	Search,
-	Settings,
 	StopCircle,
 	Trash2,
-	Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -45,13 +42,6 @@ import {
 	type DataTableColumn,
 } from "../../../components/ui/data-table";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "../../../components/ui/dialog";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -75,37 +65,18 @@ import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
 	type JSONMap,
-	type SkyforgeWorkspace,
 	type WorkspaceDeployment,
 	buildLoginUrl,
-	createWorkspace,
 	deleteDeployment,
-	deleteWorkspace,
 	destroyDeployment,
 	getDashboardSnapshot,
 	getSession,
-	getWorkspaces,
 	startDeployment,
 	stopDeployment,
 } from "../../../lib/skyforge-api";
 import { cn } from "../../../lib/utils";
 
-// Search Schema
-const deploymentsSearchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
-
 export const Route = createFileRoute("/dashboard/deployments/")({
-	validateSearch: (search) => deploymentsSearchSchema.parse(search),
-	loaderDeps: ({ search: { workspace } }) => ({ workspace }),
-	loader: async ({ context: { queryClient } }) => {
-		// Prefetch workspaces to ensure selector is ready
-		await queryClient.ensureQueryData({
-			queryKey: queryKeys.workspaces(),
-			queryFn: getWorkspaces,
-			staleTime: 30_000,
-		});
-	},
 	component: DeploymentsPage,
 });
 
@@ -113,7 +84,6 @@ function DeploymentsPage() {
 	useDashboardEvents(true);
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { workspace } = Route.useSearch();
 
 	const snap = useQuery<DashboardSnapshot | null>({
 		queryKey: queryKeys.dashboardSnapshot(),
@@ -146,133 +116,9 @@ function DeploymentsPage() {
 
 	// UI state
 	const [isFeedOpen, setIsFeedOpen] = useState(true);
-	const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-	const [createWorkspaceName, setCreateWorkspaceName] = useState("");
-	const [createWorkspaceSlug, setCreateWorkspaceSlug] = useState("");
-	const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false);
-	const [deleteWorkspaceConfirm, setDeleteWorkspaceConfirm] = useState("");
-
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
-		staleTime: 30_000,
-	});
-	const workspaces = (workspacesQ.data?.workspaces ??
-		[]) as SkyforgeWorkspace[];
-
-	const lastWorkspaceKey = "skyforge.lastWorkspaceId.deployments";
-
-	// Use URL param if available, otherwise fallback to last-selected, then first workspace
-	const selectedWorkspaceId = useMemo(() => {
-		if (
-			workspace &&
-			workspaces.some((w: SkyforgeWorkspace) => w.id === workspace)
-		)
-			return workspace;
-		const stored =
-			typeof window !== "undefined"
-				? (window.localStorage.getItem(lastWorkspaceKey) ?? "")
-				: "";
-		if (stored && workspaces.some((w: SkyforgeWorkspace) => w.id === stored))
-			return stored;
-		return workspaces[0]?.id ?? "";
-	}, [workspace, workspaces]);
-
-	useEffect(() => {
-		if (!selectedWorkspaceId) return;
-		if (typeof window !== "undefined") {
-			window.localStorage.setItem(lastWorkspaceKey, selectedWorkspaceId);
-		}
-		if (workspace !== selectedWorkspaceId) {
-			navigate({
-				search: { workspace: selectedWorkspaceId } as any,
-				replace: true,
-			});
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selectedWorkspaceId]);
-
-	const selectedWorkspace = useMemo(() => {
-		return (
-			workspaces.find((w: SkyforgeWorkspace) => w.id === selectedWorkspaceId) ??
-			null
-		);
-	}, [workspaces, selectedWorkspaceId]);
-
-	const createWs = useMutation({
-		mutationFn: async () => {
-			const name = String(createWorkspaceName ?? "").trim();
-			if (!name) throw new Error("Workspace name is required");
-			return createWorkspace({
-				name,
-				slug: String(createWorkspaceSlug ?? "").trim() || undefined,
-			} as any);
-		},
-		onSuccess: async (created) => {
-			toast.success("Workspace created");
-			setCreateWorkspaceOpen(false);
-			setCreateWorkspaceName("");
-			setCreateWorkspaceSlug("");
-			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
-			if (created?.id) {
-				navigate({
-					search: { workspace: created.id } as any,
-					replace: true,
-				});
-			}
-		},
-		onError: (e) =>
-			toast.error("Failed to create workspace", {
-				description: (e as Error).message,
-			}),
-	});
-
-	const delWs = useMutation({
-		mutationFn: async () => {
-			const confirm = String(deleteWorkspaceConfirm ?? "").trim();
-			if (!confirm) {
-				throw new Error(
-					`Type the workspace slug (“${selectedWorkspace?.slug ?? ""}”) to confirm`,
-				);
-			}
-			return deleteWorkspace(selectedWorkspaceId, { confirm });
-		},
-		onSuccess: async () => {
-			toast.success("Workspace deleted");
-			setDeleteWorkspaceOpen(false);
-			setDeleteWorkspaceConfirm("");
-			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
-			navigate({ search: { workspace: "" } as any, replace: true });
-		},
-		onError: (e) =>
-			toast.error("Failed to delete workspace", {
-				description: (e as Error).message,
-			}),
-	});
-
-	// Sync internal state selection to URL
-	const handleWorkspaceChange = (newId: string) => {
-		if (newId === "__create__") {
-			setCreateWorkspaceOpen(true);
-			return;
-		}
-		if (typeof window !== "undefined") {
-			window.localStorage.setItem(lastWorkspaceKey, newId);
-		}
-		navigate({
-			search: { workspace: newId } as any,
-			replace: true,
-		});
-	};
-
 	const allDeployments = useMemo(() => {
-		const all = (snap.data?.deployments ?? []) as WorkspaceDeployment[];
-		return selectedWorkspaceId
-			? all.filter(
-					(d: WorkspaceDeployment) => d.workspaceId === selectedWorkspaceId,
-				)
-			: all;
-	}, [selectedWorkspaceId, snap.data?.deployments]);
+		return (snap.data?.deployments ?? []) as WorkspaceDeployment[];
+	}, [snap.data?.deployments]);
 
 	// Apply filters
 	const deployments = useMemo(() => {
@@ -454,12 +300,8 @@ function DeploymentsPage() {
 	}, [handleStart, handleStop, navigate]);
 
 	const runs = useMemo(() => {
-		const all = (snap.data?.runs ?? []) as JSONMap[];
-		if (!selectedWorkspaceId) return all;
-		return all.filter(
-			(r: JSONMap) => String(r.workspaceId ?? "") === selectedWorkspaceId,
-		);
-	}, [selectedWorkspaceId, snap.data?.runs]);
+		return (snap.data?.runs ?? []) as JSONMap[];
+	}, [snap.data?.runs]);
 
 	const loginHref = buildLoginUrl(
 		window.location.pathname + window.location.search,
@@ -505,176 +347,19 @@ function DeploymentsPage() {
 
 	return (
 		<div className="space-y-6 p-6">
-			{/* Top Header / Workspace Context */}
+			{/* Top Header */}
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-6">
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight">Deployments</h1>
 					<p className="text-muted-foreground text-sm">
-						Manage deployments and monitor activity.
+						Manage deployments and monitor activity (personal scope).
 					</p>
 				</div>
 
 				<div className="flex items-center gap-3">
-					<div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
-						<Select
-							value={selectedWorkspaceId}
-							onValueChange={handleWorkspaceChange}
-							disabled={false}
-						>
-							<SelectTrigger className="w-[200px] h-8 bg-transparent border-0 focus:ring-0 shadow-none">
-								<SelectValue placeholder="Select workspace" />
-							</SelectTrigger>
-							<SelectContent>
-								{workspaces.map((w: SkyforgeWorkspace) => (
-									<SelectItem key={w.id} value={w.id}>
-										{w.name} ({w.slug})
-									</SelectItem>
-								))}
-								<SelectItem value="__create__">
-									<span className="flex items-center gap-2">
-										<Plus className="h-4 w-4" />
-										Add workspace…
-									</span>
-								</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="outline"
-								size="icon"
-								className="h-8 w-8"
-								disabled={!selectedWorkspaceId}
-							>
-								<Settings className="h-4 w-4" />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuLabel>Workspace</DropdownMenuLabel>
-							<DropdownMenuItem
-								onClick={() =>
-									navigate({
-										to: "/dashboard/workspaces/$workspaceId",
-										params: { workspaceId: selectedWorkspaceId },
-									})
-								}
-							>
-								<Users className="mr-2 h-4 w-4" />
-								Workspace access
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => navigate({ to: "/dashboard/workspaces" })}
-							>
-								<Inbox className="mr-2 h-4 w-4" />
-								All workspaces
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								className="text-destructive focus:text-destructive"
-								onClick={() => {
-									setDeleteWorkspaceOpen(true);
-									setDeleteWorkspaceConfirm("");
-								}}
-							>
-								<Trash2 className="mr-2 h-4 w-4" />
-								Delete workspace…
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
+					<Badge variant="secondary">Scope: Personal</Badge>
 				</div>
 			</div>
-
-			<Dialog open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen}>
-				<DialogContent className="max-w-lg">
-					<DialogHeader>
-						<DialogTitle>Create workspace</DialogTitle>
-						<DialogDescription>
-							Create a new workspace and its backing Git repo.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-3">
-						<div className="space-y-1.5">
-							<div className="text-sm font-medium">Name</div>
-							<Input
-								value={createWorkspaceName}
-								onChange={(e) => setCreateWorkspaceName(e.target.value)}
-								placeholder="Customer demo"
-							/>
-						</div>
-						<div className="space-y-1.5">
-							<div className="text-sm font-medium">Slug (optional)</div>
-							<Input
-								value={createWorkspaceSlug}
-								onChange={(e) => setCreateWorkspaceSlug(e.target.value)}
-								placeholder="customer-demo"
-								className="font-mono"
-							/>
-							<p className="text-xs text-muted-foreground">
-								Leave blank to auto-generate from name.
-							</p>
-						</div>
-						<div className="flex items-center justify-end gap-2 pt-2">
-							<Button
-								variant="outline"
-								onClick={() => setCreateWorkspaceOpen(false)}
-								disabled={createWs.isPending}
-							>
-								Cancel
-							</Button>
-							<Button
-								onClick={() => createWs.mutate()}
-								disabled={createWs.isPending}
-							>
-								{createWs.isPending ? "Creating…" : "Create"}
-							</Button>
-						</div>
-					</div>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog open={deleteWorkspaceOpen} onOpenChange={setDeleteWorkspaceOpen}>
-				<DialogContent className="max-w-lg">
-					<DialogHeader>
-						<DialogTitle>Delete workspace</DialogTitle>
-						<DialogDescription>
-							This deletes the workspace and its backing resources (Git repo,
-							artifacts, and state). This cannot be undone.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-3">
-						<div className="text-sm">
-							Type{" "}
-							<span className="font-mono font-semibold">
-								{selectedWorkspace?.slug ?? ""}
-							</span>{" "}
-							to confirm.
-						</div>
-						<Input
-							value={deleteWorkspaceConfirm}
-							onChange={(e) => setDeleteWorkspaceConfirm(e.target.value)}
-							placeholder={selectedWorkspace?.slug ?? ""}
-							className="font-mono"
-						/>
-						<div className="flex items-center justify-end gap-2 pt-2">
-							<Button
-								variant="outline"
-								onClick={() => setDeleteWorkspaceOpen(false)}
-								disabled={delWs.isPending}
-							>
-								Cancel
-							</Button>
-							<Button
-								variant="destructive"
-								onClick={() => delWs.mutate()}
-								disabled={delWs.isPending}
-							>
-								{delWs.isPending ? "Deleting…" : "Delete"}
-							</Button>
-						</div>
-					</div>
-				</DialogContent>
-			</Dialog>
 
 			{!snap.data && (
 				<Card className="border-dashed">
@@ -753,7 +438,6 @@ function DeploymentsPage() {
 						</Select>
 						<Link
 							to="/dashboard/deployments/new"
-							search={{ workspace: selectedWorkspaceId }}
 							className={buttonVariants({ variant: "default" })}
 						>
 							<Plus className="mr-2 h-4 w-4" /> Create
@@ -775,7 +459,7 @@ function DeploymentsPage() {
 									description={
 										searchQuery || statusFilter !== "all"
 											? "Try adjusting your filters."
-											: "You haven't created any deployments in this workspace yet."
+											: "You haven't created any deployments yet."
 									}
 									action={
 										!searchQuery && statusFilter === "all"
@@ -784,7 +468,6 @@ function DeploymentsPage() {
 													onClick: () =>
 														navigate({
 															to: "/dashboard/deployments/new",
-															search: { workspace: selectedWorkspaceId },
 														}),
 												}
 											: undefined

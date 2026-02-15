@@ -49,6 +49,7 @@ import {
 	type ForwardAssuranceSummaryResponse,
 	type ForwardNetworkCapacityPathBottlenecksResponse,
 	type ForwardNetworkCapacityUpgradeCandidatesResponse,
+	PERSONAL_SCOPE_ID,
 	type PolicyReportNQEResponse,
 	type PolicyReportPathQuery,
 	getForwardNetworkAssuranceSummary,
@@ -66,7 +67,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
 	scenario: z.string().optional().catch(""),
 	tab: z.string().optional().catch("routing"),
 });
@@ -217,11 +217,11 @@ function demandsToPolicyReportsFlowSuite(
 
 function AssuranceStudioPage() {
 	const { networkRef } = Route.useParams();
-	const { workspace, scenario, tab } = Route.useSearch();
+	const { scenario, tab } = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const qc = useQueryClient();
 
-	const workspaceId = String(workspace ?? "").trim();
+	const workspaceId = PERSONAL_SCOPE_ID;
 	const selectedScenarioId = String(scenario ?? "").trim();
 	const activeTab = String(tab ?? "routing") || "routing";
 
@@ -527,7 +527,6 @@ function AssuranceStudioPage() {
 
 	const duplicateM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
 			if (!selectedScenarioId) throw new Error("select a scenario first");
 			const name = (draftName.trim() || "Scenario") + " copy";
 			const thr = Number(threshold);
@@ -717,7 +716,6 @@ function AssuranceStudioPage() {
 
 	const runScenarioM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
 			if (!selectedScenarioId) throw new Error("select a scenario first");
 			if (compareToBaseline && !baselineSnapshotId.trim()) {
 				throw new Error(
@@ -886,7 +884,6 @@ function AssuranceStudioPage() {
 
 	const capBottlenecksM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
 			const demands = scenarioDemands
 				.filter((d) => String(d.dstIp ?? "").trim())
 				.slice(0, 200);
@@ -925,7 +922,6 @@ function AssuranceStudioPage() {
 
 	const secRunM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
 			const demands = scenarioDemands
 				.filter((d) => String(d.dstIp ?? "").trim())
 				.slice(0, 200);
@@ -968,10 +964,7 @@ function AssuranceStudioPage() {
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex items-center gap-3">
 					<Button asChild variant="ghost" size="sm">
-						<Link
-							to="/dashboard/forward-networks"
-							search={{ workspace: workspaceId }}
-						>
+						<Link to="/dashboard/forward-networks">
 							<ArrowLeft className="h-4 w-4" />
 							<span className="ml-2">Forward Networks</span>
 						</Link>
@@ -990,7 +983,6 @@ function AssuranceStudioPage() {
 						<Link
 							to="/dashboard/forward-networks/$networkRef/hub"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Assurance Hub
 						</Link>
@@ -999,7 +991,7 @@ function AssuranceStudioPage() {
 						variant="outline"
 						size="sm"
 						onClick={() => refreshAssuranceM.mutate()}
-						disabled={!workspaceId || refreshAssuranceM.isPending}
+						disabled={refreshAssuranceM.isPending}
 					>
 						<RefreshCw className="h-4 w-4 mr-2" />
 						{refreshAssuranceM.isPending ? "Refreshing…" : "Refresh Assurance"}
@@ -1009,7 +1001,7 @@ function AssuranceStudioPage() {
 							variant="outline"
 							size="sm"
 							onClick={() => seedDemoM.mutate()}
-							disabled={!workspaceId || seedDemoM.isPending}
+							disabled={seedDemoM.isPending}
 						>
 							{seedDemoM.isPending ? "Seeding…" : "Seed demo signals"}
 						</Button>
@@ -1391,10 +1383,7 @@ function AssuranceStudioPage() {
 							/>
 						</div>
 						<div className="flex items-end gap-2 md:col-span-2">
-							<Button
-								disabled={!workspaceId || evalM.isPending}
-								onClick={() => evalM.mutate()}
-							>
+							<Button disabled={evalM.isPending} onClick={() => evalM.mutate()}>
 								<Play className="h-4 w-4 mr-2" />
 								Evaluate routing
 							</Button>
@@ -1592,7 +1581,7 @@ function AssuranceStudioPage() {
 									<div className="flex items-end">
 										<Button
 											variant="outline"
-											disabled={!workspaceId || seedM.isPending}
+											disabled={seedM.isPending}
 											onClick={() => seedM.mutate()}
 										>
 											Seed
@@ -2015,7 +2004,7 @@ function AssuranceStudioPage() {
 						<CardContent className="space-y-3">
 							<div className="flex flex-wrap items-center gap-2">
 								<Button
-									disabled={!workspaceId || capBottlenecksM.isPending}
+									disabled={capBottlenecksM.isPending}
 									onClick={() => capBottlenecksM.mutate()}
 								>
 									Evaluate capacity bottlenecks

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Eye, FolderPlus, Inbox, Trash2, Upload } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import {
@@ -17,20 +17,13 @@ import {
 } from "../../components/ui/data-table";
 import { EmptyState } from "../../components/ui/empty-state";
 import { Input } from "../../components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../../components/ui/select";
 import { Skeleton } from "../../components/ui/skeleton";
 import { queryKeys } from "../../lib/query-keys";
 import {
+	PERSONAL_SCOPE_ID,
 	createWorkspaceArtifactFolder,
 	deleteWorkspaceArtifactObject,
 	downloadWorkspaceArtifact,
-	getWorkspaces,
 	listWorkspaceArtifacts,
 	putWorkspaceArtifactObject,
 } from "../../lib/skyforge-api";
@@ -40,25 +33,8 @@ export const Route = createFileRoute("/dashboard/s3")({
 });
 
 function S3Page() {
-	const workspaces = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
-		staleTime: 30_000,
-	});
-
-	const workspaceOptions = workspaces.data?.workspaces ?? [];
-	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
+	const selectedWorkspaceId = PERSONAL_SCOPE_ID;
 	const [prefix, setPrefix] = useState("");
-
-	useEffect(() => {
-		if (workspaceOptions.length === 0) return;
-		const stored =
-			window.localStorage.getItem("skyforge.lastWorkspaceId.s3") ?? "";
-		const initial = workspaceOptions.some((w) => w.id === stored)
-			? stored
-			: (workspaceOptions[0]?.id ?? "");
-		setSelectedWorkspaceId((prev) => prev || initial);
-	}, [workspaceOptions]);
 
 	const artifacts = useQuery({
 		queryKey: queryKeys.workspaceArtifacts(selectedWorkspaceId),
@@ -184,29 +160,6 @@ function S3Page() {
 
 	const toolbar = (
 		<div className="p-4 border-b flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-			<div className="flex items-center gap-3">
-				<div className="text-sm font-medium">Workspace</div>
-				<Select
-					value={selectedWorkspaceId}
-					onValueChange={(id) => {
-						setSelectedWorkspaceId(id);
-						window.localStorage.setItem("skyforge.lastWorkspaceId.s3", id);
-					}}
-					disabled={workspaceOptions.length === 0}
-				>
-					<SelectTrigger className="w-[280px]">
-						<SelectValue placeholder="Select workspace" />
-					</SelectTrigger>
-					<SelectContent>
-						{workspaceOptions.map((w) => (
-							<SelectItem key={w.id} value={w.id}>
-								{w.name} ({w.slug})
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
-
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 				<Input
 					placeholder="Prefix (e.g. topology/)"
@@ -296,7 +249,7 @@ function S3Page() {
 				<CardHeader>
 					<CardTitle>S3</CardTitle>
 					<CardDescription>
-						Workspace artifacts and generated files (backed by the platform
+						Personal artifacts and generated files (backed by the platform
 						object store).
 					</CardDescription>
 				</CardHeader>
@@ -304,7 +257,7 @@ function S3Page() {
 
 			<Card>
 				<CardContent className="p-0">
-					{workspaces.isLoading || artifacts.isLoading ? (
+					{artifacts.isLoading ? (
 						<div className="p-6 space-y-4">
 							<Skeleton className="h-12 w-full" />
 							<Skeleton className="h-12 w-full" />
@@ -313,7 +266,7 @@ function S3Page() {
 					) : (
 						<div>
 							{toolbar}
-							{workspaces.isError || artifacts.isError ? (
+							{artifacts.isError ? (
 								<div className="p-8 text-center text-destructive">
 									Failed to list objects.
 								</div>
@@ -322,7 +275,7 @@ function S3Page() {
 									<EmptyState
 										icon={Inbox}
 										title="No objects found"
-										description="No artifacts found for this workspace."
+										description="No artifacts found."
 									/>
 								</div>
 							) : (

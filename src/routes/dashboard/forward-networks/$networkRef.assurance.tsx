@@ -3,7 +3,6 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { Badge } from "../../../components/ui/badge";
 import { Button, buttonVariants } from "../../../components/ui/button";
 import {
@@ -15,19 +14,15 @@ import {
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type ForwardAssuranceSummaryResponse,
+	PERSONAL_SCOPE_ID,
 	getForwardNetworkAssuranceSummary,
 	listForwardNetworkAssuranceHistory,
 	refreshForwardNetworkAssurance,
 } from "../../../lib/skyforge-api";
 
-const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
-
 export const Route = createFileRoute(
 	"/dashboard/forward-networks/$networkRef/assurance",
 )({
-	validateSearch: (search) => searchSchema.parse(search),
 	component: ForwardNetworkAssurancePage,
 });
 
@@ -58,8 +53,7 @@ function toPct01(v: number | undefined): string {
 function ForwardNetworkAssurancePage() {
 	const qc = useQueryClient();
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
-	const workspaceId = String(workspace ?? "").trim();
+	const workspaceId = PERSONAL_SCOPE_ID;
 
 	const summaryQ = useQuery({
 		queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
@@ -112,7 +106,6 @@ function ForwardNetworkAssurancePage() {
 				<div className="flex items-center gap-3 min-w-0">
 					<Link
 						to="/dashboard/forward-networks"
-						search={{ workspace: workspaceId } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -132,7 +125,7 @@ function ForwardNetworkAssurancePage() {
 				<div className="flex flex-wrap items-center gap-2">
 					<Button
 						onClick={() => refreshM.mutate()}
-						disabled={!workspaceId || refreshM.isPending}
+						disabled={refreshM.isPending}
 					>
 						<RefreshCw className="h-4 w-4 mr-2" />
 						{refreshM.isPending ? "Refreshing…" : "Refresh from Forward"}
@@ -141,7 +134,6 @@ function ForwardNetworkAssurancePage() {
 						<Link
 							to="/dashboard/forward-networks/$networkRef/hub"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Assurance Hub
 						</Link>
@@ -150,7 +142,6 @@ function ForwardNetworkAssurancePage() {
 						<Link
 							to="/dashboard/forward-networks/$networkRef/assurance-studio"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Advanced
 						</Link>
@@ -159,7 +150,6 @@ function ForwardNetworkAssurancePage() {
 						<Link
 							to="/dashboard/forward-networks/$networkRef/capacity"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Capacity
 						</Link>
@@ -167,14 +157,7 @@ function ForwardNetworkAssurancePage() {
 				</div>
 			</div>
 
-			{!workspaceId ? (
-				<Card>
-					<CardContent className="pt-6 text-sm text-muted-foreground">
-						Select a workspace first (open this page from the Forward Networks
-						list).
-					</CardContent>
-				</Card>
-			) : summaryQ.isLoading ? (
+			{summaryQ.isLoading ? (
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
 						Loading…

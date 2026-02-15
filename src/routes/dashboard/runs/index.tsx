@@ -82,7 +82,6 @@ function RunsIndexPage() {
 					{filtered.map((r) => {
 						const id = String(r.id ?? "");
 						const status = String(r.status ?? "");
-						const workspaceId = String(r.workspaceId ?? "");
 						const type = String(r.tpl_alias ?? r.type ?? "");
 						const created = String(r.created ?? "");
 						const started = String(r.start ?? "");
@@ -103,7 +102,7 @@ function RunsIndexPage() {
 												</Link>
 											</CardTitle>
 											<CardDescription className="truncate">
-												{type || "run"} • ws {workspaceId || "—"}
+												{type || "run"}
 											</CardDescription>
 										</div>
 										<Badge variant={badgeVariantForStatus(status)}>

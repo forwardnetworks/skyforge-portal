@@ -25,11 +25,7 @@ export function WebUIModal({
 	nodeId,
 	port = 443,
 }: Props) {
-	const url = `${SKYFORGE_PROXY_ROOT}/api/workspaces/${encodeURIComponent(
-		workspaceId,
-	)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(
-		nodeId,
-	)}/webui/?port=${encodeURIComponent(String(port))}&embed=1`;
+	const url = `${SKYFORGE_PROXY_ROOT}/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/webui/?port=${encodeURIComponent(String(port))}&embed=1`;
 
 	const key = `${workspaceId}-${deploymentId}-${nodeId}-${port}-${open}`;
 

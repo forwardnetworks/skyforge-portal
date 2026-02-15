@@ -57,7 +57,7 @@ import {
 	type CreateWorkspaceDeploymentRequest,
 	type DashboardSnapshot,
 	type ExternalTemplateRepo,
-	type SkyforgeWorkspace,
+	PERSONAL_SCOPE_ID,
 	type UserVariableGroup,
 	type WorkspaceTemplatesResponse,
 	convertWorkspaceEveLab,
@@ -70,7 +70,6 @@ import {
 	getWorkspaceNetlabTemplate,
 	getWorkspaceNetlabTemplates,
 	getWorkspaceTerraformTemplates,
-	getWorkspaces,
 	importWorkspaceEveLab,
 	listUserContainerlabServers,
 	listUserEveServers,
@@ -81,9 +80,7 @@ import {
 	validateWorkspaceNetlabTemplate,
 } from "../../../lib/skyforge-api";
 
-const deploymentsSearchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
+const deploymentsSearchSchema = z.object({});
 
 export const Route = createFileRoute("/dashboard/deployments/new")({
 	validateSearch: (search) => deploymentsSearchSchema.parse(search),
@@ -100,7 +97,7 @@ type DeploymentKind =
 type TemplateSource = "workspace" | "blueprints" | "external";
 
 const formSchema = z.object({
-	workspaceId: z.string().min(1, "Workspace is required"),
+	workspaceId: z.string().min(1, "Scope is required"),
 	name: z.string().min(1, "Deployment name is required").max(100),
 	kind: z.enum([
 		"netlab-c9s",
@@ -134,7 +131,7 @@ function hostLabelFromURL(raw: string): string {
 function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { workspace } = Route.useSearch();
+	Route.useSearch();
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [netlabHelpOpen, setNetlabHelpOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
@@ -166,18 +163,10 @@ function CreateDeploymentPage() {
 		retry: false,
 	});
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
-		staleTime: 30_000,
-	});
-	const workspaces = (workspacesQ.data?.workspaces ??
-		[]) as SkyforgeWorkspace[];
-
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			workspaceId: workspace || "",
+			workspaceId: PERSONAL_SCOPE_ID,
 			name: "",
 			kind: "netlab-c9s",
 			source: "workspace",
@@ -237,38 +226,6 @@ function CreateDeploymentPage() {
 	const watchForwardCollectorId = watch("forwardCollectorId");
 	const watchEnv = watch("env");
 	const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
-
-	const lastWorkspaceKey = "skyforge.lastWorkspaceId.deployments";
-
-	// Sync workspaceId when workspaces load if not already set or passed via URL
-	useEffect(() => {
-		if (watchWorkspaceId || workspaces.length === 0) return;
-		const urlWs = String(workspace ?? "").trim();
-		if (urlWs && workspaces.some((w) => w.id === urlWs)) {
-			setValue("workspaceId", urlWs);
-			return;
-		}
-		const stored =
-			typeof window !== "undefined"
-				? (window.localStorage.getItem(lastWorkspaceKey) ?? "")
-				: "";
-		if (stored && workspaces.some((w) => w.id === stored)) {
-			setValue("workspaceId", stored);
-			return;
-		}
-		setValue("workspaceId", workspaces[0].id);
-	}, [watchWorkspaceId, workspaces, setValue]);
-
-	// Persist last-selected workspace for Create Deployment.
-	useEffect(() => {
-		if (!watchWorkspaceId) return;
-		if (typeof window === "undefined") return;
-		try {
-			window.localStorage.setItem(lastWorkspaceKey, watchWorkspaceId);
-		} catch {
-			// ignore
-		}
-	}, [watchWorkspaceId]);
 
 	// Auto-generate name when template or kind changes
 	useEffect(() => {
@@ -590,7 +547,6 @@ function CreateDeploymentPage() {
 			});
 			await navigate({
 				to: "/dashboard/deployments",
-				search: { workspace: variables.workspaceId },
 			});
 		},
 		onError: (error) => {
@@ -602,7 +558,7 @@ function CreateDeploymentPage() {
 
 	const importEveLab = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+			if (!watchWorkspaceId) throw new Error("Scope is not initialized.");
 			const server = importServer.trim();
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
@@ -623,7 +579,6 @@ function CreateDeploymentPage() {
 			setImportOpen(false);
 			await navigate({
 				to: "/dashboard/deployments",
-				search: { workspace: watchWorkspaceId },
 			});
 		},
 		onError: (error) => {
@@ -635,7 +590,7 @@ function CreateDeploymentPage() {
 
 	const convertEveLab = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+			if (!watchWorkspaceId) throw new Error("Scope is not initialized.");
 			const server = importServer.trim();
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
@@ -669,7 +624,6 @@ function CreateDeploymentPage() {
 			if (resp?.deployment) {
 				await navigate({
 					to: "/dashboard/deployments",
-					search: { workspace: watchWorkspaceId },
 				});
 			}
 		},
@@ -682,7 +636,7 @@ function CreateDeploymentPage() {
 
 	const validateNetlabTemplate = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+			if (!watchWorkspaceId) throw new Error("Scope is not initialized.");
 			if (!watchTemplate) throw new Error("Select a template first.");
 			const envFromList = new Map<string, string>();
 			for (const kv of form.getValues("env") || []) {
@@ -813,7 +767,6 @@ function CreateDeploymentPage() {
 							onClick={() =>
 								navigate({
 									to: "/dashboard/deployments",
-									search: { workspace: watchWorkspaceId },
 								})
 							}
 						>
@@ -854,35 +807,6 @@ function CreateDeploymentPage() {
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 							<div className="grid gap-6 md:grid-cols-2">
-								<FormField
-									control={form.control}
-									name="workspaceId"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Workspace</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												defaultValue={field.value}
-												value={field.value}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Select workspace" />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{workspaces.map((w) => (
-														<SelectItem key={w.id} value={w.id}>
-															{w.name} ({w.slug})
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
 								<FormField
 									control={form.control}
 									name="kind"
@@ -1014,7 +938,7 @@ function CreateDeploymentPage() {
 												</FormControl>
 												<SelectContent>
 													<SelectItem value="workspace">
-														Workspace repo
+														Personal repo
 													</SelectItem>
 													<SelectItem value="blueprints">Blueprints</SelectItem>
 													<SelectItem
@@ -1590,7 +1514,6 @@ function CreateDeploymentPage() {
 									onClick={() => {
 										navigate({
 											to: "/dashboard/deployments",
-											search: { workspace: watchWorkspaceId },
 										});
 									}}
 									disabled={mutation.isPending}
