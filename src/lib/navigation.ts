@@ -124,11 +124,11 @@ const NAV_SECTIONS: NavSection[] = [
 		defaultExpanded: true,
 		items: [
 			{
-				id: "forward-networks",
+				id: "fwd",
 				label: "Assurance Hub",
-				href: "/dashboard/forward-networks",
+				href: "/dashboard/fwd",
 				icon: Network,
-				matchPrefixes: ["/dashboard/forward-networks"],
+				matchPrefixes: ["/dashboard/fwd"],
 				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
 			},
 			{
@@ -144,9 +144,9 @@ const NAV_SECTIONS: NavSection[] = [
 			{
 				id: "forward-collector",
 				label: "Forward Collector",
-				href: "/dashboard/forward",
+				href: "/dashboard/fwd/collector",
 				icon: Radio,
-				matchPrefixes: ["/dashboard/forward"],
+				matchPrefixes: ["/dashboard/fwd/collector"],
 				visible: (ctx) => featureEnabled(ctx, "forwardEnabled"),
 			},
 			{

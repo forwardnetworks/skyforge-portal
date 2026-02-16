@@ -21,7 +21,6 @@ import {
 import type { JSONMap } from "../../../lib/skyforge-api";
 import {
 	type DashboardSnapshot,
-	PERSONAL_SCOPE_ID,
 	buildLoginUrl,
 	cancelRun,
 	getDashboardSnapshot,
@@ -88,7 +87,7 @@ function RunDetailPage() {
 									if (!run) return;
 									void (async () => {
 										try {
-											await cancelRun(runId, PERSONAL_SCOPE_ID);
+											await cancelRun(runId);
 											toast.success("Run canceled");
 											await queryClient.invalidateQueries({
 												queryKey: queryKeys.dashboardSnapshot(),

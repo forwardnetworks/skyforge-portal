@@ -17,25 +17,20 @@ export type JSONValue =
 	| { [key: string]: JSONValue };
 export type JSONMap = Record<string, JSONValue>;
 
-export type ResourceShareRecord = {
-	resourceType: string;
-	resourceId: string;
-	ownerUsername: string;
-	sharedUsername: string;
-	role: "viewer" | "editor" | string;
-	createdBy?: string;
-	createdAt?: ISO8601;
-	updatedAt?: ISO8601;
-};
-
-export type ResourceSharesResponse = {
-	items: ResourceShareRecord[];
-};
-
 export type ExternalTemplateRepo =
 	components["schemas"]["skyforge.ExternalTemplateRepo"];
-export type SkyforgeWorkspace =
-	components["schemas"]["skyforge.SkyforgeWorkspace"];
+export type SkyforgeUserContext = {
+	id: string;
+	slug: string;
+	name: string;
+	description?: string;
+	createdAt?: ISO8601;
+	createdBy?: string;
+	isPublic?: boolean;
+	owners?: string[];
+	editors?: string[];
+	viewers?: string[];
+};
 export type NotificationRecord =
 	components["schemas"]["skyforge.NotificationRecord"];
 
@@ -92,9 +87,9 @@ export type ServiceNowSchemaStatusResponse = {
 
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
 // This type reflects the fields Skyforge currently emits in the dashboard snapshot and related APIs.
-export type WorkspaceDeployment = {
+export type UserDeployment = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	name: string;
 	type:
 		| "terraform"
@@ -108,7 +103,7 @@ export type WorkspaceDeployment = {
 	createdBy?: string;
 	createdAt?: ISO8601;
 	updatedAt?: ISO8601;
-	lastTaskWorkspaceId?: number;
+	lastTaskUserId?: number;
 	lastTaskId?: number;
 	lastStatus?: string;
 	lastStartedAt?: ISO8601;
@@ -233,7 +228,7 @@ export type DeploymentNodeInterfacesResponse = {
 
 export type DeploymentInventoryResponse = {
 	generatedAt: ISO8601;
-	workspaceId: string;
+	ownerUsername: string;
 	deploymentId: string;
 	format: string;
 	nodes?: Array<{
@@ -254,7 +249,7 @@ export type DeploymentUIEvent = {
 };
 
 export type DeploymentUIEventsResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	deploymentId: string;
 	events: DeploymentUIEvent[];
 };
@@ -272,8 +267,8 @@ export type ListForwardCollectorsResponse = {
 // Dashboard snapshot is delivered via SSE (`/api/dashboard/events`) and is not described in OpenAPI.
 export type DashboardSnapshot = {
 	refreshedAt: ISO8601;
-	workspaces: SkyforgeWorkspace[];
-	deployments: WorkspaceDeployment[];
+	contexts: SkyforgeUserContext[];
+	deployments: UserDeployment[];
 	runs: JSONMap[];
 	templatesIndexUpdatedAt?: ISO8601;
 	awsSsoStatus?: {
@@ -308,66 +303,36 @@ export async function logout(): Promise<void> {
 	}
 }
 
-export type GetWorkspacesResponse =
-	operations["GET:skyforge.GetWorkspaces"]["responses"][200]["content"]["application/json"];
+export type GetUserContextsResponse = {
+	contexts: SkyforgeUserContext[];
+};
 
-export const PERSONAL_SCOPE_ID = "me";
+export const USER_CONTEXT_ID = "me";
 
-export function workspaceRef(workspaceId: string): string {
-	void workspaceId;
-	return PERSONAL_SCOPE_ID;
-}
-
-export function workspaceScopeURL(workspaceId: string): string {
-	const ref = workspaceRef(workspaceId);
-	if (ref === PERSONAL_SCOPE_ID) {
-		return "/api/user/workspace";
-	}
-	return `/api/workspaces/${encodeURIComponent(ref)}`;
-}
-
-export async function getWorkspaces(): Promise<GetWorkspacesResponse> {
-	return apiFetch<GetWorkspacesResponse>("/api/workspaces");
-}
-
-export async function getResourceShares(
-	resourceType: string,
-	resourceId: string,
-): Promise<ResourceSharesResponse> {
-	const qs = new URLSearchParams();
-	qs.set("resourceType", resourceType);
-	qs.set("resourceId", resourceId);
-	return apiFetch<ResourceSharesResponse>(`/api/shares?${qs.toString()}`);
-}
-
-export async function putResourceShare(payload: {
-	resourceType: string;
-	resourceId: string;
-	sharedUsername: string;
-	role: "viewer" | "editor";
-}): Promise<ResourceSharesResponse> {
-	return apiFetch<ResourceSharesResponse>("/api/shares", {
-		method: "PUT",
-		body: JSON.stringify(payload),
-	});
-}
-
-export async function deleteResourceShare(
-	resourceType: string,
-	resourceId: string,
-	sharedUsername: string,
-): Promise<{ ok: boolean }> {
-	const qs = new URLSearchParams();
-	qs.set("resourceType", resourceType);
-	qs.set("resourceId", resourceId);
-	qs.set("sharedUsername", sharedUsername);
-	return apiFetch<{ ok: boolean }>(`/api/shares?${qs.toString()}`, {
-		method: "DELETE",
-	});
+export async function getUserContexts(): Promise<GetUserContextsResponse> {
+	return {
+		contexts: [
+			{
+				id: USER_CONTEXT_ID,
+				slug: "personal",
+				name: "Personal",
+			},
+		],
+	};
 }
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
-	return apiFetch<DashboardSnapshot>("/api/dashboard/snapshot");
+	const raw = await apiFetch<DashboardSnapshot>("/api/dashboard/snapshot");
+	const deployments = Array.isArray(raw?.deployments)
+		? raw.deployments.map((d) => ({
+				...d,
+				ownerUsername: String((d as any)?.ownerUsername ?? ""),
+			}))
+		: [];
+	return {
+		...raw,
+		deployments,
+	};
 }
 
 export type GetUserNotificationsResponse =
@@ -418,74 +383,6 @@ export async function deleteNotification(
 	);
 }
 
-export type WorkspaceNetlabServerConfig = {
-	id: string;
-	name: string;
-	apiUrl: string;
-	apiInsecure: boolean;
-	apiUser?: string;
-	hasPassword?: boolean;
-};
-
-export type WorkspaceNetlabServersResponse = {
-	workspaceId: string;
-	servers: WorkspaceNetlabServerConfig[];
-};
-
-export async function listWorkspaceNetlabServers(
-	workspaceId: string,
-): Promise<WorkspaceNetlabServersResponse> {
-	return apiFetch<WorkspaceNetlabServersResponse>(
-		`${workspaceScopeURL(workspaceId)}/netlab/servers`,
-	);
-}
-
-export async function upsertWorkspaceNetlabServer(
-	workspaceId: string,
-	payload: Partial<WorkspaceNetlabServerConfig> & {
-		name: string;
-		apiUrl: string;
-		apiInsecure: boolean;
-		apiPassword?: string;
-		apiToken?: string;
-	},
-): Promise<WorkspaceNetlabServerConfig> {
-	return apiFetch<WorkspaceNetlabServerConfig>(
-		`${workspaceScopeURL(workspaceId)}/netlab/servers`,
-		{
-			method: "PUT",
-			body: JSON.stringify(payload),
-		},
-	);
-}
-
-export async function deleteWorkspaceNetlabServer(
-	workspaceId: string,
-	serverId: string,
-): Promise<void> {
-	await apiFetch<void>(
-		`${workspaceScopeURL(workspaceId)}/netlab/servers/${encodeURIComponent(serverId)}`,
-		{
-			method: "DELETE",
-		},
-	);
-}
-
-export type WorkspaceEveServerConfig = {
-	id: string;
-	name: string;
-	apiUrl: string;
-	webUrl?: string;
-	skipTlsVerify: boolean;
-	apiUser?: string;
-	hasPassword?: boolean;
-};
-
-export type WorkspaceEveServersResponse = {
-	workspaceId: string;
-	servers: WorkspaceEveServerConfig[];
-};
-
 export type EveLabSummary = {
 	name: string;
 	path: string;
@@ -502,20 +399,20 @@ export type EveFolderInfo = {
 	mtime?: string;
 };
 
-export type WorkspaceEveLabsResponse = {
-	workspaceId: string;
+export type UserEveLabsResponse = {
+	ownerUsername: string;
 	server: string;
 	labs: EveLabSummary[];
 	folders?: EveFolderInfo[];
 };
 
-export type WorkspaceEveImportRequest = {
+export type UserEveImportRequest = {
 	server?: string;
 	labPath: string;
 	deploymentName?: string;
 };
 
-export type WorkspaceEveConvertRequest = {
+export type UserEveConvertRequest = {
 	server?: string;
 	labPath: string;
 	outputDir?: string;
@@ -524,85 +421,45 @@ export type WorkspaceEveConvertRequest = {
 	containerlabServer?: string;
 };
 
-export type WorkspaceEveConvertResponse = {
-	workspaceId: string;
+export type UserEveConvertResponse = {
+	ownerUsername: string;
 	path: string;
-	deployment?: WorkspaceDeployment;
+	deployment?: UserDeployment;
 	warnings?: string[];
 };
 
-export async function listWorkspaceEveServers(
-	workspaceId: string,
-): Promise<WorkspaceEveServersResponse> {
-	return apiFetch<WorkspaceEveServersResponse>(
-		`${workspaceScopeURL(workspaceId)}/eve/servers`,
-	);
-}
-
-export async function listWorkspaceEveLabs(
-	workspaceId: string,
+export async function listUserEveLabs(
+	ownerUsername: string,
 	params?: { server?: string; path?: string; recursive?: boolean },
-): Promise<WorkspaceEveLabsResponse> {
+): Promise<UserEveLabsResponse> {
 	const qs = new URLSearchParams();
 	if (params?.server) qs.set("server", params.server);
 	if (params?.path) qs.set("path", params.path);
 	if (params?.recursive) qs.set("recursive", "true");
 	const suffix = qs.toString();
-	return apiFetch<WorkspaceEveLabsResponse>(
-		`${workspaceScopeURL(workspaceId)}/eve/labs${suffix ? `?${suffix}` : ""}`,
+	return apiFetch<UserEveLabsResponse>(
+		`/api/eve/labs${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
-export async function importWorkspaceEveLab(
-	workspaceId: string,
-	payload: WorkspaceEveImportRequest,
-): Promise<WorkspaceDeployment> {
-	return apiFetch<WorkspaceDeployment>(
-		`${workspaceScopeURL(workspaceId)}/eve/import`,
-		{ method: "POST", body: JSON.stringify(payload) },
-	);
+export async function importUserEveLab(
+	ownerUsername: string,
+	payload: UserEveImportRequest,
+): Promise<UserDeployment> {
+	return apiFetch<UserDeployment>(`/api/eve/import`, {
+		method: "POST",
+		body: JSON.stringify(payload),
+	});
 }
 
-export async function convertWorkspaceEveLab(
-	workspaceId: string,
-	payload: WorkspaceEveConvertRequest,
-): Promise<WorkspaceEveConvertResponse> {
-	return apiFetch<WorkspaceEveConvertResponse>(
-		`${workspaceScopeURL(workspaceId)}/eve/convert`,
-		{ method: "POST", body: JSON.stringify(payload) },
-	);
-}
-
-export async function upsertWorkspaceEveServer(
-	workspaceId: string,
-	payload: Partial<WorkspaceEveServerConfig> & {
-		name: string;
-		apiUrl: string;
-		webUrl?: string;
-		skipTlsVerify: boolean;
-		apiUser?: string;
-		apiPassword?: string;
-	},
-): Promise<WorkspaceEveServerConfig> {
-	return apiFetch<WorkspaceEveServerConfig>(
-		`${workspaceScopeURL(workspaceId)}/eve/servers`,
-		{
-			method: "PUT",
-			body: JSON.stringify(payload),
-		},
-	);
-}
-
-export async function deleteWorkspaceEveServer(
-	workspaceId: string,
-	serverId: string,
-): Promise<void> {
-	await apiFetch<void>(
-		`${workspaceScopeURL(workspaceId)}/eve/servers/${encodeURIComponent(serverId)}`,
-		{
-			method: "DELETE",
-		},
-	);
+export async function convertUserEveLab(
+	ownerUsername: string,
+	payload: UserEveConvertRequest,
+): Promise<UserEveConvertResponse> {
+	return apiFetch<UserEveConvertResponse>(`/api/eve/convert`, {
+		method: "POST",
+		body: JSON.stringify(payload),
+	});
 }
 
 export async function listForwardCollectors(): Promise<ListForwardCollectorsResponse> {
@@ -734,7 +591,7 @@ export type UserAIValidateRequest = {
 };
 
 export type UserAIValidateResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	task: {
 		id?: number;
 		ok?: boolean;
@@ -928,6 +785,17 @@ export async function putUserSettings(payload: {
 	return apiFetch<UserSettingsResponse>("/api/user/settings", {
 		method: "PUT",
 		body: JSON.stringify(payload),
+	});
+}
+
+export type SyncBlueprintCatalogResponse = {
+	status: string;
+};
+
+export async function syncUserBlueprintCatalog(): Promise<SyncBlueprintCatalogResponse> {
+	return apiFetch<SyncBlueprintCatalogResponse>("/api/blueprints/sync", {
+		method: "POST",
+		body: "{}",
 	});
 }
 
@@ -1311,7 +1179,7 @@ export type UpdateDeploymentForwardConfigRequest = {
 };
 
 export type UpdateDeploymentForwardConfigResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	deploymentId: string;
 	enabled: boolean;
 	collectorConfigId?: string;
@@ -1321,28 +1189,26 @@ export type UpdateDeploymentForwardConfigResponse = {
 };
 
 export async function updateDeploymentForwardConfig(
-	workspaceId: string,
 	deploymentId: string,
 	body: UpdateDeploymentForwardConfigRequest,
 ): Promise<UpdateDeploymentForwardConfigResponse> {
 	return apiFetch<UpdateDeploymentForwardConfigResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/forward`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
 
 export type SyncDeploymentForwardResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	deploymentId: string;
 	run: JSONMap;
 };
 
 export async function syncDeploymentForward(
-	workspaceId: string,
 	deploymentId: string,
 ): Promise<SyncDeploymentForwardResponse> {
 	return apiFetch<SyncDeploymentForwardResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/forward/sync`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/forward/sync`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -1365,11 +1231,11 @@ export type CapacityRollupRow = {
 	createdAt?: string;
 	forwardNetworkId?: string;
 	deploymentId?: string;
-	workspaceId?: string;
+	ownerUsername?: string;
 };
 
 export type DeploymentCapacitySummaryResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	deploymentId: string;
 	forwardNetworkId: string;
 	asOf?: string;
@@ -1378,7 +1244,7 @@ export type DeploymentCapacitySummaryResponse = {
 };
 
 export type DeploymentCapacityRefreshResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	deploymentId: string;
 	run: JSONMap;
 };
@@ -1388,26 +1254,24 @@ export type CapacityPerfProxyResponse = {
 };
 
 export async function getDeploymentCapacitySummary(
-	workspaceId: string,
 	deploymentId: string,
 ): Promise<DeploymentCapacitySummaryResponse> {
 	return apiFetch<DeploymentCapacitySummaryResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/summary`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/capacity/summary`,
 	);
 }
 
 export async function refreshDeploymentCapacityRollups(
-	workspaceId: string,
 	deploymentId: string,
 ): Promise<DeploymentCapacityRefreshResponse> {
 	return apiFetch<DeploymentCapacityRefreshResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/rollups/refresh`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/capacity/rollups/refresh`,
 		{ method: "POST", body: "{}" },
 	);
 }
 
 export type ForwardNetworkCapacitySummaryResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	asOf?: string;
@@ -1416,7 +1280,7 @@ export type ForwardNetworkCapacitySummaryResponse = {
 };
 
 export type ForwardNetworkCapacityRefreshResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	run: JSONMap;
 };
@@ -1490,7 +1354,7 @@ export type ForwardAssuranceEvidence = {
 };
 
 export type ForwardAssuranceSummaryResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	generatedAt: string;
@@ -1517,45 +1381,40 @@ export type ForwardAssuranceHistoryResponse = {
 };
 
 export async function getForwardNetworkCapacitySummary(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<ForwardNetworkCapacitySummaryResponse> {
 	return apiFetch<ForwardNetworkCapacitySummaryResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/summary`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/summary`,
 	);
 }
 
 export async function refreshForwardNetworkCapacityRollups(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<ForwardNetworkCapacityRefreshResponse> {
 	return apiFetch<ForwardNetworkCapacityRefreshResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/rollups/refresh`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/rollups/refresh`,
 		{ method: "POST", body: "{}" },
 	);
 }
 
 export async function getForwardNetworkAssuranceSummary(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<ForwardAssuranceSummaryResponse> {
 	return apiFetch<ForwardAssuranceSummaryResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/summary`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/summary`,
 	);
 }
 
 export async function refreshForwardNetworkAssurance(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<ForwardAssuranceSummaryResponse> {
 	return apiFetch<ForwardAssuranceSummaryResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/refresh`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/refresh`,
 		{ method: "POST", body: "{}" },
 	);
 }
 
 export async function listForwardNetworkAssuranceHistory(
-	workspaceId: string,
 	networkRef: string,
 	limit?: string,
 ): Promise<ForwardAssuranceHistoryResponse> {
@@ -1563,7 +1422,7 @@ export async function listForwardNetworkAssuranceHistory(
 	if (limit) qs.set("limit", limit);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<ForwardAssuranceHistoryResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/summary/history${suffix}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/summary/history${suffix}`,
 	);
 }
 
@@ -1574,17 +1433,16 @@ export type ForwardAssuranceDemoSeedResponse = {
 };
 
 export async function seedForwardNetworkAssuranceDemo(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<ForwardAssuranceDemoSeedResponse> {
 	return apiFetch<ForwardAssuranceDemoSeedResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/demo/seed`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/demo/seed`,
 		{ method: "POST", body: "{}" },
 	);
 }
 
 export type ForwardNetworkCapacityCoverageResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	asOfRollups?: string;
@@ -1600,11 +1458,10 @@ export type ForwardNetworkCapacityCoverageResponse = {
 };
 
 export async function getForwardNetworkCapacityCoverage(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<ForwardNetworkCapacityCoverageResponse> {
 	return apiFetch<ForwardNetworkCapacityCoverageResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/coverage`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/coverage`,
 	);
 }
 
@@ -1631,7 +1488,7 @@ export type CapacityBgpNeighborDeltaRow = {
 };
 
 export type ForwardNetworkCapacitySnapshotDeltaResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	latestSnapshotId?: string;
@@ -1656,16 +1513,15 @@ export type ForwardNetworkCapacitySnapshotDeltaResponse = {
 };
 
 export async function getForwardNetworkCapacitySnapshotDelta(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<ForwardNetworkCapacitySnapshotDeltaResponse> {
 	return apiFetch<ForwardNetworkCapacitySnapshotDeltaResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/snapshot-delta`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/snapshot-delta`,
 	);
 }
 
 export type ForwardNetworkCapacityUpgradeCandidate = {
-	scopeType: string;
+	objectType: string;
 	device: string;
 	name: string;
 	members?: string[];
@@ -1683,7 +1539,7 @@ export type ForwardNetworkCapacityUpgradeCandidate = {
 };
 
 export type ForwardNetworkCapacityUpgradeCandidatesResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	asOf?: string;
@@ -1691,16 +1547,22 @@ export type ForwardNetworkCapacityUpgradeCandidatesResponse = {
 };
 
 export async function getForwardNetworkCapacityUpgradeCandidates(
-	workspaceId: string,
 	networkRef: string,
 	q: { window?: string } = {},
 ): Promise<ForwardNetworkCapacityUpgradeCandidatesResponse> {
 	const qs = new URLSearchParams();
 	if (q.window) qs.set("window", q.window);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
-	return apiFetch<ForwardNetworkCapacityUpgradeCandidatesResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/upgrade-candidates${suffix}`,
+	const raw = await apiFetch<ForwardNetworkCapacityUpgradeCandidatesResponse>(
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/upgrade-candidates${suffix}`,
 	);
+	return {
+		...raw,
+		items: (raw.items ?? []).map((item) => ({
+			...item,
+			objectType: String((item as any).objectType ?? ""),
+		})),
+	};
 }
 
 export type ForwardNetworkCapacityPortfolioItem = {
@@ -1717,15 +1579,13 @@ export type ForwardNetworkCapacityPortfolioItem = {
 };
 
 export type ForwardNetworkCapacityPortfolioResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	items: ForwardNetworkCapacityPortfolioItem[];
 };
 
-export async function getWorkspaceForwardNetworkCapacityPortfolio(
-	workspaceId: string,
-): Promise<ForwardNetworkCapacityPortfolioResponse> {
+export async function getUserForwardNetworkCapacityPortfolio(): Promise<ForwardNetworkCapacityPortfolioResponse> {
 	return apiFetch<ForwardNetworkCapacityPortfolioResponse>(
-		`${workspaceScopeURL(workspaceId)}/capacity/forward-networks/portfolio`,
+		`/api/capacity/fwd/portfolio`,
 	);
 }
 
@@ -1781,7 +1641,7 @@ export type CapacityBgpNeighborRow = {
 };
 
 export type DeploymentCapacityInventoryResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	deploymentId: string;
 	forwardNetworkId: string;
 	asOf?: string;
@@ -1809,7 +1669,7 @@ export type DeploymentCapacityInventoryResponse = {
 };
 
 export type ForwardNetworkCapacityInventoryResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	asOf?: string;
@@ -1837,20 +1697,18 @@ export type ForwardNetworkCapacityInventoryResponse = {
 };
 
 export async function getDeploymentCapacityInventory(
-	workspaceId: string,
 	deploymentId: string,
 ): Promise<DeploymentCapacityInventoryResponse> {
 	return apiFetch<DeploymentCapacityInventoryResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/inventory`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/capacity/inventory`,
 	);
 }
 
 export async function getForwardNetworkCapacityInventory(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<ForwardNetworkCapacityInventoryResponse> {
 	return apiFetch<ForwardNetworkCapacityInventoryResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/inventory`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/inventory`,
 	);
 }
 
@@ -1875,7 +1733,7 @@ export type CapacityGrowthRow = {
 };
 
 export type DeploymentCapacityGrowthResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	deploymentId: string;
 	metric: string;
 	window: string;
@@ -1887,7 +1745,7 @@ export type DeploymentCapacityGrowthResponse = {
 };
 
 export type ForwardNetworkCapacityGrowthResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	metric: string;
@@ -1900,7 +1758,6 @@ export type ForwardNetworkCapacityGrowthResponse = {
 };
 
 export async function getDeploymentCapacityGrowth(
-	workspaceId: string,
 	deploymentId: string,
 	q: DeploymentCapacityGrowthQuery,
 ): Promise<DeploymentCapacityGrowthResponse> {
@@ -1911,12 +1768,11 @@ export async function getDeploymentCapacityGrowth(
 	if (q.compareHours) qs.set("compareHours", String(q.compareHours));
 	if (q.limit) qs.set("limit", String(q.limit));
 	return apiFetch<DeploymentCapacityGrowthResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/growth?${qs.toString()}`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/capacity/growth?${qs.toString()}`,
 	);
 }
 
 export async function getForwardNetworkCapacityGrowth(
-	workspaceId: string,
 	networkRef: string,
 	q: DeploymentCapacityGrowthQuery,
 ): Promise<ForwardNetworkCapacityGrowthResponse> {
@@ -1927,7 +1783,7 @@ export async function getForwardNetworkCapacityGrowth(
 	if (q.compareHours) qs.set("compareHours", String(q.compareHours));
 	if (q.limit) qs.set("limit", String(q.limit));
 	return apiFetch<ForwardNetworkCapacityGrowthResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/growth?${qs.toString()}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/growth?${qs.toString()}`,
 	);
 }
 
@@ -1947,23 +1803,21 @@ export type PostCapacityInterfaceMetricsHistoryRequest = {
 };
 
 export async function postDeploymentCapacityInterfaceMetricsHistory(
-	workspaceId: string,
 	deploymentId: string,
 	body: PostCapacityInterfaceMetricsHistoryRequest,
 ): Promise<CapacityPerfProxyResponse> {
 	return apiFetch<CapacityPerfProxyResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/interface-metrics-history`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/interface-metrics-history`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
 export async function postForwardNetworkCapacityInterfaceMetricsHistory(
-	workspaceId: string,
 	networkRef: string,
 	body: PostCapacityInterfaceMetricsHistoryRequest,
 ): Promise<CapacityPerfProxyResponse> {
 	return apiFetch<CapacityPerfProxyResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/interface-metrics-history`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/perf/interface-metrics-history`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -1978,23 +1832,21 @@ export type PostCapacityDeviceMetricsHistoryRequest = {
 };
 
 export async function postDeploymentCapacityDeviceMetricsHistory(
-	workspaceId: string,
 	deploymentId: string,
 	body: PostCapacityDeviceMetricsHistoryRequest,
 ): Promise<CapacityPerfProxyResponse> {
 	return apiFetch<CapacityPerfProxyResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/device-metrics-history`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/device-metrics-history`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
 export async function postForwardNetworkCapacityDeviceMetricsHistory(
-	workspaceId: string,
 	networkRef: string,
 	body: PostCapacityDeviceMetricsHistoryRequest,
 ): Promise<CapacityPerfProxyResponse> {
 	return apiFetch<CapacityPerfProxyResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/device-metrics-history`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/perf/device-metrics-history`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2005,7 +1857,6 @@ export type GetCapacityUnhealthyDevicesQuery = {
 };
 
 export async function getDeploymentCapacityUnhealthyDevices(
-	workspaceId: string,
 	deploymentId: string,
 	q: GetCapacityUnhealthyDevicesQuery,
 ): Promise<CapacityPerfProxyResponse> {
@@ -2014,12 +1865,11 @@ export async function getDeploymentCapacityUnhealthyDevices(
 	if (q.endTime) qs.set("endTime", q.endTime);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-devices${suffix}`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-devices${suffix}`,
 	);
 }
 
 export async function getForwardNetworkCapacityUnhealthyDevices(
-	workspaceId: string,
 	networkRef: string,
 	q: GetCapacityUnhealthyDevicesQuery,
 ): Promise<CapacityPerfProxyResponse> {
@@ -2028,7 +1878,7 @@ export async function getForwardNetworkCapacityUnhealthyDevices(
 	if (q.endTime) qs.set("endTime", q.endTime);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-devices${suffix}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-devices${suffix}`,
 	);
 }
 
@@ -2042,7 +1892,6 @@ export type GetCapacityUnhealthyInterfacesQuery = {
 };
 
 export async function postDeploymentCapacityUnhealthyInterfaces(
-	workspaceId: string,
 	deploymentId: string,
 	q: GetCapacityUnhealthyInterfacesQuery,
 	body: PostCapacityUnhealthyInterfacesRequest,
@@ -2052,13 +1901,12 @@ export async function postDeploymentCapacityUnhealthyInterfaces(
 	if (q.endTime) qs.set("endTime", q.endTime);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/capacity/perf/unhealthy-interfaces${suffix}`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
 export async function postForwardNetworkCapacityUnhealthyInterfaces(
-	workspaceId: string,
 	networkRef: string,
 	q: GetCapacityUnhealthyInterfacesQuery,
 	body: PostCapacityUnhealthyInterfacesRequest,
@@ -2068,7 +1916,7 @@ export async function postForwardNetworkCapacityUnhealthyInterfaces(
 	if (q.endTime) qs.set("endTime", q.endTime);
 	const suffix = qs.toString() ? `?${qs.toString()}` : "";
 	return apiFetch<CapacityPerfProxyResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-interfaces${suffix}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/perf/unhealthy-interfaces${suffix}`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2152,7 +2000,7 @@ export type ForwardNetworkCapacityPathBottlenecksCoverage = {
 };
 
 export type ForwardNetworkCapacityPathBottlenecksResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	asOf?: string;
@@ -2163,56 +2011,52 @@ export type ForwardNetworkCapacityPathBottlenecksResponse = {
 };
 
 export async function postForwardNetworkCapacityPathBottlenecks(
-	workspaceId: string,
+	ownerUsername: string,
 	networkRef: string,
 	body: ForwardNetworkCapacityPathBottlenecksRequest,
 ): Promise<ForwardNetworkCapacityPathBottlenecksResponse> {
 	return apiFetch<ForwardNetworkCapacityPathBottlenecksResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/capacity/path-bottlenecks`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/capacity/path-bottlenecks`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
 export async function setDeploymentLinkImpairment(
-	workspaceId: string,
 	deploymentId: string,
 	body: LinkImpairmentRequest,
 ): Promise<LinkImpairmentResponse> {
 	return apiFetch<LinkImpairmentResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/impair`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/links/impair`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
 export async function setDeploymentLinkAdmin(
-	workspaceId: string,
 	deploymentId: string,
 	body: LinkAdminRequest,
 ): Promise<LinkAdminResponse> {
 	return apiFetch<LinkAdminResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/admin`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/links/admin`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
 export async function captureDeploymentLinkPcap(
-	workspaceId: string,
 	deploymentId: string,
 	body: LinkCaptureRequest,
 ): Promise<LinkCaptureResponse> {
 	return apiFetch<LinkCaptureResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/capture`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/links/capture`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
 export async function getDeploymentNodeInterfaces(
-	workspaceId: string,
 	deploymentId: string,
 	nodeId: string,
 ): Promise<DeploymentNodeInterfacesResponse> {
 	return apiFetch<DeploymentNodeInterfacesResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/interfaces`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/interfaces`,
 	);
 }
 
@@ -2228,29 +2072,26 @@ export type DeploymentNodeRunningConfigResponse = {
 };
 
 export async function getDeploymentNodeRunningConfig(
-	workspaceId: string,
 	deploymentId: string,
 	nodeId: string,
 ): Promise<DeploymentNodeRunningConfigResponse> {
 	return apiFetch<DeploymentNodeRunningConfigResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/running-config`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/running-config`,
 	);
 }
 
 export async function getDeploymentInventory(
-	workspaceId: string,
 	deploymentId: string,
 	format: "json" | "csv" = "json",
 ): Promise<DeploymentInventoryResponse> {
 	const qs = new URLSearchParams();
 	qs.set("format", format);
 	return apiFetch<DeploymentInventoryResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/inventory?${qs.toString()}`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/inventory?${qs.toString()}`,
 	);
 }
 
 export async function listDeploymentUIEvents(
-	workspaceId: string,
 	deploymentId: string,
 	params?: { afterId?: number; limit?: number },
 ): Promise<DeploymentUIEventsResponse> {
@@ -2259,7 +2100,7 @@ export async function listDeploymentUIEvents(
 	if (params?.limit) qs.set("limit", String(params.limit));
 	const suffix = qs.toString();
 	return apiFetch<DeploymentUIEventsResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/ui-events${suffix ? `?${suffix}` : ""}`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/ui-events${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
@@ -2272,7 +2113,6 @@ export type DeploymentNodeLogsResponse = {
 };
 
 export async function getDeploymentNodeLogs(
-	workspaceId: string,
 	deploymentId: string,
 	nodeId: string,
 	params?: { tail?: number; container?: string },
@@ -2282,7 +2122,7 @@ export async function getDeploymentNodeLogs(
 	if (params?.container) qs.set("container", params.container);
 	const suffix = qs.toString();
 	return apiFetch<DeploymentNodeLogsResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/logs${suffix ? `?${suffix}` : ""}`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/logs${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
@@ -2307,12 +2147,11 @@ export type DeploymentNodeDescribeResponse = {
 };
 
 export async function getDeploymentNodeDescribe(
-	workspaceId: string,
 	deploymentId: string,
 	nodeId: string,
 ): Promise<DeploymentNodeDescribeResponse> {
 	return apiFetch<DeploymentNodeDescribeResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/describe`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/describe`,
 	);
 }
 
@@ -2328,12 +2167,11 @@ export type DeploymentNodeSaveConfigResponse = {
 };
 
 export async function saveDeploymentNodeConfig(
-	workspaceId: string,
 	deploymentId: string,
 	nodeId: string,
 ): Promise<DeploymentNodeSaveConfigResponse> {
 	return apiFetch<DeploymentNodeSaveConfigResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/save-config`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/save-config`,
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -2363,22 +2201,21 @@ export type LinkStatsSnapshot = {
 };
 
 export async function getDeploymentLinkStats(
-	workspaceId: string,
 	deploymentId: string,
 ): Promise<LinkStatsSnapshot> {
 	return apiFetch<LinkStatsSnapshot>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/stats`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/links/stats`,
 	);
 }
 
 type TemplatesQuery = {
-	source?: "workspace" | "blueprints" | "custom" | "external" | string;
+	source?: "user" | "blueprints" | "custom" | "external" | string;
 	repo?: string;
 	dir?: string;
 };
 
-export type WorkspaceTemplatesResponse = {
-	workspaceId: string;
+export type UserTemplatesResponse = {
+	ownerUsername: string;
 	repo: string;
 	branch: string;
 	dir: string;
@@ -2388,22 +2225,22 @@ export type WorkspaceTemplatesResponse = {
 	updatedAt?: ISO8601;
 };
 
-export async function getWorkspaceNetlabTemplates(
-	workspaceId: string,
+export async function getUserNetlabTemplates(
+	ownerUsername: string,
 	query?: TemplatesQuery,
-): Promise<WorkspaceTemplatesResponse> {
+): Promise<UserTemplatesResponse> {
 	const params = new URLSearchParams();
 	if (query?.source) params.set("source", query.source);
 	if (query?.repo) params.set("repo", query.repo);
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
-	return apiFetch<WorkspaceTemplatesResponse>(
-		`${workspaceScopeURL(workspaceId)}/netlab/templates${qs ? `?${qs}` : ""}`,
+	return apiFetch<UserTemplatesResponse>(
+		`/api/netlab/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
-export type WorkspaceNetlabTemplateResponse = {
-	workspaceId: string;
+export type UserNetlabTemplateResponse = {
+	ownerUsername: string;
 	source: string;
 	repo?: string;
 	branch?: string;
@@ -2413,27 +2250,27 @@ export type WorkspaceNetlabTemplateResponse = {
 	yaml: string;
 };
 
-export async function getWorkspaceNetlabTemplate(
-	workspaceId: string,
+export async function getUserNetlabTemplate(
+	ownerUsername: string,
 	params: { source?: string; repo?: string; dir?: string; template: string },
-): Promise<WorkspaceNetlabTemplateResponse> {
+): Promise<UserNetlabTemplateResponse> {
 	const qs = new URLSearchParams();
 	if (params.source) qs.set("source", params.source);
 	if (params.repo) qs.set("repo", params.repo);
 	if (params.dir) qs.set("dir", params.dir);
 	qs.set("template", params.template);
-	return apiFetch<WorkspaceNetlabTemplateResponse>(
-		`${workspaceScopeURL(workspaceId)}/netlab/template?${qs.toString()}`,
+	return apiFetch<UserNetlabTemplateResponse>(
+		`/api/netlab/template?${qs.toString()}`,
 	);
 }
 
-export type WorkspaceRunResponse = {
-	workspaceId: string;
+export type UserRunResponse = {
+	ownerUsername: string;
 	task: JSONMap;
 	user?: string;
 };
 
-export type ValidateWorkspaceNetlabTemplateRequest = {
+export type ValidateUserNetlabTemplateRequest = {
 	source?: string;
 	repo?: string;
 	dir?: string;
@@ -2442,46 +2279,46 @@ export type ValidateWorkspaceNetlabTemplateRequest = {
 	setOverrides?: string[];
 };
 
-export async function validateWorkspaceNetlabTemplate(
-	workspaceId: string,
-	body: ValidateWorkspaceNetlabTemplateRequest,
-): Promise<WorkspaceRunResponse> {
-	return apiFetch<WorkspaceRunResponse>(
-		`${workspaceScopeURL(workspaceId)}/netlab/validate`,
-		{ method: "POST", body: JSON.stringify(body) },
-	);
+export async function validateUserNetlabTemplate(
+	ownerUsername: string,
+	body: ValidateUserNetlabTemplateRequest,
+): Promise<UserRunResponse> {
+	return apiFetch<UserRunResponse>(`/api/netlab/validate`, {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
 }
 
-export async function getWorkspaceContainerlabTemplates(
-	workspaceId: string,
+export async function getUserContainerlabTemplates(
+	ownerUsername: string,
 	query?: TemplatesQuery,
-): Promise<WorkspaceTemplatesResponse> {
+): Promise<UserTemplatesResponse> {
 	const params = new URLSearchParams();
 	if (query?.source) params.set("source", query.source);
 	if (query?.repo) params.set("repo", query.repo);
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
-	return apiFetch<WorkspaceTemplatesResponse>(
-		`${workspaceScopeURL(workspaceId)}/containerlab/templates${qs ? `?${qs}` : ""}`,
+	return apiFetch<UserTemplatesResponse>(
+		`/api/containerlab/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
-export async function getWorkspaceTerraformTemplates(
-	workspaceId: string,
+export async function getUserTerraformTemplates(
+	ownerUsername: string,
 	query?: TemplatesQuery,
-): Promise<WorkspaceTemplatesResponse> {
+): Promise<UserTemplatesResponse> {
 	const params = new URLSearchParams();
 	if (query?.source) params.set("source", query.source);
 	if (query?.repo) params.set("repo", query.repo);
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
-	return apiFetch<WorkspaceTemplatesResponse>(
-		`${workspaceScopeURL(workspaceId)}/terraform/templates${qs ? `?${qs}` : ""}`,
+	return apiFetch<UserTemplatesResponse>(
+		`/api/terraform/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
-export type WorkspaceContainerlabTemplateResponse = {
-	workspaceId: string;
+export type UserContainerlabTemplateResponse = {
+	ownerUsername: string;
 	source: string;
 	repo?: string;
 	branch?: string;
@@ -2491,48 +2328,49 @@ export type WorkspaceContainerlabTemplateResponse = {
 	yaml: string;
 };
 
-export async function getWorkspaceContainerlabTemplate(
-	workspaceId: string,
+export async function getUserContainerlabTemplate(
+	ownerUsername: string,
 	params: { source?: string; repo?: string; dir?: string; file: string },
-): Promise<WorkspaceContainerlabTemplateResponse> {
+): Promise<UserContainerlabTemplateResponse> {
 	const qs = new URLSearchParams();
 	if (params.source) qs.set("source", params.source);
 	if (params.repo) qs.set("repo", params.repo);
 	if (params.dir) qs.set("dir", params.dir);
 	qs.set("file", params.file);
-	return apiFetch<WorkspaceContainerlabTemplateResponse>(
-		`${workspaceScopeURL(workspaceId)}/containerlab/template?${qs.toString()}`,
+	return apiFetch<UserContainerlabTemplateResponse>(
+		`/api/containerlab/template?${qs.toString()}`,
 	);
 }
 
-export async function getWorkspaceEveNgTemplates(
-	workspaceId: string,
+export async function getUserEveNgTemplates(
+	ownerUsername: string,
 	query?: TemplatesQuery,
-): Promise<WorkspaceTemplatesResponse> {
+): Promise<UserTemplatesResponse> {
+	void ownerUsername;
 	const params = new URLSearchParams();
 	if (query?.source) params.set("source", query.source);
 	if (query?.repo) params.set("repo", query.repo);
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
-	return apiFetch<WorkspaceTemplatesResponse>(
-		`${workspaceScopeURL(workspaceId)}/eve-ng/templates${qs ? `?${qs}` : ""}`,
+	return apiFetch<UserTemplatesResponse>(
+		`/api/eve-ng/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 
-export type CreateWorkspaceDeploymentRequest = NonNullable<
-	operations["POST:skyforge.CreateWorkspaceDeployment"]["requestBody"]
+export type CreateUserDeploymentRequest = NonNullable<
+	operations["POST:skyforge.CreateDeployment"]["requestBody"]
 >["content"]["application/json"];
-export type CreateWorkspaceDeploymentResponse =
-	operations["POST:skyforge.CreateWorkspaceDeployment"]["responses"][200]["content"]["application/json"];
+export type CreateUserDeploymentResponse =
+	operations["POST:skyforge.CreateDeployment"]["responses"][200]["content"]["application/json"];
 
-export async function createWorkspaceDeployment(
-	workspaceId: string,
-	body: CreateWorkspaceDeploymentRequest,
-): Promise<CreateWorkspaceDeploymentResponse> {
-	return apiFetch<CreateWorkspaceDeploymentResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments`,
-		{ method: "POST", body: JSON.stringify(body) },
-	);
+export async function createUserDeployment(
+	ownerUsername: string,
+	body: CreateUserDeploymentRequest,
+): Promise<CreateUserDeploymentResponse> {
+	return apiFetch<CreateUserDeploymentResponse>("/api/deployments", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
 }
 
 export type CreateContainerlabDeploymentFromYAMLRequest = {
@@ -2545,18 +2383,18 @@ export type CreateContainerlabDeploymentFromYAMLRequest = {
 };
 
 export type CreateContainerlabDeploymentFromYAMLResponse = {
-	workspaceId: string;
-	deployment?: WorkspaceDeployment;
+	ownerUsername: string;
+	deployment?: UserDeployment;
 	run?: JSONMap;
 	note?: string;
 };
 
 export async function createContainerlabDeploymentFromYAML(
-	workspaceId: string,
+	ownerUsername: string,
 	body: CreateContainerlabDeploymentFromYAMLRequest,
 ): Promise<CreateContainerlabDeploymentFromYAMLResponse> {
 	return apiFetch<CreateContainerlabDeploymentFromYAMLResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments-designer/containerlab/from-yaml`,
+		`/api/deployments-designer/containerlab/from-yaml`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2570,18 +2408,18 @@ export type CreateClabernetesDeploymentFromYAMLRequest = {
 };
 
 export type CreateClabernetesDeploymentFromYAMLResponse = {
-	workspaceId: string;
-	deployment?: WorkspaceDeployment;
+	ownerUsername: string;
+	deployment?: UserDeployment;
 	run?: JSONMap;
 	note?: string;
 };
 
 export async function createClabernetesDeploymentFromYAML(
-	workspaceId: string,
+	ownerUsername: string,
 	body: CreateClabernetesDeploymentFromYAMLRequest,
 ): Promise<CreateClabernetesDeploymentFromYAMLResponse> {
 	return apiFetch<CreateClabernetesDeploymentFromYAMLResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments-designer/clabernetes/from-yaml`,
+		`/api/deployments-designer/clabernetes/from-yaml`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2594,7 +2432,7 @@ export type SaveContainerlabTopologyYAMLRequest = {
 };
 
 export type SaveContainerlabTopologyYAMLResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	branch: string;
 	templatesDir: string;
 	template: string;
@@ -2602,13 +2440,19 @@ export type SaveContainerlabTopologyYAMLResponse = {
 };
 
 export async function saveContainerlabTopologyYAML(
-	workspaceId: string,
+	ownerUsername: string,
 	body: SaveContainerlabTopologyYAMLRequest,
 ): Promise<SaveContainerlabTopologyYAMLResponse> {
-	return apiFetch<SaveContainerlabTopologyYAMLResponse>(
-		`${workspaceScopeURL(workspaceId)}/containerlab/topologies`,
+	const resp = await apiFetch<SaveContainerlabTopologyYAMLResponse>(
+		`/api/containerlab/topologies`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
+	return {
+		...resp,
+		ownerUsername: String(
+			(resp as any)?.ownerUsername ?? resp.ownerUsername ?? ownerUsername,
+		),
+	};
 }
 
 export type SaveNetlabTopologyYAMLRequest = {
@@ -2619,7 +2463,7 @@ export type SaveNetlabTopologyYAMLRequest = {
 };
 
 export type SaveNetlabTopologyYAMLResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	branch: string;
 	templatesDir: string;
 	template: string;
@@ -2627,13 +2471,19 @@ export type SaveNetlabTopologyYAMLResponse = {
 };
 
 export async function saveNetlabTopologyYAML(
-	workspaceId: string,
+	ownerUsername: string,
 	body: SaveNetlabTopologyYAMLRequest,
 ): Promise<SaveNetlabTopologyYAMLResponse> {
-	return apiFetch<SaveNetlabTopologyYAMLResponse>(
-		`${workspaceScopeURL(workspaceId)}/netlab/topologies`,
+	const resp = await apiFetch<SaveNetlabTopologyYAMLResponse>(
+		`/api/netlab/topologies`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
+	return {
+		...resp,
+		ownerUsername: String(
+			(resp as any)?.ownerUsername ?? resp.ownerUsername ?? ownerUsername,
+		),
+	};
 }
 
 export type CreateDeploymentFromTemplateRequest = {
@@ -2645,8 +2495,8 @@ export type CreateDeploymentFromTemplateRequest = {
 };
 
 export type CreateDeploymentFromTemplateResponse = {
-	workspaceId: string;
-	deployment?: WorkspaceDeployment;
+	ownerUsername: string;
+	deployment?: UserDeployment;
 	run?: JSONMap;
 	note?: string;
 };
@@ -2657,62 +2507,30 @@ export type CreateContainerlabDeploymentFromTemplateRequest =
 	};
 
 export async function createClabernetesDeploymentFromTemplate(
-	workspaceId: string,
+	ownerUsername: string,
 	body: CreateDeploymentFromTemplateRequest,
 ): Promise<CreateDeploymentFromTemplateResponse> {
 	return apiFetch<CreateDeploymentFromTemplateResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments-designer/clabernetes/from-template`,
+		`/api/deployments-designer/clabernetes/from-template`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
 export async function createContainerlabDeploymentFromTemplate(
-	workspaceId: string,
+	ownerUsername: string,
 	body: CreateContainerlabDeploymentFromTemplateRequest,
 ): Promise<CreateDeploymentFromTemplateResponse> {
 	return apiFetch<CreateDeploymentFromTemplateResponse>(
-		`${workspaceScopeURL(workspaceId)}/deployments-designer/containerlab/from-template`,
+		`/api/deployments-designer/containerlab/from-template`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
-export type CreateWorkspaceRequest = NonNullable<
-	operations["POST:skyforge.CreateWorkspace"]["requestBody"]
->["content"]["application/json"];
-
-export type CreateWorkspaceResponse =
-	operations["POST:skyforge.CreateWorkspace"]["responses"][200]["content"]["application/json"];
-
-export async function createWorkspace(
-	body: CreateWorkspaceRequest,
-): Promise<CreateWorkspaceResponse> {
-	return apiFetch<CreateWorkspaceResponse>("/api/workspaces", {
-		method: "POST",
-		body: JSON.stringify(body),
-	});
-}
-
-export type UpdateWorkspaceMembersRequest = NonNullable<
-	operations["PUT:skyforge.UpdateWorkspaceMembers"]["requestBody"]
->["content"]["application/json"];
-export type UpdateWorkspaceMembersResponse =
-	operations["PUT:skyforge.UpdateWorkspaceMembers"]["responses"][200]["content"]["application/json"];
-export async function updateWorkspaceMembers(
-	workspaceId: string,
-	body: UpdateWorkspaceMembersRequest,
-): Promise<UpdateWorkspaceMembersResponse> {
-	return apiFetch<UpdateWorkspaceMembersResponse>(
-		`${workspaceScopeURL(workspaceId)}/members`,
-		{ method: "PUT", body: JSON.stringify(body) },
-	);
-}
-
 export async function getDeploymentTopology(
-	workspaceId: string,
 	deploymentId: string,
 ): Promise<DeploymentTopology> {
 	return apiFetch<DeploymentTopology>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/topology`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/topology`,
 	);
 }
 
@@ -2750,21 +2568,6 @@ export async function listRegistryTags(
 	const suffix = qs.toString();
 	return apiFetch<RegistryTagsListResponse>(
 		`/api/registry/repos/${encodeURIComponent(repo)}/tags${suffix ? `?${suffix}` : ""}`,
-	);
-}
-
-export type DeleteWorkspaceResponse =
-	operations["DELETE:skyforge.DeleteWorkspace"]["responses"][200]["content"]["application/json"];
-export async function deleteWorkspace(
-	workspaceId: string,
-	params: { confirm: string; force?: boolean },
-): Promise<DeleteWorkspaceResponse> {
-	const qs = new URLSearchParams();
-	qs.set("confirm", params.confirm);
-	if (params.force) qs.set("force", "true");
-	return apiFetch<DeleteWorkspaceResponse>(
-		`${workspaceScopeURL(workspaceId)}?${qs.toString()}`,
-		{ method: "DELETE" },
 	);
 }
 
@@ -3092,143 +2895,127 @@ export async function restartUserCollector(): Promise<UserCollectorRuntimeRespon
 	);
 }
 
-export type UpdateWorkspaceSettingsRequest = NonNullable<
-	operations["PUT:skyforge.UpdateWorkspaceSettings"]["requestBody"]
+export type UpdateUserSettingsRequest = NonNullable<
+	operations["PUT:skyforge.UpdateSettings"]["requestBody"]
 >["content"]["application/json"];
-export type UpdateWorkspaceSettingsResponse =
-	operations["PUT:skyforge.UpdateWorkspaceSettings"]["responses"][200]["content"]["application/json"];
-export async function updateWorkspaceSettings(
-	workspaceId: string,
-	body: UpdateWorkspaceSettingsRequest,
-): Promise<UpdateWorkspaceSettingsResponse> {
-	return apiFetch<UpdateWorkspaceSettingsResponse>(
-		`${workspaceScopeURL(workspaceId)}/settings`,
-		{ method: "PUT", body: JSON.stringify(body) },
-	);
+export type UpdateUserSettingsResponse =
+	operations["PUT:skyforge.UpdateSettings"]["responses"][200]["content"]["application/json"];
+export async function updateUserSettings(
+	ownerUsername: string,
+	body: UpdateUserSettingsRequest,
+): Promise<UpdateUserSettingsResponse> {
+	return apiFetch<UpdateUserSettingsResponse>(`/api/settings`, {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
 }
 
-export type GetWorkspaceForwardConfigResponse =
-	operations["GET:skyforge.GetWorkspaceForwardConfig"]["responses"][200]["content"]["application/json"];
-export async function getWorkspaceForwardConfig(
-	workspaceId: string,
-): Promise<GetWorkspaceForwardConfigResponse> {
-	return apiFetch<GetWorkspaceForwardConfigResponse>(
-		`${workspaceScopeURL(workspaceId)}/integrations/forward`,
-	);
+export type GetUserForwardConfigResponse =
+	operations["GET:skyforge.GetForwardConfig"]["responses"][200]["content"]["application/json"];
+export async function getUserForwardConfig(): Promise<GetUserForwardConfigResponse> {
+	return apiFetch<GetUserForwardConfigResponse>(`/api/integrations/forward`);
 }
 
-export type PutWorkspaceForwardConfigRequest = NonNullable<
-	operations["PUT:skyforge.PutWorkspaceForwardConfig"]["requestBody"]
+export type PutUserForwardConfigRequest = NonNullable<
+	operations["PUT:skyforge.PutForwardConfig"]["requestBody"]
 >["content"]["application/json"];
-export type PutWorkspaceForwardConfigResponse =
-	operations["PUT:skyforge.PutWorkspaceForwardConfig"]["responses"][200]["content"]["application/json"];
-export async function putWorkspaceForwardConfig(
-	workspaceId: string,
-	body: PutWorkspaceForwardConfigRequest,
-): Promise<PutWorkspaceForwardConfigResponse> {
-	return apiFetch<PutWorkspaceForwardConfigResponse>(
-		`${workspaceScopeURL(workspaceId)}/integrations/forward`,
-		{ method: "PUT", body: JSON.stringify(body) },
-	);
+export type PutUserForwardConfigResponse =
+	operations["PUT:skyforge.PutForwardConfig"]["responses"][200]["content"]["application/json"];
+export async function putUserForwardConfig(
+	body: PutUserForwardConfigRequest,
+): Promise<PutUserForwardConfigResponse> {
+	return apiFetch<PutUserForwardConfigResponse>(`/api/integrations/forward`, {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
 }
 
-export type ApplyWorkspaceForwardCredentialSetRequest = {
+export type ApplyUserForwardCredentialSetRequest = {
 	credentialId: string;
 };
 
-export async function applyWorkspaceForwardCredentialSet(
-	workspaceId: string,
-	body: ApplyWorkspaceForwardCredentialSetRequest,
-): Promise<GetWorkspaceForwardConfigResponse> {
-	return apiFetch<GetWorkspaceForwardConfigResponse>(
-		`${workspaceScopeURL(workspaceId)}/integrations/forward/apply-credential-set`,
+export async function applyUserForwardCredentialSet(
+	bodyOrCredential: ApplyUserForwardCredentialSetRequest | string,
+): Promise<GetUserForwardConfigResponse> {
+	const body =
+		typeof bodyOrCredential === "string"
+			? { credentialId: bodyOrCredential }
+			: bodyOrCredential;
+	return apiFetch<GetUserForwardConfigResponse>(
+		`/api/integrations/forward/apply-credential-set`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
-export async function deleteWorkspaceForwardConfig(
-	workspaceId: string,
-): Promise<GetWorkspaceForwardConfigResponse> {
-	return apiFetch<GetWorkspaceForwardConfigResponse>(
-		`${workspaceScopeURL(workspaceId)}/integrations/forward`,
-		{ method: "DELETE" },
+export async function deleteUserForwardConfig(): Promise<GetUserForwardConfigResponse> {
+	return apiFetch<GetUserForwardConfigResponse>(`/api/integrations/forward`, {
+		method: "DELETE",
+	});
+}
+
+export type ListUserForwardCollectorsResponse =
+	operations["GET:skyforge.ListForwardCollectors"]["responses"][200]["content"]["application/json"];
+export async function listUserForwardCollectors(): Promise<ListUserForwardCollectorsResponse> {
+	return apiFetch<ListUserForwardCollectorsResponse>(
+		`/api/integrations/forward/collectors`,
 	);
 }
 
-export type ListWorkspaceForwardCollectorsResponse =
-	operations["GET:skyforge.GetWorkspaceForwardCollectors"]["responses"][200]["content"]["application/json"];
-export async function listWorkspaceForwardCollectors(
-	workspaceId: string,
-): Promise<ListWorkspaceForwardCollectorsResponse> {
-	return apiFetch<ListWorkspaceForwardCollectorsResponse>(
-		`${workspaceScopeURL(workspaceId)}/integrations/forward/collectors`,
-	);
-}
-
-export type ListWorkspaceArtifactsResponse =
-	operations["GET:skyforge.ListWorkspaceArtifacts"]["responses"][200]["content"]["application/json"];
-export async function listWorkspaceArtifacts(
-	workspaceId: string,
+export type ListUserArtifactsResponse =
+	operations["GET:skyforge.ListArtifacts"]["responses"][200]["content"]["application/json"];
+export async function listUserArtifacts(
+	ownerUsername: string,
 	params?: { prefix?: string; limit?: string },
-): Promise<ListWorkspaceArtifactsResponse> {
+): Promise<ListUserArtifactsResponse> {
 	const qs = new URLSearchParams();
 	if (params?.prefix) qs.set("prefix", params.prefix);
 	if (params?.limit) qs.set("limit", params.limit);
 	const suffix = qs.toString();
-	return apiFetch<ListWorkspaceArtifactsResponse>(
-		`${workspaceScopeURL(workspaceId)}/artifacts${suffix ? `?${suffix}` : ""}`,
+	return apiFetch<ListUserArtifactsResponse>(
+		`/api/artifacts${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
-export type DownloadWorkspaceArtifactResponse =
-	operations["GET:skyforge.DownloadWorkspaceArtifact"]["responses"][200]["content"]["application/json"];
-export async function downloadWorkspaceArtifact(
-	workspaceId: string,
+export type DownloadUserArtifactResponse =
+	operations["GET:skyforge.DownloadArtifact"]["responses"][200]["content"]["application/json"];
+export async function downloadUserArtifact(
+	ownerUsername: string,
 	key: string,
-): Promise<DownloadWorkspaceArtifactResponse> {
+): Promise<DownloadUserArtifactResponse> {
 	const qs = new URLSearchParams({ key });
-	return apiFetch<DownloadWorkspaceArtifactResponse>(
-		`${workspaceScopeURL(workspaceId)}/artifacts/download?${qs.toString()}`,
+	return apiFetch<DownloadUserArtifactResponse>(
+		`/api/artifacts/download?${qs.toString()}`,
 	);
 }
 
-export async function putWorkspaceArtifactObject(
-	workspaceId: string,
+export async function putUserArtifactObject(
+	ownerUsername: string,
 	body: { key: string; contentBase64: string; contentType?: string },
 ): Promise<JSONMap> {
-	return apiFetch<JSONMap>(
-		`${workspaceScopeURL(workspaceId)}/artifacts/object`,
-		{
-			method: "POST",
-			body: JSON.stringify(body),
-		},
-	);
+	return apiFetch<JSONMap>(`/api/artifacts/object`, {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
 }
 
-export async function deleteWorkspaceArtifactObject(
-	workspaceId: string,
+export async function deleteUserArtifactObject(
+	ownerUsername: string,
 	key: string,
 ): Promise<JSONMap> {
 	const qs = new URLSearchParams({ key });
-	return apiFetch<JSONMap>(
-		`${workspaceScopeURL(workspaceId)}/artifacts/object?${qs.toString()}`,
-		{
-			method: "DELETE",
-		},
-	);
+	return apiFetch<JSONMap>(`/api/artifacts/object?${qs.toString()}`, {
+		method: "DELETE",
+	});
 }
 
-export async function createWorkspaceArtifactFolder(
-	workspaceId: string,
+export async function createUserArtifactFolder(
+	ownerUsername: string,
 	prefix: string,
 ): Promise<JSONMap> {
-	return apiFetch<JSONMap>(
-		`${workspaceScopeURL(workspaceId)}/artifacts/folder`,
-		{
-			method: "POST",
-			body: JSON.stringify({ prefix }),
-		},
-	);
+	return apiFetch<JSONMap>(`/api/artifacts/folder`, {
+		method: "POST",
+		body: JSON.stringify({ prefix }),
+	});
 }
 
 export type StorageListResponse =
@@ -3365,48 +3152,103 @@ export async function updateNotificationSettings(
 }
 
 export type GovernanceSummaryResponse =
-	operations["GET:skyforge.GetGovernanceSummary"]["responses"][200]["content"]["application/json"];
+	operations["GET:skyforge.GetGovernanceSummary"]["responses"][200]["content"]["application/json"] & {
+		usersTracked?: number;
+	};
 export async function getGovernanceSummary(): Promise<GovernanceSummaryResponse> {
-	return apiFetch<GovernanceSummaryResponse>("/api/admin/governance/summary");
+	const resp = await apiFetch<GovernanceSummaryResponse>(
+		"/api/admin/governance/summary",
+	);
+	return {
+		...resp,
+		usersTracked: Number((resp as any)?.usersTracked ?? 0),
+	};
 }
 
 export type GovernanceResourcesResponse =
-	operations["GET:skyforge.ListGovernanceResources"]["responses"][200]["content"]["application/json"];
+	operations["GET:skyforge.ListGovernanceResources"]["responses"][200]["content"]["application/json"] & {
+		resources: Array<
+			operations["GET:skyforge.ListGovernanceResources"]["responses"][200]["content"]["application/json"]["resources"][number] & {
+				ownerUsername?: string;
+				ownerLabel?: string;
+			}
+		>;
+	};
 export async function listGovernanceResources(params?: {
 	limit?: string;
 }): Promise<GovernanceResourcesResponse> {
 	const qs = new URLSearchParams();
 	if (params?.limit) qs.set("limit", params.limit);
 	const suffix = qs.toString();
-	return apiFetch<GovernanceResourcesResponse>(
+	const resp = await apiFetch<GovernanceResourcesResponse>(
 		`/api/admin/governance/resources${suffix ? `?${suffix}` : ""}`,
 	);
+	return {
+		...resp,
+		resources: (resp.resources ?? []).map((r: any) => ({
+			...r,
+			ownerUsername: String(r?.ownerUsername ?? ""),
+			ownerLabel: String(r?.ownerLabel ?? r?.ownerUsername ?? ""),
+		})),
+	};
 }
 
 export type GovernanceCostsResponse =
-	operations["GET:skyforge.ListGovernanceCosts"]["responses"][200]["content"]["application/json"];
+	operations["GET:skyforge.ListGovernanceCosts"]["responses"][200]["content"]["application/json"] & {
+		costs: Array<
+			operations["GET:skyforge.ListGovernanceCosts"]["responses"][200]["content"]["application/json"]["costs"][number] & {
+				ownerUsername?: string;
+				ownerLabel?: string;
+			}
+		>;
+	};
 export async function listGovernanceCosts(params?: {
 	limit?: string;
 }): Promise<GovernanceCostsResponse> {
 	const qs = new URLSearchParams();
 	if (params?.limit) qs.set("limit", params.limit);
 	const suffix = qs.toString();
-	return apiFetch<GovernanceCostsResponse>(
+	const resp = await apiFetch<GovernanceCostsResponse>(
 		`/api/admin/governance/costs${suffix ? `?${suffix}` : ""}`,
 	);
+	return {
+		...resp,
+		costs: (resp.costs ?? []).map((r: any) => ({
+			...r,
+			ownerUsername: String(r?.ownerUsername ?? ""),
+			ownerLabel: String(r?.ownerLabel ?? r?.ownerUsername ?? ""),
+		})),
+	};
 }
 
 export type GovernanceUsageResponse =
-	operations["GET:skyforge.ListGovernanceUsage"]["responses"][200]["content"]["application/json"];
+	operations["GET:skyforge.ListGovernanceUsage"]["responses"][200]["content"]["application/json"] & {
+		usage: Array<
+			operations["GET:skyforge.ListGovernanceUsage"]["responses"][200]["content"]["application/json"]["usage"][number] & {
+				ownerUsername?: string;
+				ownerLabel?: string;
+				userType?: string;
+			}
+		>;
+	};
 export async function listGovernanceUsage(params?: {
 	limit?: string;
 }): Promise<GovernanceUsageResponse> {
 	const qs = new URLSearchParams();
 	if (params?.limit) qs.set("limit", params.limit);
 	const suffix = qs.toString();
-	return apiFetch<GovernanceUsageResponse>(
+	const resp = await apiFetch<GovernanceUsageResponse>(
 		`/api/admin/governance/usage${suffix ? `?${suffix}` : ""}`,
 	);
+	return {
+		...resp,
+		usage: (resp.usage ?? []).map((r: any) => ({
+			...r,
+			ownerUsername: String(r?.ownerUsername ?? ""),
+			ownerLabel: String(r?.ownerLabel ?? r?.ownerUsername ?? ""),
+			userType: String(r?.userType ?? ""),
+		})),
+	};
 }
 
 export async function syncGovernanceSources(): Promise<void> {
@@ -3423,16 +3265,29 @@ export async function getAdminEffectiveConfig(): Promise<AdminEffectiveConfigRes
 }
 
 export type AdminAuditResponse =
-	operations["GET:skyforge.GetAdminAudit"]["responses"][200]["content"]["application/json"];
+	operations["GET:skyforge.GetAdminAudit"]["responses"][200]["content"]["application/json"] & {
+		events: Array<
+			operations["GET:skyforge.GetAdminAudit"]["responses"][200]["content"]["application/json"]["events"][number] & {
+				ownerUsername?: string;
+			}
+		>;
+	};
 export async function getAdminAudit(params?: {
 	limit?: string;
 }): Promise<AdminAuditResponse> {
 	const qs = new URLSearchParams();
 	if (params?.limit) qs.set("limit", params.limit);
 	const suffix = qs.toString();
-	return apiFetch<AdminAuditResponse>(
+	const resp = await apiFetch<AdminAuditResponse>(
 		`/api/admin/audit${suffix ? `?${suffix}` : ""}`,
 	);
+	return {
+		...resp,
+		events: (resp.events ?? []).map((e: any) => ({
+			...e,
+			ownerUsername: String(e?.ownerUsername ?? e?.ownerUsername ?? ""),
+		})),
+	};
 }
 
 export type AdminImpersonateStatusResponse =
@@ -3507,14 +3362,23 @@ export type AdminPurgeUserRequest = NonNullable<
 	operations["POST:skyforge.PurgeUser"]["requestBody"]
 >["content"]["application/json"];
 export type AdminPurgeUserResponse =
-	operations["POST:skyforge.PurgeUser"]["responses"][200]["content"]["application/json"];
+	operations["POST:skyforge.PurgeUser"]["responses"][200]["content"]["application/json"] & {
+		deletedScopes?: number;
+	};
 export async function adminPurgeUser(
 	body: AdminPurgeUserRequest,
 ): Promise<AdminPurgeUserResponse> {
-	return apiFetch<AdminPurgeUserResponse>("/api/admin/users/purge", {
-		method: "POST",
-		body: JSON.stringify(body),
-	});
+	const resp = await apiFetch<AdminPurgeUserResponse>(
+		"/api/admin/users/purge",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+	return {
+		...resp,
+		deletedScopes: Number((resp as any)?.deletedScopes ?? 0),
+	};
 }
 
 export type GovernancePolicy = {
@@ -3557,12 +3421,9 @@ export async function updateGovernancePolicy(
 	);
 }
 
-export async function startDeployment(
-	workspaceId: string,
-	deploymentId: string,
-): Promise<JSONMap> {
+export async function startDeployment(deploymentId: string): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/start`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/start`,
 		{
 			method: "POST",
 			body: "{}",
@@ -3570,12 +3431,9 @@ export async function startDeployment(
 	);
 }
 
-export async function stopDeployment(
-	workspaceId: string,
-	deploymentId: string,
-): Promise<JSONMap> {
+export async function stopDeployment(deploymentId: string): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/stop`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/stop`,
 		{
 			method: "POST",
 			body: "{}",
@@ -3584,11 +3442,10 @@ export async function stopDeployment(
 }
 
 export async function destroyDeployment(
-	workspaceId: string,
 	deploymentId: string,
 ): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/destroy`,
+		`/api/deployments/${encodeURIComponent(deploymentId)}/destroy`,
 		{
 			method: "POST",
 			body: "{}",
@@ -3597,7 +3454,6 @@ export async function destroyDeployment(
 }
 
 export async function deleteDeployment(
-	workspaceId: string,
 	deploymentId: string,
 	params?: { forwardDelete?: boolean },
 ): Promise<JSONMap> {
@@ -3605,7 +3461,7 @@ export async function deleteDeployment(
 	if (params?.forwardDelete) qs.set("forward_delete", "true");
 	const suffix = qs.toString();
 	return apiFetch<JSONMap>(
-		`${workspaceScopeURL(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}${
+		`/api/deployments/${encodeURIComponent(deploymentId)}${
 			suffix ? `?${suffix}` : ""
 		}`,
 		{
@@ -3631,70 +3487,13 @@ export async function getStatusSummary(): Promise<StatusSummaryResponse> {
 
 export async function cancelRun(
 	taskId: string | number,
-	workspaceId: string,
+	_ownerUsername?: string,
 ): Promise<JSONMap> {
-	const qs = new URLSearchParams();
-	if (workspaceId) qs.set("workspace_id", workspaceId);
 	return apiFetch<JSONMap>(
-		`/api/runs/${encodeURIComponent(String(taskId))}/cancel${qs.toString() ? `?${qs.toString()}` : ""}`,
+		`/api/runs/${encodeURIComponent(String(taskId))}/cancel`,
 		{
 			method: "POST",
 			body: "{}",
-		},
-	);
-}
-
-export type WorkspaceVariableGroup =
-	components["schemas"]["skyforge.WorkspaceVariableGroup"];
-export type WorkspaceVariableGroupListResponse =
-	operations["GET:skyforge.ListWorkspaceVariableGroups"]["responses"][200]["content"]["application/json"];
-export type WorkspaceVariableGroupUpsertRequest = NonNullable<
-	operations["POST:skyforge.CreateWorkspaceVariableGroup"]["requestBody"]
->["content"]["application/json"];
-
-export async function listWorkspaceVariableGroups(
-	workspaceId: string,
-): Promise<WorkspaceVariableGroupListResponse> {
-	return apiFetch<WorkspaceVariableGroupListResponse>(
-		`${workspaceScopeURL(workspaceId)}/variable-groups`,
-	);
-}
-
-export async function createWorkspaceVariableGroup(
-	workspaceId: string,
-	body: WorkspaceVariableGroupUpsertRequest,
-): Promise<WorkspaceVariableGroup> {
-	return apiFetch<WorkspaceVariableGroup>(
-		`${workspaceScopeURL(workspaceId)}/variable-groups`,
-		{
-			method: "POST",
-			body: JSON.stringify(body),
-		},
-	);
-}
-
-export async function updateWorkspaceVariableGroup(
-	workspaceId: string,
-	groupId: number,
-	body: WorkspaceVariableGroupUpsertRequest,
-): Promise<WorkspaceVariableGroup> {
-	return apiFetch<WorkspaceVariableGroup>(
-		`${workspaceScopeURL(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`,
-		{
-			method: "PUT",
-			body: JSON.stringify(body),
-		},
-	);
-}
-
-export async function deleteWorkspaceVariableGroup(
-	workspaceId: string,
-	groupId: number,
-): Promise<WorkspaceVariableGroupListResponse> {
-	return apiFetch<WorkspaceVariableGroupListResponse>(
-		`${workspaceScopeURL(workspaceId)}/variable-groups/${encodeURIComponent(groupId)}`,
-		{
-			method: "DELETE",
 		},
 	);
 }
@@ -3864,7 +3663,7 @@ export type PolicyReportPackDeltaResponse = {
 
 export type PolicyReportRecertCampaign = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	name: string;
 	description?: string;
 	forwardNetworkId: string;
@@ -3905,7 +3704,7 @@ export type PolicyReportCreateRecertCampaignRequest = {
 export type PolicyReportRecertAssignment = {
 	id: string;
 	campaignId: string;
-	workspaceId: string;
+	ownerUsername: string;
 	findingId: string;
 	checkId: string;
 	assigneeUsername?: string;
@@ -3945,7 +3744,7 @@ export type PolicyReportAttestAssignmentRequest = {
 
 export type PolicyReportException = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	forwardNetworkId: string;
 	findingId: string;
 	checkId: string;
@@ -3978,7 +3777,7 @@ export type PolicyReportDecisionResponse = {
 
 export type PolicyReportForwardNetwork = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	forwardNetworkId: string;
 	name: string;
 	description?: string;
@@ -4018,7 +3817,7 @@ export type PolicyReportPutForwardCredentialsRequest = {
 
 export type PolicyReportZone = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	forwardNetworkId: string;
 	name: string;
 	description?: string;
@@ -4046,7 +3845,7 @@ export type PolicyReportListZonesResponse = {
 
 export type PolicyReportRun = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	forwardNetworkId: string;
 	snapshotId?: string;
 	packId: string;
@@ -4074,7 +3873,7 @@ export type PolicyReportRunFinding = {
 };
 
 export type PolicyReportFindingAgg = {
-	workspaceId: string;
+	ownerUsername: string;
 	forwardNetworkId: string;
 	checkId: string;
 	findingId: string;
@@ -4127,7 +3926,7 @@ export type PolicyReportPresetCheckSpec = {
 
 export type PolicyReportPreset = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	forwardNetworkId: string;
 	name: string;
 	description?: string;
@@ -4145,7 +3944,6 @@ export type PolicyReportPreset = {
 	lastRunId?: string;
 	lastRunAt?: string;
 	lastError?: string;
-	ownerUsername: string;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -4290,33 +4088,29 @@ export type PolicyReportChangePlanningResponse = {
 	impacts: PolicyReportFlowImpact[];
 };
 
-export async function getWorkspacePolicyReportChecks(
-	workspaceId: string,
+export async function getUserPolicyReportChecks(
+	ownerUsername: string,
 ): Promise<PolicyReportChecksResponse> {
-	return apiFetch<PolicyReportChecksResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/checks`,
-	);
+	return apiFetch<PolicyReportChecksResponse>(`/api/policy-reports/checks`);
 }
 
-export async function getWorkspacePolicyReportCheck(
-	workspaceId: string,
+export async function getUserPolicyReportCheck(
+	ownerUsername: string,
 	checkId: string,
 ): Promise<PolicyReportCheckResponse> {
 	return apiFetch<PolicyReportCheckResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/checks/${encodeURIComponent(checkId)}`,
+		`/api/policy-reports/checks/${encodeURIComponent(checkId)}`,
 	);
 }
 
-export async function getWorkspacePolicyReportPacks(
-	workspaceId: string,
+export async function getUserPolicyReportPacks(
+	ownerUsername: string,
 ): Promise<PolicyReportPacks> {
-	return apiFetch<PolicyReportPacks>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/packs`,
-	);
+	return apiFetch<PolicyReportPacks>(`/api/policy-reports/packs`);
 }
 
-export async function getWorkspacePolicyReportSnapshots(
-	workspaceId: string,
+export async function getUserPolicyReportSnapshots(
+	ownerUsername: string,
 	networkId: string,
 	maxResults?: number,
 ): Promise<PolicyReportSnapshotsResponse> {
@@ -4326,29 +4120,26 @@ export async function getWorkspacePolicyReportSnapshots(
 		qs.set("maxResults", String(maxResults));
 	}
 	return apiFetch<PolicyReportSnapshotsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/snapshots?${qs.toString()}`,
+		`/api/policy-reports/snapshots?${qs.toString()}`,
 	);
 }
 
-export async function runWorkspacePolicyReportCheck(
-	workspaceId: string,
+export async function runUserPolicyReportCheck(
+	ownerUsername: string,
 	body: PolicyReportRunCheckRequest,
 ): Promise<PolicyReportNQEResponse> {
-	return apiFetch<PolicyReportNQEResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/checks/run`,
-		{
-			method: "POST",
-			body: JSON.stringify(body),
-		},
-	);
+	return apiFetch<PolicyReportNQEResponse>(`/api/policy-reports/checks/run`, {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
 }
 
-export async function runWorkspacePolicyReportPack(
-	workspaceId: string,
+export async function runUserPolicyReportPack(
+	ownerUsername: string,
 	body: PolicyReportRunPackRequest,
 ): Promise<PolicyReportRunPackResponse> {
 	return apiFetch<PolicyReportRunPackResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/packs/run`,
+		`/api/policy-reports/packs/run`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4356,12 +4147,12 @@ export async function runWorkspacePolicyReportPack(
 	);
 }
 
-export async function runWorkspacePolicyReportPackDelta(
-	workspaceId: string,
+export async function runUserPolicyReportPackDelta(
+	ownerUsername: string,
 	body: PolicyReportPackDeltaRequest,
 ): Promise<PolicyReportPackDeltaResponse> {
 	return apiFetch<PolicyReportPackDeltaResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/packs/delta`,
+		`/api/policy-reports/packs/delta`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4369,12 +4160,12 @@ export async function runWorkspacePolicyReportPackDelta(
 	);
 }
 
-export async function createWorkspacePolicyReportRecertCampaign(
-	workspaceId: string,
+export async function createUserPolicyReportRecertCampaign(
+	ownerUsername: string,
 	body: PolicyReportCreateRecertCampaignRequest,
 ): Promise<PolicyReportRecertCampaignWithCounts> {
 	return apiFetch<PolicyReportRecertCampaignWithCounts>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/campaigns`,
+		`/api/policy-reports/governance/campaigns`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4382,8 +4173,8 @@ export async function createWorkspacePolicyReportRecertCampaign(
 	);
 }
 
-export async function listWorkspacePolicyReportRecertCampaigns(
-	workspaceId: string,
+export async function listUserPolicyReportRecertCampaigns(
+	ownerUsername: string,
 	status?: string,
 	limit?: number,
 ): Promise<PolicyReportListRecertCampaignsResponse> {
@@ -4391,26 +4182,26 @@ export async function listWorkspacePolicyReportRecertCampaigns(
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListRecertCampaignsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/campaigns?${qs.toString()}`,
+		`/api/policy-reports/governance/campaigns?${qs.toString()}`,
 	);
 }
 
-export async function getWorkspacePolicyReportRecertCampaign(
-	workspaceId: string,
+export async function getUserPolicyReportRecertCampaign(
+	ownerUsername: string,
 	campaignId: string,
 ): Promise<PolicyReportRecertCampaignWithCounts> {
 	return apiFetch<PolicyReportRecertCampaignWithCounts>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}`,
+		`/api/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}`,
 	);
 }
 
-export async function generateWorkspacePolicyReportRecertAssignments(
-	workspaceId: string,
+export async function generateUserPolicyReportRecertAssignments(
+	ownerUsername: string,
 	campaignId: string,
 	body: PolicyReportGenerateRecertAssignmentsRequest,
 ): Promise<PolicyReportGenerateRecertAssignmentsResponse> {
 	return apiFetch<PolicyReportGenerateRecertAssignmentsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}/generate`,
+		`/api/policy-reports/governance/campaigns/${encodeURIComponent(campaignId)}/generate`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4418,8 +4209,8 @@ export async function generateWorkspacePolicyReportRecertAssignments(
 	);
 }
 
-export async function listWorkspacePolicyReportRecertAssignments(
-	workspaceId: string,
+export async function listUserPolicyReportRecertAssignments(
+	ownerUsername: string,
 	campaignId?: string,
 	status?: string,
 	assignee?: string,
@@ -4431,17 +4222,17 @@ export async function listWorkspacePolicyReportRecertAssignments(
 	if (assignee) qs.set("assignee", assignee);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListRecertAssignmentsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/assignments?${qs.toString()}`,
+		`/api/policy-reports/governance/assignments?${qs.toString()}`,
 	);
 }
 
-export async function attestWorkspacePolicyReportRecertAssignment(
-	workspaceId: string,
+export async function attestUserPolicyReportRecertAssignment(
+	ownerUsername: string,
 	assignmentId: string,
 	body: PolicyReportAttestAssignmentRequest,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/attest`,
+		`/api/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/attest`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4449,13 +4240,13 @@ export async function attestWorkspacePolicyReportRecertAssignment(
 	);
 }
 
-export async function waiveWorkspacePolicyReportRecertAssignment(
-	workspaceId: string,
+export async function waiveUserPolicyReportRecertAssignment(
+	ownerUsername: string,
 	assignmentId: string,
 	body: PolicyReportAttestAssignmentRequest,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/waive`,
+		`/api/policy-reports/governance/assignments/${encodeURIComponent(assignmentId)}/waive`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4463,179 +4254,137 @@ export async function waiveWorkspacePolicyReportRecertAssignment(
 	);
 }
 
-// Forward Networks (generic workspace-saved networks; used by capacity tooling)
+// Forward Networks (saved per user; used by capacity tooling)
 
 export async function createUserForwardNetwork(
 	body: PolicyReportCreateForwardNetworkRequest,
 ): Promise<PolicyReportForwardNetwork> {
-	return apiFetch<PolicyReportForwardNetwork>(`/api/forward-networks`, {
+	return apiFetch<PolicyReportForwardNetwork>(`/api/fwd`, {
 		method: "POST",
 		body: JSON.stringify(body),
 	});
 }
 
 export async function listUserForwardNetworks(): Promise<PolicyReportListForwardNetworksResponse> {
-	return apiFetch<PolicyReportListForwardNetworksResponse>(
-		`/api/forward-networks`,
-	);
+	return apiFetch<PolicyReportListForwardNetworksResponse>(`/api/fwd`);
 }
 
 export async function deleteUserForwardNetwork(
 	networkRef: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`/api/forward-networks/${encodeURIComponent(networkRef)}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}`,
 		{ method: "DELETE" },
 	);
 }
 
-export async function createWorkspaceForwardNetwork(
-	workspaceId: string,
+export async function createUserPolicyReportForwardNetwork(
 	body: PolicyReportCreateForwardNetworkRequest,
 ): Promise<PolicyReportForwardNetwork> {
-	return apiFetch<PolicyReportForwardNetwork>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks`,
-		{
-			method: "POST",
-			body: JSON.stringify(body),
-		},
-	);
+	return apiFetch<PolicyReportForwardNetwork>(`/api/policy-reports/networks`, {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
 }
 
-export async function listWorkspaceForwardNetworks(
-	workspaceId: string,
-): Promise<PolicyReportListForwardNetworksResponse> {
+export async function listUserPolicyReportForwardNetworks(): Promise<PolicyReportListForwardNetworksResponse> {
 	return apiFetch<PolicyReportListForwardNetworksResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks`,
+		`/api/policy-reports/networks`,
 	);
 }
 
-export async function deleteWorkspaceForwardNetwork(
-	workspaceId: string,
+export async function deleteUserPolicyReportForwardNetwork(
 	networkRef: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}`,
+		`/api/policy-reports/networks/${encodeURIComponent(networkRef)}`,
 		{ method: "DELETE" },
 	);
 }
 
-export async function createWorkspacePolicyReportForwardNetwork(
-	workspaceId: string,
-	body: PolicyReportCreateForwardNetworkRequest,
-): Promise<PolicyReportForwardNetwork> {
-	return apiFetch<PolicyReportForwardNetwork>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks`,
-		{
-			method: "POST",
-			body: JSON.stringify(body),
-		},
-	);
-}
-
-export async function listWorkspacePolicyReportForwardNetworks(
-	workspaceId: string,
-): Promise<PolicyReportListForwardNetworksResponse> {
-	return apiFetch<PolicyReportListForwardNetworksResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks`,
-	);
-}
-
-export async function deleteWorkspacePolicyReportForwardNetwork(
-	workspaceId: string,
-	networkRef: string,
-): Promise<PolicyReportDecisionResponse> {
-	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(networkRef)}`,
-		{ method: "DELETE" },
-	);
-}
-
-export async function getWorkspacePolicyReportForwardNetworkCredentials(
-	workspaceId: string,
+export async function getUserPolicyReportForwardNetworkCredentials(
 	forwardNetworkId: string,
 ): Promise<PolicyReportForwardCredentialsStatus> {
 	return apiFetch<PolicyReportForwardCredentialsStatus>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		`/api/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
 	);
 }
 
-export async function putWorkspacePolicyReportForwardNetworkCredentials(
-	workspaceId: string,
+export async function putUserPolicyReportForwardNetworkCredentials(
 	forwardNetworkId: string,
 	body: PolicyReportPutForwardCredentialsRequest,
 ): Promise<PolicyReportForwardCredentialsStatus> {
 	return apiFetch<PolicyReportForwardCredentialsStatus>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		`/api/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
 
-export async function deleteWorkspacePolicyReportForwardNetworkCredentials(
-	workspaceId: string,
+export async function deleteUserPolicyReportForwardNetworkCredentials(
+	ownerUsername: string,
 	forwardNetworkId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
+		`/api/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/credentials`,
 		{ method: "DELETE" },
 	);
 }
 
-export async function createWorkspacePolicyReportZone(
-	workspaceId: string,
+export async function createUserPolicyReportZone(
+	ownerUsername: string,
 	forwardNetworkId: string,
 	body: PolicyReportCreateZoneRequest,
 ): Promise<PolicyReportZone> {
 	return apiFetch<PolicyReportZone>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
+		`/api/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
-export async function listWorkspacePolicyReportZones(
-	workspaceId: string,
+export async function listUserPolicyReportZones(
+	ownerUsername: string,
 	forwardNetworkId: string,
 ): Promise<PolicyReportListZonesResponse> {
 	return apiFetch<PolicyReportListZonesResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
+		`/api/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones`,
 	);
 }
 
-export async function updateWorkspacePolicyReportZone(
-	workspaceId: string,
+export async function updateUserPolicyReportZone(
+	ownerUsername: string,
 	forwardNetworkId: string,
 	zoneId: string,
 	body: PolicyReportUpdateZoneRequest,
 ): Promise<PolicyReportZone> {
 	return apiFetch<PolicyReportZone>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
+		`/api/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
 		{ method: "PUT", body: JSON.stringify(body) },
 	);
 }
 
-export async function deleteWorkspacePolicyReportZone(
-	workspaceId: string,
+export async function deleteUserPolicyReportZone(
+	ownerUsername: string,
 	forwardNetworkId: string,
 	zoneId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
+		`/api/policy-reports/networks/${encodeURIComponent(forwardNetworkId)}/zones/${encodeURIComponent(zoneId)}`,
 		{ method: "DELETE" },
 	);
 }
 
-export async function createWorkspacePolicyReportPreset(
-	workspaceId: string,
+export async function createUserPolicyReportPreset(
+	ownerUsername: string,
 	body: PolicyReportCreatePresetRequest,
 ): Promise<PolicyReportPreset> {
-	return apiFetch<PolicyReportPreset>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/presets`,
-		{ method: "POST", body: JSON.stringify(body) },
-	);
+	return apiFetch<PolicyReportPreset>(`/api/policy-reports/presets`, {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
 }
 
-export async function listWorkspacePolicyReportPresets(
-	workspaceId: string,
+export async function listUserPolicyReportPresets(
+	ownerUsername: string,
 	forwardNetworkId?: string,
 	enabled?: boolean,
 	limit?: number,
@@ -4647,72 +4396,72 @@ export async function listWorkspacePolicyReportPresets(
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	const q = qs.toString();
 	return apiFetch<PolicyReportListPresetsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/presets${q ? `?${q}` : ""}`,
+		`/api/policy-reports/presets${q ? `?${q}` : ""}`,
 	);
 }
 
-export async function deleteWorkspacePolicyReportPreset(
-	workspaceId: string,
+export async function deleteUserPolicyReportPreset(
+	ownerUsername: string,
 	presetId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}`,
+		`/api/policy-reports/presets/${encodeURIComponent(presetId)}`,
 		{ method: "DELETE" },
 	);
 }
 
-export async function runWorkspacePolicyReportPreset(
-	workspaceId: string,
+export async function runUserPolicyReportPreset(
+	ownerUsername: string,
 	presetId: string,
 ): Promise<PolicyReportRunPresetResponse> {
 	return apiFetch<PolicyReportRunPresetResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/presets/${encodeURIComponent(presetId)}/run`,
+		`/api/policy-reports/presets/${encodeURIComponent(presetId)}/run`,
 		{ method: "POST", body: "{}" },
 	);
 }
 
-export async function runWorkspacePolicyReportPathsEnforcementBypass(
-	workspaceId: string,
+export async function runUserPolicyReportPathsEnforcementBypass(
+	ownerUsername: string,
 	body: PolicyReportPathsEnforcementBypassRequest,
 ): Promise<PolicyReportNQEResponse> {
 	return apiFetch<PolicyReportNQEResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/paths/enforcement-bypass`,
+		`/api/policy-reports/paths/enforcement-bypass`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
-export async function storeWorkspacePolicyReportPathsEnforcementBypass(
-	workspaceId: string,
+export async function storeUserPolicyReportPathsEnforcementBypass(
+	ownerUsername: string,
 	body: PolicyReportPathsEnforcementBypassStoreRequest,
 ): Promise<PolicyReportPathsEnforcementBypassStoreResponse> {
 	return apiFetch<PolicyReportPathsEnforcementBypassStoreResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/paths/enforcement-bypass/store`,
+		`/api/policy-reports/paths/enforcement-bypass/store`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
-export async function createWorkspacePolicyReportRun(
-	workspaceId: string,
+export async function createUserPolicyReportRun(
+	ownerUsername: string,
 	body: PolicyReportCreateRunRequest,
 ): Promise<PolicyReportCreateRunResponse> {
-	return apiFetch<PolicyReportCreateRunResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/runs`,
-		{ method: "POST", body: JSON.stringify(body) },
-	);
+	return apiFetch<PolicyReportCreateRunResponse>(`/api/policy-reports/runs`, {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
 }
 
-export async function createWorkspacePolicyReportCustomRun(
-	workspaceId: string,
+export async function createUserPolicyReportCustomRun(
+	ownerUsername: string,
 	body: PolicyReportCreateCustomRunRequest,
 ): Promise<PolicyReportCreateCustomRunResponse> {
 	return apiFetch<PolicyReportCreateCustomRunResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/runs/custom`,
+		`/api/policy-reports/runs/custom`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
-export async function listWorkspacePolicyReportRuns(
-	workspaceId: string,
+export async function listUserPolicyReportRuns(
+	ownerUsername: string,
 	forwardNetworkId?: string,
 	packId?: string,
 	status?: string,
@@ -4724,21 +4473,21 @@ export async function listWorkspacePolicyReportRuns(
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListRunsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/runs?${qs.toString()}`,
+		`/api/policy-reports/runs?${qs.toString()}`,
 	);
 }
 
-export async function getWorkspacePolicyReportRun(
-	workspaceId: string,
+export async function getUserPolicyReportRun(
+	ownerUsername: string,
 	runId: string,
 ): Promise<PolicyReportGetRunResponse> {
 	return apiFetch<PolicyReportGetRunResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}`,
+		`/api/policy-reports/runs/${encodeURIComponent(runId)}`,
 	);
 }
 
-export async function listWorkspacePolicyReportRunFindings(
-	workspaceId: string,
+export async function listUserPolicyReportRunFindings(
+	ownerUsername: string,
 	runId: string,
 	checkId?: string,
 	limit?: number,
@@ -4748,12 +4497,12 @@ export async function listWorkspacePolicyReportRunFindings(
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	const q = qs.toString();
 	return apiFetch<PolicyReportListRunFindingsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/runs/${encodeURIComponent(runId)}/findings${q ? `?${q}` : ""}`,
+		`/api/policy-reports/runs/${encodeURIComponent(runId)}/findings${q ? `?${q}` : ""}`,
 	);
 }
 
-export async function listWorkspacePolicyReportFindings(
-	workspaceId: string,
+export async function listUserPolicyReportFindings(
+	ownerUsername: string,
 	forwardNetworkId?: string,
 	checkId?: string,
 	status?: string,
@@ -4765,16 +4514,16 @@ export async function listWorkspacePolicyReportFindings(
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListFindingsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/findings?${qs.toString()}`,
+		`/api/policy-reports/findings?${qs.toString()}`,
 	);
 }
 
-export async function createWorkspacePolicyReportException(
-	workspaceId: string,
+export async function createUserPolicyReportException(
+	ownerUsername: string,
 	body: PolicyReportCreateExceptionRequest,
 ): Promise<PolicyReportException> {
 	return apiFetch<PolicyReportException>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/exceptions`,
+		`/api/policy-reports/governance/exceptions`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -4782,8 +4531,8 @@ export async function createWorkspacePolicyReportException(
 	);
 }
 
-export async function listWorkspacePolicyReportExceptions(
-	workspaceId: string,
+export async function listUserPolicyReportExceptions(
+	ownerUsername: string,
 	forwardNetworkId?: string,
 	status?: string,
 	limit?: number,
@@ -4793,36 +4542,36 @@ export async function listWorkspacePolicyReportExceptions(
 	if (status) qs.set("status", status);
 	if (typeof limit === "number") qs.set("limit", String(limit));
 	return apiFetch<PolicyReportListExceptionsResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/exceptions?${qs.toString()}`,
+		`/api/policy-reports/governance/exceptions?${qs.toString()}`,
 	);
 }
 
-export async function approveWorkspacePolicyReportException(
-	workspaceId: string,
+export async function approveUserPolicyReportException(
+	ownerUsername: string,
 	exceptionId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/approve`,
+		`/api/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/approve`,
 		{ method: "POST", body: "{}" },
 	);
 }
 
-export async function rejectWorkspacePolicyReportException(
-	workspaceId: string,
+export async function rejectUserPolicyReportException(
+	ownerUsername: string,
 	exceptionId: string,
 ): Promise<PolicyReportDecisionResponse> {
 	return apiFetch<PolicyReportDecisionResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/reject`,
+		`/api/policy-reports/governance/exceptions/${encodeURIComponent(exceptionId)}/reject`,
 		{ method: "POST", body: "{}" },
 	);
 }
 
-export async function simulateWorkspacePolicyReportChangePlanning(
-	workspaceId: string,
+export async function simulateUserPolicyReportChangePlanning(
+	ownerUsername: string,
 	body: PolicyReportChangePlanningRequest,
 ): Promise<PolicyReportChangePlanningResponse> {
 	return apiFetch<PolicyReportChangePlanningResponse>(
-		`${workspaceScopeURL(workspaceId)}/policy-reports/change-planning/simulate`,
+		`/api/policy-reports/change-planning/simulate`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),

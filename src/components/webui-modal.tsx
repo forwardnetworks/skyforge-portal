@@ -11,7 +11,6 @@ import { ExternalLink, Monitor } from "lucide-react";
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	workspaceId: string;
 	deploymentId: string;
 	nodeId: string;
 	port?: number;
@@ -20,14 +19,13 @@ type Props = {
 export function WebUIModal({
 	open,
 	onOpenChange,
-	workspaceId,
 	deploymentId,
 	nodeId,
 	port = 443,
 }: Props) {
-	const url = `${SKYFORGE_PROXY_ROOT}/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/webui/?port=${encodeURIComponent(String(port))}&embed=1`;
+	const url = `${SKYFORGE_PROXY_ROOT}/api/deployments/${encodeURIComponent(deploymentId)}/nodes/${encodeURIComponent(nodeId)}/webui/?port=${encodeURIComponent(String(port))}&embed=1`;
 
-	const key = `${workspaceId}-${deploymentId}-${nodeId}-${port}-${open}`;
+	const key = `${deploymentId}-${nodeId}-${port}-${open}`;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>

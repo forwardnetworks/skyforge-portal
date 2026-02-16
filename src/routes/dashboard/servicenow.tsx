@@ -571,7 +571,7 @@ function ServiceNowPage() {
 							</SelectContent>
 						</Select>
 						<div className="text-xs text-muted-foreground">
-							<a className="underline" href="/dashboard/forward">
+							<a className="underline" href="/dashboard/fwd/collector">
 								Manage credential sets
 							</a>
 						</div>

@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { queryKeys } from "./query-keys";
-import { type DeploymentUIEvent, SKYFORGE_API } from "./skyforge-api";
+import type { DeploymentUIEvent } from "./skyforge-api";
 import { subscribeSSE } from "./sse";
 
 export type DeploymentUIEventsState = {
@@ -14,21 +14,17 @@ export type DeploymentUIEventsPayload = {
 	events: DeploymentUIEvent[];
 };
 
-export function useDeploymentUIEvents(
-	workspaceId: string,
-	deploymentId: string,
-	enabled: boolean,
-) {
+export function useDeploymentUIEvents(deploymentId: string, enabled: boolean) {
 	const queryClient = useQueryClient();
 	const url = useMemo(
 		() =>
-			`${SKYFORGE_API}/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/ui-events/events`,
-		[deploymentId, workspaceId],
+			`/api/deployments/${encodeURIComponent(deploymentId)}/ui-events/events`,
+		[deploymentId],
 	);
 
 	useEffect(() => {
 		if (!enabled) return;
-		if (!workspaceId || !deploymentId) return;
+		if (!deploymentId) return;
 
 		const onUIEvents = (ev: MessageEvent<string>) => {
 			try {
@@ -36,7 +32,7 @@ export function useDeploymentUIEvents(
 				if (!payload || !Array.isArray(payload.events)) return;
 
 				queryClient.setQueryData(
-					queryKeys.deploymentUIEvents(workspaceId, deploymentId),
+					queryKeys.deploymentUIEvents(deploymentId),
 					(prev?: DeploymentUIEventsState) => {
 						const prevEvents = prev?.events ?? [];
 						const merged = prevEvents.concat(payload.events);
@@ -55,5 +51,5 @@ export function useDeploymentUIEvents(
 
 		const sub = subscribeSSE(url, { "ui-events": onUIEvents });
 		return () => sub.close();
-	}, [deploymentId, enabled, queryClient, url, workspaceId]);
+	}, [deploymentId, enabled, queryClient, url]);
 }

@@ -3,7 +3,7 @@ import { apiFetch } from "./http";
 
 export type AssuranceStudioRun = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	scenarioId?: string;
@@ -24,7 +24,7 @@ export type AssuranceStudioRunDetail = {
 };
 
 export type AssuranceStudioListRunsResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	runs: AssuranceStudioRun[];
 };
@@ -39,31 +39,28 @@ export type AssuranceStudioCreateRunRequest = {
 };
 
 export async function listAssuranceStudioRuns(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<AssuranceStudioListRunsResponse> {
 	return apiFetch<AssuranceStudioListRunsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/runs`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/runs`,
 	);
 }
 
 export async function createAssuranceStudioRun(
-	workspaceId: string,
 	networkRef: string,
 	body: AssuranceStudioCreateRunRequest,
 ): Promise<AssuranceStudioRun> {
 	return apiFetch<AssuranceStudioRun>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/runs`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/runs`,
 		{ method: "POST", body: JSON.stringify(body ?? {}) },
 	);
 }
 
 export async function getAssuranceStudioRun(
-	workspaceId: string,
 	networkRef: string,
 	runId: string,
 ): Promise<AssuranceStudioRunDetail> {
 	return apiFetch<AssuranceStudioRunDetail>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/runs/${encodeURIComponent(runId)}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/runs/${encodeURIComponent(runId)}`,
 	);
 }

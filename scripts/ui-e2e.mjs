@@ -105,7 +105,7 @@ try {
 	);
 	await visit(
 		page,
-		"/dashboard/forward",
+		"/dashboard/fwd/collector",
 		{ role: "heading", name: /Collector/i },
 		"forward",
 	);

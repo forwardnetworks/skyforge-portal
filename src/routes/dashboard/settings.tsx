@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Loader2, Save, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, Save, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -72,6 +72,7 @@ import {
 	putUserSettings,
 	revokeUserApiToken,
 	startAwsSso,
+	syncUserBlueprintCatalog,
 	updateUserForwardCredentialSet,
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
@@ -190,6 +191,17 @@ function UserSettingsPage() {
 			toast.error(
 				err instanceof Error ? err.message : "Failed to save user settings",
 			);
+		},
+	});
+	const syncBlueprintsM = useMutation({
+		mutationFn: syncUserBlueprintCatalog,
+		onSuccess: () => {
+			toast.success("Blueprints synced");
+		},
+		onError: (err: unknown) => {
+			toast.error("Failed to sync blueprints", {
+				description: err instanceof Error ? err.message : "request failed",
+			});
 		},
 	});
 
@@ -864,7 +876,7 @@ function UserSettingsPage() {
 									</div>
 								</div>
 								<Button asChild variant="outline">
-									<Link to="/dashboard/forward">Open</Link>
+									<Link to="/dashboard/fwd/collector">Open</Link>
 								</Button>
 							</div>
 							<div className="flex items-center justify-between gap-3">
@@ -1221,7 +1233,7 @@ function UserSettingsPage() {
 							<div className="text-xs text-muted-foreground">
 								MCP endpoint: <span className="font-mono">/api/mcp/rpc</span> or{" "}
 								<span className="font-mono">
-									/api/workspaces/&lt;workspace&gt;/mcp/forward/&lt;networkId&gt;/rpc
+									/api/mcp/forward/&lt;networkId&gt;/rpc
 								</span>
 								.
 							</div>
@@ -1393,7 +1405,21 @@ function UserSettingsPage() {
 
 					<Card>
 						<CardHeader>
-							<CardTitle>External Template Repos</CardTitle>
+							<div className="flex items-center justify-between gap-3">
+								<CardTitle>External Template Repos</CardTitle>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => syncBlueprintsM.mutate()}
+									disabled={syncBlueprintsM.isPending}
+								>
+									<RefreshCw
+										className={`mr-2 h-4 w-4 ${syncBlueprintsM.isPending ? "animate-spin" : ""}`}
+									/>
+									Sync default blueprints
+								</Button>
+							</div>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div className="flex items-center justify-between gap-4">

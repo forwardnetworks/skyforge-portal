@@ -24,39 +24,36 @@ import {
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type ForwardCredentialSetSummary,
-	PERSONAL_SCOPE_ID,
 	type PolicyReportForwardNetwork,
-	applyWorkspaceForwardCredentialSet,
-	createWorkspaceForwardNetwork,
-	deleteWorkspaceForwardConfig,
-	deleteWorkspaceForwardNetwork,
-	getWorkspaceForwardConfig,
+	applyUserForwardCredentialSet,
+	createUserForwardNetwork,
+	deleteUserForwardConfig,
+	deleteUserForwardNetwork,
+	getUserForwardConfig,
 	listForwardNetworks,
 	listUserForwardCollectorConfigs,
 	listUserForwardCredentialSets,
-	listWorkspaceForwardNetworks,
+	listUserForwardNetworks,
 } from "../../../lib/skyforge-api";
 
-export const Route = createFileRoute("/dashboard/forward-networks/")({
+export const Route = createFileRoute("/dashboard/fwd/")({
 	component: ForwardNetworksPage,
 });
 
 function ForwardNetworksPage() {
 	const qc = useQueryClient();
-	const selectedWorkspaceId = PERSONAL_SCOPE_ID;
 
-	const workspaceNetworksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(selectedWorkspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(selectedWorkspaceId),
-		enabled: Boolean(selectedWorkspaceId),
+	const userNetworksQ = useQuery({
+		queryKey: queryKeys.userForwardNetworks(),
+		queryFn: () => listUserForwardNetworks(),
+		enabled: true,
 		staleTime: 10_000,
 		retry: false,
 	});
 
-	const workspaceNetworks = useMemo(
-		() =>
-			(workspaceNetworksQ.data?.networks ?? []) as PolicyReportForwardNetwork[],
-		[workspaceNetworksQ.data?.networks],
+	const userNetworks = useMemo(
+		() => (userNetworksQ.data?.networks ?? []) as PolicyReportForwardNetwork[],
+		[userNetworksQ.data?.networks],
 	);
 
 	const collectorsQ = useQuery({
@@ -81,10 +78,10 @@ function ForwardNetworksPage() {
 		[availableForwardNetworksQ.data?.networks],
 	);
 
-	const workspaceForwardConfigQ = useQuery({
-		queryKey: queryKeys.workspaceForwardConfig(selectedWorkspaceId),
-		queryFn: () => getWorkspaceForwardConfig(selectedWorkspaceId),
-		enabled: Boolean(selectedWorkspaceId),
+	const forwardConfigQ = useQuery({
+		queryKey: queryKeys.forwardConfig(),
+		queryFn: () => getUserForwardConfig(),
+		enabled: true,
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -109,7 +106,7 @@ function ForwardNetworksPage() {
 		useState<string>("__default__");
 	const [credentialSetId, setCredentialSetId] = useState<string>("");
 
-	const canOpenNetworkViews = Boolean(String(selectedWorkspaceId ?? "").trim());
+	const canOpenNetworkViews = true;
 
 	const forwardNetworkSelectValue = useMemo(() => {
 		const id = forwardNetworkId.trim();
@@ -139,7 +136,7 @@ function ForwardNetworksPage() {
 						? collectorConfigId
 						: undefined,
 			};
-			return createWorkspaceForwardNetwork(selectedWorkspaceId, body);
+			return createUserForwardNetwork(body);
 		},
 		onSuccess: async () => {
 			toast.success("Forward network saved");
@@ -148,7 +145,7 @@ function ForwardNetworksPage() {
 			setDescription("");
 			setCollectorConfigId("__default__");
 			await qc.invalidateQueries({
-				queryKey: queryKeys.workspaceForwardNetworks(selectedWorkspaceId),
+				queryKey: queryKeys.userForwardNetworks(),
 			});
 		},
 		onError: (e) =>
@@ -159,12 +156,12 @@ function ForwardNetworksPage() {
 
 	const deleteM = useMutation({
 		mutationFn: async (networkRef: string) => {
-			return deleteWorkspaceForwardNetwork(selectedWorkspaceId, networkRef);
+			return deleteUserForwardNetwork(networkRef);
 		},
 		onSuccess: async () => {
 			toast.success("Forward network deleted");
 			await qc.invalidateQueries({
-				queryKey: queryKeys.workspaceForwardNetworks(selectedWorkspaceId),
+				queryKey: queryKeys.userForwardNetworks(),
 			});
 		},
 		onError: (e) =>
@@ -183,14 +180,12 @@ function ForwardNetworksPage() {
 		mutationFn: async () => {
 			const id = credentialSetId.trim();
 			if (!id) throw new Error("Select a credential set");
-			return applyWorkspaceForwardCredentialSet(selectedWorkspaceId, {
-				credentialId: id,
-			});
+			return applyUserForwardCredentialSet(id);
 		},
 		onSuccess: async () => {
 			toast.success("Forward credentials applied");
 			await qc.invalidateQueries({
-				queryKey: queryKeys.workspaceForwardConfig(selectedWorkspaceId),
+				queryKey: queryKeys.forwardConfig(),
 			});
 		},
 		onError: (e) =>
@@ -201,12 +196,12 @@ function ForwardNetworksPage() {
 
 	const clearCredSetM = useMutation({
 		mutationFn: async () => {
-			return deleteWorkspaceForwardConfig(selectedWorkspaceId);
+			return deleteUserForwardConfig();
 		},
 		onSuccess: async () => {
 			toast.success("Forward credentials cleared");
 			await qc.invalidateQueries({
-				queryKey: queryKeys.workspaceForwardConfig(selectedWorkspaceId),
+				queryKey: queryKeys.forwardConfig(),
 			});
 		},
 		onError: (e) =>
@@ -241,12 +236,12 @@ function ForwardNetworksPage() {
 					<div className="rounded-md border p-3">
 						<div className="text-sm font-medium">Forward status</div>
 						<div className="mt-1 text-sm text-muted-foreground">
-							{workspaceForwardConfigQ.isLoading
+							{forwardConfigQ.isLoading
 								? "Loading…"
-								: workspaceForwardConfigQ.isError
+								: forwardConfigQ.isError
 									? "Failed to load Forward config"
-									: workspaceForwardConfigQ.data?.configured
-										? `Configured for ${workspaceForwardConfigQ.data?.username ?? ""}`
+									: forwardConfigQ.data?.configured
+										? `Configured for ${forwardConfigQ.data?.username ?? ""}`
 										: "Not configured"}
 						</div>
 					</div>
@@ -429,16 +424,16 @@ function ForwardNetworksPage() {
 				<CardHeader>
 					<CardTitle>Forward networks</CardTitle>
 					<CardDescription>
-						These networks are the Assurance Hub scope.
+						These networks are saved for your account in Assurance Hub.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
-					{workspaceNetworks.length === 0 ? (
+					{userNetworks.length === 0 ? (
 						<div className="text-sm text-muted-foreground">
 							No saved networks yet.
 						</div>
 					) : null}
-					{workspaceNetworks.map((n) => (
+					{userNetworks.map((n) => (
 						<div
 							key={n.id}
 							className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-lg border p-3"
@@ -455,7 +450,7 @@ function ForwardNetworksPage() {
 									<>
 										<Button asChild variant="outline" size="sm">
 											<Link
-												to="/dashboard/forward-networks/$networkRef/hub"
+												to="/dashboard/fwd/$networkRef/hub"
 												params={{ networkRef: n.id }}
 											>
 												Open Hub
@@ -463,7 +458,7 @@ function ForwardNetworksPage() {
 										</Button>
 										<Button asChild variant="ghost" size="sm">
 											<Link
-												to="/dashboard/forward-networks/$networkRef/assurance-studio"
+												to="/dashboard/fwd/$networkRef/assurance-studio"
 												params={{ networkRef: n.id }}
 											>
 												Advanced

@@ -65,7 +65,7 @@ import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
 	type JSONMap,
-	type WorkspaceDeployment,
+	type UserDeployment,
 	buildLoginUrl,
 	deleteDeployment,
 	destroyDeployment,
@@ -96,8 +96,9 @@ function DeploymentsPage() {
 		staleTime: Number.POSITIVE_INFINITY,
 	});
 
-	const [destroyTarget, setDestroyTarget] =
-		useState<WorkspaceDeployment | null>(null);
+	const [destroyTarget, setDestroyTarget] = useState<UserDeployment | null>(
+		null,
+	);
 	const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 	const [destroyAlsoDeleteForward, setDestroyAlsoDeleteForward] =
 		useState(false);
@@ -117,7 +118,7 @@ function DeploymentsPage() {
 	// UI state
 	const [isFeedOpen, setIsFeedOpen] = useState(true);
 	const allDeployments = useMemo(() => {
-		return (snap.data?.deployments ?? []) as WorkspaceDeployment[];
+		return (snap.data?.deployments ?? []) as UserDeployment[];
 	}, [snap.data?.deployments]);
 
 	// Apply filters
@@ -170,9 +171,9 @@ function DeploymentsPage() {
 		});
 	}, [allDeployments, searchQuery, statusFilter, typeFilter]);
 
-	const handleStart = async (d: WorkspaceDeployment) => {
+	const handleStart = async (d: UserDeployment) => {
 		try {
-			await startDeployment(d.workspaceId, d.id);
+			await startDeployment(d.id);
 			toast.success("Deployment starting", {
 				description: `${d.name} is queued to start.`,
 			});
@@ -181,9 +182,9 @@ function DeploymentsPage() {
 		}
 	};
 
-	const handleStop = async (d: WorkspaceDeployment) => {
+	const handleStop = async (d: UserDeployment) => {
 		try {
-			await stopDeployment(d.workspaceId, d.id);
+			await stopDeployment(d.id);
 			toast.success("Deployment stopping", {
 				description: `${d.name} is queued to stop.`,
 			});
@@ -193,7 +194,7 @@ function DeploymentsPage() {
 	};
 
 	const deploymentColumns = useMemo((): Array<
-		DataTableColumn<WorkspaceDeployment>
+		DataTableColumn<UserDeployment>
 	> => {
 		return [
 			{
@@ -311,7 +312,7 @@ function DeploymentsPage() {
 		if (!destroyTarget) return;
 		try {
 			// "Destroy" in the UI means remove the deployment definition (and trigger provider cleanup).
-			await deleteDeployment(destroyTarget.workspaceId, destroyTarget.id, {
+			await deleteDeployment(destroyTarget.id, {
 				forwardDelete: destroyAlsoDeleteForward,
 			});
 			toast.success("Deployment deleted", {
@@ -352,12 +353,12 @@ function DeploymentsPage() {
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight">Deployments</h1>
 					<p className="text-muted-foreground text-sm">
-						Manage deployments and monitor activity (personal scope).
+						Manage deployments and monitor personal activity.
 					</p>
 				</div>
 
 				<div className="flex items-center gap-3">
-					<Badge variant="secondary">Scope: Personal</Badge>
+					<Badge variant="secondary">Access: Personal</Badge>
 				</div>
 			</div>
 

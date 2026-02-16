@@ -14,15 +14,12 @@ import {
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type ForwardAssuranceSummaryResponse,
-	PERSONAL_SCOPE_ID,
 	getForwardNetworkAssuranceSummary,
 	listForwardNetworkAssuranceHistory,
 	refreshForwardNetworkAssurance,
 } from "../../../lib/skyforge-api";
 
-export const Route = createFileRoute(
-	"/dashboard/forward-networks/$networkRef/assurance",
-)({
+export const Route = createFileRoute("/dashboard/fwd/$networkRef/assurance")({
 	component: ForwardNetworkAssurancePage,
 });
 
@@ -53,12 +50,11 @@ function toPct01(v: number | undefined): string {
 function ForwardNetworkAssurancePage() {
 	const qc = useQueryClient();
 	const { networkRef } = Route.useParams();
-	const workspaceId = PERSONAL_SCOPE_ID;
 
 	const summaryQ = useQuery({
-		queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkAssuranceSummary(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkAssuranceSummary(networkRef),
+		queryFn: () => getForwardNetworkAssuranceSummary(networkRef),
+		enabled: Boolean(networkRef),
 		staleTime: 5_000,
 		retry: false,
 	});
@@ -68,19 +64,15 @@ function ForwardNetworkAssurancePage() {
 	const warnings = useMemo(() => summary?.warnings ?? [], [summary?.warnings]);
 
 	const refreshM = useMutation({
-		mutationFn: async () =>
-			refreshForwardNetworkAssurance(workspaceId, networkRef),
+		mutationFn: async () => refreshForwardNetworkAssurance(networkRef),
 		onSuccess: async (res) => {
 			toast.success("Assurance refreshed");
 			qc.setQueryData(
-				queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+				queryKeys.forwardNetworkAssuranceSummary(networkRef),
 				res,
 			);
 			await qc.invalidateQueries({
-				queryKey: queryKeys.forwardNetworkAssuranceHistory(
-					workspaceId,
-					networkRef,
-				),
+				queryKey: queryKeys.forwardNetworkAssuranceHistory(networkRef),
 			});
 		},
 		onError: (e) =>
@@ -88,10 +80,9 @@ function ForwardNetworkAssurancePage() {
 	});
 
 	const historyQ = useQuery({
-		queryKey: queryKeys.forwardNetworkAssuranceHistory(workspaceId, networkRef),
-		queryFn: () =>
-			listForwardNetworkAssuranceHistory(workspaceId, networkRef, "20"),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkAssuranceHistory(networkRef),
+		queryFn: () => listForwardNetworkAssuranceHistory(networkRef, "20"),
+		enabled: Boolean(networkRef),
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -105,7 +96,7 @@ function ForwardNetworkAssurancePage() {
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex items-center gap-3 min-w-0">
 					<Link
-						to="/dashboard/forward-networks"
+						to="/dashboard/fwd"
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -131,16 +122,13 @@ function ForwardNetworkAssurancePage() {
 						{refreshM.isPending ? "Refreshing…" : "Refresh from Forward"}
 					</Button>
 					<Button asChild variant="outline">
-						<Link
-							to="/dashboard/forward-networks/$networkRef/hub"
-							params={{ networkRef }}
-						>
+						<Link to="/dashboard/fwd/$networkRef/hub" params={{ networkRef }}>
 							Assurance Hub
 						</Link>
 					</Button>
 					<Button asChild variant="ghost">
 						<Link
-							to="/dashboard/forward-networks/$networkRef/assurance-studio"
+							to="/dashboard/fwd/$networkRef/assurance-studio"
 							params={{ networkRef }}
 						>
 							Advanced
@@ -148,7 +136,7 @@ function ForwardNetworkAssurancePage() {
 					</Button>
 					<Button asChild variant="outline">
 						<Link
-							to="/dashboard/forward-networks/$networkRef/capacity"
+							to="/dashboard/fwd/$networkRef/capacity"
 							params={{ networkRef }}
 						>
 							Capacity

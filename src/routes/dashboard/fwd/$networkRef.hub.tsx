@@ -26,17 +26,14 @@ import { postAssuranceTrafficSeeds } from "../../../lib/assurance-traffic-api";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type ForwardAssuranceSummaryResponse,
-	PERSONAL_SCOPE_ID,
 	type PolicyReportForwardNetwork,
 	getForwardNetworkAssuranceSummary,
-	listWorkspaceForwardNetworks,
+	listUserForwardNetworks,
 	refreshForwardNetworkAssurance,
 	seedForwardNetworkAssuranceDemo,
 } from "../../../lib/skyforge-api";
 
-export const Route = createFileRoute(
-	"/dashboard/forward-networks/$networkRef/hub",
-)({
+export const Route = createFileRoute("/dashboard/fwd/$networkRef/hub")({
 	component: ForwardNetworkHubPage,
 });
 
@@ -74,7 +71,6 @@ function presetTitle(preset: PresetKind): string {
 function ForwardNetworkHubPage() {
 	const qc = useQueryClient();
 	const { networkRef } = Route.useParams();
-	const workspaceId = PERSONAL_SCOPE_ID;
 
 	const [window, setWindow] = useState("24h");
 	const [thresholdUtil, setThresholdUtil] = useState("0.8");
@@ -87,18 +83,18 @@ function ForwardNetworkHubPage() {
 	const [showAdvanced, setShowAdvanced] = useState(false);
 
 	const summaryQ = useQuery({
-		queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkAssuranceSummary(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkAssuranceSummary(networkRef),
+		queryFn: () => getForwardNetworkAssuranceSummary(networkRef),
+		enabled: Boolean(networkRef),
 		staleTime: 5_000,
 		retry: false,
 	});
 	const summary = summaryQ.data as ForwardAssuranceSummaryResponse | undefined;
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(workspaceId),
-		enabled: Boolean(workspaceId),
+		queryKey: queryKeys.userForwardNetworks(),
+		queryFn: () => listUserForwardNetworks(),
+		enabled: true,
 		staleTime: 20_000,
 		retry: false,
 	});
@@ -109,26 +105,25 @@ function ForwardNetworkHubPage() {
 	}, [networksQ.data?.networks, networkRef]);
 
 	const runsQ = useQuery({
-		queryKey: queryKeys.assuranceStudioRuns(workspaceId, networkRef),
-		queryFn: () => listAssuranceStudioRuns(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.assuranceStudioRuns(networkRef),
+		queryFn: () => listAssuranceStudioRuns(networkRef),
+		enabled: Boolean(networkRef),
 		staleTime: 10_000,
 		retry: false,
 	});
 
 	const missing = useMemo(() => summary?.missing ?? [], [summary?.missing]);
 	const warnings = useMemo(() => summary?.warnings ?? [], [summary?.warnings]);
-	const ready = Boolean(workspaceId && summary?.snapshot.snapshotId);
+	const ready = Boolean(summary?.snapshot.snapshotId);
 	const hasBlockingMissing = missing.length > 0;
 	const indexingReady = indexingUsable(summary?.indexingHealth.overall);
 	const canRunPresets = ready && indexingReady && !hasBlockingMissing;
 
 	const refreshM = useMutation({
-		mutationFn: async () =>
-			refreshForwardNetworkAssurance(workspaceId, networkRef),
+		mutationFn: async () => refreshForwardNetworkAssurance(networkRef),
 		onSuccess: async (next) => {
 			qc.setQueryData(
-				queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+				queryKeys.forwardNetworkAssuranceSummary(networkRef),
 				next,
 			);
 			toast.success("Forward assurance refreshed");
@@ -138,8 +133,7 @@ function ForwardNetworkHubPage() {
 	});
 
 	const seedSignalsM = useMutation({
-		mutationFn: async () =>
-			seedForwardNetworkAssuranceDemo(workspaceId, networkRef),
+		mutationFn: async () => seedForwardNetworkAssuranceDemo(networkRef),
 		onSuccess: (res) =>
 			toast.success("Demo signals seeded", {
 				description: `syslog=${res.inserted?.syslog ?? 0}, traps=${res.inserted?.snmpTraps ?? 0}`,
@@ -158,7 +152,7 @@ function ForwardNetworkHubPage() {
 				5,
 				Math.min(300, Number.parseInt(maxDemands, 10) || 120),
 			);
-			const seeded = await postAssuranceTrafficSeeds(workspaceId, networkRef, {
+			const seeded = await postAssuranceTrafficSeeds(networkRef, {
 				snapshotId: summary.snapshot.snapshotId,
 				mode: "mesh",
 				includeGroups: true,
@@ -179,56 +173,52 @@ function ForwardNetworkHubPage() {
 				1,
 				Math.min(10, Number.parseInt(maxResults, 10) || 3),
 			);
-			const evalResp = await postAssuranceStudioEvaluate(
-				workspaceId,
-				networkRef,
-				{
-					snapshotId: summary.snapshot.snapshotId,
-					window: String(window || "24h"),
-					demands,
-					phases: {
-						routing: preset === "routing",
-						capacity: preset === "capacity",
-						security: preset === "security",
-					},
-					routing:
-						preset === "routing"
-							? {
-									thresholdUtil: Number.isFinite(threshold) ? threshold : 0.8,
-									forward: { maxResults: maxR },
-									enforcement: { requireEnforcement: true },
-									includeHops,
-									includeAcl,
-									projectLoad: true,
-								}
-							: undefined,
-					capacity:
-						preset === "capacity"
-							? { includeHops, includeUpgradeCandidates: true }
-							: undefined,
-					security:
-						preset === "security"
-							? {
-									requireEnforcement: secRequireEnforcement,
-									includeReturnPath: secIncludeReturnPath,
-									requireSymmetricDelivery: secIncludeReturnPath
-										? true
-										: undefined,
-									requireReturnEnforcement: secIncludeReturnPath
-										? true
-										: undefined,
-									intent: "PREFER_DELIVERED",
-									includeTags: true,
-									includeNetworkFunctions: true,
-									maxCandidates: 2000,
-									maxResults: 1,
-									maxReturnPathResults: secIncludeReturnPath ? 1 : 0,
-									maxSeconds: 25,
-									maxOverallSeconds: 180,
-								}
-							: undefined,
+			const evalResp = await postAssuranceStudioEvaluate(networkRef, {
+				snapshotId: summary.snapshot.snapshotId,
+				window: String(window || "24h"),
+				demands,
+				phases: {
+					routing: preset === "routing",
+					capacity: preset === "capacity",
+					security: preset === "security",
 				},
-			);
+				routing:
+					preset === "routing"
+						? {
+								thresholdUtil: Number.isFinite(threshold) ? threshold : 0.8,
+								forward: { maxResults: maxR },
+								enforcement: { requireEnforcement: true },
+								includeHops,
+								includeAcl,
+								projectLoad: true,
+							}
+						: undefined,
+				capacity:
+					preset === "capacity"
+						? { includeHops, includeUpgradeCandidates: true }
+						: undefined,
+				security:
+					preset === "security"
+						? {
+								requireEnforcement: secRequireEnforcement,
+								includeReturnPath: secIncludeReturnPath,
+								requireSymmetricDelivery: secIncludeReturnPath
+									? true
+									: undefined,
+								requireReturnEnforcement: secIncludeReturnPath
+									? true
+									: undefined,
+								intent: "PREFER_DELIVERED",
+								includeTags: true,
+								includeNetworkFunctions: true,
+								maxCandidates: 2000,
+								maxResults: 1,
+								maxReturnPathResults: secIncludeReturnPath ? 1 : 0,
+								maxSeconds: 25,
+								maxOverallSeconds: 180,
+							}
+						: undefined,
+			});
 
 			const errors: Record<string, string> = { ...(evalResp.errors ?? {}) };
 			const results: Record<string, unknown> = {};
@@ -294,7 +284,7 @@ function ForwardNetworkHubPage() {
 						? "PARTIAL"
 						: "FAILED";
 
-			const run = await createAssuranceStudioRun(workspaceId, networkRef, {
+			const run = await createAssuranceStudioRun(networkRef, {
 				title: `${presetTitle(preset)} preset (${new Date().toISOString()})`,
 				status,
 				error:
@@ -312,7 +302,7 @@ function ForwardNetworkHubPage() {
 		},
 		onSuccess: async (out) => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioRuns(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioRuns(networkRef),
 			});
 			toast.success(`${presetTitle(out.preset)} preset finished`, {
 				description: `status=${out.status}, run=${out.runId}, demands=${out.demandCount}`,
@@ -327,7 +317,7 @@ function ForwardNetworkHubPage() {
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex items-center gap-3 min-w-0">
 					<Link
-						to="/dashboard/forward-networks"
+						to="/dashboard/fwd"
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -357,7 +347,7 @@ function ForwardNetworkHubPage() {
 					</Button>
 					<Button asChild variant="outline">
 						<Link
-							to="/dashboard/forward-networks/$networkRef/assurance-studio"
+							to="/dashboard/fwd/$networkRef/assurance-studio"
 							params={{ networkRef }}
 						>
 							Advanced
@@ -674,7 +664,7 @@ function ForwardNetworkHubPage() {
 					<div className="flex flex-wrap gap-2 pt-2">
 						<Button asChild variant="outline" size="sm">
 							<Link
-								to="/dashboard/forward-networks/$networkRef/assurance"
+								to="/dashboard/fwd/$networkRef/assurance"
 								params={{ networkRef }}
 							>
 								Assurance summary
@@ -682,7 +672,7 @@ function ForwardNetworkHubPage() {
 						</Button>
 						<Button asChild variant="outline" size="sm">
 							<Link
-								to="/dashboard/forward-networks/$networkRef/capacity"
+								to="/dashboard/fwd/$networkRef/capacity"
 								params={{ networkRef }}
 							>
 								Capacity explorer
@@ -690,7 +680,7 @@ function ForwardNetworkHubPage() {
 						</Button>
 						<Button asChild variant="outline" size="sm">
 							<Link
-								to="/dashboard/forward-networks/$networkRef/assurance-studio"
+								to="/dashboard/fwd/$networkRef/assurance-studio"
 								params={{ networkRef }}
 							>
 								Legacy studio

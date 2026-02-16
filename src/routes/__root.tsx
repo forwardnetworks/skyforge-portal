@@ -1,5 +1,6 @@
 import {
 	type QueryClient,
+	useMutation,
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { CommandMenu } from "../components/command-menu";
 import { GlobalSpinner } from "../components/global-spinner";
 import { ModeToggle } from "../components/mode-toggle";
@@ -51,7 +53,9 @@ import {
 } from "../lib/notifications-events";
 import { queryKeys } from "../lib/query-keys";
 import {
+	adminImpersonateStop,
 	buildLoginUrl,
+	getAdminImpersonateStatus,
 	getSession,
 	getUIConfig,
 	getUserNotifications,
@@ -142,6 +146,31 @@ function RootLayout() {
 	const isAdmin = !!session.data?.isAdmin;
 	const showLoginGate =
 		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
+	const impersonateStatusQ = useQuery({
+		queryKey: queryKeys.adminImpersonateStatus(),
+		queryFn: getAdminImpersonateStatus,
+		enabled: !!session.data?.authenticated && isAdmin,
+		staleTime: 5_000,
+		retry: false,
+	});
+	const stopImpersonation = useMutation({
+		mutationFn: async () => adminImpersonateStop(),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.session() });
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.adminImpersonateStatus(),
+			});
+			window.location.reload();
+		},
+		onError: (error) => {
+			toast.error("Failed to stop impersonation", {
+				description:
+					error instanceof Error
+						? error.message
+						: "Unable to restore admin session",
+			});
+		},
+	});
 
 	const username = session.data?.username ?? "";
 	const notificationsLimit = "20";
@@ -163,6 +192,15 @@ function RootLayout() {
 		const list = notifications.data?.notifications ?? [];
 		return list.filter((n: any) => !n.is_read).length;
 	}, [notifications.data?.notifications]);
+	const impersonating = Boolean(
+		session.data?.impersonating || impersonateStatusQ.data?.impersonating,
+	);
+	const impersonateActor = String(
+		impersonateStatusQ.data?.actorUsername ?? session.data?.actorUsername ?? "",
+	).trim();
+	const impersonateEffective = String(
+		impersonateStatusQ.data?.effectiveUsername ?? session.data?.username ?? "",
+	).trim();
 
 	return (
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -387,6 +425,27 @@ function RootLayout() {
 							</div>
 						) : (
 							<>
+								{impersonating ? (
+									<div className="mb-4 flex flex-col gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+										<div className="text-sm">
+											<span className="font-medium">Impersonation active:</span>{" "}
+											<span className="font-mono">
+												{impersonateActor || "admin"} →{" "}
+												{impersonateEffective || "user"}
+											</span>
+										</div>
+										<Button
+											size="sm"
+											variant="outline"
+											onClick={() => stopImpersonation.mutate()}
+											disabled={stopImpersonation.isPending}
+										>
+											{stopImpersonation.isPending
+												? "Stopping…"
+												: "Stop impersonation"}
+										</Button>
+									</div>
+								) : null}
 								{!isFullBleedRoute ? (
 									<div className="mb-6">
 										<Breadcrumb>

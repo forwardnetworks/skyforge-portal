@@ -117,7 +117,7 @@ function StatusPage() {
 		{
 			id: "forward",
 			name: "Forward Collector",
-			href: "/dashboard/forward",
+			href: "/dashboard/fwd/collector",
 			icon: Activity,
 			external: false,
 			enabled: features?.forwardEnabled ?? true,

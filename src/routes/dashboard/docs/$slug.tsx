@@ -61,7 +61,7 @@ const DOC_PAGES: DocPage[] = [
 				<p>
 					The current model is{" "}
 					<strong>per-user settings applied to deployments</strong> with a
-					personal scope.
+					personal account.
 				</p>
 				<ul className="list-disc pl-5 space-y-2">
 					<li>

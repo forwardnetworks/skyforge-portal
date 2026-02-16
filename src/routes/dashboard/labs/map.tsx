@@ -6,12 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { queryKeys } from "@/lib/query-keys";
 import {
 	type DeploymentTopology,
-	PERSONAL_SCOPE_ID,
-	getWorkspaceContainerlabTemplate,
-	getWorkspaces,
+	USER_CONTEXT_ID,
+	getUserContainerlabTemplate,
 } from "@/lib/skyforge-api";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -65,33 +63,33 @@ function parseContainerlabYamlToTopology(yamlText: string): DeploymentTopology {
 
 function LabsMapPage() {
 	const search = Route.useSearch() as any;
-	const workspaceId =
-		String(search?.workspaceId ?? "").trim() || PERSONAL_SCOPE_ID;
-	const source = String(search?.source ?? "workspace");
+	const contextId = USER_CONTEXT_ID;
+	const sourceRaw = String(search?.source ?? "user")
+		.trim()
+		.toLowerCase();
+	const source =
+		sourceRaw === "personal"
+			? "user"
+			: sourceRaw === "blueprints" ||
+					sourceRaw === "custom" ||
+					sourceRaw === "external" ||
+					sourceRaw === "user"
+				? sourceRaw
+				: "user";
 	const dir = String(search?.dir ?? "containerlab/designer");
 	const file = String(search?.file ?? "");
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
-		retry: false,
-		staleTime: 30_000,
-	});
-
 	const templateQ = useQuery({
-		queryKey: workspaceId
-			? ["containerlabTemplateMap", workspaceId, source, dir, file]
-			: ["containerlabTemplateMap", "none"],
+		queryKey: ["containerlabTemplateMap", contextId, source, dir, file],
 		queryFn: async () => {
-			if (!workspaceId) throw new Error("workspaceId is required");
 			if (!file) throw new Error("file is required");
-			return getWorkspaceContainerlabTemplate(workspaceId, {
+			return getUserContainerlabTemplate(contextId, {
 				source,
 				dir,
 				file,
 			});
 		},
-		enabled: Boolean(workspaceId) && Boolean(file),
+		enabled: Boolean(file),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -120,23 +118,13 @@ function LabsMapPage() {
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div className="space-y-1">
-								<Label>Workspace</Label>
-								<Input
-									value={workspaceId}
-									readOnly
-									placeholder={
-										workspacesQ.isLoading ? "Loading…" : "workspaceId missing"
-									}
-								/>
-							</div>
-							<div className="space-y-1">
 								<Label>File</Label>
 								<Input value={file} readOnly placeholder="file missing" />
 							</div>
 							<div className="text-xs text-muted-foreground">
 								Example:{" "}
 								<span className="font-mono">
-									/dashboard/labs/map?workspaceId=&lt;id&gt;&amp;source=workspace&amp;dir=containerlab/designer&amp;file=lab.clab.yml
+									/dashboard/labs/map?source=user&amp;dir=containerlab/designer&amp;file=lab.clab.yml
 								</span>
 							</div>
 						</CardContent>
@@ -217,7 +205,6 @@ function LabsMapPage() {
 					<div className="h-full rounded-xl border overflow-hidden">
 						<TopologyViewer
 							topology={topology as any}
-							workspaceId={workspaceId}
 							enableTerminal={false}
 							fullHeight
 						/>

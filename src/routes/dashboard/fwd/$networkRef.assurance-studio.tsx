@@ -49,13 +49,11 @@ import {
 	type ForwardAssuranceSummaryResponse,
 	type ForwardNetworkCapacityPathBottlenecksResponse,
 	type ForwardNetworkCapacityUpgradeCandidatesResponse,
-	PERSONAL_SCOPE_ID,
 	type PolicyReportNQEResponse,
 	type PolicyReportPathQuery,
 	getForwardNetworkAssuranceSummary,
 	getSession,
 	listUserForwardNetworks,
-	listWorkspaceForwardNetworks,
 	refreshForwardNetworkAssurance,
 	seedForwardNetworkAssuranceDemo,
 } from "@/lib/skyforge-api";
@@ -72,7 +70,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute(
-	"/dashboard/forward-networks/$networkRef/assurance-studio",
+	"/dashboard/fwd/$networkRef/assurance-studio",
 )({
 	validateSearch: (search) => searchSchema.parse(search),
 	component: AssuranceStudioPage,
@@ -220,8 +218,6 @@ function AssuranceStudioPage() {
 	const { scenario, tab } = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const qc = useQueryClient();
-
-	const workspaceId = PERSONAL_SCOPE_ID;
 	const selectedScenarioId = String(scenario ?? "").trim();
 	const activeTab = String(tab ?? "routing") || "routing";
 
@@ -293,9 +289,9 @@ function AssuranceStudioPage() {
 	const [secEnfTagPartsText, setSecEnfTagPartsText] = useState("");
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(workspaceId),
-		enabled: Boolean(workspaceId),
+		queryKey: queryKeys.userForwardNetworks(),
+		queryFn: () => listUserForwardNetworks(),
+		enabled: true,
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -320,9 +316,9 @@ function AssuranceStudioPage() {
 	const networkName = String(networkRow?.name ?? "") || String(networkRef);
 
 	const assuranceQ = useQuery({
-		queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkAssuranceSummary(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkAssuranceSummary(networkRef),
+		queryFn: () => getForwardNetworkAssuranceSummary(networkRef),
+		enabled: Boolean(networkRef),
 		staleTime: 5_000,
 		retry: false,
 	});
@@ -331,18 +327,15 @@ function AssuranceStudioPage() {
 		| undefined;
 
 	const refreshAssuranceM = useMutation({
-		mutationFn: () => refreshForwardNetworkAssurance(workspaceId, networkRef),
+		mutationFn: () => refreshForwardNetworkAssurance(networkRef),
 		onSuccess: async (res) => {
 			toast.success("Assurance refreshed");
 			qc.setQueryData(
-				queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+				queryKeys.forwardNetworkAssuranceSummary(networkRef),
 				res,
 			);
 			await qc.invalidateQueries({
-				queryKey: queryKeys.forwardNetworkAssuranceHistory(
-					workspaceId,
-					networkRef,
-				),
+				queryKey: queryKeys.forwardNetworkAssuranceHistory(networkRef),
 			});
 		},
 		onError: (e: any) =>
@@ -352,16 +345,13 @@ function AssuranceStudioPage() {
 	});
 
 	const seedDemoM = useMutation({
-		mutationFn: () => seedForwardNetworkAssuranceDemo(workspaceId, networkRef),
+		mutationFn: () => seedForwardNetworkAssuranceDemo(networkRef),
 		onSuccess: async (res) => {
 			toast.success("Seeded demo signals", {
 				description: `syslog CIDR ${res.syslogCidr}`,
 			});
 			await qc.invalidateQueries({
-				queryKey: queryKeys.forwardNetworkAssuranceSummary(
-					workspaceId,
-					networkRef,
-				),
+				queryKey: queryKeys.forwardNetworkAssuranceSummary(networkRef),
 			});
 		},
 		onError: (e: any) =>
@@ -371,9 +361,9 @@ function AssuranceStudioPage() {
 	});
 
 	const scenariosQ = useQuery({
-		queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
-		queryFn: () => listAssuranceStudioScenarios(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.assuranceStudioScenarios(networkRef),
+		queryFn: () => listAssuranceStudioScenarios(networkRef),
+		enabled: Boolean(networkRef),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -387,9 +377,9 @@ function AssuranceStudioPage() {
 	}, [scenarios, selectedScenarioId]);
 
 	const runsQ = useQuery({
-		queryKey: queryKeys.assuranceStudioRuns(workspaceId, networkRef),
-		queryFn: () => listAssuranceStudioRuns(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.assuranceStudioRuns(networkRef),
+		queryFn: () => listAssuranceStudioRuns(networkRef),
+		enabled: Boolean(networkRef),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -401,28 +391,23 @@ function AssuranceStudioPage() {
 	}, [runsQ.data?.runs, runStatusFilter]);
 
 	const runDetailQ = useQuery({
-		queryKey: queryKeys.assuranceStudioRun(
-			workspaceId,
-			networkRef,
-			runDetailId,
-		),
-		queryFn: () => getAssuranceStudioRun(workspaceId, networkRef, runDetailId),
-		enabled: Boolean(runDetailOpen && workspaceId && networkRef && runDetailId),
+		queryKey: queryKeys.assuranceStudioRun(networkRef, runDetailId),
+		queryFn: () => getAssuranceStudioRun(networkRef, runDetailId),
+		enabled: Boolean(runDetailOpen && networkRef && runDetailId),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	// If no scenario is selected, default to the newest.
 	useEffect(() => {
-		if (!workspaceId) return;
 		if (!networkRef) return;
 		if (selectedScenarioId) return;
 		if (scenarios.length === 0) return;
 		void navigate({
-			search: (prev) => ({ ...prev, scenario: scenarios[0]!.id }),
+			search: (prev: any) => ({ ...prev, scenario: scenarios[0]!.id }),
 			replace: true,
 		});
-	}, [workspaceId, networkRef, selectedScenarioId, scenarios, navigate]);
+	}, [networkRef, selectedScenarioId, scenarios, navigate]);
 
 	// Load scenario -> draft.
 	useEffect(() => {
@@ -505,7 +490,7 @@ function AssuranceStudioPage() {
 				thresholdUtil: Number.isFinite(thr) ? thr : undefined,
 				demands: parseDemandsCSV(demandsText),
 			};
-			return createAssuranceStudioScenario(workspaceId, networkRef, {
+			return createAssuranceStudioScenario(networkRef, {
 				name,
 				description: newDesc.trim() || undefined,
 				spec,
@@ -513,13 +498,13 @@ function AssuranceStudioPage() {
 		},
 		onSuccess: async (sc) => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioScenarios(networkRef),
 			});
 			setNewOpen(false);
 			setNewName("");
 			setNewDesc("");
 			toast.success("Scenario created");
-			void navigate({ search: (prev) => ({ ...prev, scenario: sc.id }) });
+			void navigate({ search: (prev: any) => ({ ...prev, scenario: sc.id }) });
 		},
 		onError: (e: any) =>
 			toast.error(String(e?.message ?? e ?? "create failed")),
@@ -554,7 +539,7 @@ function AssuranceStudioPage() {
 					enforcementTagParts: splitParts(secEnfTagPartsText),
 				},
 			};
-			return createAssuranceStudioScenario(workspaceId, networkRef, {
+			return createAssuranceStudioScenario(networkRef, {
 				name,
 				description: draftDesc.trim() || undefined,
 				spec,
@@ -562,10 +547,10 @@ function AssuranceStudioPage() {
 		},
 		onSuccess: async (sc) => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioScenarios(networkRef),
 			});
 			toast.success("Scenario duplicated", { description: sc.id });
-			void navigate({ search: (prev) => ({ ...prev, scenario: sc.id }) });
+			void navigate({ search: (prev: any) => ({ ...prev, scenario: sc.id }) });
 		},
 		onError: (e: any) =>
 			toast.error(String(e?.message ?? e ?? "duplicate failed")),
@@ -602,20 +587,15 @@ function AssuranceStudioPage() {
 					enforcementTagParts: splitParts(secEnfTagPartsText),
 				},
 			};
-			return updateAssuranceStudioScenario(
-				workspaceId,
-				networkRef,
-				selectedScenarioId,
-				{
-					name: draftName.trim() || undefined,
-					description: draftDesc.trim() === "" ? null : draftDesc.trim(),
-					spec,
-				},
-			);
+			return updateAssuranceStudioScenario(networkRef, selectedScenarioId, {
+				name: draftName.trim() || undefined,
+				description: draftDesc.trim() === "" ? null : draftDesc.trim(),
+				spec,
+			});
 		},
 		onSuccess: async () => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioScenarios(networkRef),
 			});
 			setDirty(false);
 			toast.success("Scenario saved");
@@ -626,19 +606,15 @@ function AssuranceStudioPage() {
 	const deleteM = useMutation({
 		mutationFn: async () => {
 			if (!selectedScenarioId) throw new Error("select a scenario first");
-			return deleteAssuranceStudioScenario(
-				workspaceId,
-				networkRef,
-				selectedScenarioId,
-			);
+			return deleteAssuranceStudioScenario(networkRef, selectedScenarioId);
 		},
 		onSuccess: async () => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioScenarios(networkRef),
 			});
 			toast.success("Scenario deleted");
 			void navigate({
-				search: (prev) => ({ ...prev, scenario: "" }),
+				search: (prev: any) => ({ ...prev, scenario: "" }),
 				replace: true,
 			});
 		},
@@ -658,7 +634,7 @@ function AssuranceStudioPage() {
 				maxDevices: Number(maxDevices) || 30,
 				maxDemands: Number(maxDemands) || 200,
 			};
-			return postAssuranceTrafficSeeds(workspaceId, networkRef, req);
+			return postAssuranceTrafficSeeds(networkRef, req);
 		},
 		onSuccess: (resp) => {
 			setDemandsText(demandsToCSV(resp.demands ?? []));
@@ -679,7 +655,7 @@ function AssuranceStudioPage() {
 			}
 			const thr = Number(threshold);
 			const mr = Number(maxResults);
-			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
+			const resp = await postAssuranceStudioEvaluate(networkRef, {
 				snapshotId: snapshotId.trim() || undefined,
 				baselineSnapshotId:
 					compareToBaseline && baselineSnapshotId.trim()
@@ -761,7 +737,7 @@ function AssuranceStudioPage() {
 				},
 			};
 
-			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
+			const resp = await postAssuranceStudioEvaluate(networkRef, {
 				snapshotId: snapshotId.trim() || undefined,
 				baselineSnapshotId:
 					compareToBaseline && baselineSnapshotId.trim()
@@ -860,7 +836,7 @@ function AssuranceStudioPage() {
 						: "PARTIAL";
 
 			const title = `${draftName.trim() || "Scenario"} (${new Date().toISOString()})`;
-			const run = await createAssuranceStudioRun(workspaceId, networkRef, {
+			const run = await createAssuranceStudioRun(networkRef, {
 				scenarioId: selectedScenarioId,
 				title,
 				status,
@@ -874,7 +850,7 @@ function AssuranceStudioPage() {
 		onSuccess: async (out) => {
 			toast.success("Scenario run stored", { description: out.run.id });
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioRuns(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioRuns(networkRef),
 			});
 			setRunDetailId(out.run.id);
 			setRunDetailOpen(true);
@@ -888,7 +864,7 @@ function AssuranceStudioPage() {
 				.filter((d) => String(d.dstIp ?? "").trim())
 				.slice(0, 200);
 			if (demands.length === 0) throw new Error("no valid demands to evaluate");
-			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
+			const resp = await postAssuranceStudioEvaluate(networkRef, {
 				window,
 				snapshotId: snapshotId.trim() || undefined,
 				demands,
@@ -926,7 +902,7 @@ function AssuranceStudioPage() {
 				.filter((d) => String(d.dstIp ?? "").trim())
 				.slice(0, 200);
 			if (demands.length === 0) throw new Error("no valid demands to evaluate");
-			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
+			const resp = await postAssuranceStudioEvaluate(networkRef, {
 				snapshotId: snapshotId.trim() || undefined,
 				window,
 				demands,
@@ -964,7 +940,7 @@ function AssuranceStudioPage() {
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex items-center gap-3">
 					<Button asChild variant="ghost" size="sm">
-						<Link to="/dashboard/forward-networks">
+						<Link to="/dashboard/fwd">
 							<ArrowLeft className="h-4 w-4" />
 							<span className="ml-2">Forward Networks</span>
 						</Link>
@@ -980,10 +956,7 @@ function AssuranceStudioPage() {
 					<Badge variant="secondary">Forward Paths + NQE</Badge>
 					{networksQ.isLoading ? <Skeleton className="h-6 w-24" /> : null}
 					<Button asChild variant="outline" size="sm">
-						<Link
-							to="/dashboard/forward-networks/$networkRef/hub"
-							params={{ networkRef }}
-						>
+						<Link to="/dashboard/fwd/$networkRef/hub" params={{ networkRef }}>
 							Assurance Hub
 						</Link>
 					</Button>
@@ -1183,9 +1156,7 @@ function AssuranceStudioPage() {
 						<Button
 							variant="outline"
 							size="sm"
-							disabled={
-								!workspaceId || !selectedScenarioId || duplicateM.isPending
-							}
+							disabled={!selectedScenarioId || duplicateM.isPending}
 							onClick={() => duplicateM.mutate()}
 						>
 							Duplicate
@@ -1205,9 +1176,7 @@ function AssuranceStudioPage() {
 						</Button>
 						<Button
 							size="sm"
-							disabled={
-								!workspaceId || !selectedScenarioId || saveM.isPending || !dirty
-							}
+							disabled={!selectedScenarioId || saveM.isPending || !dirty}
 							onClick={() => saveM.mutate()}
 						>
 							<Save className="h-4 w-4 mr-2" />
@@ -1215,9 +1184,7 @@ function AssuranceStudioPage() {
 						</Button>
 						<Button
 							size="sm"
-							disabled={
-								!workspaceId || !selectedScenarioId || runScenarioM.isPending
-							}
+							disabled={!selectedScenarioId || runScenarioM.isPending}
 							onClick={() => runScenarioM.mutate()}
 						>
 							<Play className="h-4 w-4 mr-2" />
@@ -1251,7 +1218,10 @@ function AssuranceStudioPage() {
 								onValueChange={(v) => {
 									setDirty(false);
 									void navigate({
-										search: (prev) => ({ ...prev, scenario: String(v ?? "") }),
+										search: (prev: any) => ({
+											...prev,
+											scenario: String(v ?? ""),
+										}),
 									});
 								}}
 							>
@@ -1658,7 +1628,7 @@ function AssuranceStudioPage() {
 			<Tabs
 				value={activeTab}
 				onValueChange={(v) =>
-					void navigate({ search: (prev) => ({ ...prev, tab: v }) })
+					void navigate({ search: (prev: any) => ({ ...prev, tab: v }) })
 				}
 			>
 				<TabsList>
@@ -2052,7 +2022,7 @@ function AssuranceStudioPage() {
 													<table className="w-full border-collapse text-sm">
 														<thead>
 															<tr className="border-b">
-																<th className="p-2 text-left">Scope</th>
+																<th className="p-2 text-left">User</th>
 																<th className="p-2 text-left">Target</th>
 																<th className="p-2 text-left">Speed</th>
 																<th className="p-2 text-left">Worst</th>
@@ -2065,7 +2035,7 @@ function AssuranceStudioPage() {
 															{up.items.slice(0, 5).map((it, idx) => (
 																<tr key={idx} className="border-b">
 																	<td className="p-2 font-mono text-xs">
-																		{it.scopeType}
+																		{it.objectType ?? "—"}
 																	</td>
 																	<td className="p-2 font-mono text-xs">
 																		{it.device}:{it.name}
@@ -2336,9 +2306,7 @@ function AssuranceStudioPage() {
 
 							<div className="flex flex-wrap items-center gap-2">
 								<Button
-									disabled={
-										!workspaceId || secRunM.isPending || !forwardNetworkId
-									}
+									disabled={secRunM.isPending || !forwardNetworkId}
 									onClick={() => secRunM.mutate()}
 								>
 									Run Paths Assurance

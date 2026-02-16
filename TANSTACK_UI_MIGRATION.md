@@ -68,7 +68,7 @@ The portal has been migrated to TanStack Router, but to reach "2026/A+" standard
 2.  **Dashboard Index** (`/dashboard`)
 3.  **Deployments** (`/dashboard/deployments`)
 4.  **Create Deployment** (`/dashboard/deployments/new`)
-5.  **Workspaces** (merged into Dashboard)
+5.  **Scopes** (merged into Dashboard)
 6.  **S3 Storage** (`/dashboard/s3`)
 7.  **PKI Management** (`/dashboard/pki`)
 8.  **Run Details** (`/dashboard/runs/$runId`)
@@ -121,7 +121,7 @@ The portal is now architecturally modern, visually polished, and technically rob
 | Badge | 100% | Status displays | Semantic colors |
 | Skeleton | 100% | 10+ pages | Universal loading pattern |
 | EmptyState | 100% | 9+ pages | Consistent null states |
-| Select | 95% | Forms | Deployment, workspace selection |
+| Select | 95% | Forms | Deployment, scope selection |
 | Input | 95% | Forms | Search, PKI forms |
 | Label | 95% | Forms | Proper htmlFor associations |
 | Form | 80% | Validation forms | Zod + React Hook Form |
@@ -167,7 +167,7 @@ The following are **optional improvements** for continued evolution. The portal 
 #### 1. Extend URL Search Params to More Routes
 **Current State:** Only governance uses URL-based state
 **Opportunity Routes:**
-- `/dashboard/deployments` - Filter by workspace, status (`?workspace=prod&status=running`)
+- `/dashboard/deployments` - Filter by scope, status (`?scope=prod&status=running`)
 - `/dashboard/pki` - Tab state via URL (`?tab=ssh`)
 
 **Benefit:** Shareable filter URLs, browser back button works, bookmarkable states
@@ -177,7 +177,7 @@ The following are **optional improvements** for continued evolution. The portal 
 ```typescript
 // Example for deployments.tsx
 const deploymentsSearchSchema = z.object({
-  workspace: z.string().optional(),
+  scope: z.string().optional(),
   status: z.enum(["running", "stopped", "failed"]).optional(),
 });
 
@@ -228,7 +228,7 @@ loader: async ({ context: { queryClient } }) => {
 #### 4. Complete Admin Settings Page
 **Current State:** Placeholder content
 **Opportunity:**
-- User preferences (default workspace, notification settings)
+- User preferences (default scope, notification settings)
 - Platform configuration (if applicable)
 - API token management
 - Theme defaults
@@ -251,7 +251,7 @@ loader: async ({ context: { queryClient } }) => {
 #### 6. Expand Tooltip Coverage
 **Current State:** Only 1 usage (deployment form template source)
 **Opportunity Locations:**
-- Deployment form: Server selection, workspace, template type
+- Deployment form: Server selection, scope, template type
 - PKI form: Common name, SAN fields, validity period
 - Governance search: Filter syntax hints
 
@@ -273,7 +273,7 @@ loader: async ({ context: { queryClient } }) => {
 ---
 
 #### 8. Combobox for Large Select Lists
-**Use Case:** Lists with 50+ items (workspaces, resources)
+**Use Case:** Lists with 50+ items (scopes, resources)
 **Benefit:** Search within select options
 **Effort:** 2-3 hours
 
@@ -481,8 +481,8 @@ function RunDetailPage() {
 const destroyMutation = useMutation({
   mutationFn: async () => {
     if (!destroyTarget) return;
-    console.log("Destroying deployment:", destroyTarget.workspaceId, destroyTarget.id);
-    return destroyDeployment(destroyTarget.workspaceId, destroyTarget.id);
+    console.log("Destroying deployment:", destroyTarget.scopeId, destroyTarget.id);
+    return destroyDeployment(destroyTarget.scopeId, destroyTarget.id);
   },
   onSuccess: () => {
     toast.success("Deployment destroyed");
@@ -504,16 +504,16 @@ const destroyMutation = useMutation({
 ### Issue 5: No Workspace Management UI
 
 **Location:** Missing entirely
-**Symptom:** No way to create, edit, or delete workspaces from the dashboard
+**Symptom:** No way to create, edit, or delete scopes from the dashboard
 
 **Current State:**
-- `getWorkspaces()` API exists (read-only)
+- `getScopes()` API exists (read-only)
 - No `createWorkspace()`, `updateWorkspace()`, `deleteWorkspace()` APIs exposed in `skyforge-api.ts`
-- No `/dashboard/workspaces/new` or `/admin/workspaces` routes exist
+- No `/dashboard/scopes/new` or `/admin/scopes` routes exist
 
 **Fix Required:**
 
-**A. Expose workspace CRUD APIs in `skyforge-api.ts`:**
+**A. Expose scope CRUD APIs in `skyforge-api.ts`:**
 ```typescript
 // Add these types and functions
 export type CreateWorkspaceRequest = {
@@ -523,35 +523,35 @@ export type CreateWorkspaceRequest = {
 };
 
 export async function createWorkspace(body: CreateWorkspaceRequest): Promise<SkyforgeWorkspace> {
-  return apiFetch<SkyforgeWorkspace>("/api/workspaces", {
+  return apiFetch<SkyforgeWorkspace>("/api/scopes", {
     method: "POST",
     body: JSON.stringify(body),
   });
 }
 
 export async function updateWorkspace(
-  workspaceId: string,
+  scopeId: string,
   body: Partial<CreateWorkspaceRequest>
 ): Promise<SkyforgeWorkspace> {
-  return apiFetch<SkyforgeWorkspace>(`/api/workspaces/${workspaceId}`, {
+  return apiFetch<SkyforgeWorkspace>(`/api/scopes/${scopeId}`, {
     method: "PATCH",
     body: JSON.stringify(body),
   });
 }
 
-export async function deleteWorkspace(workspaceId: string): Promise<void> {
-  return apiFetch<void>(`/api/workspaces/${workspaceId}`, {
+export async function deleteWorkspace(scopeId: string): Promise<void> {
+  return apiFetch<void>(`/api/scopes/${scopeId}`, {
     method: "DELETE",
   });
 }
 ```
 
-**B. Create workspace management routes:**
-- `/dashboard/workspaces` - List workspaces with create button
-- `/dashboard/workspaces/new` - Create workspace form
-- `/dashboard/workspaces/$workspaceId` - Edit workspace details
+**B. Create scope management routes:**
+- `/dashboard/scopes` - List scopes with create button
+- `/dashboard/scopes/new` - Create scope form
+- `/dashboard/scopes/$scopeId` - Edit scope details
 
-**C. Add workspace link to side navigation**
+**C. Add scope link to side navigation**
 
 **Estimated Effort:** 4-6 hours (full CRUD UI)
 
@@ -587,7 +587,7 @@ export async function deleteWorkspace(workspaceId: string): Promise<void> {
 | Runs table blank columns | 🔴 Critical | 10 min | Missing type/created data |
 | Missing "Info" action | 🟡 Medium | 15 min | Can't easily view deployment details |
 | Destroy does nothing | 🔴 Critical | 30 min | Blocking feature |
-| No workspace management | 🟡 Medium | 4-6 hrs | Missing admin functionality |
+| No scope management | 🟡 Medium | 4-6 hrs | Missing admin functionality |
 | Queue 0 not useful | 🟢 Low | 15 min | UX polish |
 
 **Total Critical Fix Time:** ~1.5 hours

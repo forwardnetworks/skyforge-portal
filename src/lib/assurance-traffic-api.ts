@@ -39,7 +39,7 @@ export type AssuranceTrafficDemand = {
 };
 
 export type AssuranceTrafficSeedResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	snapshotId?: string;
@@ -50,12 +50,11 @@ export type AssuranceTrafficSeedResponse = {
 };
 
 export async function postAssuranceTrafficSeeds(
-	workspaceId: string,
 	networkRef: string,
 	body: AssuranceTrafficSeedRequest,
 ): Promise<AssuranceTrafficSeedResponse> {
 	return apiFetch<AssuranceTrafficSeedResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/traffic/seeds`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/traffic/seeds`,
 		{
 			method: "POST",
 			body: JSON.stringify(body ?? {}),
@@ -136,7 +135,7 @@ export type AssuranceTrafficEvaluateSummary = {
 };
 
 export type AssuranceTrafficEvaluateResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	snapshotId?: string;
@@ -158,12 +157,11 @@ export type AssuranceTrafficEvaluateResponse = {
 };
 
 export async function postAssuranceTrafficEvaluate(
-	workspaceId: string,
 	networkRef: string,
 	body: AssuranceTrafficEvaluateRequest,
 ): Promise<AssuranceTrafficEvaluateResponse> {
 	return apiFetch<AssuranceTrafficEvaluateResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/traffic/evaluate`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/traffic/evaluate`,
 		{
 			method: "POST",
 			body: JSON.stringify(body ?? {}),

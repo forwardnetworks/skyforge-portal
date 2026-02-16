@@ -151,7 +151,7 @@ function AdminSettingsPage() {
 			adminPurgeUser({ username: purgeUsername, confirm: purgeUsername }),
 		onSuccess: (res) => {
 			toast.success("User purged", {
-				description: `Deleted workspaces: ${res.deletedWorkspaces}`,
+				description: `Deleted personal resources: ${res.deletedScopes}`,
 			});
 		},
 		onError: (e) => {
@@ -191,11 +191,11 @@ function AdminSettingsPage() {
 			},
 			{ id: "action", header: "Action", cell: (r) => r.action, width: 260 },
 			{
-				id: "workspaceId",
-				header: "Workspace",
+				id: "ownerUsername",
+				header: "Context",
 				cell: (r) => (
 					<span className="font-mono text-xs text-muted-foreground">
-						{r.workspaceId}
+						{r.ownerUsername}
 					</span>
 				),
 				width: 220,
@@ -439,7 +439,7 @@ function AdminSettingsPage() {
 									Purge user (dev-only)
 								</CardTitle>
 								<CardDescription>
-									Removes user state and associated workspaces to rerun
+									Removes user state and associated personal resources to rerun
 									first-login bootstrap.
 								</CardDescription>
 							</CardHeader>

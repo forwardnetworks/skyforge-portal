@@ -20,12 +20,12 @@ import { Input } from "../../components/ui/input";
 import { Skeleton } from "../../components/ui/skeleton";
 import { queryKeys } from "../../lib/query-keys";
 import {
-	PERSONAL_SCOPE_ID,
-	createWorkspaceArtifactFolder,
-	deleteWorkspaceArtifactObject,
-	downloadWorkspaceArtifact,
-	listWorkspaceArtifacts,
-	putWorkspaceArtifactObject,
+	USER_CONTEXT_ID,
+	createUserArtifactFolder,
+	deleteUserArtifactObject,
+	downloadUserArtifact,
+	listUserArtifacts,
+	putUserArtifactObject,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/s3")({
@@ -33,17 +33,17 @@ export const Route = createFileRoute("/dashboard/s3")({
 });
 
 function S3Page() {
-	const selectedWorkspaceId = PERSONAL_SCOPE_ID;
+	const selectedOwner = USER_CONTEXT_ID;
 	const [prefix, setPrefix] = useState("");
 
 	const artifacts = useQuery({
-		queryKey: queryKeys.workspaceArtifacts(selectedWorkspaceId),
+		queryKey: queryKeys.userArtifacts(selectedOwner),
 		queryFn: async () =>
-			listWorkspaceArtifacts(selectedWorkspaceId, {
+			listUserArtifacts(selectedOwner, {
 				prefix: prefix || undefined,
 			}),
 		staleTime: 10_000,
-		enabled: !!selectedWorkspaceId,
+		enabled: !!selectedOwner,
 	});
 
 	const list = artifacts.data?.items ?? [];
@@ -68,8 +68,8 @@ function S3Page() {
 								size="sm"
 								onClick={async () => {
 									try {
-										const resp = await downloadWorkspaceArtifact(
-											selectedWorkspaceId,
+										const resp = await downloadUserArtifact(
+											selectedOwner,
 											item.key,
 										);
 										const raw = atob(resp.fileData);
@@ -90,7 +90,7 @@ function S3Page() {
 										});
 									}
 								}}
-								disabled={!selectedWorkspaceId}
+								disabled={!selectedOwner}
 							>
 								<Eye className="mr-2 h-3 w-3" />
 								View
@@ -101,8 +101,8 @@ function S3Page() {
 							size="sm"
 							onClick={async () => {
 								try {
-									const resp = await downloadWorkspaceArtifact(
-										selectedWorkspaceId,
+									const resp = await downloadUserArtifact(
+										selectedOwner,
 										item.key,
 									);
 									const raw = atob(resp.fileData);
@@ -124,7 +124,7 @@ function S3Page() {
 									});
 								}
 							}}
-							disabled={!selectedWorkspaceId}
+							disabled={!selectedOwner}
 						>
 							<Download className="mr-2 h-3 w-3" />
 							Download
@@ -135,10 +135,7 @@ function S3Page() {
 							onClick={async () => {
 								if (!confirm(`Delete ${item.key}?`)) return;
 								try {
-									await deleteWorkspaceArtifactObject(
-										selectedWorkspaceId,
-										item.key,
-									);
+									await deleteUserArtifactObject(selectedOwner, item.key);
 									toast.success("Deleted", { description: item.key });
 									await artifacts.refetch();
 								} catch (e) {
@@ -147,7 +144,7 @@ function S3Page() {
 									});
 								}
 							}}
-							disabled={!selectedWorkspaceId}
+							disabled={!selectedOwner}
 						>
 							<Trash2 className="mr-2 h-3 w-3" />
 							Delete
@@ -156,7 +153,7 @@ function S3Page() {
 				),
 			},
 		];
-	}, [artifacts.refetch, selectedWorkspaceId]);
+	}, [artifacts.refetch, selectedOwner]);
 
 	const toolbar = (
 		<div className="p-4 border-b flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -171,7 +168,7 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={() => artifacts.refetch()}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedOwner}
 				>
 					Refresh
 				</Button>
@@ -179,11 +176,11 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={async () => {
-						if (!selectedWorkspaceId) return;
+						if (!selectedOwner) return;
 						const folder = window.prompt("Folder prefix (e.g. uploads/)");
 						if (!folder) return;
 						try {
-							await createWorkspaceArtifactFolder(selectedWorkspaceId, folder);
+							await createUserArtifactFolder(selectedOwner, folder);
 							toast.success("Folder created");
 							await artifacts.refetch();
 						} catch (e) {
@@ -192,7 +189,7 @@ function S3Page() {
 							});
 						}
 					}}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedOwner}
 				>
 					<FolderPlus className="mr-2 h-3 w-3" />
 					Folder
@@ -201,7 +198,7 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={() => {
-						if (!selectedWorkspaceId) return;
+						if (!selectedOwner) return;
 						const input = document.createElement("input");
 						input.type = "file";
 						input.onchange = () => {
@@ -218,7 +215,7 @@ function S3Page() {
 										b64 += btoa(String.fromCharCode(...chunk));
 									}
 									const key = (prefix || "") + file.name;
-									await putWorkspaceArtifactObject(selectedWorkspaceId, {
+									await putUserArtifactObject(selectedOwner, {
 										key,
 										contentBase64: b64,
 										contentType: file.type || "application/octet-stream",
@@ -234,7 +231,7 @@ function S3Page() {
 						};
 						input.click();
 					}}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedOwner}
 				>
 					<Upload className="mr-2 h-3 w-3" />
 					Upload

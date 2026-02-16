@@ -21,8 +21,8 @@ function PolicyReportsIndexPage() {
 					Policy &amp; Compliance
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Policy workflows are now personal-scope only. Select a Forward network
-					in Assurance Hub to run checks.
+					Policy workflows are per-user. Select a Forward network in Assurance
+					Hub to run checks.
 				</p>
 			</div>
 
@@ -36,7 +36,7 @@ function PolicyReportsIndexPage() {
 				</CardHeader>
 				<CardContent>
 					<Link
-						to="/dashboard/forward-networks"
+						to="/dashboard/fwd"
 						className="text-sm text-primary underline hover:no-underline"
 					>
 						Open Assurance Hub
@@ -45,8 +45,8 @@ function PolicyReportsIndexPage() {
 			</Card>
 
 			<EmptyState
-				title="Workspace model removed"
-				description="Policy and compliance no longer require selecting or managing workspaces."
+				title="Shared model removed"
+				description="Policy and compliance now run directly from your personal account and selected Forward network."
 				icon={ShieldCheck}
 			/>
 		</div>

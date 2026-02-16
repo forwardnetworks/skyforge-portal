@@ -26,7 +26,7 @@ describe("navigation model", () => {
 		});
 		expect(items.some((item) => item.id === "forward-collector")).toBe(false);
 		expect(items.some((item) => item.id === "forward-onprem")).toBe(false);
-		expect(items.some((item) => item.id === "forward-networks")).toBe(false);
+		expect(items.some((item) => item.id === "fwd")).toBe(false);
 		expect(items.some((item) => item.id === "policy-compliance")).toBe(false);
 	});
 
@@ -35,8 +35,8 @@ describe("navigation model", () => {
 			forwardEnabled: true,
 		});
 		expect(items.some((item) => item.id === "forward-onprem")).toBe(true);
-		const assuranceHub = getItemById(items, "forward-networks");
-		expect(assuranceHub.href).toBe("/dashboard/forward-networks");
+		const assuranceHub = getItemById(items, "fwd");
+		expect(assuranceHub.href).toBe("/dashboard/fwd");
 	});
 
 	it("hides admin-only entries for non-admin users", () => {
@@ -53,20 +53,17 @@ describe("navigation model", () => {
 
 	it("matches forward network detail routes as active", () => {
 		const items = flattenItems({ forwardEnabled: true });
-		const forwardNetworks = getItemById(items, "forward-networks");
+		const forwardNetworks = getItemById(items, "fwd");
 		expect(
 			isNavItemActive(
-				"/dashboard/forward-networks/prod-network/assurance-studio",
+				"/dashboard/fwd/prod-network/assurance-studio",
 				forwardNetworks,
 			),
 		).toBe(true);
 		expect(
-			isNavItemActive(
-				"/dashboard/forward-networks/prod-network/capacity",
-				forwardNetworks,
-			),
+			isNavItemActive("/dashboard/fwd/prod-network/capacity", forwardNetworks),
 		).toBe(true);
-		expect(isNavItemActive("/dashboard/workspaces", forwardNetworks)).toBe(
+		expect(isNavItemActive("/dashboard/deployments", forwardNetworks)).toBe(
 			false,
 		);
 	});

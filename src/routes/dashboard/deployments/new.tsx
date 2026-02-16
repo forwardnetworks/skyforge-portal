@@ -54,30 +54,30 @@ import {
 } from "../../../lib/netlab-env";
 import { queryKeys } from "../../../lib/query-keys";
 import {
-	type CreateWorkspaceDeploymentRequest,
+	type CreateUserDeploymentRequest,
 	type DashboardSnapshot,
 	type ExternalTemplateRepo,
-	PERSONAL_SCOPE_ID,
+	USER_CONTEXT_ID,
+	type UserTemplatesResponse,
 	type UserVariableGroup,
-	type WorkspaceTemplatesResponse,
-	convertWorkspaceEveLab,
-	createWorkspaceDeployment,
+	convertUserEveLab,
+	createUserDeployment,
 	getDashboardSnapshot,
+	getUserContainerlabTemplate,
+	getUserContainerlabTemplates,
+	getUserEveNgTemplates,
+	getUserNetlabTemplate,
+	getUserNetlabTemplates,
 	getUserSettings,
-	getWorkspaceContainerlabTemplate,
-	getWorkspaceContainerlabTemplates,
-	getWorkspaceEveNgTemplates,
-	getWorkspaceNetlabTemplate,
-	getWorkspaceNetlabTemplates,
-	getWorkspaceTerraformTemplates,
-	importWorkspaceEveLab,
+	getUserTerraformTemplates,
+	importUserEveLab,
 	listUserContainerlabServers,
+	listUserEveLabs,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
 	listUserVariableGroups,
-	listWorkspaceEveLabs,
-	validateWorkspaceNetlabTemplate,
+	validateUserNetlabTemplate,
 } from "../../../lib/skyforge-api";
 
 const deploymentsSearchSchema = z.object({});
@@ -94,10 +94,9 @@ type DeploymentKind =
 	| "containerlab"
 	| "clabernetes"
 	| "terraform";
-type TemplateSource = "workspace" | "blueprints" | "external";
+type TemplateSource = "user" | "blueprints" | "external";
 
 const formSchema = z.object({
-	workspaceId: z.string().min(1, "Scope is required"),
 	name: z.string().min(1, "Deployment name is required").max(100),
 	kind: z.enum([
 		"netlab-c9s",
@@ -107,7 +106,7 @@ const formSchema = z.object({
 		"terraform",
 		"eve_ng",
 	]),
-	source: z.enum(["workspace", "blueprints", "external"]),
+	source: z.enum(["user", "blueprints", "external"]),
 	templateRepoId: z.string().optional(),
 	template: z.string().min(1, "Template is required"),
 	netlabServer: z.string().optional(),
@@ -166,10 +165,9 @@ function CreateDeploymentPage() {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			workspaceId: PERSONAL_SCOPE_ID,
 			name: "",
 			kind: "netlab-c9s",
-			source: "workspace",
+			source: "user",
 			templateRepoId: "",
 			template: "",
 			netlabServer: "",
@@ -217,7 +215,7 @@ function CreateDeploymentPage() {
 		});
 	};
 
-	const watchWorkspaceId = watch("workspaceId");
+	const userContextId = USER_CONTEXT_ID;
 	const watchKind = watch("kind");
 	const watchSource = watch("source");
 	const watchTemplateRepoId = watch("templateRepoId");
@@ -261,18 +259,13 @@ function CreateDeploymentPage() {
 	});
 
 	const eveLabsQ = useQuery({
-		queryKey: queryKeys.workspaceEveLabs(
-			watchWorkspaceId,
-			importServer,
-			"",
-			true,
-		),
+		queryKey: queryKeys.userEveLabs(userContextId, importServer, "", true),
 		queryFn: () =>
-			listWorkspaceEveLabs(watchWorkspaceId, {
+			listUserEveLabs(userContextId, {
 				server: importServer,
 				recursive: true,
 			}),
-		enabled: Boolean(importOpen && watchWorkspaceId && importServer),
+		enabled: Boolean(importOpen && userContextId && importServer),
 		staleTime: 30_000,
 		retry: false,
 	});
@@ -326,23 +319,23 @@ function CreateDeploymentPage() {
 
 	const effectiveSource: TemplateSource = useMemo(() => {
 		if (watchKind === "netlab" || watchKind === "netlab-c9s")
-			return watchSource === "workspace" ? "workspace" : "blueprints";
+			return watchSource === "user" ? "user" : "blueprints";
 		if (watchKind === "eve_ng") return "blueprints";
 		if (watchKind === "containerlab" || watchKind === "clabernetes")
 			return watchSource;
 		if (watchKind === "terraform") return watchSource;
-		return "workspace";
+		return "user";
 	}, [watchKind, watchSource]);
 
-	const templatesQ = useQuery<WorkspaceTemplatesResponse>({
-		queryKey: queryKeys.workspaceTemplates(
-			watchWorkspaceId,
+	const templatesQ = useQuery<UserTemplatesResponse>({
+		queryKey: queryKeys.userTemplates(
+			userContextId,
 			watchKind,
 			effectiveSource,
 			watchTemplateRepoId || undefined,
 			undefined,
 		),
-		enabled: !!watchWorkspaceId,
+		enabled: !!userContextId,
 		queryFn: async () => {
 			const query: { source?: string; repo?: string } = {
 				source: effectiveSource,
@@ -353,16 +346,16 @@ function CreateDeploymentPage() {
 			switch (watchKind) {
 				case "netlab":
 				case "netlab-c9s":
-					return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
+					return getUserNetlabTemplates(userContextId, query);
 				case "eve_ng":
-					return getWorkspaceEveNgTemplates(watchWorkspaceId, query);
+					return getUserEveNgTemplates(userContextId, query);
 				case "containerlab":
 				case "clabernetes":
-					return getWorkspaceContainerlabTemplates(watchWorkspaceId, query);
+					return getUserContainerlabTemplates(userContextId, query);
 				case "terraform":
-					return getWorkspaceTerraformTemplates(watchWorkspaceId, query);
+					return getUserTerraformTemplates(userContextId, query);
 				default:
-					return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
+					return getUserNetlabTemplates(userContextId, query);
 			}
 		},
 		staleTime: 5 * 60_000,
@@ -371,7 +364,7 @@ function CreateDeploymentPage() {
 
 	useEffect(() => {
 		if (!templatesUpdatedAt) return;
-		void queryClient.invalidateQueries({ queryKey: ["workspaceTemplates"] });
+		void queryClient.invalidateQueries({ queryKey: ["userTemplates"] });
 	}, [templatesUpdatedAt, queryClient]);
 
 	const templates = useMemo(() => {
@@ -382,7 +375,7 @@ function CreateDeploymentPage() {
 			.toLowerCase();
 		if (!f || f === "all") return raw;
 		return raw.filter(
-			(t) =>
+			(t: string) =>
 				String(t).toLowerCase().startsWith(`${f}/`) ||
 				String(t).toLowerCase() === f,
 		);
@@ -417,36 +410,36 @@ function CreateDeploymentPage() {
 
 	const templatePreviewQ = useQuery({
 		queryKey: [
-			"workspaceTemplate",
+			"userTemplate",
 			watchKind,
-			watchWorkspaceId,
+			userContextId,
 			effectiveSource,
 			watchTemplateRepoId,
 			templatesQ.data?.dir,
 			watchTemplate,
 		],
 		queryFn: async () => {
-			if (!watchWorkspaceId) throw new Error("workspaceId is required");
+			if (!userContextId) throw new Error("user context is required");
 			if (!watchTemplate) throw new Error("template is required");
 			const query: any = { source: effectiveSource };
 			if (effectiveSource === "external" && watchTemplateRepoId)
 				query.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
 			if (watchKind === "containerlab" || watchKind === "clabernetes") {
-				return getWorkspaceContainerlabTemplate(watchWorkspaceId, {
+				return getUserContainerlabTemplate(userContextId, {
 					...query,
 					file: watchTemplate,
 				});
 			}
 			// Default: treat as netlab-like.
-			return getWorkspaceNetlabTemplate(watchWorkspaceId, {
+			return getUserNetlabTemplate(userContextId, {
 				...query,
 				template: watchTemplate,
 			});
 		},
 		enabled:
 			templatePreviewOpen &&
-			Boolean(watchWorkspaceId) &&
+			Boolean(userContextId) &&
 			Boolean(watchTemplate) &&
 			(watchKind === "netlab" ||
 				watchKind === "netlab-c9s" ||
@@ -531,12 +524,12 @@ function CreateDeploymentPage() {
 				config.eveServer = eve;
 			}
 
-			const body: CreateWorkspaceDeploymentRequest = {
+			const body: CreateUserDeploymentRequest = {
 				name: values.name,
 				type: values.kind,
 				config: config as any,
 			};
-			return createWorkspaceDeployment(values.workspaceId, body);
+			return createUserDeployment(userContextId, body);
 		},
 		onSuccess: async (_, variables) => {
 			toast.success("Deployment created successfully", {
@@ -558,12 +551,12 @@ function CreateDeploymentPage() {
 
 	const importEveLab = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Scope is not initialized.");
+			if (!userContextId) throw new Error("User context is not initialized.");
 			const server = importServer.trim();
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
 			if (!labPath) throw new Error("Select an EVE-NG lab.");
-			return importWorkspaceEveLab(watchWorkspaceId, {
+			return importUserEveLab(userContextId, {
 				server,
 				labPath,
 				deploymentName: importDeploymentName.trim() || undefined,
@@ -590,7 +583,7 @@ function CreateDeploymentPage() {
 
 	const convertEveLab = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Scope is not initialized.");
+			if (!userContextId) throw new Error("User context is not initialized.");
 			const server = importServer.trim();
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
@@ -600,7 +593,7 @@ function CreateDeploymentPage() {
 			if (createDeployment && !containerlabServer) {
 				throw new Error("Select a Containerlab server.");
 			}
-			return convertWorkspaceEveLab(watchWorkspaceId, {
+			return convertUserEveLab(userContextId, {
 				server,
 				labPath,
 				createDeployment,
@@ -636,7 +629,7 @@ function CreateDeploymentPage() {
 
 	const validateNetlabTemplate = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Scope is not initialized.");
+			if (!userContextId) throw new Error("User context is not initialized.");
 			if (!watchTemplate) throw new Error("Select a template first.");
 			const envFromList = new Map<string, string>();
 			for (const kv of form.getValues("env") || []) {
@@ -664,7 +657,7 @@ function CreateDeploymentPage() {
 			if (effectiveSource === "external" && watchTemplateRepoId)
 				body.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
-			return validateWorkspaceNetlabTemplate(watchWorkspaceId, body);
+			return validateUserNetlabTemplate(userContextId, body);
 		},
 		onSuccess: async (res: any) => {
 			const runId = String(res?.task?.id ?? res?.task?.task_id ?? "").trim();
@@ -937,9 +930,7 @@ function CreateDeploymentPage() {
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													<SelectItem value="workspace">
-														Personal repo
-													</SelectItem>
+													<SelectItem value="user">My repo</SelectItem>
 													<SelectItem value="blueprints">Blueprints</SelectItem>
 													<SelectItem
 														value="external"
@@ -1183,7 +1174,7 @@ function CreateDeploymentPage() {
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													{templates.map((t) => (
+													{templates.map((t: string) => (
 														<SelectItem key={t} value={t}>
 															{t}
 														</SelectItem>

@@ -65,7 +65,7 @@ function IntegrationsPage() {
 						</div>
 						<div className="flex gap-2">
 							<Button asChild size="sm">
-								<Link to="/dashboard/forward">Open</Link>
+								<Link to="/dashboard/fwd/collector">Open</Link>
 							</Button>
 						</div>
 					</CardContent>

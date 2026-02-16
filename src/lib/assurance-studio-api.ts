@@ -24,7 +24,7 @@ export type AssuranceScenarioSpec = {
 
 export type AssuranceScenario = {
 	id: string;
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	name: string;
@@ -36,7 +36,7 @@ export type AssuranceScenario = {
 };
 
 export type AssuranceScenarioListResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	scenarios: AssuranceScenario[];
 };
@@ -54,55 +54,50 @@ export type AssuranceScenarioUpdateRequest = {
 };
 
 export async function listAssuranceStudioScenarios(
-	workspaceId: string,
 	networkRef: string,
 ): Promise<AssuranceScenarioListResponse> {
 	return apiFetch<AssuranceScenarioListResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/scenarios`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/scenarios`,
 	);
 }
 
 export async function createAssuranceStudioScenario(
-	workspaceId: string,
 	networkRef: string,
 	body: AssuranceScenarioCreateRequest,
 ): Promise<AssuranceScenario> {
 	return apiFetch<AssuranceScenario>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/scenarios`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/scenarios`,
 		{ method: "POST", body: JSON.stringify(body ?? {}) },
 	);
 }
 
 export async function getAssuranceStudioScenario(
-	workspaceId: string,
 	networkRef: string,
 	scenarioId: string,
 ): Promise<AssuranceScenario> {
 	return apiFetch<AssuranceScenario>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/scenarios/${encodeURIComponent(scenarioId)}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/scenarios/${encodeURIComponent(scenarioId)}`,
 	);
 }
 
 export async function updateAssuranceStudioScenario(
-	workspaceId: string,
 	networkRef: string,
 	scenarioId: string,
 	body: AssuranceScenarioUpdateRequest,
 ): Promise<AssuranceScenario> {
 	// Server uses pointer semantics for description; null means clear, undefined means keep.
 	return apiFetch<AssuranceScenario>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/scenarios/${encodeURIComponent(scenarioId)}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/scenarios/${encodeURIComponent(scenarioId)}`,
 		{ method: "PUT", body: JSON.stringify(body ?? {}) },
 	);
 }
 
 export async function deleteAssuranceStudioScenario(
-	workspaceId: string,
 	networkRef: string,
 	scenarioId: string,
 ): Promise<{ ok: boolean }> {
 	return apiFetch<{ ok: boolean }>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/scenarios/${encodeURIComponent(scenarioId)}`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/scenarios/${encodeURIComponent(scenarioId)}`,
 		{ method: "DELETE" },
 	);
 }
@@ -189,7 +184,7 @@ export type AssuranceStudioRoutingDiffResponse = {
 };
 
 export type AssuranceStudioEvaluateResponse = {
-	workspaceId: string;
+	ownerUsername: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	snapshotId?: string;
@@ -206,12 +201,11 @@ export type AssuranceStudioEvaluateResponse = {
 };
 
 export async function postAssuranceStudioEvaluate(
-	workspaceId: string,
 	networkRef: string,
 	body: AssuranceStudioEvaluateRequest,
 ): Promise<AssuranceStudioEvaluateResponse> {
 	return apiFetch<AssuranceStudioEvaluateResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/evaluate`,
+		`/api/fwd/${encodeURIComponent(networkRef)}/assurance/studio/evaluate`,
 		{
 			method: "POST",
 			body: JSON.stringify(body ?? {}),

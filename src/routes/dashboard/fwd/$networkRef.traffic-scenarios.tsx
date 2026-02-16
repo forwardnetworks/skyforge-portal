@@ -18,11 +18,7 @@ import {
 	postAssuranceTrafficSeeds,
 } from "@/lib/assurance-traffic-api";
 import { queryKeys } from "@/lib/query-keys";
-import {
-	PERSONAL_SCOPE_ID,
-	listUserForwardNetworks,
-	listWorkspaceForwardNetworks,
-} from "@/lib/skyforge-api";
+import { listUserForwardNetworks } from "@/lib/skyforge-api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Play, Sparkles } from "lucide-react";
@@ -33,7 +29,7 @@ import { z } from "zod";
 const searchSchema = z.object({});
 
 export const Route = createFileRoute(
-	"/dashboard/forward-networks/$networkRef/traffic-scenarios",
+	"/dashboard/fwd/$networkRef/traffic-scenarios",
 )({
 	validateSearch: (search) => searchSchema.parse(search),
 	component: ForwardNetworkTrafficScenariosPage,
@@ -169,7 +165,6 @@ function parseDemandsCSV(text: string): AssuranceTrafficDemand[] {
 function ForwardNetworkTrafficScenariosPage() {
 	const { networkRef } = Route.useParams();
 	Route.useSearch();
-	const workspaceId = PERSONAL_SCOPE_ID;
 
 	const [seedMode, setSeedMode] = useState("mesh");
 	const [includeGroups, setIncludeGroups] = useState(true);
@@ -199,9 +194,9 @@ function ForwardNetworkTrafficScenariosPage() {
 	const [requireEnforcement, setRequireEnforcement] = useState(true);
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(workspaceId),
-		enabled: Boolean(workspaceId),
+		queryKey: queryKeys.userForwardNetworks(),
+		queryFn: () => listUserForwardNetworks(),
+		enabled: true,
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -244,7 +239,7 @@ function ForwardNetworkTrafficScenariosPage() {
 				req.nameParts = splitParts(namePartsText);
 				req.deviceTypes = splitParts(deviceTypesText);
 			}
-			return postAssuranceTrafficSeeds(workspaceId, networkRef, req);
+			return postAssuranceTrafficSeeds(networkRef, req);
 		},
 		onSuccess: (resp) => {
 			setDemandsText(demandsToCSV(resp.demands ?? []));
@@ -272,7 +267,7 @@ function ForwardNetworkTrafficScenariosPage() {
 			if (!demands.length) throw new Error("no demands parsed from CSV");
 			const thr = Number(threshold);
 			const mr = Number(maxResults);
-			return postAssuranceTrafficEvaluate(workspaceId, networkRef, {
+			return postAssuranceTrafficEvaluate(networkRef, {
 				snapshotId: snapshotId.trim() || undefined,
 				window,
 				thresholdUtil: Number.isFinite(thr) ? thr : 0.8,
@@ -298,7 +293,7 @@ function ForwardNetworkTrafficScenariosPage() {
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex items-center gap-3">
 					<Button asChild variant="ghost" size="sm">
-						<Link to="/dashboard/forward-networks">
+						<Link to="/dashboard/fwd">
 							<ArrowLeft className="h-4 w-4" />
 							<span className="ml-2">Forward Networks</span>
 						</Link>
@@ -316,7 +311,7 @@ function ForwardNetworkTrafficScenariosPage() {
 					<Badge variant="secondary">Forward Paths + NQE</Badge>
 					<Button asChild variant="outline" size="sm">
 						<Link
-							to="/dashboard/forward-networks/$networkRef/assurance-studio"
+							to="/dashboard/fwd/$networkRef/assurance-studio"
 							params={{ networkRef }}
 						>
 							Assurance Studio

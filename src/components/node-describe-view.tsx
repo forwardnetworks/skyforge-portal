@@ -5,7 +5,6 @@ import { RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 
 type Props = {
-	workspaceId: string;
 	deploymentId: string;
 	nodeId: string;
 	nodeKind?: string;
@@ -15,7 +14,6 @@ type Props = {
 };
 
 export function NodeDescribeView({
-	workspaceId,
 	deploymentId,
 	nodeId,
 	nodeKind,
@@ -30,10 +28,9 @@ export function NodeDescribeView({
 	}, [nodeId, nodeKind]);
 
 	const data = useQuery({
-		queryKey: ["deploymentNodeDescribe", workspaceId, deploymentId, nodeId],
-		enabled: !!workspaceId && !!deploymentId && !!nodeId,
-		queryFn: async () =>
-			getDeploymentNodeDescribe(workspaceId, deploymentId, nodeId),
+		queryKey: ["deploymentNodeDescribe", deploymentId, nodeId],
+		enabled: !!deploymentId && !!nodeId,
+		queryFn: async () => getDeploymentNodeDescribe(deploymentId, nodeId),
 		refetchOnWindowFocus: false,
 		retry: 1,
 	});

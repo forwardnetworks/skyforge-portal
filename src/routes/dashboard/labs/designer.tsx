@@ -50,18 +50,18 @@ import {
 } from "@/lib/containerlab-yaml";
 import { queryKeys } from "@/lib/query-keys";
 import {
-	PERSONAL_SCOPE_ID,
 	type TopologyIntentSpec,
+	USER_CONTEXT_ID,
 	autofixUserAITemplate,
 	createClabernetesDeploymentFromTemplate,
 	createContainerlabDeploymentFromTemplate,
-	createWorkspaceDeployment,
+	createUserDeployment,
 	generateTopologySpecFromPrompt,
 	getDeploymentTopology,
-	getWorkspaceContainerlabTemplate,
-	getWorkspaceContainerlabTemplates,
-	getWorkspaceNetlabTemplate,
-	getWorkspaceNetlabTemplates,
+	getUserContainerlabTemplate,
+	getUserContainerlabTemplates,
+	getUserNetlabTemplate,
+	getUserNetlabTemplates,
 	listRegistryRepositories,
 	listRegistryTags,
 	listUserContainerlabServers,
@@ -69,7 +69,7 @@ import {
 	saveNetlabTopologyYAML,
 	startDeployment,
 	validateUserAITemplate,
-	validateWorkspaceNetlabTemplate,
+	validateUserNetlabTemplate,
 } from "@/lib/skyforge-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactFlowInstance } from "@xyflow/react";
@@ -469,7 +469,7 @@ async function resolveRepoTag(opts: {
 }
 
 type SavedConfigRef = {
-	workspaceId: string;
+	userContextId: string;
 	templatesDir: string;
 	template: string;
 	filePath: string;
@@ -529,7 +529,7 @@ function LabDesignerPage() {
 	const queryClient = useQueryClient();
 
 	const [labName, setLabName] = useState("lab");
-	const [workspaceId, setWorkspaceId] = useState(PERSONAL_SCOPE_ID);
+	const userContextId = USER_CONTEXT_ID;
 	const [runtime, setRuntime] = useState<DesignerRuntime>("clabernetes");
 	const [activeStep, setActiveStep] = useState<DesignerStep>("build");
 	const [containerlabServer, setContainerlabServer] = useState("");
@@ -555,7 +555,7 @@ function LabDesignerPage() {
 	const [yamlSource, setYamlSource] = useState<YamlSource>("graph-generated");
 	const [customYaml, setCustomYaml] = useState<string>("");
 	const [importOpen, setImportOpen] = useState(false);
-	const [importSource, setImportSource] = useState<"workspace" | "blueprints">(
+	const [importSource, setImportSource] = useState<"user" | "blueprints">(
 		"blueprints",
 	);
 	const [importDir, setImportDir] = useState("containerlab");
@@ -675,27 +675,27 @@ function LabDesignerPage() {
 		mutationFn: async () => {
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (isNetlabRuntime) {
-				if (!workspaceId) throw new Error("Scope is not initialized");
+				if (!userContextId) throw new Error("User context is not initialized");
 				if (!isNetlabTemplatesDir(effectiveTemplatesDir)) {
 					throw new Error(
 						"Repo path must be under netlab/ or blueprints/netlab/",
 					);
 				}
-				const saved = await saveNetlabTopologyYAML(workspaceId, {
+				const saved = await saveNetlabTopologyYAML(userContextId, {
 					name: labName,
 					topologyYAML: effectiveYaml,
 					templatesDir: effectiveTemplatesDir,
 					template: effectiveTemplateFile,
 				});
 				setLastSaved({
-					workspaceId: saved.workspaceId,
+					userContextId: saved.ownerUsername,
 					templatesDir: saved.templatesDir,
 					template: saved.template,
 					filePath: saved.filePath,
 					branch: saved.branch,
 				});
-				return validateWorkspaceNetlabTemplate(workspaceId, {
-					source: "workspace",
+				return validateUserNetlabTemplate(userContextId, {
+					source: "user",
 					dir: saved.templatesDir,
 					template: saved.template,
 				});
@@ -808,23 +808,26 @@ function LabDesignerPage() {
 	]);
 
 	useEffect(() => {
-		if (!importOpen || !workspaceId) return;
-		const key = `skyforge.labDesigner.importPrefs.${workspaceId}`;
+		if (!importOpen || !userContextId) return;
+		const key = `skyforge.labDesigner.importPrefs.${userContextId}`;
 		try {
 			const raw = window.localStorage.getItem(key);
 			if (!raw) return;
 			const parsed = JSON.parse(raw) as any;
-			if (parsed?.source === "workspace" || parsed?.source === "blueprints")
-				setImportSource(parsed.source);
+			if (parsed?.source === "blueprints") {
+				setImportSource("blueprints");
+			} else if (parsed?.source) {
+				setImportSource("user");
+			}
 			if (typeof parsed?.dir === "string") setImportDir(parsed.dir);
 		} catch {
 			// ignore
 		}
-	}, [importOpen, workspaceId]);
+	}, [importOpen, userContextId]);
 
 	useEffect(() => {
-		if (!workspaceId) return;
-		const key = `skyforge.labDesigner.importPrefs.${workspaceId}`;
+		if (!userContextId) return;
+		const key = `skyforge.labDesigner.importPrefs.${userContextId}`;
 		try {
 			window.localStorage.setItem(
 				key,
@@ -833,7 +836,7 @@ function LabDesignerPage() {
 		} catch {
 			// ignore
 		}
-	}, [importDir, importSource, workspaceId]);
+	}, [importDir, importSource, userContextId]);
 
 	const addNode = useCallback(
 		async (opts?: {
@@ -1113,14 +1116,13 @@ function LabDesignerPage() {
 	useEffect(() => {
 		const depId = String(search.importDeploymentId ?? "").trim();
 		if (!depId) return;
-		setWorkspaceId(PERSONAL_SCOPE_ID);
 		setUseSavedConfig(false);
 		setLastSaved(null);
 
 		let cancelled = false;
 		(async () => {
 			try {
-				const topo = await getDeploymentTopology(PERSONAL_SCOPE_ID, depId);
+				const topo = await getDeploymentTopology(depId);
 				if (cancelled) return;
 				const nextNodes: Array<Node<DesignNodeData>> = (topo.nodes ?? []).map(
 					(n, idx) => ({
@@ -1173,7 +1175,7 @@ function LabDesignerPage() {
 		try {
 			const payload = {
 				labName,
-				workspaceId,
+				userContextId,
 				runtime,
 				containerlabServer,
 				useSavedConfig,
@@ -1239,65 +1241,65 @@ function LabDesignerPage() {
 	});
 
 	const templatesQ = useQuery({
-		queryKey: workspaceId
+		queryKey: userContextId
 			? [
 					isNetlabRuntime ? "netlabTemplates" : "containerlabTemplates",
-					workspaceId,
+					userContextId,
 					importSource,
 					importDir,
 				]
 			: [isNetlabRuntime ? "netlabTemplates" : "containerlabTemplates", "none"],
 		queryFn: async () => {
 			if (isNetlabRuntime) {
-				return getWorkspaceNetlabTemplates(workspaceId, {
+				return getUserNetlabTemplates(userContextId, {
 					source: importSource,
 					dir: importDir,
 				});
 			}
-			return getWorkspaceContainerlabTemplates(workspaceId, {
+			return getUserContainerlabTemplates(userContextId, {
 				source: importSource,
 				dir: importDir,
 			});
 		},
-		enabled: Boolean(workspaceId) && importOpen,
+		enabled: Boolean(userContextId) && importOpen,
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const templatePreviewQ = useQuery({
-		queryKey: workspaceId
+		queryKey: userContextId
 			? [
 					isNetlabRuntime ? "netlabTemplate" : "containerlabTemplate",
-					workspaceId,
+					userContextId,
 					importSource,
 					importDir,
 					importFile,
 				]
 			: [isNetlabRuntime ? "netlabTemplate" : "containerlabTemplate", "none"],
 		queryFn: async () => {
-			if (!workspaceId) throw new Error("missing scope");
+			if (!userContextId) throw new Error("missing user context");
 			if (!importFile) return null;
 			if (isNetlabRuntime) {
-				return getWorkspaceNetlabTemplate(workspaceId, {
+				return getUserNetlabTemplate(userContextId, {
 					source: importSource,
 					dir: importDir,
 					template: importFile,
 				});
 			}
-			return getWorkspaceContainerlabTemplate(workspaceId, {
+			return getUserContainerlabTemplate(userContextId, {
 				source: importSource,
 				dir: importDir,
 				file: importFile,
 			});
 		},
-		enabled: Boolean(workspaceId) && importOpen && Boolean(importFile),
+		enabled: Boolean(userContextId) && importOpen && Boolean(importFile),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const createDeployment = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Scope is not initialized");
+			if (!userContextId) throw new Error("User context is not initialized");
 			const isGeneratedDraftActive =
 				yamlSource === "generated-draft" && Boolean(activeGeneratedDraftId);
 			const generatedDraftReviewed =
@@ -1309,7 +1311,7 @@ function LabDesignerPage() {
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 
 			const canUseSaved =
-				useSavedConfig && lastSaved?.workspaceId === workspaceId;
+				useSavedConfig && lastSaved?.userContextId === userContextId;
 			if (isNetlabRuntime) {
 				if (!isNetlabTemplatesDir(effectiveTemplatesDir)) {
 					throw new Error(
@@ -1318,14 +1320,14 @@ function LabDesignerPage() {
 				}
 				const saved = canUseSaved
 					? lastSaved
-					: await saveNetlabTopologyYAML(workspaceId, {
+					: await saveNetlabTopologyYAML(userContextId, {
 							name: labName,
 							topologyYAML: effectiveYaml,
 							templatesDir: effectiveTemplatesDir,
 							template: effectiveTemplateFile,
 						}).then((resp) => {
 							const next: SavedConfigRef = {
-								workspaceId: resp.workspaceId,
+								userContextId: resp.ownerUsername,
 								templatesDir: resp.templatesDir,
 								template: resp.template,
 								filePath: resp.filePath,
@@ -1334,16 +1336,16 @@ function LabDesignerPage() {
 							setLastSaved(next);
 							return next;
 						});
-				const deployment = await createWorkspaceDeployment(workspaceId, {
+				const deployment = await createUserDeployment(userContextId, {
 					name: labName,
 					type: "netlab-c9s",
 					config: {
-						templateSource: "workspace",
+						templateSource: "user",
 						templatesDir: saved.templatesDir,
 						template: saved.template,
 					} as any,
 				});
-				const run = await startDeployment(workspaceId, String(deployment.id));
+				const run = await startDeployment(String(deployment.id));
 				return { deployment, run };
 			}
 
@@ -1355,14 +1357,14 @@ function LabDesignerPage() {
 			}
 			const saved = canUseSaved
 				? lastSaved
-				: await saveContainerlabTopologyYAML(workspaceId, {
+				: await saveContainerlabTopologyYAML(userContextId, {
 						name: labName,
 						topologyYAML: effectiveYaml,
 						templatesDir: effectiveTemplatesDir,
 						template: effectiveTemplateFile,
 					}).then((resp) => {
 						const next: SavedConfigRef = {
-							workspaceId: resp.workspaceId,
+							userContextId: resp.ownerUsername,
 							templatesDir: resp.templatesDir,
 							template: resp.template,
 							filePath: resp.filePath,
@@ -1375,19 +1377,19 @@ function LabDesignerPage() {
 			if (runtime === "containerlab") {
 				if (!containerlabServer)
 					throw new Error("Select a containerlab server");
-				return createContainerlabDeploymentFromTemplate(workspaceId, {
+				return createContainerlabDeploymentFromTemplate(userContextId, {
 					name: labName,
 					netlabServer: containerlabServer,
-					templateSource: "workspace",
+					templateSource: "user",
 					templatesDir: saved.templatesDir,
 					template: saved.template,
 					autoDeploy: true,
 				});
 			}
 
-			return createClabernetesDeploymentFromTemplate(workspaceId, {
+			return createClabernetesDeploymentFromTemplate(userContextId, {
 				name: labName,
-				templateSource: "workspace",
+				templateSource: "user",
 				templatesDir: saved.templatesDir,
 				template: saved.template,
 				autoDeploy: true,
@@ -1417,7 +1419,7 @@ function LabDesignerPage() {
 
 	const saveConfig = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Scope is not initialized");
+			if (!userContextId) throw new Error("User context is not initialized");
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (isNetlabRuntime) {
 				if (!isNetlabTemplatesDir(effectiveTemplatesDir)) {
@@ -1425,7 +1427,7 @@ function LabDesignerPage() {
 						"Repo path must be under netlab/ or blueprints/netlab/",
 					);
 				}
-				return saveNetlabTopologyYAML(workspaceId, {
+				return saveNetlabTopologyYAML(userContextId, {
 					name: labName,
 					topologyYAML: effectiveYaml,
 					templatesDir: effectiveTemplatesDir,
@@ -1438,7 +1440,7 @@ function LabDesignerPage() {
 			if (!isContainerlabTemplatesDir(effectiveTemplatesDir)) {
 				throw new Error("Repo path must be under containerlab/");
 			}
-			return saveContainerlabTopologyYAML(workspaceId, {
+			return saveContainerlabTopologyYAML(userContextId, {
 				name: labName,
 				topologyYAML: effectiveYaml,
 				templatesDir: effectiveTemplatesDir,
@@ -1447,7 +1449,7 @@ function LabDesignerPage() {
 		},
 		onSuccess: (resp) => {
 			setLastSaved({
-				workspaceId: resp.workspaceId,
+				userContextId: resp.ownerUsername,
 				templatesDir: resp.templatesDir,
 				template: resp.template,
 				filePath: resp.filePath,
@@ -1463,17 +1465,17 @@ function LabDesignerPage() {
 
 	const importTemplate = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Scope is not initialized");
+			if (!userContextId) throw new Error("User context is not initialized");
 			const file = importFile.trim();
 			if (!file) throw new Error("Select a template");
 			if (isNetlabRuntime) {
-				return getWorkspaceNetlabTemplate(workspaceId, {
+				return getUserNetlabTemplate(userContextId, {
 					source: importSource,
 					dir: importDir,
 					template: file,
 				});
 			}
-			return getWorkspaceContainerlabTemplate(workspaceId, {
+			return getUserContainerlabTemplate(userContextId, {
 				source: importSource,
 				dir: importDir,
 				file,
@@ -1617,8 +1619,8 @@ function LabDesignerPage() {
 	};
 
 	const openMapInNewTab = async () => {
-		if (!workspaceId) {
-			toast.error("Scope is not initialized");
+		if (!userContextId) {
+			toast.error("User context is not initialized");
 			return;
 		}
 		if (isNetlabRuntime) {
@@ -1626,17 +1628,17 @@ function LabDesignerPage() {
 			return;
 		}
 		try {
-			const canUseSaved = lastSaved?.workspaceId === workspaceId;
+			const canUseSaved = lastSaved?.userContextId === userContextId;
 			const saved = canUseSaved
 				? lastSaved
-				: await saveContainerlabTopologyYAML(workspaceId, {
+				: await saveContainerlabTopologyYAML(userContextId, {
 						name: labName,
 						topologyYAML: effectiveYaml,
 						templatesDir: effectiveTemplatesDir,
 						template: effectiveTemplateFile,
 					}).then((resp) => {
 						const next: SavedConfigRef = {
-							workspaceId: resp.workspaceId,
+							userContextId: resp.ownerUsername,
 							templatesDir: resp.templatesDir,
 							template: resp.template,
 							filePath: resp.filePath,
@@ -1647,8 +1649,7 @@ function LabDesignerPage() {
 					});
 
 			const qs = new URLSearchParams();
-			qs.set("workspaceId", workspaceId);
-			qs.set("source", "workspace");
+			qs.set("source", "user");
 			qs.set("dir", saved.templatesDir);
 			qs.set("file", saved.template);
 			const url = `/dashboard/labs/map?${qs.toString()}`;
@@ -2497,7 +2498,7 @@ function LabDesignerPage() {
 										variant="outline"
 										size="sm"
 										onClick={() => setImportOpen(true)}
-										disabled={!workspaceId}
+										disabled={!userContextId}
 									>
 										<FolderOpen className="mr-2 h-4 w-4" />
 										Import template
@@ -2535,8 +2536,8 @@ function LabDesignerPage() {
 										/>
 									</div>
 									<div className="space-y-1">
-										<Label>Scope</Label>
-										<Input value="Personal" readOnly />
+										<Label>User context</Label>
+										<Input value="Signed-in user" readOnly />
 									</div>
 									<div className="space-y-1">
 										<Label>Runtime</Label>
@@ -2848,7 +2849,7 @@ function LabDesignerPage() {
 												);
 												toast.success("Copied path");
 											}}
-											disabled={!workspaceId}
+											disabled={!userContextId}
 										>
 											Copy path
 										</Button>
@@ -2856,7 +2857,7 @@ function LabDesignerPage() {
 											size="sm"
 											variant="outline"
 											onClick={openMapInNewTab}
-											disabled={!workspaceId || isNetlabRuntime}
+											disabled={!userContextId || isNetlabRuntime}
 										>
 											<ExternalLink className="mr-2 h-4 w-4" />
 											Open map
@@ -3000,7 +3001,7 @@ function LabDesignerPage() {
 									<div className="min-w-0">
 										<div className="text-sm font-medium">Use saved config</div>
 										<div className="text-xs text-muted-foreground truncate">
-											{lastSaved?.workspaceId === workspaceId
+											{lastSaved?.userContextId === userContextId
 												? `${lastSaved.filePath} (${lastSaved.branch})`
 												: "Auto-saves before deploy"}
 										</div>
@@ -3117,15 +3118,15 @@ function LabDesignerPage() {
 								<Select
 									value={importSource}
 									onValueChange={(v) => {
-										const next = v as "workspace" | "blueprints";
+										const next = v as "user" | "blueprints";
 										setImportSource(next);
 										if (isNetlabRuntime) {
 											setImportDir(
-												next === "workspace" ? "netlab/designer" : "netlab",
+												next === "user" ? "netlab/designer" : "netlab",
 											);
 										} else {
 											setImportDir(
-												next === "workspace"
+												next === "user"
 													? "containerlab/designer"
 													: "containerlab",
 											);
@@ -3138,7 +3139,7 @@ function LabDesignerPage() {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="blueprints">Blueprints</SelectItem>
-										<SelectItem value="workspace">Personal repo</SelectItem>
+										<SelectItem value="user">My repo</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
@@ -3156,7 +3157,7 @@ function LabDesignerPage() {
 							<Select
 								value={importFile}
 								onValueChange={(v) => setImportFile(v)}
-								disabled={!workspaceId}
+								disabled={!userContextId}
 							>
 								<SelectTrigger>
 									<SelectValue

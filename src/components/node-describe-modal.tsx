@@ -10,7 +10,6 @@ import { Terminal } from "lucide-react";
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	workspaceId: string;
 	deploymentId: string;
 	nodeId: string;
 	nodeKind?: string;
@@ -20,7 +19,6 @@ type Props = {
 export function NodeDescribeModal({
 	open,
 	onOpenChange,
-	workspaceId,
 	deploymentId,
 	nodeId,
 	nodeKind,
@@ -38,7 +36,6 @@ export function NodeDescribeModal({
 				<div className="flex-1 min-h-0">
 					{open ? (
 						<NodeDescribeView
-							workspaceId={workspaceId}
 							deploymentId={deploymentId}
 							nodeId={nodeId}
 							nodeKind={nodeKind}
