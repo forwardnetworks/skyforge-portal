@@ -20,12 +20,10 @@ import {
 	refreshForwardNetworkAssurance,
 } from "../../../lib/skyforge-api";
 
-const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
+const searchSchema = z.object({});
 
 export const Route = createFileRoute(
-	"/dashboard/forward-networks/$networkRef/assurance",
+	"/dashboard/fwd/$networkRef/assurance",
 )({
 	validateSearch: (search) => searchSchema.parse(search),
 	component: ForwardNetworkAssurancePage,
@@ -58,13 +56,15 @@ function toPct01(v: number | undefined): string {
 function ForwardNetworkAssurancePage() {
 	const qc = useQueryClient();
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
-	const workspaceId = String(workspace ?? "").trim();
+	const userContextId = "personal";
 
 	const summaryQ = useQuery({
-		queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkAssuranceSummary(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkAssuranceSummary(
+			userContextId,
+			networkRef,
+		),
+		queryFn: () => getForwardNetworkAssuranceSummary(userContextId, networkRef),
+		enabled: Boolean(userContextId && networkRef),
 		staleTime: 5_000,
 		retry: false,
 	});
@@ -75,16 +75,16 @@ function ForwardNetworkAssurancePage() {
 
 	const refreshM = useMutation({
 		mutationFn: async () =>
-			refreshForwardNetworkAssurance(workspaceId, networkRef),
+			refreshForwardNetworkAssurance(userContextId, networkRef),
 		onSuccess: async (res) => {
 			toast.success("Assurance refreshed");
 			qc.setQueryData(
-				queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+				queryKeys.forwardNetworkAssuranceSummary(userContextId, networkRef),
 				res,
 			);
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkAssuranceHistory(
-					workspaceId,
+					userContextId,
 					networkRef,
 				),
 			});
@@ -94,10 +94,13 @@ function ForwardNetworkAssurancePage() {
 	});
 
 	const historyQ = useQuery({
-		queryKey: queryKeys.forwardNetworkAssuranceHistory(workspaceId, networkRef),
+		queryKey: queryKeys.forwardNetworkAssuranceHistory(
+			userContextId,
+			networkRef,
+		),
 		queryFn: () =>
-			listForwardNetworkAssuranceHistory(workspaceId, networkRef, "20"),
-		enabled: Boolean(workspaceId && networkRef),
+			listForwardNetworkAssuranceHistory(userContextId, networkRef, "20"),
+		enabled: Boolean(userContextId && networkRef),
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -111,8 +114,7 @@ function ForwardNetworkAssurancePage() {
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex items-center gap-3 min-w-0">
 					<Link
-						to="/dashboard/forward-networks"
-						search={{ workspace: workspaceId } as any}
+						to="/dashboard/fwd"
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -132,25 +134,23 @@ function ForwardNetworkAssurancePage() {
 				<div className="flex flex-wrap items-center gap-2">
 					<Button
 						onClick={() => refreshM.mutate()}
-						disabled={!workspaceId || refreshM.isPending}
+						disabled={!userContextId || refreshM.isPending}
 					>
 						<RefreshCw className="h-4 w-4 mr-2" />
 						{refreshM.isPending ? "Refreshing…" : "Refresh from Forward"}
 					</Button>
 					<Button asChild variant="outline">
 						<Link
-							to="/dashboard/forward-networks/$networkRef/assurance-studio"
+							to="/dashboard/fwd/$networkRef/assurance-studio"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Assurance Studio
 						</Link>
 					</Button>
 					<Button asChild variant="outline">
 						<Link
-							to="/dashboard/forward-networks/$networkRef/capacity"
+							to="/dashboard/fwd/$networkRef/capacity"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Capacity
 						</Link>
@@ -158,14 +158,7 @@ function ForwardNetworkAssurancePage() {
 				</div>
 			</div>
 
-			{!workspaceId ? (
-				<Card>
-					<CardContent className="pt-6 text-sm text-muted-foreground">
-						Select a workspace first (open this page from the Forward Networks
-						list).
-					</CardContent>
-				</Card>
-			) : summaryQ.isLoading ? (
+			{summaryQ.isLoading ? (
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
 						Loading…

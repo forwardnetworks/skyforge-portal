@@ -11,8 +11,9 @@ import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
-	type WorkspaceDeployment,
+	type UserDeployment,
 	getDeploymentTopology,
+	toUserContextId,
 } from "../../../lib/skyforge-api";
 
 export const Route = createFileRoute(
@@ -35,20 +36,20 @@ function DeploymentMapPage() {
 
 	const deployment = useMemo(() => {
 		return (snap.data?.deployments ?? []).find(
-			(d: WorkspaceDeployment) => d.id === deploymentId,
+			(d: UserDeployment) => d.id === deploymentId,
 		);
 	}, [deploymentId, snap.data?.deployments]);
 
-	const workspaceId = String(deployment?.workspaceId ?? "");
+	const userContextId = toUserContextId(deployment);
 	const deploymentType = String(deployment?.type ?? "");
 	const status =
 		deployment?.activeTaskStatus ?? deployment?.lastStatus ?? "unknown";
 
 	const topology = useQuery({
-		queryKey: queryKeys.deploymentTopology(workspaceId, deploymentId),
+		queryKey: queryKeys.deploymentTopology(userContextId, deploymentId),
 		queryFn: async () => {
 			if (!deployment) throw new Error("deployment not found");
-			return getDeploymentTopology(deployment.workspaceId, deployment.id);
+			return getDeploymentTopology(userContextId, deployment.id);
 		},
 		enabled:
 			!!deployment &&
@@ -115,7 +116,7 @@ function DeploymentMapPage() {
 				</div>
 				<div className="flex items-center gap-2">
 					<a
-						href={`/dashboard/labs/designer?workspaceId=${encodeURIComponent(workspaceId)}&importDeploymentId=${encodeURIComponent(deploymentId)}`}
+						href={`/dashboard/labs/designer?importDeploymentId=${encodeURIComponent(deploymentId)}`}
 						target="_blank"
 						rel="noreferrer noopener"
 						className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -140,7 +141,7 @@ function DeploymentMapPage() {
 				<div className="h-full">
 					<TopologyViewer
 						topology={topology.data}
-						workspaceId={deployment.workspaceId}
+						userContextId={userContextId}
 						deploymentId={deployment.id}
 						enableTerminal={["netlab-c9s", "clabernetes"].includes(
 							deployment.type,

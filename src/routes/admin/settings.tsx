@@ -37,6 +37,7 @@ import {
 	getSession,
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
+	toUserContextId,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/admin/settings")({
@@ -151,7 +152,7 @@ function AdminSettingsPage() {
 			adminPurgeUser({ username: purgeUsername, confirm: purgeUsername }),
 		onSuccess: (res) => {
 			toast.success("User purged", {
-				description: `Deleted workspaces: ${res.deletedWorkspaces}`,
+				description: `Deleted user contexts: ${res.deletedUserContexts}`,
 			});
 		},
 		onError: (e) => {
@@ -191,11 +192,11 @@ function AdminSettingsPage() {
 			},
 			{ id: "action", header: "Action", cell: (r) => r.action, width: 260 },
 			{
-				id: "workspaceId",
-				header: "Workspace",
+				id: "userContextId",
+				header: "User Context",
 				cell: (r) => (
 					<span className="font-mono text-xs text-muted-foreground">
-						{r.workspaceId}
+						{toUserContextId(r)}
 					</span>
 				),
 				width: 220,
@@ -439,7 +440,7 @@ function AdminSettingsPage() {
 									Purge user (dev-only)
 								</CardTitle>
 								<CardDescription>
-									Removes user state and associated workspaces to rerun
+									Removes user state and associated user contexts to rerun
 									first-login bootstrap.
 								</CardDescription>
 							</CardHeader>

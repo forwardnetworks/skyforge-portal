@@ -10,7 +10,7 @@ import { Terminal } from "lucide-react";
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	workspaceId: string;
+	userContextId: string;
 	deploymentId: string;
 	nodeId: string;
 	nodeKind?: string;
@@ -20,7 +20,7 @@ type Props = {
 export function NodeLogsModal({
 	open,
 	onOpenChange,
-	workspaceId,
+	userContextId,
 	deploymentId,
 	nodeId,
 	nodeKind,
@@ -38,7 +38,7 @@ export function NodeLogsModal({
 				<div className="flex-1 min-h-0">
 					{open ? (
 						<NodeLogsView
-							workspaceId={workspaceId}
+							userContextId={userContextId}
 							deploymentId={deploymentId}
 							nodeId={nodeId}
 							nodeKind={nodeKind}

@@ -43,7 +43,7 @@ import {
 	type LinkCaptureResponse,
 	type LinkStatsSnapshot,
 	captureDeploymentLinkPcap,
-	downloadWorkspaceArtifact,
+	downloadUserArtifact,
 	getDeploymentInventory,
 	getDeploymentLinkStats,
 	getDeploymentNodeInterfaces,
@@ -52,6 +52,7 @@ import {
 	setDeploymentLinkImpairment,
 } from "@/lib/skyforge-api";
 import { saveDeploymentNodeConfig } from "@/lib/skyforge-api";
+import { userContextApiPath } from "@/lib/user-context-path";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
 	Activity,
@@ -214,14 +215,14 @@ const nodeTypes = {
 
 export function TopologyViewer({
 	topology,
-	workspaceId,
+	userContextId,
 	deploymentId,
 	enableTerminal,
 	fullHeight,
 	className,
 }: {
 	topology?: DeploymentTopology | null;
-	workspaceId?: string;
+	userContextId?: string;
 	deploymentId?: string;
 	enableTerminal?: boolean;
 	fullHeight?: boolean;
@@ -359,9 +360,9 @@ export function TopologyViewer({
 	const [search, setSearch] = useState("");
 	const [layoutMode, setLayoutMode] = useState<"grid" | "circle">("grid");
 	const positionsKey = useMemo(() => {
-		if (!workspaceId || !deploymentId) return "";
-		return `skyforge.topology.positions.${workspaceId}.${deploymentId}`;
-	}, [deploymentId, workspaceId]);
+		if (!userContextId || !deploymentId) return "";
+		return `skyforge.topology.positions.${userContextId}.${deploymentId}`;
+	}, [deploymentId, userContextId]);
 	const [pinnedPositions, setPinnedPositions] = useState<
 		Record<string, { x: number; y: number }>
 	>(() => {
@@ -432,12 +433,16 @@ export function TopologyViewer({
 		}
 	}, [positionsKey]);
 
-	const uiEventsEnabled = Boolean(workspaceId && deploymentId);
-	useDeploymentUIEvents(workspaceId ?? "", deploymentId ?? "", uiEventsEnabled);
+	const uiEventsEnabled = Boolean(userContextId && deploymentId);
+	useDeploymentUIEvents(
+		userContextId ?? "",
+		deploymentId ?? "",
+		uiEventsEnabled,
+	);
 	const uiEvents = useQuery({
 		queryKey:
-			workspaceId && deploymentId
-				? queryKeys.deploymentUIEvents(workspaceId, deploymentId)
+			userContextId && deploymentId
+				? queryKeys.deploymentUIEvents(userContextId, deploymentId)
 				: ["deploymentUIEvents", "none"],
 		queryFn: async () => ({ cursor: 0, events: [] }) as DeploymentUIEventsState,
 		initialData: { cursor: 0, events: [] } as DeploymentUIEventsState,
@@ -500,7 +505,7 @@ export function TopologyViewer({
 	}, [edgeFlags, edgeRates, setEdges, statsEnabled]);
 
 	useEffect(() => {
-		if (!workspaceId || !deploymentId) return;
+		if (!userContextId || !deploymentId) return;
 		if (deepLinkHandledRef.current) return;
 		const params = new URLSearchParams(window.location.search);
 		const node = params.get("node")?.trim();
@@ -526,7 +531,7 @@ export function TopologyViewer({
 		const suffix = params.toString();
 		const nextUrl = `${window.location.pathname}${suffix ? `?${suffix}` : ""}${window.location.hash || ""}`;
 		window.history.replaceState(null, "", nextUrl);
-	}, [deploymentId, workspaceId]);
+	}, [deploymentId, userContextId]);
 
 	useEffect(() => {
 		if (!edgeMenu) return;
@@ -544,9 +549,9 @@ export function TopologyViewer({
 
 	const saveConfig = useMutation({
 		mutationFn: async (nodeId: string) => {
-			if (!workspaceId || !deploymentId)
-				throw new Error("missing workspace/deployment");
-			return saveDeploymentNodeConfig(workspaceId, deploymentId, nodeId);
+			if (!userContextId || !deploymentId)
+				throw new Error("missing user context/deployment");
+			return saveDeploymentNodeConfig(userContextId, deploymentId, nodeId);
 		},
 		onSuccess: (resp, nodeId) => {
 			if (resp?.skipped) {
@@ -568,9 +573,9 @@ export function TopologyViewer({
 
 	const linkAdmin = useMutation({
 		mutationFn: async (args: { edgeId: string; action: "up" | "down" }) => {
-			if (!workspaceId || !deploymentId)
-				throw new Error("missing workspace/deployment");
-			return setDeploymentLinkAdmin(workspaceId, deploymentId, args);
+			if (!userContextId || !deploymentId)
+				throw new Error("missing user context/deployment");
+			return setDeploymentLinkAdmin(userContextId, deploymentId, args);
 		},
 		onSuccess: (resp) => {
 			const failed = resp.results.filter((r) => r.error);
@@ -596,9 +601,9 @@ export function TopologyViewer({
 			maxPackets: number;
 			snaplen: number;
 		}) => {
-			if (!workspaceId || !deploymentId)
-				throw new Error("missing workspace/deployment");
-			return captureDeploymentLinkPcap(workspaceId, deploymentId, args);
+			if (!userContextId || !deploymentId)
+				throw new Error("missing user context/deployment");
+			return captureDeploymentLinkPcap(userContextId, deploymentId, args);
 		},
 		onSuccess: (resp) => {
 			toast.success("Pcap captured", {
@@ -613,9 +618,9 @@ export function TopologyViewer({
 
 	const fetchInterfaces = useMutation({
 		mutationFn: async (nodeId: string) => {
-			if (!workspaceId || !deploymentId)
-				throw new Error("missing workspace/deployment");
-			return getDeploymentNodeInterfaces(workspaceId, deploymentId, nodeId);
+			if (!userContextId || !deploymentId)
+				throw new Error("missing user context/deployment");
+			return getDeploymentNodeInterfaces(userContextId, deploymentId, nodeId);
 		},
 		onError: (e: any) =>
 			toast.error("Failed to load interfaces", {
@@ -625,9 +630,13 @@ export function TopologyViewer({
 
 	const fetchRunningConfig = useMutation({
 		mutationFn: async (nodeId: string) => {
-			if (!workspaceId || !deploymentId)
-				throw new Error("missing workspace/deployment");
-			return getDeploymentNodeRunningConfig(workspaceId, deploymentId, nodeId);
+			if (!userContextId || !deploymentId)
+				throw new Error("missing user context/deployment");
+			return getDeploymentNodeRunningConfig(
+				userContextId,
+				deploymentId,
+				nodeId,
+			);
 		},
 		onError: (e: any) =>
 			toast.error("Failed to load running config", {
@@ -637,8 +646,8 @@ export function TopologyViewer({
 
 	const downloadPcap = useCallback(
 		async (key: string) => {
-			if (!workspaceId) return;
-			const resp = await downloadWorkspaceArtifact(workspaceId, key);
+			if (!userContextId) return;
+			const resp = await downloadUserArtifact(userContextId, key);
 			const b64 = String((resp as any)?.fileData ?? "");
 			if (!b64) throw new Error("missing fileData");
 			const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -650,12 +659,16 @@ export function TopologyViewer({
 			a.click();
 			URL.revokeObjectURL(url);
 		},
-		[workspaceId],
+		[userContextId],
 	);
 
 	const downloadInventory = useCallback(async () => {
-		if (!workspaceId || !deploymentId) return;
-		const resp = await getDeploymentInventory(workspaceId, deploymentId, "csv");
+		if (!userContextId || !deploymentId) return;
+		const resp = await getDeploymentInventory(
+			userContextId,
+			deploymentId,
+			"csv",
+		);
 		const csv = String(resp.csv ?? "");
 		if (!csv.trim()) throw new Error("empty inventory csv");
 		const blob = new Blob([csv], { type: "text/csv" });
@@ -665,7 +678,7 @@ export function TopologyViewer({
 		a.download = `${deploymentId}-inventory.csv`;
 		a.click();
 		URL.revokeObjectURL(url);
-	}, [deploymentId, workspaceId]);
+	}, [deploymentId, userContextId]);
 
 	useEffect(() => {
 		if (!nodeMenu) return;
@@ -715,30 +728,30 @@ export function TopologyViewer({
 	const onNodeContextMenu = useCallback(
 		(event: React.MouseEvent, node: Node) => {
 			event.preventDefault();
-			if (!workspaceId || !deploymentId) return;
+			if (!userContextId || !deploymentId) return;
 			const rect = ref.current?.getBoundingClientRect();
 			const x = rect ? event.clientX - rect.left : event.clientX;
 			const y = rect ? event.clientY - rect.top : event.clientY;
 			setNodeMenu({ x, y, node });
 		},
-		[deploymentId, workspaceId],
+		[deploymentId, userContextId],
 	);
 
 	const onEdgeContextMenu = useCallback(
 		(event: React.MouseEvent, edge: Edge) => {
-			if (!workspaceId || !deploymentId) return;
+			if (!userContextId || !deploymentId) return;
 			event.preventDefault();
 			const rect = ref.current?.getBoundingClientRect();
 			const x = rect ? event.clientX - rect.left : event.clientX;
 			const y = rect ? event.clientY - rect.top : event.clientY;
 			setEdgeMenu({ x, y, edge });
 		},
-		[deploymentId, workspaceId],
+		[deploymentId, userContextId],
 	);
 
 	const applyImpairment = useCallback(
 		async (action: "set" | "clear", edgeId: string) => {
-			if (!workspaceId || !deploymentId) return;
+			if (!userContextId || !deploymentId) return;
 			try {
 				setImpairSaving(true);
 				const body: any = { edgeId, action };
@@ -773,7 +786,7 @@ export function TopologyViewer({
 					if (Number.isFinite(rateKbps)) body.rateKbps = rateKbps;
 				}
 				const resp = await setDeploymentLinkImpairment(
-					workspaceId,
+					userContextId,
 					deploymentId,
 					body,
 				);
@@ -806,16 +819,19 @@ export function TopologyViewer({
 			impair.lossPct,
 			impair.rateKbps,
 			impair.reorderPct,
-			workspaceId,
+			userContextId,
 		],
 	);
 
 	useEffect(() => {
-		if (!statsEnabled || !workspaceId || !deploymentId) return;
+		if (!statsEnabled || !userContextId || !deploymentId) return;
 		setStatsError(null);
 		lastStatsRef.current = null;
 
-		const url = `/api/workspaces/${encodeURIComponent(workspaceId)}/deployments/${encodeURIComponent(deploymentId)}/links/stats/events`;
+		const url = userContextApiPath(
+			userContextId,
+			`/deployments/${encodeURIComponent(deploymentId)}/links/stats/events`,
+		);
 		const es = new EventSource(url, { withCredentials: true });
 
 		const onStats = (ev: MessageEvent) => {
@@ -892,13 +908,13 @@ export function TopologyViewer({
 		es.onerror = onError;
 
 		// Kick a one-shot fetch too (makes the first delta appear faster after a pause).
-		void getDeploymentLinkStats(workspaceId, deploymentId).catch(() => {});
+		void getDeploymentLinkStats(userContextId, deploymentId).catch(() => {});
 
 		return () => {
 			es.removeEventListener("stats", onStats as any);
 			es.close();
 		};
-	}, [deploymentId, statsEnabled, workspaceId]);
+	}, [deploymentId, statsEnabled, userContextId]);
 
 	return (
 		<div
@@ -988,7 +1004,7 @@ export function TopologyViewer({
 											return next;
 										});
 									}}
-									disabled={!workspaceId || !deploymentId}
+									disabled={!userContextId || !deploymentId}
 									title="Show live link utilization (SSE)"
 								>
 									<Activity className="mr-2 h-4 w-4" />
@@ -1032,7 +1048,7 @@ export function TopologyViewer({
 											}),
 										)
 									}
-									disabled={!workspaceId || !deploymentId}
+									disabled={!userContextId || !deploymentId}
 									title="Download inventory CSV"
 								>
 									Inventory
@@ -1114,26 +1130,26 @@ export function TopologyViewer({
 				</div>
 			) : null}
 
-			{enableTerminal && workspaceId && deploymentId ? (
+			{enableTerminal && userContextId && deploymentId ? (
 				<TerminalModal
 					open={!!terminalNode}
 					onOpenChange={(open) => {
 						if (!open) setTerminalNode(null);
 					}}
-					workspaceId={workspaceId}
+					userContextId={userContextId}
 					deploymentId={deploymentId}
 					nodeId={terminalNode?.id ?? ""}
 					nodeKind={terminalNode?.kind ?? ""}
 				/>
 			) : null}
 
-			{workspaceId && deploymentId ? (
+			{userContextId && deploymentId ? (
 				<NodeLogsModal
 					open={!!logsNode}
 					onOpenChange={(open) => {
 						if (!open) setLogsNode(null);
 					}}
-					workspaceId={workspaceId}
+					userContextId={userContextId}
 					deploymentId={deploymentId}
 					nodeId={logsNode?.id ?? ""}
 					nodeKind={logsNode?.kind ?? ""}
@@ -1141,13 +1157,13 @@ export function TopologyViewer({
 				/>
 			) : null}
 
-			{workspaceId && deploymentId ? (
+			{userContextId && deploymentId ? (
 				<NodeDescribeModal
 					open={!!describeNode}
 					onOpenChange={(open) => {
 						if (!open) setDescribeNode(null);
 					}}
-					workspaceId={workspaceId}
+					userContextId={userContextId}
 					deploymentId={deploymentId}
 					nodeId={describeNode?.id ?? ""}
 					nodeKind={describeNode?.kind ?? ""}
@@ -1205,7 +1221,7 @@ export function TopologyViewer({
 				</DialogContent>
 			</Dialog>
 
-			{nodeMenu && workspaceId && deploymentId ? (
+			{nodeMenu && userContextId && deploymentId ? (
 				<div
 					className="absolute z-50"
 					style={{ left: nodeMenu.x, top: nodeMenu.y }}
@@ -1431,7 +1447,7 @@ export function TopologyViewer({
 				</div>
 			) : null}
 
-			{edgeMenu && workspaceId && deploymentId ? (
+			{edgeMenu && userContextId && deploymentId ? (
 				<div
 					className="absolute z-50"
 					style={{ left: edgeMenu.x, top: edgeMenu.y }}

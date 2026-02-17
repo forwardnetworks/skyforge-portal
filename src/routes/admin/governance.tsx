@@ -161,15 +161,15 @@ function GovernancePage() {
 		enabled: isAdmin,
 	});
 
-	const usageSnapshots = usage.data?.usage ?? [];
-	const clusterUsage = useMemo(() => {
+		const usageSnapshots = usage.data?.usage ?? [];
+		const clusterUsage = useMemo(() => {
 		const byMetric = new Map<
 			string,
 			NonNullable<typeof usage.data>["usage"][number]
 		>();
-		for (const snap of usageSnapshots) {
-			if (snap.scopeType !== "cluster") continue;
-			const metric = String(snap.metric ?? "");
+			for (const snap of usageSnapshots) {
+				if (snap.subjectType !== "cluster") continue;
+				const metric = String(snap.metric ?? "");
 			if (!metric) continue;
 			const prev = byMetric.get(metric);
 			if (!prev) {
@@ -186,7 +186,7 @@ function GovernancePage() {
 		return byMetric;
 	}, [usageSnapshots]);
 
-	const topUsers = useMemo(() => {
+		const topUsers = useMemo(() => {
 		type Row = {
 			user: string;
 			deploymentsActive: number;
@@ -195,10 +195,10 @@ function GovernancePage() {
 			tasksRunning: number;
 			lastSeenAt: string;
 		};
-		const rows = new Map<string, Row>();
-		for (const snap of usageSnapshots) {
-			if (snap.scopeType !== "user") continue;
-			const user = String(snap.scopeId ?? "").trim();
+			const rows = new Map<string, Row>();
+			for (const snap of usageSnapshots) {
+				if (snap.subjectType !== "user") continue;
+				const user = String(snap.subjectId ?? "").trim();
 			if (!user) continue;
 			const metric = String(snap.metric ?? "").trim();
 			if (!metric) continue;
@@ -246,19 +246,19 @@ function GovernancePage() {
 		});
 	}, [usageSnapshots]);
 
-	const filteredResources = useMemo(() => {
-		const list = resources.data?.resources ?? [];
+		const filteredResources = useMemo(() => {
+			const list = resources.data?.resources ?? [];
 		const query = q?.trim().toLowerCase() || "";
 		if (!query) return list;
-		return list.filter((r) => {
-			const haystack = [
-				r.name,
-				r.resourceId,
-				r.resourceType,
-				r.workspaceName,
-				r.owner,
-				r.provider,
-			]
+			return list.filter((r) => {
+				const haystack = [
+					r.name,
+					r.resourceId,
+					r.resourceType,
+					r.userContextName,
+					r.owner,
+					r.provider,
+				]
 				.filter(Boolean)
 				.join(" ")
 				.toLowerCase();
@@ -444,12 +444,12 @@ function GovernancePage() {
 						icon={<Activity className="h-5 w-5" />}
 						gradient="green"
 					/>
-					<BentoStatCard
-						title="Workspaces tracked"
-						value={String(summaryData?.workspacesTracked ?? "—")}
-						icon={<Layers className="h-5 w-5" />}
-						gradient="purple"
-					/>
+						<BentoStatCard
+							title="Users tracked"
+							value={String(summaryData?.userContextsTracked ?? "—")}
+							icon={<Layers className="h-5 w-5" />}
+							gradient="purple"
+						/>
 					<BentoStatCard
 						title="Last 30d spend"
 						value={
@@ -537,7 +537,7 @@ function GovernancePage() {
 							<div className="rounded-md border p-3 space-y-3">
 								<div className="text-sm font-medium">Feature access</div>
 								<div className="text-xs text-muted-foreground">
-									Global toggles for user-scoped integrations. Admin users are
+									Global toggles for user-level integrations. Admin users are
 									not restricted by these flags.
 								</div>
 								<div className="space-y-2">
@@ -547,8 +547,8 @@ function GovernancePage() {
 												User BYOS Netlab servers
 											</div>
 											<div className="text-xs text-muted-foreground">
-												Allows using user-scoped Netlab BYOS servers (serverRef
-												= `user:...`).
+												Allows using user-level Netlab BYOS servers (serverRef =
+												`user:...`).
 											</div>
 										</div>
 										<Switch
@@ -569,7 +569,7 @@ function GovernancePage() {
 												User BYOS Containerlab servers
 											</div>
 											<div className="text-xs text-muted-foreground">
-												Allows using user-scoped Containerlab BYOS servers
+												Allows using user-level Containerlab BYOS servers
 												(serverRef = `user:...`).
 											</div>
 										</div>
@@ -711,12 +711,12 @@ function GovernancePage() {
 												width: 160,
 												cell: (r) => r.resourceType,
 											},
-											{
-												id: "workspace",
-												header: "Workspace",
-												width: 200,
-												cell: (r) => r.workspaceName,
-											},
+												{
+													id: "userContext",
+													header: "User",
+													width: 200,
+													cell: (r) => r.userContextName,
+												},
 											{
 												id: "owner",
 												header: "Owner",
@@ -905,7 +905,7 @@ function GovernancePage() {
 											gradient="purple"
 										/>
 										<BentoStatCard
-											title="Workspace pods"
+											title="User Context pods"
 											value={
 												clusterUsage.get("k8s.pods.ws.total")?.value ?? "—"
 											}
@@ -916,7 +916,7 @@ function GovernancePage() {
 											gradient="purple"
 										/>
 										<BentoStatCard
-											title="Workspace namespaces"
+											title="User Context namespaces"
 											value={
 												clusterUsage.get("k8s.namespaces.ws")?.value ?? "—"
 											}
@@ -1014,15 +1014,15 @@ function GovernancePage() {
 											<DataTable
 												columns={
 													[
-														{
-															id: "scope",
-															header: "Scope",
-															width: 180,
-															cell: (u) =>
-																u.scopeType === "user"
-																	? `user:${u.scopeId ?? ""}`
-																	: u.scopeType,
-														},
+															{
+																id: "context",
+																header: "Subject",
+																width: 180,
+																cell: (u) =>
+																	u.subjectType === "user"
+																		? String(u.subjectId ?? "")
+																		: String(u.subjectType ?? ""),
+															},
 														{
 															id: "metric",
 															header: "Metric",
@@ -1054,10 +1054,10 @@ function GovernancePage() {
 														>
 													>
 												}
-												rows={(usage.data?.usage ?? []).slice(0, 200)}
-												getRowId={(u) =>
-													`${u.provider}:${u.scopeType}:${u.scopeId ?? ""}:${u.metric}:${u.collectedAt}`
-												}
+													rows={(usage.data?.usage ?? []).slice(0, 200)}
+													getRowId={(u) =>
+														`${u.provider}:${u.subjectType}:${u.subjectId ?? ""}:${u.metric}:${u.collectedAt}`
+													}
 												maxHeightClassName="max-h-[50vh]"
 												minWidthClassName="min-w-[900px]"
 											/>

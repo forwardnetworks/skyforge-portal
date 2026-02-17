@@ -16,6 +16,7 @@ import type { JSONMap } from "../../../lib/skyforge-api";
 import {
 	type DashboardSnapshot,
 	getDashboardSnapshot,
+	toUserContextId,
 } from "../../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/runs/")({
@@ -82,7 +83,7 @@ function RunsIndexPage() {
 					{filtered.map((r) => {
 						const id = String(r.id ?? "");
 						const status = String(r.status ?? "");
-						const workspaceId = String(r.workspaceId ?? "");
+						const userContextId = toUserContextId(r);
 						const type = String(r.tpl_alias ?? r.type ?? "");
 						const created = String(r.created ?? "");
 						const started = String(r.start ?? "");
@@ -103,7 +104,7 @@ function RunsIndexPage() {
 												</Link>
 											</CardTitle>
 											<CardDescription className="truncate">
-												{type || "run"} • ws {workspaceId || "—"}
+												{type || "run"} • user {userContextId || "—"}
 											</CardDescription>
 										</div>
 										<Badge variant={badgeVariantForStatus(status)}>

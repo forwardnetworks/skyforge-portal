@@ -9,9 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/query-keys";
 import {
 	type DeploymentTopology,
-	getWorkspaceContainerlabTemplate,
-	getWorkspaces,
+	getUserContainerlabTemplate,
+	getUserContexts,
 } from "@/lib/skyforge-api";
+import {
+	parseTemplateSourceUI,
+	toTemplateSourceBackend,
+} from "@/lib/template-source";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
@@ -64,32 +68,38 @@ function parseContainerlabYamlToTopology(yamlText: string): DeploymentTopology {
 
 function LabsMapPage() {
 	const search = Route.useSearch() as any;
-	const workspaceId = String(search?.workspaceId ?? "");
-	const source = String(search?.source ?? "workspace");
+	const source = parseTemplateSourceUI(String(search?.source ?? "user"));
+	const sourceBackend = toTemplateSourceBackend(source);
 	const dir = String(search?.dir ?? "containerlab/designer");
 	const file = String(search?.file ?? "");
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userContextsQ = useQuery({
+		queryKey: queryKeys.userContexts(),
+		queryFn: getUserContexts,
 		retry: false,
 		staleTime: 30_000,
 	});
+	const userContextId = useMemo(() => {
+		const list = (userContextsQ.data?.userContexts ?? []) as Array<{
+			id?: string;
+		}>;
+		return String(list[0]?.id ?? "").trim();
+	}, [userContextsQ.data?.userContexts]);
 
 	const templateQ = useQuery({
-		queryKey: workspaceId
-			? ["containerlabTemplateMap", workspaceId, source, dir, file]
+		queryKey: userContextId
+			? ["containerlabTemplateMap", userContextId, source, dir, file]
 			: ["containerlabTemplateMap", "none"],
 		queryFn: async () => {
-			if (!workspaceId) throw new Error("workspaceId is required");
+			if (!userContextId) throw new Error("user context ID is required");
 			if (!file) throw new Error("file is required");
-			return getWorkspaceContainerlabTemplate(workspaceId, {
-				source,
+			return getUserContainerlabTemplate(userContextId, {
+				source: sourceBackend,
 				dir,
 				file,
 			});
 		},
-		enabled: Boolean(workspaceId) && Boolean(file),
+		enabled: Boolean(userContextId) && Boolean(file),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -103,7 +113,7 @@ function LabsMapPage() {
 		}
 	}, [templateQ.data?.yaml]);
 
-	if (!workspaceId || !file) {
+	if (!file) {
 		return (
 			<div className="h-screen w-screen p-6">
 				<div className="max-w-2xl space-y-4">
@@ -118,12 +128,12 @@ function LabsMapPage() {
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div className="space-y-1">
-								<Label>Workspace</Label>
+								<Label>User context</Label>
 								<Input
-									value={workspaceId}
+									value={userContextId}
 									readOnly
 									placeholder={
-										workspacesQ.isLoading ? "Loading…" : "workspaceId missing"
+										userContextsQ.isLoading ? "Resolving…" : "Unavailable"
 									}
 								/>
 							</div>
@@ -134,7 +144,7 @@ function LabsMapPage() {
 							<div className="text-xs text-muted-foreground">
 								Example:{" "}
 								<span className="font-mono">
-									/dashboard/labs/map?workspaceId=&lt;id&gt;&amp;source=workspace&amp;dir=containerlab/designer&amp;file=lab.clab.yml
+									/dashboard/labs/map?source=user&amp;dir=containerlab/designer&amp;file=lab.clab.yml
 								</span>
 							</div>
 						</CardContent>
@@ -215,7 +225,7 @@ function LabsMapPage() {
 					<div className="h-full rounded-xl border overflow-hidden">
 						<TopologyViewer
 							topology={topology as any}
-							workspaceId={workspaceId}
+							userContextId={userContextId}
 							enableTerminal={false}
 							fullHeight
 						/>

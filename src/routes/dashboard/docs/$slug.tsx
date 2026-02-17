@@ -60,8 +60,8 @@ const DOC_PAGES: DocPage[] = [
 			<div className="space-y-4 text-sm">
 				<p>
 					The current model is{" "}
-					<strong>per-user settings applied to deployments</strong>. Workspaces
-					are primarily for sharing and feature gates.
+					<strong>per-user settings applied to deployments</strong>. Settings
+					and resources are tied directly to the signed-in user.
 				</p>
 				<ul className="list-disc pl-5 space-y-2">
 					<li>

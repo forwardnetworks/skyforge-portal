@@ -24,6 +24,7 @@ import {
 	buildLoginUrl,
 	cancelRun,
 	getDashboardSnapshot,
+	toUserContextId,
 } from "../../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/runs/$runId")({
@@ -85,23 +86,22 @@ function RunDetailPage() {
 								disabled={!run || !canCancel}
 								onClick={() => {
 									if (!run) return;
-									const ws = String(run.workspaceId ?? "");
-									if (!ws) {
+									const userContextId = toUserContextId(run);
+									if (!userContextId) {
 										toast.error("Cannot cancel run", {
-											description: "Missing workspace ID.",
+											description: "Missing user context ID.",
 										});
 										return;
 									}
 									void (async () => {
 										try {
-											await cancelRun(runId, ws);
+											await cancelRun(runId, userContextId);
 											toast.success("Run canceled");
 											await queryClient.invalidateQueries({
 												queryKey: queryKeys.dashboardSnapshot(),
 											});
 											navigate({
 												to: "/dashboard/deployments",
-												search: { workspace: ws } as any,
 											});
 										} catch (e) {
 											toast.error("Cancel failed", {
@@ -174,7 +174,10 @@ function RunDetailPage() {
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<Meta label="Type" value={String(run?.tpl_alias ?? "")} />
 						<Meta label="Status" value={String(run?.status ?? "")} />
-						<Meta label="Workspace" value={String(run?.workspaceId ?? "")} />
+						<Meta
+							label="User Context"
+							value={toUserContextId(run as Record<string, unknown>)}
+						/>
 						<Meta label="Created" value={String(run?.created ?? "")} />
 						<Meta label="Started" value={String(run?.start ?? "")} />
 						<Meta label="Finished" value={String(run?.end ?? "")} />

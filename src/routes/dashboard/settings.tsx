@@ -1157,7 +1157,7 @@ function UserSettingsPage() {
 							<div className="text-xs text-muted-foreground">
 								MCP endpoint: <span className="font-mono">/api/mcp/rpc</span> or{" "}
 								<span className="font-mono">
-									/api/workspaces/&lt;workspace&gt;/mcp/forward/&lt;networkId&gt;/rpc
+									/api/mcp/forward/&lt;networkId&gt;/rpc
 								</span>
 								.
 							</div>

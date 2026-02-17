@@ -27,7 +27,6 @@ const cookie = await seedSession();
 const cookieHeader = `${cookie.name}=${cookie.value}`;
 await assertSSE(cookieHeader);
 
-const workspaceId = await ensureWorkspace(cookieHeader);
 const deploymentIds = await listDeploymentIds(cookieHeader);
 
 const browser = await chromium.launch({ headless: HEADLESS });
@@ -80,26 +79,6 @@ try {
 		"deployments-new",
 	);
 	await visit(page, "/dashboard/runs", { placeholder: /Filter runs/i }, "runs");
-	await visit(
-		page,
-		"/dashboard/workspaces",
-		{ role: "heading", name: /Workspaces/i },
-		"workspaces",
-	);
-	await visit(
-		page,
-		"/dashboard/workspaces/new",
-		/Create Workspace/i,
-		"workspaces-new",
-	);
-	if (workspaceId) {
-		await visit(
-			page,
-			`/dashboard/workspaces/${encodeURIComponent(workspaceId)}`,
-			{ role: "heading", name: /Workspace/i },
-			"workspace-detail",
-		);
-	}
 	await visit(
 		page,
 		"/dashboard/settings",
@@ -286,45 +265,6 @@ async function assertSSE(cookieHeader) {
 	} finally {
 		clearTimeout(timeout);
 	}
-}
-
-async function ensureWorkspace(cookieHeader) {
-	const listResp = await fetch(`${API_URL}/api/workspaces`, {
-		headers: { Cookie: cookieHeader },
-	});
-	if (!listResp.ok) {
-		throw new Error(`Failed to list workspaces (${listResp.status})`);
-	}
-	const listBody = await listResp.json();
-	const workspaces = Array.isArray(listBody?.workspaces)
-		? listBody.workspaces
-		: [];
-	if (workspaces.length > 0) {
-		return String(workspaces[0].id || "");
-	}
-
-	const slug = `e2e-${Date.now()}`;
-	const createResp = await fetch(`${API_URL}/api/workspaces`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Cookie: cookieHeader,
-		},
-		body: JSON.stringify({
-			name: "E2E Workspace",
-			slug,
-			description: "UI E2E seed workspace",
-			isPublic: false,
-		}),
-	});
-	if (!createResp.ok) {
-		const detail = await createResp.text();
-		throw new Error(
-			`Failed to create workspace (${createResp.status}): ${detail}`,
-		);
-	}
-	const created = await createResp.json();
-	return String(created?.id || "");
 }
 
 async function listDeploymentIds(cookieHeader) {

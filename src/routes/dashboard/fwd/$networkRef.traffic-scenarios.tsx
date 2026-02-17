@@ -18,10 +18,7 @@ import {
 	postAssuranceTrafficSeeds,
 } from "@/lib/assurance-traffic-api";
 import { queryKeys } from "@/lib/query-keys";
-import {
-	listUserForwardNetworks,
-	listWorkspaceForwardNetworks,
-} from "@/lib/skyforge-api";
+import { listUserForwardNetworks } from "@/lib/skyforge-api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Play, Sparkles } from "lucide-react";
@@ -29,12 +26,10 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
+const searchSchema = z.object({});
 
 export const Route = createFileRoute(
-	"/dashboard/forward-networks/$networkRef/traffic-scenarios",
+	"/dashboard/fwd/$networkRef/traffic-scenarios",
 )({
 	validateSearch: (search) => searchSchema.parse(search),
 	component: ForwardNetworkTrafficScenariosPage,
@@ -169,8 +164,7 @@ function parseDemandsCSV(text: string): AssuranceTrafficDemand[] {
 
 function ForwardNetworkTrafficScenariosPage() {
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
-	const workspaceId = String(workspace ?? "").trim();
+	const userContextId = "personal";
 
 	const [seedMode, setSeedMode] = useState("mesh");
 	const [includeGroups, setIncludeGroups] = useState(true);
@@ -200,9 +194,9 @@ function ForwardNetworkTrafficScenariosPage() {
 	const [requireEnforcement, setRequireEnforcement] = useState(true);
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(workspaceId),
-		enabled: Boolean(workspaceId),
+		queryKey: queryKeys.userContextForwardNetworks(userContextId),
+		queryFn: listUserForwardNetworks,
+		enabled: Boolean(userContextId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -245,7 +239,7 @@ function ForwardNetworkTrafficScenariosPage() {
 				req.nameParts = splitParts(namePartsText);
 				req.deviceTypes = splitParts(deviceTypesText);
 			}
-			return postAssuranceTrafficSeeds(workspaceId, networkRef, req);
+			return postAssuranceTrafficSeeds(userContextId, networkRef, req);
 		},
 		onSuccess: (resp) => {
 			setDemandsText(demandsToCSV(resp.demands ?? []));
@@ -273,7 +267,7 @@ function ForwardNetworkTrafficScenariosPage() {
 			if (!demands.length) throw new Error("no demands parsed from CSV");
 			const thr = Number(threshold);
 			const mr = Number(maxResults);
-			return postAssuranceTrafficEvaluate(workspaceId, networkRef, {
+			return postAssuranceTrafficEvaluate(userContextId, networkRef, {
 				snapshotId: snapshotId.trim() || undefined,
 				window,
 				thresholdUtil: Number.isFinite(thr) ? thr : 0.8,
@@ -299,10 +293,7 @@ function ForwardNetworkTrafficScenariosPage() {
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex items-center gap-3">
 					<Button asChild variant="ghost" size="sm">
-						<Link
-							to="/dashboard/forward-networks"
-							search={{ workspace: workspaceId }}
-						>
+						<Link to="/dashboard/fwd">
 							<ArrowLeft className="h-4 w-4" />
 							<span className="ml-2">Forward Networks</span>
 						</Link>
@@ -320,9 +311,8 @@ function ForwardNetworkTrafficScenariosPage() {
 					<Badge variant="secondary">Forward Paths + NQE</Badge>
 					<Button asChild variant="outline" size="sm">
 						<Link
-							to="/dashboard/forward-networks/$networkRef/assurance-studio"
+							to="/dashboard/fwd/$networkRef/assurance-studio"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Assurance Studio
 						</Link>
@@ -338,8 +328,8 @@ function ForwardNetworkTrafficScenariosPage() {
 				<CardContent className="space-y-4">
 					<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 						<div className="space-y-1">
-							<div className="text-sm text-muted-foreground">Workspace</div>
-							<Input value={workspaceId} readOnly />
+							<div className="text-sm text-muted-foreground">User Context</div>
+							<Input value={userContextId} readOnly />
 						</div>
 						<div className="space-y-1">
 							<div className="text-sm text-muted-foreground">
@@ -534,7 +524,7 @@ function ForwardNetworkTrafficScenariosPage() {
 								</div>
 								<div className="flex items-end">
 									<Button
-										disabled={!workspaceId || seedMutation.isPending}
+										disabled={!userContextId || seedMutation.isPending}
 										onClick={() => seedMutation.mutate()}
 									>
 										Seed demands
@@ -578,7 +568,7 @@ function ForwardNetworkTrafficScenariosPage() {
 								</div>
 								<div className="flex items-end gap-2">
 									<Button
-										disabled={!workspaceId || evalMutation.isPending}
+										disabled={!userContextId || evalMutation.isPending}
 										onClick={() => evalMutation.mutate()}
 									>
 										Evaluate

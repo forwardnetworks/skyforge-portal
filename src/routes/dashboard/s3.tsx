@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Eye, FolderPlus, Inbox, Trash2, Upload } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import {
@@ -17,22 +17,15 @@ import {
 } from "../../components/ui/data-table";
 import { EmptyState } from "../../components/ui/empty-state";
 import { Input } from "../../components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../../components/ui/select";
 import { Skeleton } from "../../components/ui/skeleton";
 import { queryKeys } from "../../lib/query-keys";
 import {
-	createWorkspaceArtifactFolder,
-	deleteWorkspaceArtifactObject,
-	downloadWorkspaceArtifact,
-	getWorkspaces,
-	listWorkspaceArtifacts,
-	putWorkspaceArtifactObject,
+	createUserArtifactFolder,
+	deleteUserArtifactObject,
+	downloadUserArtifact,
+	getUserContexts,
+	listUserArtifacts,
+	putUserArtifactObject,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/s3")({
@@ -40,34 +33,25 @@ export const Route = createFileRoute("/dashboard/s3")({
 });
 
 function S3Page() {
-	const workspaces = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userContextsQ = useQuery({
+		queryKey: queryKeys.userContexts(),
+		queryFn: getUserContexts,
 		staleTime: 30_000,
 	});
 
-	const workspaceOptions = workspaces.data?.workspaces ?? [];
-	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
+	const selectedUserContextId = useMemo(() => {
+		return String(userContextsQ.data?.userContexts?.[0]?.id ?? "").trim();
+	}, [userContextsQ.data?.userContexts]);
 	const [prefix, setPrefix] = useState("");
 
-	useEffect(() => {
-		if (workspaceOptions.length === 0) return;
-		const stored =
-			window.localStorage.getItem("skyforge.lastWorkspaceId.s3") ?? "";
-		const initial = workspaceOptions.some((w) => w.id === stored)
-			? stored
-			: (workspaceOptions[0]?.id ?? "");
-		setSelectedWorkspaceId((prev) => prev || initial);
-	}, [workspaceOptions]);
-
 	const artifacts = useQuery({
-		queryKey: queryKeys.workspaceArtifacts(selectedWorkspaceId),
+		queryKey: queryKeys.userContextArtifacts(selectedUserContextId),
 		queryFn: async () =>
-			listWorkspaceArtifacts(selectedWorkspaceId, {
+			listUserArtifacts(selectedUserContextId, {
 				prefix: prefix || undefined,
 			}),
 		staleTime: 10_000,
-		enabled: !!selectedWorkspaceId,
+		enabled: !!selectedUserContextId,
 	});
 
 	const list = artifacts.data?.items ?? [];
@@ -92,8 +76,8 @@ function S3Page() {
 								size="sm"
 								onClick={async () => {
 									try {
-										const resp = await downloadWorkspaceArtifact(
-											selectedWorkspaceId,
+										const resp = await downloadUserArtifact(
+											selectedUserContextId,
 											item.key,
 										);
 										const raw = atob(resp.fileData);
@@ -114,7 +98,7 @@ function S3Page() {
 										});
 									}
 								}}
-								disabled={!selectedWorkspaceId}
+								disabled={!selectedUserContextId}
 							>
 								<Eye className="mr-2 h-3 w-3" />
 								View
@@ -125,8 +109,8 @@ function S3Page() {
 							size="sm"
 							onClick={async () => {
 								try {
-									const resp = await downloadWorkspaceArtifact(
-										selectedWorkspaceId,
+									const resp = await downloadUserArtifact(
+										selectedUserContextId,
 										item.key,
 									);
 									const raw = atob(resp.fileData);
@@ -148,7 +132,7 @@ function S3Page() {
 									});
 								}
 							}}
-							disabled={!selectedWorkspaceId}
+							disabled={!selectedUserContextId}
 						>
 							<Download className="mr-2 h-3 w-3" />
 							Download
@@ -159,8 +143,8 @@ function S3Page() {
 							onClick={async () => {
 								if (!confirm(`Delete ${item.key}?`)) return;
 								try {
-									await deleteWorkspaceArtifactObject(
-										selectedWorkspaceId,
+									await deleteUserArtifactObject(
+										selectedUserContextId,
 										item.key,
 									);
 									toast.success("Deleted", { description: item.key });
@@ -171,7 +155,7 @@ function S3Page() {
 									});
 								}
 							}}
-							disabled={!selectedWorkspaceId}
+							disabled={!selectedUserContextId}
 						>
 							<Trash2 className="mr-2 h-3 w-3" />
 							Delete
@@ -180,31 +164,18 @@ function S3Page() {
 				),
 			},
 		];
-	}, [artifacts.refetch, selectedWorkspaceId]);
+	}, [artifacts.refetch, selectedUserContextId]);
 
 	const toolbar = (
 		<div className="p-4 border-b flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 			<div className="flex items-center gap-3">
-				<div className="text-sm font-medium">Workspace</div>
-				<Select
-					value={selectedWorkspaceId}
-					onValueChange={(id) => {
-						setSelectedWorkspaceId(id);
-						window.localStorage.setItem("skyforge.lastWorkspaceId.s3", id);
-					}}
-					disabled={workspaceOptions.length === 0}
+				<div className="text-sm font-medium">User context</div>
+				<div
+					className="rounded-md border px-3 py-2 text-sm font-mono min-w-[280px]"
+					aria-live="polite"
 				>
-					<SelectTrigger className="w-[280px]">
-						<SelectValue placeholder="Select workspace" />
-					</SelectTrigger>
-					<SelectContent>
-						{workspaceOptions.map((w) => (
-							<SelectItem key={w.id} value={w.id}>
-								{w.name} ({w.slug})
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+					{selectedUserContextId || "Resolving…"}
+				</div>
 			</div>
 
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -218,7 +189,7 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={() => artifacts.refetch()}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedUserContextId}
 				>
 					Refresh
 				</Button>
@@ -226,11 +197,14 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={async () => {
-						if (!selectedWorkspaceId) return;
+						if (!selectedUserContextId) return;
 						const folder = window.prompt("Folder prefix (e.g. uploads/)");
 						if (!folder) return;
 						try {
-							await createWorkspaceArtifactFolder(selectedWorkspaceId, folder);
+							await createUserArtifactFolder(
+								selectedUserContextId,
+								folder,
+							);
 							toast.success("Folder created");
 							await artifacts.refetch();
 						} catch (e) {
@@ -239,7 +213,7 @@ function S3Page() {
 							});
 						}
 					}}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedUserContextId}
 				>
 					<FolderPlus className="mr-2 h-3 w-3" />
 					Folder
@@ -248,7 +222,7 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={() => {
-						if (!selectedWorkspaceId) return;
+						if (!selectedUserContextId) return;
 						const input = document.createElement("input");
 						input.type = "file";
 						input.onchange = () => {
@@ -265,7 +239,7 @@ function S3Page() {
 										b64 += btoa(String.fromCharCode(...chunk));
 									}
 									const key = (prefix || "") + file.name;
-									await putWorkspaceArtifactObject(selectedWorkspaceId, {
+									await putUserArtifactObject(selectedUserContextId, {
 										key,
 										contentBase64: b64,
 										contentType: file.type || "application/octet-stream",
@@ -281,7 +255,7 @@ function S3Page() {
 						};
 						input.click();
 					}}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedUserContextId}
 				>
 					<Upload className="mr-2 h-3 w-3" />
 					Upload
@@ -296,15 +270,15 @@ function S3Page() {
 				<CardHeader>
 					<CardTitle>S3</CardTitle>
 					<CardDescription>
-						Workspace artifacts and generated files (backed by the platform
-						object store).
+						User artifacts and generated files (backed by the platform object
+						store).
 					</CardDescription>
 				</CardHeader>
 			</Card>
 
 			<Card>
 				<CardContent className="p-0">
-					{workspaces.isLoading || artifacts.isLoading ? (
+					{userContextsQ.isLoading || artifacts.isLoading ? (
 						<div className="p-6 space-y-4">
 							<Skeleton className="h-12 w-full" />
 							<Skeleton className="h-12 w-full" />
@@ -313,7 +287,7 @@ function S3Page() {
 					) : (
 						<div>
 							{toolbar}
-							{workspaces.isError || artifacts.isError ? (
+							{userContextsQ.isError || artifacts.isError ? (
 								<div className="p-8 text-center text-destructive">
 									Failed to list objects.
 								</div>
@@ -322,7 +296,7 @@ function S3Page() {
 									<EmptyState
 										icon={Inbox}
 										title="No objects found"
-										description="No artifacts found for this workspace."
+										description="No artifacts found for this user."
 									/>
 								</div>
 							) : (

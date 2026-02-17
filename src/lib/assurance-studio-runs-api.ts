@@ -3,7 +3,7 @@ import { apiFetch } from "./http";
 
 export type AssuranceStudioRun = {
 	id: string;
-	workspaceId: string;
+	userContextId: string;
 	networkRef: string;
 	forwardNetworkId: string;
 	scenarioId?: string;
@@ -24,7 +24,7 @@ export type AssuranceStudioRunDetail = {
 };
 
 export type AssuranceStudioListRunsResponse = {
-	workspaceId: string;
+	userContextId: string;
 	networkRef: string;
 	runs: AssuranceStudioRun[];
 };
@@ -39,31 +39,34 @@ export type AssuranceStudioCreateRunRequest = {
 };
 
 export async function listAssuranceStudioRuns(
-	workspaceId: string,
+	userContextId: string,
 	networkRef: string,
 ): Promise<AssuranceStudioListRunsResponse> {
+	void userContextId;
 	return apiFetch<AssuranceStudioListRunsResponse>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/runs`,
+		`/api/fwd/networks/${encodeURIComponent(networkRef)}/assurance/studio/runs`,
 	);
 }
 
 export async function createAssuranceStudioRun(
-	workspaceId: string,
+	userContextId: string,
 	networkRef: string,
 	body: AssuranceStudioCreateRunRequest,
 ): Promise<AssuranceStudioRun> {
+	void userContextId;
 	return apiFetch<AssuranceStudioRun>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/runs`,
+		`/api/fwd/networks/${encodeURIComponent(networkRef)}/assurance/studio/runs`,
 		{ method: "POST", body: JSON.stringify(body ?? {}) },
 	);
 }
 
 export async function getAssuranceStudioRun(
-	workspaceId: string,
+	userContextId: string,
 	networkRef: string,
 	runId: string,
 ): Promise<AssuranceStudioRunDetail> {
+	void userContextId;
 	return apiFetch<AssuranceStudioRunDetail>(
-		`/api/workspaces/${encodeURIComponent(workspaceId)}/forward-networks/${encodeURIComponent(networkRef)}/assurance/studio/runs/${encodeURIComponent(runId)}`,
+		`/api/fwd/networks/${encodeURIComponent(networkRef)}/assurance/studio/runs/${encodeURIComponent(runId)}`,
 	);
 }

@@ -54,15 +54,20 @@ import {
 	createClabernetesDeploymentFromTemplate,
 	createContainerlabDeploymentFromTemplate,
 	getDeploymentTopology,
-	getWorkspaceContainerlabTemplate,
-	getWorkspaceContainerlabTemplates,
-	getWorkspaces,
+	getUserContainerlabTemplate,
+	getUserContainerlabTemplates,
+	getUserContexts,
 	listRegistryRepositories,
 	listRegistryTags,
 	listUserContainerlabServers,
 	saveContainerlabTopologyYAML,
+	toUserContextId,
 	validateUserAITemplate,
 } from "@/lib/skyforge-api";
+import {
+	parseTemplateSourceUI,
+	toTemplateSourceBackend,
+} from "@/lib/template-source";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactFlowInstance } from "@xyflow/react";
 import {
@@ -84,7 +89,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const designerSearchSchema = z.object({
-	workspaceId: z.string().optional().catch(""),
 	importDeploymentId: z.string().optional().catch(""),
 });
 
@@ -371,7 +375,7 @@ async function resolveRepoTag(opts: {
 }
 
 type SavedConfigRef = {
-	workspaceId: string;
+	userContextId: string;
 	templatesDir: string;
 	template: string;
 	filePath: string;
@@ -431,7 +435,7 @@ function LabDesignerPage() {
 	const queryClient = useQueryClient();
 
 	const [labName, setLabName] = useState("lab");
-	const [workspaceId, setWorkspaceId] = useState("");
+	const [userContextId, setUserContextId] = useState("");
 	const [runtime, setRuntime] = useState<"clabernetes" | "containerlab">(
 		"clabernetes",
 	);
@@ -454,7 +458,7 @@ function LabDesignerPage() {
 	const [yamlMode, setYamlMode] = useState<"generated" | "custom">("generated");
 	const [customYaml, setCustomYaml] = useState<string>("");
 	const [importOpen, setImportOpen] = useState(false);
-	const [importSource, setImportSource] = useState<"workspace" | "blueprints">(
+	const [importSource, setImportSource] = useState<"user" | "blueprints">(
 		"blueprints",
 	);
 	const [importDir, setImportDir] = useState("containerlab");
@@ -626,33 +630,39 @@ function LabDesignerPage() {
 		return `${base}.yml`;
 	}, [labName, templateFile]);
 
+	const importSourceBackend = useMemo(
+		() => toTemplateSourceBackend(importSource),
+		[importSource],
+	);
+
 	useEffect(() => {
-		if (!importOpen || !workspaceId) return;
-		const key = `skyforge.labDesigner.importPrefs.${workspaceId}`;
+		if (!importOpen || !userContextId) return;
+		const key = `skyforge.labDesigner.importPrefs.${userContextId}`;
 		try {
 			const raw = window.localStorage.getItem(key);
 			if (!raw) return;
 			const parsed = JSON.parse(raw) as any;
-			if (parsed?.source === "workspace" || parsed?.source === "blueprints")
-				setImportSource(parsed.source);
+			const parsedSource = parseTemplateSourceUI(parsed?.source);
+			if (parsedSource === "user" || parsedSource === "blueprints")
+				setImportSource(parsedSource);
 			if (typeof parsed?.dir === "string") setImportDir(parsed.dir);
 		} catch {
 			// ignore
 		}
-	}, [importOpen, workspaceId]);
+	}, [importOpen, userContextId]);
 
 	useEffect(() => {
-		if (!workspaceId) return;
-		const key = `skyforge.labDesigner.importPrefs.${workspaceId}`;
+		if (!userContextId) return;
+		const key = `skyforge.labDesigner.importPrefs.${userContextId}`;
 		try {
 			window.localStorage.setItem(
 				key,
-				JSON.stringify({ source: importSource, dir: importDir }),
+				JSON.stringify({ source: importSourceBackend, dir: importDir }),
 			);
 		} catch {
 			// ignore
 		}
-	}, [importDir, importSource, workspaceId]);
+	}, [importDir, importSource, userContextId]);
 
 	const addNode = () => {
 		const base = "n";
@@ -882,17 +892,15 @@ function LabDesignerPage() {
 
 	// Optional: import an existing running deployment topology into the canvas.
 	useEffect(() => {
-		const ws = String(search.workspaceId ?? "").trim();
-		const depId = String(search.importDeploymentId ?? "").trim();
-		if (!ws || !depId) return;
-		setWorkspaceId(ws);
+		const depId = String(importDeploymentId).trim();
+		if (!userContextId || !depId) return;
 		setUseSavedConfig(false);
 		setLastSaved(null);
 
 		let cancelled = false;
 		(async () => {
 			try {
-				const topo = await getDeploymentTopology(ws, depId);
+				const topo = await getDeploymentTopology(userContextId, depId);
 				if (cancelled) return;
 				const nextNodes: Array<Node<DesignNodeData>> = (topo.nodes ?? []).map(
 					(n, idx) => ({
@@ -939,13 +947,13 @@ function LabDesignerPage() {
 			cancelled = true;
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [search.importDeploymentId, search.workspaceId]);
+	}, [importDeploymentId, userContextId]);
 
 	const saveDraft = () => {
 		try {
 			const payload = {
 				labName,
-				workspaceId,
+				userContextId,
 				runtime,
 				containerlabServer,
 				useSavedConfig,
@@ -971,8 +979,6 @@ function LabDesignerPage() {
 			}
 			const parsed = JSON.parse(raw) as any;
 			if (typeof parsed?.labName === "string") setLabName(parsed.labName);
-			if (typeof parsed?.workspaceId === "string")
-				setWorkspaceId(parsed.workspaceId);
 			if (
 				parsed?.runtime === "clabernetes" ||
 				parsed?.runtime === "containerlab"
@@ -996,12 +1002,24 @@ function LabDesignerPage() {
 		}
 	};
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userContextsQ = useQuery({
+		queryKey: queryKeys.userContexts(),
+		queryFn: getUserContexts,
 		retry: false,
 		staleTime: 30_000,
 	});
+	const defaultUserContextId = useMemo(() => {
+		const list = (userContextsQ.data?.userContexts ?? []) as Array<{
+			id?: string;
+		}>;
+		return String(list[0]?.id ?? "").trim();
+	}, [userContextsQ.data?.userContexts]);
+
+	useEffect(() => {
+		if (!defaultUserContextId) return;
+		if (userContextId === defaultUserContextId) return;
+		setUserContextId(defaultUserContextId);
+	}, [defaultUserContextId, userContextId]);
 
 	const registryReposQ = useQuery({
 		queryKey: queryKeys.registryRepos(""),
@@ -1019,46 +1037,47 @@ function LabDesignerPage() {
 	});
 
 	const templatesQ = useQuery({
-		queryKey: workspaceId
-			? ["containerlabTemplates", workspaceId, importSource, importDir]
+		queryKey: userContextId
+			? ["containerlabTemplates", userContextId, importSource, importDir]
 			: ["containerlabTemplates", "none"],
 		queryFn: async () =>
-			getWorkspaceContainerlabTemplates(workspaceId, {
-				source: importSource,
+			getUserContainerlabTemplates(userContextId, {
+				source: importSourceBackend,
 				dir: importDir,
 			}),
-		enabled: Boolean(workspaceId) && importOpen,
+		enabled: Boolean(userContextId) && importOpen,
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const templatePreviewQ = useQuery({
-		queryKey: workspaceId
+		queryKey: userContextId
 			? [
 					"containerlabTemplate",
-					workspaceId,
+					userContextId,
 					importSource,
 					importDir,
 					importFile,
 				]
 			: ["containerlabTemplate", "none"],
 		queryFn: async () => {
-			if (!workspaceId) throw new Error("missing workspace");
+			if (!userContextId) throw new Error("user context unavailable");
 			if (!importFile) return null;
-			return getWorkspaceContainerlabTemplate(workspaceId, {
-				source: importSource,
+			return getUserContainerlabTemplate(userContextId, {
+				source: importSourceBackend,
 				dir: importDir,
 				file: importFile,
 			});
 		},
-		enabled: Boolean(workspaceId) && importOpen && Boolean(importFile),
+		enabled: Boolean(userContextId) && importOpen && Boolean(importFile),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const createDeployment = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Select a workspace");
+			if (!userContextId)
+				throw new Error("User context is still initializing.");
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (!/^\s*topology\s*:/m.test(effectiveYaml)) {
 				throw new Error("YAML must contain a top-level 'topology:' section");
@@ -1071,17 +1090,17 @@ function LabDesignerPage() {
 			}
 
 			const canUseSaved =
-				useSavedConfig && lastSaved?.workspaceId === workspaceId;
+				useSavedConfig && lastSaved?.userContextId === userContextId;
 			const saved = canUseSaved
 				? lastSaved
-				: await saveContainerlabTopologyYAML(workspaceId, {
+				: await saveContainerlabTopologyYAML(userContextId, {
 						name: labName,
 						topologyYAML: effectiveYaml,
 						templatesDir: effectiveTemplatesDir,
 						template: effectiveTemplateFile,
 					}).then((resp) => {
 						const next: SavedConfigRef = {
-							workspaceId: resp.workspaceId,
+							userContextId: toUserContextId(resp),
 							templatesDir: resp.templatesDir,
 							template: resp.template,
 							filePath: resp.filePath,
@@ -1094,19 +1113,19 @@ function LabDesignerPage() {
 			if (runtime === "containerlab") {
 				if (!containerlabServer)
 					throw new Error("Select a containerlab server");
-				return createContainerlabDeploymentFromTemplate(workspaceId, {
+				return createContainerlabDeploymentFromTemplate(userContextId, {
 					name: labName,
 					netlabServer: containerlabServer,
-					templateSource: "workspace",
+					templateSource: toTemplateSourceBackend("user"),
 					templatesDir: saved.templatesDir,
 					template: saved.template,
 					autoDeploy: true,
 				});
 			}
 
-			return createClabernetesDeploymentFromTemplate(workspaceId, {
+			return createClabernetesDeploymentFromTemplate(userContextId, {
 				name: labName,
-				templateSource: "workspace",
+				templateSource: toTemplateSourceBackend("user"),
 				templatesDir: saved.templatesDir,
 				template: saved.template,
 				autoDeploy: true,
@@ -1136,7 +1155,8 @@ function LabDesignerPage() {
 
 	const saveConfig = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Select a workspace");
+			if (!userContextId)
+				throw new Error("User context is still initializing.");
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (!/^\s*topology\s*:/m.test(effectiveYaml)) {
 				throw new Error("YAML must contain a top-level 'topology:' section");
@@ -1147,7 +1167,7 @@ function LabDesignerPage() {
 			) {
 				throw new Error("Repo path must be under containerlab/");
 			}
-			return saveContainerlabTopologyYAML(workspaceId, {
+			return saveContainerlabTopologyYAML(userContextId, {
 				name: labName,
 				topologyYAML: effectiveYaml,
 				templatesDir: effectiveTemplatesDir,
@@ -1156,7 +1176,7 @@ function LabDesignerPage() {
 		},
 		onSuccess: (resp) => {
 			setLastSaved({
-				workspaceId: resp.workspaceId,
+				userContextId: toUserContextId(resp),
 				templatesDir: resp.templatesDir,
 				template: resp.template,
 				filePath: resp.filePath,
@@ -1172,11 +1192,12 @@ function LabDesignerPage() {
 
 	const importTemplate = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("Select a workspace");
+			if (!userContextId)
+				throw new Error("User context is still initializing.");
 			const file = importFile.trim();
 			if (!file) throw new Error("Select a template");
-			return getWorkspaceContainerlabTemplate(workspaceId, {
-				source: importSource,
+			return getUserContainerlabTemplate(userContextId, {
+				source: importSourceBackend,
 				dir: importDir,
 				file,
 			});
@@ -1258,22 +1279,22 @@ function LabDesignerPage() {
 	};
 
 	const openMapInNewTab = async () => {
-		if (!workspaceId) {
-			toast.error("Select a workspace first");
+		if (!userContextId) {
+			toast.error("User context is still initializing");
 			return;
 		}
 		try {
-			const canUseSaved = lastSaved?.workspaceId === workspaceId;
+			const canUseSaved = lastSaved?.userContextId === userContextId;
 			const saved = canUseSaved
 				? lastSaved
-				: await saveContainerlabTopologyYAML(workspaceId, {
+				: await saveContainerlabTopologyYAML(userContextId, {
 						name: labName,
 						topologyYAML: effectiveYaml,
 						templatesDir: effectiveTemplatesDir,
 						template: effectiveTemplateFile,
 					}).then((resp) => {
 						const next: SavedConfigRef = {
-							workspaceId: resp.workspaceId,
+							userContextId: toUserContextId(resp),
 							templatesDir: resp.templatesDir,
 							template: resp.template,
 							filePath: resp.filePath,
@@ -1284,8 +1305,7 @@ function LabDesignerPage() {
 					});
 
 			const qs = new URLSearchParams();
-			qs.set("workspaceId", workspaceId);
-			qs.set("source", "workspace");
+			qs.set("source", "user");
 			qs.set("dir", saved.templatesDir);
 			qs.set("file", saved.template);
 			const url = `/dashboard/labs/map?${qs.toString()}`;
@@ -1409,7 +1429,7 @@ function LabDesignerPage() {
 						variant="outline"
 						size="sm"
 						onClick={() => setImportOpen(true)}
-						disabled={!workspaceId}
+						disabled={!userContextId}
 					>
 						<FolderOpen className="mr-2 h-4 w-4" />
 						Import template
@@ -2008,42 +2028,23 @@ function LabDesignerPage() {
 								/>
 							</div>
 							<div className="space-y-1">
-								<Label>Workspace</Label>
-								<Select
-									value={workspaceId}
-									onValueChange={(v) => setWorkspaceId(v)}
-								>
-									<SelectTrigger>
-										<SelectValue
-											placeholder={
-												workspacesQ.isLoading ? "Loading…" : "Select workspace…"
-											}
-										/>
-									</SelectTrigger>
-									<SelectContent>
-										{(workspacesQ.data?.workspaces ?? []).map((w: any) => (
-											<SelectItem key={String(w.id)} value={String(w.id)}>
-												{String(w.name ?? w.slug ?? w.id)}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+								<Label>User context</Label>
+								<div className="rounded-md border px-3 py-2 font-mono text-xs text-muted-foreground">
+									{userContextId
+										? userContextId
+										: userContextsQ.isLoading
+											? "resolving..."
+											: "unavailable"}
+								</div>
 							</div>
 							<div className="space-y-1">
 								<Label>Runtime</Label>
 								<Select
 									value={runtime}
 									onValueChange={(v) => setRuntime(v as any)}
-									disabled={!workspaceId}
 								>
 									<SelectTrigger>
-										<SelectValue
-											placeholder={
-												!workspaceId
-													? "Select workspace first…"
-													: "Select runtime…"
-											}
-										/>
+										<SelectValue placeholder="Select runtime…" />
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="clabernetes">
@@ -2079,16 +2080,10 @@ function LabDesignerPage() {
 											);
 											toast.success("Copied path");
 										}}
-										disabled={!workspaceId}
 									>
 										Copy path
 									</Button>
-									<Button
-										size="sm"
-										variant="outline"
-										onClick={openMapInNewTab}
-										disabled={!workspaceId}
-									>
+									<Button size="sm" variant="outline" onClick={openMapInNewTab}>
 										<ExternalLink className="mr-2 h-4 w-4" />
 										Open map
 									</Button>
@@ -2101,7 +2096,7 @@ function LabDesignerPage() {
 								<div className="min-w-0">
 									<div className="text-sm font-medium">Use saved config</div>
 									<div className="text-xs text-muted-foreground truncate">
-										{lastSaved?.workspaceId === workspaceId
+										{lastSaved?.userContextId === userContextId
 											? `${lastSaved.filePath} (${lastSaved.branch})`
 											: "Auto-saves before deploy"}
 									</div>
@@ -2116,18 +2111,16 @@ function LabDesignerPage() {
 								<Select
 									value={containerlabServer}
 									onValueChange={(v) => setContainerlabServer(v)}
-									disabled={!workspaceId || runtime !== "containerlab"}
+									disabled={runtime !== "containerlab"}
 								>
 									<SelectTrigger>
 										<SelectValue
 											placeholder={
 												runtime !== "containerlab"
 													? "Not required for clabernetes…"
-													: !workspaceId
-														? "Select workspace first…"
-														: containerlabServersQ.isLoading
-															? "Loading…"
-															: "Select server…"
+													: containerlabServersQ.isLoading
+														? "Loading…"
+														: "Select server…"
 											}
 										/>
 									</SelectTrigger>
@@ -2380,10 +2373,10 @@ function LabDesignerPage() {
 								<Select
 									value={importSource}
 									onValueChange={(v) => {
-										const next = v as "workspace" | "blueprints";
+										const next = v as "user" | "blueprints";
 										setImportSource(next);
 										setImportDir(
-											next === "workspace"
+											next === "user"
 												? "containerlab/designer"
 												: "containerlab",
 										);
@@ -2395,7 +2388,7 @@ function LabDesignerPage() {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="blueprints">Blueprints</SelectItem>
-										<SelectItem value="workspace">Workspace repo</SelectItem>
+										<SelectItem value="user">User repo</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
@@ -2413,7 +2406,7 @@ function LabDesignerPage() {
 							<Select
 								value={importFile}
 								onValueChange={(v) => setImportFile(v)}
-								disabled={!workspaceId}
+								disabled={!userContextId}
 							>
 								<SelectTrigger>
 									<SelectValue

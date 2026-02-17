@@ -54,36 +54,37 @@ import {
 } from "../../../lib/netlab-env";
 import { queryKeys } from "../../../lib/query-keys";
 import {
-	type CreateWorkspaceDeploymentRequest,
+	type CreateUserDeploymentRequest,
 	type DashboardSnapshot,
 	type ExternalTemplateRepo,
-	type SkyforgeWorkspace,
 	type UserVariableGroup,
-	type WorkspaceTemplatesResponse,
-	convertWorkspaceEveLab,
-	createWorkspaceDeployment,
+	type UserTemplatesResponse,
+	convertUserEveLab,
+	createUserDeployment,
 	getDashboardSnapshot,
 	getUserSettings,
-	getWorkspaceContainerlabTemplate,
-	getWorkspaceContainerlabTemplates,
-	getWorkspaceEveNgTemplates,
-	getWorkspaceNetlabTemplate,
-	getWorkspaceNetlabTemplates,
-	getWorkspaceTerraformTemplates,
-	getWorkspaces,
-	importWorkspaceEveLab,
+	getUserContainerlabTemplate,
+	getUserContainerlabTemplates,
+	getUserEveNgTemplates,
+	getUserNetlabTemplate,
+	getUserNetlabTemplates,
+	getUserTerraformTemplates,
+	getUserContexts,
+	importUserEveLab,
 	listUserContainerlabServers,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
 	listUserVariableGroups,
-	listWorkspaceEveLabs,
-	validateWorkspaceNetlabTemplate,
+	listUserEveLabs,
+	validateUserNetlabTemplate,
 } from "../../../lib/skyforge-api";
+import {
+	toTemplateSourceBackend,
+	type TemplateSourceUI,
+} from "../../../lib/template-source";
 
-const deploymentsSearchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
+const deploymentsSearchSchema = z.object({});
 
 export const Route = createFileRoute("/dashboard/deployments/new")({
 	validateSearch: (search) => deploymentsSearchSchema.parse(search),
@@ -97,10 +98,10 @@ type DeploymentKind =
 	| "containerlab"
 	| "clabernetes"
 	| "terraform";
-type TemplateSource = "workspace" | "blueprints" | "external";
+type TemplateSource = TemplateSourceUI;
 
 const formSchema = z.object({
-	workspaceId: z.string().min(1, "Workspace is required"),
+	userContextId: z.string().min(1, "User context is required"),
 	name: z.string().min(1, "Deployment name is required").max(100),
 	kind: z.enum([
 		"netlab-c9s",
@@ -110,7 +111,7 @@ const formSchema = z.object({
 		"terraform",
 		"eve_ng",
 	]),
-	source: z.enum(["workspace", "blueprints", "external"]),
+	source: z.enum(["user", "blueprints", "external"]),
 	templateRepoId: z.string().optional(),
 	template: z.string().min(1, "Template is required"),
 	netlabServer: z.string().optional(),
@@ -134,7 +135,6 @@ function hostLabelFromURL(raw: string): string {
 function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { workspace } = Route.useSearch();
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [netlabHelpOpen, setNetlabHelpOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
@@ -166,21 +166,22 @@ function CreateDeploymentPage() {
 		retry: false,
 	});
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userContextsQ = useQuery({
+		queryKey: queryKeys.userContexts(),
+		queryFn: getUserContexts,
 		staleTime: 30_000,
 	});
-	const workspaces = (workspacesQ.data?.workspaces ??
-		[]) as SkyforgeWorkspace[];
+	const userContexts = (userContextsQ.data?.userContexts ?? []) as Array<{
+		id?: string;
+	}>;
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			workspaceId: workspace || "",
+			userContextId: "",
 			name: "",
 			kind: "netlab-c9s",
-			source: "workspace",
+			source: "user",
 			templateRepoId: "",
 			template: "",
 			netlabServer: "",
@@ -228,7 +229,7 @@ function CreateDeploymentPage() {
 		});
 	};
 
-	const watchWorkspaceId = watch("workspaceId");
+	const watchUserContextId = watch("userContextId");
 	const watchKind = watch("kind");
 	const watchSource = watch("source");
 	const watchTemplateRepoId = watch("templateRepoId");
@@ -237,38 +238,15 @@ function CreateDeploymentPage() {
 	const watchForwardCollectorId = watch("forwardCollectorId");
 	const watchEnv = watch("env");
 	const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
+	const defaultUserContextId = useMemo(() => {
+		return String(userContexts[0]?.id ?? "").trim();
+	}, [userContexts]);
 
-	const lastWorkspaceKey = "skyforge.lastWorkspaceId.deployments";
-
-	// Sync workspaceId when workspaces load if not already set or passed via URL
 	useEffect(() => {
-		if (watchWorkspaceId || workspaces.length === 0) return;
-		const urlWs = String(workspace ?? "").trim();
-		if (urlWs && workspaces.some((w) => w.id === urlWs)) {
-			setValue("workspaceId", urlWs);
-			return;
-		}
-		const stored =
-			typeof window !== "undefined"
-				? (window.localStorage.getItem(lastWorkspaceKey) ?? "")
-				: "";
-		if (stored && workspaces.some((w) => w.id === stored)) {
-			setValue("workspaceId", stored);
-			return;
-		}
-		setValue("workspaceId", workspaces[0].id);
-	}, [watchWorkspaceId, workspaces, setValue]);
-
-	// Persist last-selected workspace for Create Deployment.
-	useEffect(() => {
-		if (!watchWorkspaceId) return;
-		if (typeof window === "undefined") return;
-		try {
-			window.localStorage.setItem(lastWorkspaceKey, watchWorkspaceId);
-		} catch {
-			// ignore
-		}
-	}, [watchWorkspaceId]);
+		if (!defaultUserContextId) return;
+		if (watchUserContextId === defaultUserContextId) return;
+		setValue("userContextId", defaultUserContextId);
+	}, [defaultUserContextId, watchUserContextId, setValue]);
 
 	// Auto-generate name when template or kind changes
 	useEffect(() => {
@@ -304,18 +282,18 @@ function CreateDeploymentPage() {
 	});
 
 	const eveLabsQ = useQuery({
-		queryKey: queryKeys.workspaceEveLabs(
-			watchWorkspaceId,
+		queryKey: queryKeys.userContextEveLabs(
+			watchUserContextId,
 			importServer,
 			"",
 			true,
 		),
 		queryFn: () =>
-			listWorkspaceEveLabs(watchWorkspaceId, {
+			listUserEveLabs(watchUserContextId, {
 				server: importServer,
 				recursive: true,
 			}),
-		enabled: Boolean(importOpen && watchWorkspaceId && importServer),
+		enabled: Boolean(importOpen && watchUserContextId && importServer),
 		staleTime: 30_000,
 		retry: false,
 	});
@@ -369,43 +347,48 @@ function CreateDeploymentPage() {
 
 	const effectiveSource: TemplateSource = useMemo(() => {
 		if (watchKind === "netlab" || watchKind === "netlab-c9s")
-			return watchSource === "workspace" ? "workspace" : "blueprints";
+			return watchSource === "user" ? "user" : "blueprints";
 		if (watchKind === "eve_ng") return "blueprints";
 		if (watchKind === "containerlab" || watchKind === "clabernetes")
 			return watchSource;
 		if (watchKind === "terraform") return watchSource;
-		return "workspace";
+		return "user";
 	}, [watchKind, watchSource]);
 
-	const templatesQ = useQuery<WorkspaceTemplatesResponse>({
-		queryKey: queryKeys.workspaceTemplates(
-			watchWorkspaceId,
+	const effectiveBackendSource = useMemo(
+		() => toTemplateSourceBackend(effectiveSource),
+		[effectiveSource],
+	);
+
+	const templatesQ = useQuery<UserTemplatesResponse>({
+		queryKey: queryKeys.userContextTemplates(
+			watchUserContextId,
 			watchKind,
-			effectiveSource,
+			effectiveBackendSource,
 			watchTemplateRepoId || undefined,
 			undefined,
 		),
-		enabled: !!watchWorkspaceId,
+		enabled: !!watchUserContextId,
 		queryFn: async () => {
 			const query: { source?: string; repo?: string } = {
-				source: effectiveSource,
+				source: effectiveBackendSource,
 			};
-			if (effectiveSource === "external" && watchTemplateRepoId)
+			if (effectiveBackendSource === "external" && watchTemplateRepoId)
 				query.repo = watchTemplateRepoId;
 
 			switch (watchKind) {
 				case "netlab":
 				case "netlab-c9s":
-					return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
+					return getUserNetlabTemplates(watchUserContextId, query);
 				case "eve_ng":
-					return getWorkspaceEveNgTemplates(watchWorkspaceId, query);
+					return getUserEveNgTemplates(watchUserContextId, query);
 				case "containerlab":
 				case "clabernetes":
-					return getWorkspaceContainerlabTemplates(watchWorkspaceId, query);
+					return getUserContainerlabTemplates(watchUserContextId, query);
 				case "terraform":
-					return getWorkspaceTerraformTemplates(watchWorkspaceId, query);
+					return getUserTerraformTemplates(watchUserContextId, query);
 				default:
-					return getWorkspaceNetlabTemplates(watchWorkspaceId, query);
+					return getUserNetlabTemplates(watchUserContextId, query);
 			}
 		},
 		staleTime: 5 * 60_000,
@@ -414,7 +397,7 @@ function CreateDeploymentPage() {
 
 	useEffect(() => {
 		if (!templatesUpdatedAt) return;
-		void queryClient.invalidateQueries({ queryKey: ["workspaceTemplates"] });
+		void queryClient.invalidateQueries({ queryKey: ["userContextTemplates"] });
 	}, [templatesUpdatedAt, queryClient]);
 
 	const templates = useMemo(() => {
@@ -460,36 +443,36 @@ function CreateDeploymentPage() {
 
 	const templatePreviewQ = useQuery({
 		queryKey: [
-			"workspaceTemplate",
+			"userContextTemplate",
 			watchKind,
-			watchWorkspaceId,
-			effectiveSource,
+			watchUserContextId,
+			effectiveBackendSource,
 			watchTemplateRepoId,
 			templatesQ.data?.dir,
 			watchTemplate,
 		],
 		queryFn: async () => {
-			if (!watchWorkspaceId) throw new Error("workspaceId is required");
+			if (!watchUserContextId) throw new Error("user context ID is required");
 			if (!watchTemplate) throw new Error("template is required");
-			const query: any = { source: effectiveSource };
-			if (effectiveSource === "external" && watchTemplateRepoId)
+			const query: any = { source: effectiveBackendSource };
+			if (effectiveBackendSource === "external" && watchTemplateRepoId)
 				query.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
 			if (watchKind === "containerlab" || watchKind === "clabernetes") {
-				return getWorkspaceContainerlabTemplate(watchWorkspaceId, {
+				return getUserContainerlabTemplate(watchUserContextId, {
 					...query,
 					file: watchTemplate,
 				});
 			}
 			// Default: treat as netlab-like.
-			return getWorkspaceNetlabTemplate(watchWorkspaceId, {
+			return getUserNetlabTemplate(watchUserContextId, {
 				...query,
 				template: watchTemplate,
 			});
 		},
 		enabled:
 			templatePreviewOpen &&
-			Boolean(watchWorkspaceId) &&
+			Boolean(watchUserContextId) &&
 			Boolean(watchTemplate) &&
 			(watchKind === "netlab" ||
 				watchKind === "netlab-c9s" ||
@@ -539,29 +522,29 @@ function CreateDeploymentPage() {
 				const v = (values.netlabServer || "").trim();
 				if (!v) throw new Error("BYOS server is required");
 				config.netlabServer = v;
-				config.templateSource = effectiveSource;
-				if (effectiveSource === "external" && values.templateRepoId)
+				config.templateSource = effectiveBackendSource;
+				if (effectiveBackendSource === "external" && values.templateRepoId)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
 			if (values.kind === "netlab-c9s") {
-				config.templateSource = effectiveSource;
-				if (effectiveSource === "external" && values.templateRepoId)
+				config.templateSource = effectiveBackendSource;
+				if (effectiveBackendSource === "external" && values.templateRepoId)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
 			if (values.kind === "clabernetes") {
-				config.templateSource = effectiveSource;
-				if (effectiveSource === "external" && values.templateRepoId)
+				config.templateSource = effectiveBackendSource;
+				if (effectiveBackendSource === "external" && values.templateRepoId)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
 			if (values.kind === "terraform") {
-				config.templateSource = effectiveSource;
-				if (effectiveSource === "external" && values.templateRepoId)
+				config.templateSource = effectiveBackendSource;
+				if (effectiveBackendSource === "external" && values.templateRepoId)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
@@ -574,12 +557,12 @@ function CreateDeploymentPage() {
 				config.eveServer = eve;
 			}
 
-			const body: CreateWorkspaceDeploymentRequest = {
+			const body: CreateUserDeploymentRequest = {
 				name: values.name,
 				type: values.kind,
 				config: config as any,
 			};
-			return createWorkspaceDeployment(values.workspaceId, body);
+			return createUserDeployment(values.userContextId, body);
 		},
 		onSuccess: async (_, variables) => {
 			toast.success("Deployment created successfully", {
@@ -590,7 +573,6 @@ function CreateDeploymentPage() {
 			});
 			await navigate({
 				to: "/dashboard/deployments",
-				search: { workspace: variables.workspaceId },
 			});
 		},
 		onError: (error) => {
@@ -602,12 +584,13 @@ function CreateDeploymentPage() {
 
 	const importEveLab = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+			if (!watchUserContextId)
+				throw new Error("User context is still initializing.");
 			const server = importServer.trim();
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
 			if (!labPath) throw new Error("Select an EVE-NG lab.");
-			return importWorkspaceEveLab(watchWorkspaceId, {
+			return importUserEveLab(watchUserContextId, {
 				server,
 				labPath,
 				deploymentName: importDeploymentName.trim() || undefined,
@@ -623,7 +606,6 @@ function CreateDeploymentPage() {
 			setImportOpen(false);
 			await navigate({
 				to: "/dashboard/deployments",
-				search: { workspace: watchWorkspaceId },
 			});
 		},
 		onError: (error) => {
@@ -635,7 +617,8 @@ function CreateDeploymentPage() {
 
 	const convertEveLab = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+			if (!watchUserContextId)
+				throw new Error("User context is still initializing.");
 			const server = importServer.trim();
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
@@ -645,7 +628,7 @@ function CreateDeploymentPage() {
 			if (createDeployment && !containerlabServer) {
 				throw new Error("Select a Containerlab server.");
 			}
-			return convertWorkspaceEveLab(watchWorkspaceId, {
+			return convertUserEveLab(watchUserContextId, {
 				server,
 				labPath,
 				createDeployment,
@@ -669,7 +652,6 @@ function CreateDeploymentPage() {
 			if (resp?.deployment) {
 				await navigate({
 					to: "/dashboard/deployments",
-					search: { workspace: watchWorkspaceId },
 				});
 			}
 		},
@@ -682,7 +664,8 @@ function CreateDeploymentPage() {
 
 	const validateNetlabTemplate = useMutation({
 		mutationFn: async () => {
-			if (!watchWorkspaceId) throw new Error("Select a workspace first.");
+			if (!watchUserContextId)
+				throw new Error("User context is still initializing.");
 			if (!watchTemplate) throw new Error("Select a template first.");
 			const envFromList = new Map<string, string>();
 			for (const kv of form.getValues("env") || []) {
@@ -703,14 +686,14 @@ function CreateDeploymentPage() {
 			for (const [k, v] of envFromList.entries()) env[k] = v;
 
 			const body: any = {
-				source: effectiveSource,
+				source: effectiveBackendSource,
 				template: watchTemplate,
 				environment: env,
 			};
-			if (effectiveSource === "external" && watchTemplateRepoId)
+			if (effectiveBackendSource === "external" && watchTemplateRepoId)
 				body.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
-			return validateWorkspaceNetlabTemplate(watchWorkspaceId, body);
+			return validateUserNetlabTemplate(watchUserContextId, body);
 		},
 		onSuccess: async (res: any) => {
 			const runId = String(res?.task?.id ?? res?.task?.task_id ?? "").trim();
@@ -813,7 +796,6 @@ function CreateDeploymentPage() {
 							onClick={() =>
 								navigate({
 									to: "/dashboard/deployments",
-									search: { workspace: watchWorkspaceId },
 								})
 							}
 						>
@@ -854,35 +836,6 @@ function CreateDeploymentPage() {
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 							<div className="grid gap-6 md:grid-cols-2">
-								<FormField
-									control={form.control}
-									name="workspaceId"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Workspace</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												defaultValue={field.value}
-												value={field.value}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Select workspace" />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{workspaces.map((w) => (
-														<SelectItem key={w.id} value={w.id}>
-															{w.name} ({w.slug})
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
 								<FormField
 									control={form.control}
 									name="kind"
@@ -1013,9 +966,7 @@ function CreateDeploymentPage() {
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													<SelectItem value="workspace">
-														Workspace repo
-													</SelectItem>
+													<SelectItem value="user">User repo</SelectItem>
 													<SelectItem value="blueprints">Blueprints</SelectItem>
 													<SelectItem
 														value="external"
@@ -1043,7 +994,7 @@ function CreateDeploymentPage() {
 									)}
 								/>
 
-								{effectiveSource === "external" && (
+								{effectiveBackendSource === "external" && (
 									<FormField
 										control={form.control}
 										name="templateRepoId"
@@ -1578,7 +1529,10 @@ function CreateDeploymentPage() {
 							)}
 
 							<div className="flex gap-3">
-								<Button type="submit" disabled={mutation.isPending}>
+								<Button
+									type="submit"
+									disabled={mutation.isPending || !watchUserContextId}
+								>
 									{mutation.isPending && (
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 									)}
@@ -1590,7 +1544,6 @@ function CreateDeploymentPage() {
 									onClick={() => {
 										navigate({
 											to: "/dashboard/deployments",
-											search: { workspace: watchWorkspaceId },
 										});
 									}}
 									disabled={mutation.isPending}

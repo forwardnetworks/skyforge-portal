@@ -27,7 +27,7 @@ import {
 	type CapacityRollupRow,
 	type DashboardSnapshot,
 	type DeploymentCapacityInventoryResponse,
-	type WorkspaceDeployment,
+	type UserDeployment,
 	getDeploymentCapacityGrowth,
 	getDeploymentCapacityInventory,
 	getDeploymentCapacitySummary,
@@ -35,6 +35,7 @@ import {
 	postDeploymentCapacityDeviceMetricsHistory,
 	postDeploymentCapacityInterfaceMetricsHistory,
 	refreshDeploymentCapacityRollups,
+	toUserContextId,
 } from "@/lib/skyforge-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -310,31 +311,34 @@ function DeploymentCapacityPage() {
 
 	const deployment = useMemo(() => {
 		return (snap.data?.deployments ?? []).find(
-			(d: WorkspaceDeployment) => d.id === deploymentId,
+			(d: UserDeployment) => d.id === deploymentId,
 		);
 	}, [snap.data?.deployments, deploymentId]);
 
-	const workspaceId = String(deployment?.workspaceId ?? "");
+	const userContextId = toUserContextId(deployment);
 	const forwardNetworkId = String(
 		(deployment?.config ?? {})["forwardNetworkId"] ?? "",
 	);
 	const forwardEnabled = Boolean((deployment?.config ?? {})["forwardEnabled"]);
 
 	const summary = useQuery({
-		queryKey: queryKeys.deploymentCapacitySummary(workspaceId, deploymentId),
-		queryFn: () => getDeploymentCapacitySummary(workspaceId, deploymentId),
+		queryKey: queryKeys.deploymentCapacitySummary(userContextId, deploymentId),
+		queryFn: () => getDeploymentCapacitySummary(userContextId, deploymentId),
 		enabled: Boolean(
-			workspaceId && deploymentId && forwardEnabled && forwardNetworkId,
+			userContextId && deploymentId && forwardEnabled && forwardNetworkId,
 		),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const inventory = useQuery<DeploymentCapacityInventoryResponse>({
-		queryKey: queryKeys.deploymentCapacityInventory(workspaceId, deploymentId),
-		queryFn: () => getDeploymentCapacityInventory(workspaceId, deploymentId),
+		queryKey: queryKeys.deploymentCapacityInventory(
+			userContextId,
+			deploymentId,
+		),
+		queryFn: () => getDeploymentCapacityInventory(userContextId, deploymentId),
 		enabled: Boolean(
-			workspaceId && deploymentId && forwardEnabled && forwardNetworkId,
+			userContextId && deploymentId && forwardEnabled && forwardNetworkId,
 		),
 		retry: false,
 		staleTime: 30_000,
@@ -342,8 +346,8 @@ function DeploymentCapacityPage() {
 
 	const refresh = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace not found");
-			return refreshDeploymentCapacityRollups(workspaceId, deploymentId);
+			if (!userContextId) throw new Error("user context not found");
+			return refreshDeploymentCapacityRollups(userContextId, deploymentId);
 		},
 		onSuccess: async (resp) => {
 			toast.success("Refresh queued", {
@@ -351,19 +355,19 @@ function DeploymentCapacityPage() {
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.deploymentCapacitySummary(
-					workspaceId,
+					userContextId,
 					deploymentId,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.deploymentCapacityInventory(
-					workspaceId,
+					userContextId,
 					deploymentId,
 				),
 			});
 			await qc.invalidateQueries({
 				// Prefix match for all growth queries for this deployment.
-				queryKey: ["deploymentCapacityGrowth", workspaceId, deploymentId],
+				queryKey: ["deploymentCapacityGrowth", userContextId, deploymentId],
 			});
 		},
 		onError: (e) =>
@@ -373,7 +377,7 @@ function DeploymentCapacityPage() {
 	const loadUnhealthyDevices = useMutation({
 		mutationFn: async () => {
 			return getDeploymentCapacityUnhealthyDevices(
-				workspaceId,
+				userContextId,
 				deploymentId,
 				{},
 			);
@@ -774,7 +778,7 @@ function DeploymentCapacityPage() {
 	const ifaceHistory = useQuery({
 		queryKey: [
 			"capacityIfaceHistory",
-			workspaceId,
+			userContextId,
 			deploymentId,
 			windowLabel,
 			ifaceMetric,
@@ -784,7 +788,7 @@ function DeploymentCapacityPage() {
 			if (!selectedIface) return null;
 			const typ = metricToInterfaceType(ifaceMetric);
 			const resp = await postDeploymentCapacityInterfaceMetricsHistory(
-				workspaceId,
+				userContextId,
 				deploymentId,
 				{
 					type: typ,
@@ -803,7 +807,7 @@ function DeploymentCapacityPage() {
 		},
 		enabled: Boolean(
 			selectedIface &&
-				workspaceId &&
+				userContextId &&
 				deploymentId &&
 				forwardEnabled &&
 				forwardNetworkId,
@@ -815,7 +819,7 @@ function DeploymentCapacityPage() {
 	const deviceHistory = useQuery({
 		queryKey: [
 			"capacityDeviceHistory",
-			workspaceId,
+			userContextId,
 			deploymentId,
 			windowLabel,
 			deviceMetric,
@@ -825,7 +829,7 @@ function DeploymentCapacityPage() {
 			if (!selectedDevice) return null;
 			const typ = metricToDeviceType(deviceMetric);
 			const resp = await postDeploymentCapacityDeviceMetricsHistory(
-				workspaceId,
+				userContextId,
 				deploymentId,
 				{
 					type: typ,
@@ -838,7 +842,7 @@ function DeploymentCapacityPage() {
 		},
 		enabled: Boolean(
 			selectedDevice &&
-				workspaceId &&
+				userContextId &&
 				deploymentId &&
 				forwardEnabled &&
 				forwardNetworkId,
@@ -1180,7 +1184,7 @@ function DeploymentCapacityPage() {
 
 	const ifaceGrowth = useQuery({
 		queryKey: queryKeys.deploymentCapacityGrowth(
-			workspaceId,
+			userContextId,
 			deploymentId,
 			windowLabel,
 			growthIfaceMetric,
@@ -1188,7 +1192,7 @@ function DeploymentCapacityPage() {
 			"interface",
 		),
 		queryFn: () =>
-			getDeploymentCapacityGrowth(workspaceId, deploymentId, {
+			getDeploymentCapacityGrowth(userContextId, deploymentId, {
 				metric: growthIfaceMetric,
 				window: windowLabel,
 				objectType: "interface",
@@ -1196,7 +1200,7 @@ function DeploymentCapacityPage() {
 				limit: 50,
 			}),
 		enabled: Boolean(
-			workspaceId && deploymentId && forwardEnabled && forwardNetworkId,
+			userContextId && deploymentId && forwardEnabled && forwardNetworkId,
 		),
 		retry: false,
 		staleTime: 30_000,
@@ -1204,7 +1208,7 @@ function DeploymentCapacityPage() {
 
 	const deviceGrowth = useQuery({
 		queryKey: queryKeys.deploymentCapacityGrowth(
-			workspaceId,
+			userContextId,
 			deploymentId,
 			windowLabel,
 			growthDeviceMetric,
@@ -1212,7 +1216,7 @@ function DeploymentCapacityPage() {
 			"device",
 		),
 		queryFn: () =>
-			getDeploymentCapacityGrowth(workspaceId, deploymentId, {
+			getDeploymentCapacityGrowth(userContextId, deploymentId, {
 				metric: growthDeviceMetric,
 				window: windowLabel,
 				objectType: "device",
@@ -1220,7 +1224,7 @@ function DeploymentCapacityPage() {
 				limit: 50,
 			}),
 		enabled: Boolean(
-			workspaceId && deploymentId && forwardEnabled && forwardNetworkId,
+			userContextId && deploymentId && forwardEnabled && forwardNetworkId,
 		),
 		retry: false,
 		staleTime: 30_000,

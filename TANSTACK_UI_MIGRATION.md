@@ -501,59 +501,13 @@ const destroyMutation = useMutation({
 
 ---
 
-### Issue 5: No Workspace Management UI
+### Issue 5: Workspace CRUD UI (No Longer Applicable)
 
-**Location:** Missing entirely
-**Symptom:** No way to create, edit, or delete workspaces from the dashboard
+**Status:** Closed by product direction change.
 
-**Current State:**
-- `getWorkspaces()` API exists (read-only)
-- No `createWorkspace()`, `updateWorkspace()`, `deleteWorkspace()` APIs exposed in `skyforge-api.ts`
-- No `/dashboard/workspaces/new` or `/admin/workspaces` routes exist
-
-**Fix Required:**
-
-**A. Expose workspace CRUD APIs in `skyforge-api.ts`:**
-```typescript
-// Add these types and functions
-export type CreateWorkspaceRequest = {
-  name: string;
-  slug: string;
-  description?: string;
-};
-
-export async function createWorkspace(body: CreateWorkspaceRequest): Promise<SkyforgeWorkspace> {
-  return apiFetch<SkyforgeWorkspace>("/api/workspaces", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-export async function updateWorkspace(
-  workspaceId: string,
-  body: Partial<CreateWorkspaceRequest>
-): Promise<SkyforgeWorkspace> {
-  return apiFetch<SkyforgeWorkspace>(`/api/workspaces/${workspaceId}`, {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-}
-
-export async function deleteWorkspace(workspaceId: string): Promise<void> {
-  return apiFetch<void>(`/api/workspaces/${workspaceId}`, {
-    method: "DELETE",
-  });
-}
-```
-
-**B. Create workspace management routes:**
-- `/dashboard/workspaces` - List workspaces with create button
-- `/dashboard/workspaces/new` - Create workspace form
-- `/dashboard/workspaces/$workspaceId` - Edit workspace details
-
-**C. Add workspace link to side navigation**
-
-**Estimated Effort:** 4-6 hours (full CRUD UI)
+The dashboard no longer uses workspace-management routes for end users.
+Legacy notes about `/dashboard/workspaces*` CRUD screens are intentionally
+obsolete and should not be reintroduced.
 
 ---
 

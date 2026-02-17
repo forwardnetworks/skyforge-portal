@@ -10,7 +10,7 @@ import { Terminal } from "lucide-react";
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	workspaceId: string;
+	userContextId: string;
 	deploymentId: string;
 	nodeId: string;
 	nodeKind?: string;
@@ -19,13 +19,13 @@ type Props = {
 export function TerminalModal({
 	open,
 	onOpenChange,
-	workspaceId,
+	userContextId,
 	deploymentId,
 	nodeId,
 	nodeKind,
 }: Props) {
 	// Reset key when opening to ensure clean terminal state
-	const key = `${workspaceId}-${deploymentId}-${nodeId}-${open}`;
+	const key = `${userContextId}-${deploymentId}-${nodeId}-${open}`;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,7 +40,7 @@ export function TerminalModal({
 					{open ? (
 						<TerminalView
 							key={key}
-							workspaceId={workspaceId}
+							userContextId={userContextId}
 							deploymentId={deploymentId}
 							nodeId={nodeId}
 							nodeKind={nodeKind}

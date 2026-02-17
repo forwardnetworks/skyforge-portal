@@ -54,10 +54,9 @@ import {
 	getForwardNetworkAssuranceSummary,
 	getSession,
 	listUserForwardNetworks,
-	listWorkspaceForwardNetworks,
 	refreshForwardNetworkAssurance,
 	seedForwardNetworkAssuranceDemo,
-	storeWorkspacePolicyReportPathsEnforcementBypass,
+	storeUserPolicyReportPathsEnforcementBypass,
 } from "@/lib/skyforge-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -67,13 +66,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
 	scenario: z.string().optional().catch(""),
 	tab: z.string().optional().catch("routing"),
 });
 
 export const Route = createFileRoute(
-	"/dashboard/forward-networks/$networkRef/assurance-studio",
+	"/dashboard/fwd/$networkRef/assurance-studio",
 )({
 	validateSearch: (search) => searchSchema.parse(search),
 	component: AssuranceStudioPage,
@@ -218,11 +216,10 @@ function demandsToPolicyReportsFlowSuite(
 
 function AssuranceStudioPage() {
 	const { networkRef } = Route.useParams();
-	const { workspace, scenario, tab } = Route.useSearch();
+	const { scenario, tab } = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const qc = useQueryClient();
-
-	const workspaceId = String(workspace ?? "").trim();
+	const userContextId = "personal";
 	const selectedScenarioId = String(scenario ?? "").trim();
 	const activeTab = String(tab ?? "routing") || "routing";
 
@@ -294,9 +291,9 @@ function AssuranceStudioPage() {
 	const [secEnfTagPartsText, setSecEnfTagPartsText] = useState("");
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(workspaceId),
-		enabled: Boolean(workspaceId),
+		queryKey: queryKeys.userContextForwardNetworks(userContextId),
+		queryFn: listUserForwardNetworks,
+		enabled: Boolean(userContextId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -321,9 +318,12 @@ function AssuranceStudioPage() {
 	const networkName = String(networkRow?.name ?? "") || String(networkRef);
 
 	const assuranceQ = useQuery({
-		queryKey: queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkAssuranceSummary(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkAssuranceSummary(
+			userContextId,
+			networkRef,
+		),
+		queryFn: () => getForwardNetworkAssuranceSummary(userContextId, networkRef),
+		enabled: Boolean(userContextId && networkRef),
 		staleTime: 5_000,
 		retry: false,
 	});
@@ -332,16 +332,16 @@ function AssuranceStudioPage() {
 		| undefined;
 
 	const refreshAssuranceM = useMutation({
-		mutationFn: () => refreshForwardNetworkAssurance(workspaceId, networkRef),
+		mutationFn: () => refreshForwardNetworkAssurance(userContextId, networkRef),
 		onSuccess: async (res) => {
 			toast.success("Assurance refreshed");
 			qc.setQueryData(
-				queryKeys.forwardNetworkAssuranceSummary(workspaceId, networkRef),
+				queryKeys.forwardNetworkAssuranceSummary(userContextId, networkRef),
 				res,
 			);
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkAssuranceHistory(
-					workspaceId,
+					userContextId,
 					networkRef,
 				),
 			});
@@ -353,14 +353,15 @@ function AssuranceStudioPage() {
 	});
 
 	const seedDemoM = useMutation({
-		mutationFn: () => seedForwardNetworkAssuranceDemo(workspaceId, networkRef),
+		mutationFn: () =>
+			seedForwardNetworkAssuranceDemo(userContextId, networkRef),
 		onSuccess: async (res) => {
 			toast.success("Seeded demo signals", {
 				description: `syslog CIDR ${res.syslogCidr}`,
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkAssuranceSummary(
-					workspaceId,
+					userContextId,
 					networkRef,
 				),
 			});
@@ -372,9 +373,9 @@ function AssuranceStudioPage() {
 	});
 
 	const scenariosQ = useQuery({
-		queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
-		queryFn: () => listAssuranceStudioScenarios(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.assuranceStudioScenarios(userContextId, networkRef),
+		queryFn: () => listAssuranceStudioScenarios(userContextId, networkRef),
+		enabled: Boolean(userContextId && networkRef),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -388,9 +389,9 @@ function AssuranceStudioPage() {
 	}, [scenarios, selectedScenarioId]);
 
 	const runsQ = useQuery({
-		queryKey: queryKeys.assuranceStudioRuns(workspaceId, networkRef),
-		queryFn: () => listAssuranceStudioRuns(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.assuranceStudioRuns(userContextId, networkRef),
+		queryFn: () => listAssuranceStudioRuns(userContextId, networkRef),
+		enabled: Boolean(userContextId && networkRef),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -403,19 +404,22 @@ function AssuranceStudioPage() {
 
 	const runDetailQ = useQuery({
 		queryKey: queryKeys.assuranceStudioRun(
-			workspaceId,
+			userContextId,
 			networkRef,
 			runDetailId,
 		),
-		queryFn: () => getAssuranceStudioRun(workspaceId, networkRef, runDetailId),
-		enabled: Boolean(runDetailOpen && workspaceId && networkRef && runDetailId),
+		queryFn: () =>
+			getAssuranceStudioRun(userContextId, networkRef, runDetailId),
+		enabled: Boolean(
+			runDetailOpen && userContextId && networkRef && runDetailId,
+		),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	// If no scenario is selected, default to the newest.
 	useEffect(() => {
-		if (!workspaceId) return;
+		if (!userContextId) return;
 		if (!networkRef) return;
 		if (selectedScenarioId) return;
 		if (scenarios.length === 0) return;
@@ -423,7 +427,7 @@ function AssuranceStudioPage() {
 			search: (prev) => ({ ...prev, scenario: scenarios[0]!.id }),
 			replace: true,
 		});
-	}, [workspaceId, networkRef, selectedScenarioId, scenarios, navigate]);
+	}, [userContextId, networkRef, selectedScenarioId, scenarios, navigate]);
 
 	// Load scenario -> draft.
 	useEffect(() => {
@@ -506,7 +510,7 @@ function AssuranceStudioPage() {
 				thresholdUtil: Number.isFinite(thr) ? thr : undefined,
 				demands: parseDemandsCSV(demandsText),
 			};
-			return createAssuranceStudioScenario(workspaceId, networkRef, {
+			return createAssuranceStudioScenario(userContextId, networkRef, {
 				name,
 				description: newDesc.trim() || undefined,
 				spec,
@@ -514,7 +518,7 @@ function AssuranceStudioPage() {
 		},
 		onSuccess: async (sc) => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioScenarios(userContextId, networkRef),
 			});
 			setNewOpen(false);
 			setNewName("");
@@ -528,7 +532,7 @@ function AssuranceStudioPage() {
 
 	const duplicateM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
+			if (!userContextId) throw new Error("user context is required");
 			if (!selectedScenarioId) throw new Error("select a scenario first");
 			const name = (draftName.trim() || "Scenario") + " copy";
 			const thr = Number(threshold);
@@ -556,7 +560,7 @@ function AssuranceStudioPage() {
 					enforcementTagParts: splitParts(secEnfTagPartsText),
 				},
 			};
-			return createAssuranceStudioScenario(workspaceId, networkRef, {
+			return createAssuranceStudioScenario(userContextId, networkRef, {
 				name,
 				description: draftDesc.trim() || undefined,
 				spec,
@@ -564,7 +568,7 @@ function AssuranceStudioPage() {
 		},
 		onSuccess: async (sc) => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioScenarios(userContextId, networkRef),
 			});
 			toast.success("Scenario duplicated", { description: sc.id });
 			void navigate({ search: (prev) => ({ ...prev, scenario: sc.id }) });
@@ -605,7 +609,7 @@ function AssuranceStudioPage() {
 				},
 			};
 			return updateAssuranceStudioScenario(
-				workspaceId,
+				userContextId,
 				networkRef,
 				selectedScenarioId,
 				{
@@ -617,7 +621,7 @@ function AssuranceStudioPage() {
 		},
 		onSuccess: async () => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioScenarios(userContextId, networkRef),
 			});
 			setDirty(false);
 			toast.success("Scenario saved");
@@ -629,14 +633,14 @@ function AssuranceStudioPage() {
 		mutationFn: async () => {
 			if (!selectedScenarioId) throw new Error("select a scenario first");
 			return deleteAssuranceStudioScenario(
-				workspaceId,
+				userContextId,
 				networkRef,
 				selectedScenarioId,
 			);
 		},
 		onSuccess: async () => {
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioScenarios(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioScenarios(userContextId, networkRef),
 			});
 			toast.success("Scenario deleted");
 			void navigate({
@@ -660,7 +664,7 @@ function AssuranceStudioPage() {
 				maxDevices: Number(maxDevices) || 30,
 				maxDemands: Number(maxDemands) || 200,
 			};
-			return postAssuranceTrafficSeeds(workspaceId, networkRef, req);
+			return postAssuranceTrafficSeeds(userContextId, networkRef, req);
 		},
 		onSuccess: (resp) => {
 			setDemandsText(demandsToCSV(resp.demands ?? []));
@@ -681,24 +685,28 @@ function AssuranceStudioPage() {
 			}
 			const thr = Number(threshold);
 			const mr = Number(maxResults);
-			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
-				snapshotId: snapshotId.trim() || undefined,
-				baselineSnapshotId:
-					compareToBaseline && baselineSnapshotId.trim()
-						? baselineSnapshotId.trim()
-						: undefined,
-				window,
-				demands,
-				phases: { routing: true, capacity: false, security: false },
-				routing: {
-					thresholdUtil: Number.isFinite(thr) ? thr : 0.8,
-					forward: { maxResults: Number.isFinite(mr) && mr > 0 ? mr : 3 },
-					enforcement: { requireEnforcement },
-					includeHops,
-					includeAcl,
-					projectLoad,
+			const resp = await postAssuranceStudioEvaluate(
+				userContextId,
+				networkRef,
+				{
+					snapshotId: snapshotId.trim() || undefined,
+					baselineSnapshotId:
+						compareToBaseline && baselineSnapshotId.trim()
+							? baselineSnapshotId.trim()
+							: undefined,
+					window,
+					demands,
+					phases: { routing: true, capacity: false, security: false },
+					routing: {
+						thresholdUtil: Number.isFinite(thr) ? thr : 0.8,
+						forward: { maxResults: Number.isFinite(mr) && mr > 0 ? mr : 3 },
+						enforcement: { requireEnforcement },
+						includeHops,
+						includeAcl,
+						projectLoad,
+					},
 				},
-			});
+			);
 			if (resp?.routing) return resp;
 			throw new Error(resp?.errors?.routing ?? "routing evaluation failed");
 		},
@@ -717,18 +725,16 @@ function AssuranceStudioPage() {
 	}, [demandsText]);
 
 	const policyReportsUrl = useMemo(() => {
-		if (!workspaceId) return "";
 		if (!forwardNetworkId) return "";
 		const qs = new URLSearchParams();
 		qs.set("embed", "1");
 		qs.set("forwardNetworkId", forwardNetworkId);
 		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
 		if (flowsText.trim()) qs.set("flows", flowsText);
-		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-	}, [workspaceId, forwardNetworkId, snapshotId, flowsText]);
+		return `/dashboard/policy-reports?${qs.toString()}`;
+	}, [forwardNetworkId, snapshotId, flowsText]);
 
 	const policyReportsIntentUrl = useMemo(() => {
-		if (!workspaceId) return "";
 		if (!forwardNetworkId) return "";
 		const qs = new URLSearchParams();
 		qs.set("embed", "1");
@@ -736,31 +742,28 @@ function AssuranceStudioPage() {
 		qs.set("forwardNetworkId", forwardNetworkId);
 		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
 		if (flowsText.trim()) qs.set("flows", flowsText);
-		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-	}, [workspaceId, forwardNetworkId, snapshotId, flowsText]);
+		return `/dashboard/policy-reports?${qs.toString()}`;
+	}, [forwardNetworkId, snapshotId, flowsText]);
 
 	const policyReportsSegmentationUrl = useMemo(() => {
-		if (!workspaceId) return "";
 		if (!forwardNetworkId) return "";
 		const qs = new URLSearchParams();
 		qs.set("embed", "1");
 		qs.set("tab", "segmentation");
 		qs.set("forwardNetworkId", forwardNetworkId);
 		if (snapshotId.trim()) qs.set("snapshotId", snapshotId.trim());
-		return `/dashboard/workspaces/${encodeURIComponent(workspaceId)}/policy-reports?${qs.toString()}`;
-	}, [workspaceId, forwardNetworkId, snapshotId]);
+		return `/dashboard/policy-reports?${qs.toString()}`;
+	}, [forwardNetworkId, snapshotId]);
 
 	const capacityUrl = useMemo(() => {
-		if (!workspaceId) return "";
 		const qs = new URLSearchParams();
-		qs.set("workspace", workspaceId);
 		qs.set("embed", "1");
-		return `/dashboard/forward-networks/${encodeURIComponent(networkRef)}/capacity?${qs.toString()}`;
-	}, [workspaceId, networkRef]);
+		return `/dashboard/fwd/${encodeURIComponent(networkRef)}/capacity?${qs.toString()}`;
+	}, [networkRef]);
 
 	const runScenarioM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
+			if (!userContextId) throw new Error("user context is required");
 			if (!selectedScenarioId) throw new Error("select a scenario first");
 			if (compareToBaseline && !baselineSnapshotId.trim()) {
 				throw new Error(
@@ -806,51 +809,55 @@ function AssuranceStudioPage() {
 				},
 			};
 
-			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
-				snapshotId: snapshotId.trim() || undefined,
-				baselineSnapshotId:
-					compareToBaseline && baselineSnapshotId.trim()
-						? baselineSnapshotId.trim()
+			const resp = await postAssuranceStudioEvaluate(
+				userContextId,
+				networkRef,
+				{
+					snapshotId: snapshotId.trim() || undefined,
+					baselineSnapshotId:
+						compareToBaseline && baselineSnapshotId.trim()
+							? baselineSnapshotId.trim()
+							: undefined,
+					window,
+					demands,
+					phases: {
+						routing: true,
+						capacity: true,
+						security: includeSecurityInRun,
+					},
+					routing: {
+						thresholdUtil: Number.isFinite(thr) ? thr : 0.8,
+						forward: { maxResults: Number.isFinite(mr) && mr > 0 ? mr : 3 },
+						enforcement: { requireEnforcement },
+						includeHops,
+						includeAcl,
+						projectLoad,
+					},
+					capacity: { includeHops: capIncludeHops },
+					security: includeSecurityInRun
+						? {
+								requireEnforcement: secRequireEnforcement,
+								includeReturnPath: secIncludeReturnPath,
+								requireSymmetricDelivery: secIncludeReturnPath
+									? secRequireSymmetricDelivery
+									: undefined,
+								requireReturnEnforcement: secIncludeReturnPath
+									? secRequireReturnEnforcement
+									: undefined,
+								enforcementDeviceNameParts: splitParts(secEnfNamePartsText),
+								enforcementTagParts: splitParts(secEnfTagPartsText),
+								intent: "PREFER_DELIVERED",
+								includeTags: true,
+								includeNetworkFunctions: secIncludeNetworkFunctions,
+								maxCandidates: 5000,
+								maxResults: 1,
+								maxReturnPathResults: secIncludeReturnPath ? 1 : 0,
+								maxSeconds: 30,
+								maxOverallSeconds: 300,
+							}
 						: undefined,
-				window,
-				demands,
-				phases: {
-					routing: true,
-					capacity: true,
-					security: includeSecurityInRun,
 				},
-				routing: {
-					thresholdUtil: Number.isFinite(thr) ? thr : 0.8,
-					forward: { maxResults: Number.isFinite(mr) && mr > 0 ? mr : 3 },
-					enforcement: { requireEnforcement },
-					includeHops,
-					includeAcl,
-					projectLoad,
-				},
-				capacity: { includeHops: capIncludeHops },
-				security: includeSecurityInRun
-					? {
-							requireEnforcement: secRequireEnforcement,
-							includeReturnPath: secIncludeReturnPath,
-							requireSymmetricDelivery: secIncludeReturnPath
-								? secRequireSymmetricDelivery
-								: undefined,
-							requireReturnEnforcement: secIncludeReturnPath
-								? secRequireReturnEnforcement
-								: undefined,
-							enforcementDeviceNameParts: splitParts(secEnfNamePartsText),
-							enforcementTagParts: splitParts(secEnfTagPartsText),
-							intent: "PREFER_DELIVERED",
-							includeTags: true,
-							includeNetworkFunctions: secIncludeNetworkFunctions,
-							maxCandidates: 5000,
-							maxResults: 1,
-							maxReturnPathResults: secIncludeReturnPath ? 1 : 0,
-							maxSeconds: 30,
-							maxOverallSeconds: 300,
-						}
-					: undefined,
-			});
+			);
 
 			const errors: Record<string, string> = { ...(resp.errors ?? {}) };
 			const results: Record<string, unknown> = {};
@@ -905,7 +912,7 @@ function AssuranceStudioPage() {
 						: "PARTIAL";
 
 			const title = `${draftName.trim() || "Scenario"} (${new Date().toISOString()})`;
-			const run = await createAssuranceStudioRun(workspaceId, networkRef, {
+			const run = await createAssuranceStudioRun(userContextId, networkRef, {
 				scenarioId: selectedScenarioId,
 				title,
 				status,
@@ -919,7 +926,7 @@ function AssuranceStudioPage() {
 		onSuccess: async (out) => {
 			toast.success("Scenario run stored", { description: out.run.id });
 			await qc.invalidateQueries({
-				queryKey: queryKeys.assuranceStudioRuns(workspaceId, networkRef),
+				queryKey: queryKeys.assuranceStudioRuns(userContextId, networkRef),
 			});
 			setRunDetailId(out.run.id);
 			setRunDetailOpen(true);
@@ -929,18 +936,22 @@ function AssuranceStudioPage() {
 
 	const capBottlenecksM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
+			if (!userContextId) throw new Error("user context is required");
 			const demands = scenarioDemands
 				.filter((d) => String(d.dstIp ?? "").trim())
 				.slice(0, 200);
 			if (demands.length === 0) throw new Error("no valid demands to evaluate");
-			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
-				window,
-				snapshotId: snapshotId.trim() || undefined,
-				demands,
-				phases: { routing: false, capacity: true, security: false },
-				capacity: { includeHops: capIncludeHops },
-			});
+			const resp = await postAssuranceStudioEvaluate(
+				userContextId,
+				networkRef,
+				{
+					window,
+					snapshotId: snapshotId.trim() || undefined,
+					demands,
+					phases: { routing: false, capacity: true, security: false },
+					capacity: { includeHops: capIncludeHops },
+				},
+			);
 			if (resp?.capacity)
 				return {
 					bottlenecks: resp.capacity,
@@ -968,37 +979,41 @@ function AssuranceStudioPage() {
 
 	const secRunM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
+			if (!userContextId) throw new Error("user context is required");
 			const demands = scenarioDemands
 				.filter((d) => String(d.dstIp ?? "").trim())
 				.slice(0, 200);
 			if (demands.length === 0) throw new Error("no valid demands to evaluate");
-			const resp = await postAssuranceStudioEvaluate(workspaceId, networkRef, {
-				snapshotId: snapshotId.trim() || undefined,
-				window,
-				demands,
-				phases: { routing: false, capacity: false, security: true },
-				security: {
-					requireEnforcement: secRequireEnforcement,
-					includeReturnPath: secIncludeReturnPath,
-					requireSymmetricDelivery: secIncludeReturnPath
-						? secRequireSymmetricDelivery
-						: undefined,
-					requireReturnEnforcement: secIncludeReturnPath
-						? secRequireReturnEnforcement
-						: undefined,
-					enforcementDeviceNameParts: splitParts(secEnfNamePartsText),
-					enforcementTagParts: splitParts(secEnfTagPartsText),
-					intent: "PREFER_DELIVERED",
-					includeTags: true,
-					includeNetworkFunctions: secIncludeNetworkFunctions,
-					maxCandidates: 5000,
-					maxResults: 1,
-					maxReturnPathResults: secIncludeReturnPath ? 1 : 0,
-					maxSeconds: 30,
-					maxOverallSeconds: 300,
+			const resp = await postAssuranceStudioEvaluate(
+				userContextId,
+				networkRef,
+				{
+					snapshotId: snapshotId.trim() || undefined,
+					window,
+					demands,
+					phases: { routing: false, capacity: false, security: true },
+					security: {
+						requireEnforcement: secRequireEnforcement,
+						includeReturnPath: secIncludeReturnPath,
+						requireSymmetricDelivery: secIncludeReturnPath
+							? secRequireSymmetricDelivery
+							: undefined,
+						requireReturnEnforcement: secIncludeReturnPath
+							? secRequireReturnEnforcement
+							: undefined,
+						enforcementDeviceNameParts: splitParts(secEnfNamePartsText),
+						enforcementTagParts: splitParts(secEnfTagPartsText),
+						intent: "PREFER_DELIVERED",
+						includeTags: true,
+						includeNetworkFunctions: secIncludeNetworkFunctions,
+						maxCandidates: 5000,
+						maxResults: 1,
+						maxReturnPathResults: secIncludeReturnPath ? 1 : 0,
+						maxSeconds: 30,
+						maxOverallSeconds: 300,
+					},
 				},
-			});
+			);
 			if (resp?.security) return resp.security;
 			throw new Error(resp?.errors?.security ?? "security evaluation failed");
 		},
@@ -1008,7 +1023,7 @@ function AssuranceStudioPage() {
 
 	const secStoreM = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace is required");
+			if (!userContextId) throw new Error("user context is required");
 			if (!forwardNetworkId) throw new Error("forwardNetworkId is required");
 			const queries: PolicyReportPathQuery[] = scenarioDemands
 				.filter((d) => String(d.dstIp ?? "").trim())
@@ -1022,7 +1037,7 @@ function AssuranceStudioPage() {
 					dstPort: d.dstPort,
 				}));
 			if (queries.length === 0) throw new Error("no valid demands to evaluate");
-			return storeWorkspacePolicyReportPathsEnforcementBypass(workspaceId, {
+			return storeUserPolicyReportPathsEnforcementBypass(userContextId, {
 				title: `Assurance Studio Paths Assurance (${queries.length} flows)`,
 				forwardNetworkId,
 				snapshotId: snapshotId.trim() || undefined,
@@ -1059,10 +1074,7 @@ function AssuranceStudioPage() {
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex items-center gap-3">
 					<Button asChild variant="ghost" size="sm">
-						<Link
-							to="/dashboard/forward-networks"
-							search={{ workspace: workspaceId }}
-						>
+						<Link to="/dashboard/fwd">
 							<ArrowLeft className="h-4 w-4" />
 							<span className="ml-2">Forward Networks</span>
 						</Link>
@@ -1081,7 +1093,7 @@ function AssuranceStudioPage() {
 						variant="outline"
 						size="sm"
 						onClick={() => refreshAssuranceM.mutate()}
-						disabled={!workspaceId || refreshAssuranceM.isPending}
+						disabled={!userContextId || refreshAssuranceM.isPending}
 					>
 						<RefreshCw className="h-4 w-4 mr-2" />
 						{refreshAssuranceM.isPending ? "Refreshing…" : "Refresh Assurance"}
@@ -1091,16 +1103,15 @@ function AssuranceStudioPage() {
 							variant="outline"
 							size="sm"
 							onClick={() => seedDemoM.mutate()}
-							disabled={!workspaceId || seedDemoM.isPending}
+							disabled={!userContextId || seedDemoM.isPending}
 						>
 							{seedDemoM.isPending ? "Seeding…" : "Seed demo signals"}
 						</Button>
 					) : null}
 					<Button asChild variant="outline" size="sm">
 						<Link
-							to="/dashboard/forward-networks/$networkRef/assurance"
+							to="/dashboard/fwd/$networkRef/assurance"
 							params={{ networkRef }}
-							search={{ workspace: workspaceId } as any}
 						>
 							Assurance page
 						</Link>
@@ -1283,7 +1294,7 @@ function AssuranceStudioPage() {
 							variant="outline"
 							size="sm"
 							disabled={
-								!workspaceId || !selectedScenarioId || duplicateM.isPending
+								!userContextId || !selectedScenarioId || duplicateM.isPending
 							}
 							onClick={() => duplicateM.mutate()}
 						>
@@ -1305,7 +1316,10 @@ function AssuranceStudioPage() {
 						<Button
 							size="sm"
 							disabled={
-								!workspaceId || !selectedScenarioId || saveM.isPending || !dirty
+								!userContextId ||
+								!selectedScenarioId ||
+								saveM.isPending ||
+								!dirty
 							}
 							onClick={() => saveM.mutate()}
 						>
@@ -1315,7 +1329,7 @@ function AssuranceStudioPage() {
 						<Button
 							size="sm"
 							disabled={
-								!workspaceId || !selectedScenarioId || runScenarioM.isPending
+								!userContextId || !selectedScenarioId || runScenarioM.isPending
 							}
 							onClick={() => runScenarioM.mutate()}
 						>
@@ -1483,7 +1497,7 @@ function AssuranceStudioPage() {
 						</div>
 						<div className="flex items-end gap-2 md:col-span-2">
 							<Button
-								disabled={!workspaceId || evalM.isPending}
+								disabled={!userContextId || evalM.isPending}
 								onClick={() => evalM.mutate()}
 							>
 								<Play className="h-4 w-4 mr-2" />
@@ -1683,7 +1697,7 @@ function AssuranceStudioPage() {
 									<div className="flex items-end">
 										<Button
 											variant="outline"
-											disabled={!workspaceId || seedM.isPending}
+											disabled={!userContextId || seedM.isPending}
 											onClick={() => seedM.mutate()}
 										>
 											Seed
@@ -2106,7 +2120,7 @@ function AssuranceStudioPage() {
 						<CardContent className="space-y-3">
 							<div className="flex flex-wrap items-center gap-2">
 								<Button
-									disabled={!workspaceId || capBottlenecksM.isPending}
+									disabled={!userContextId || capBottlenecksM.isPending}
 									onClick={() => capBottlenecksM.mutate()}
 								>
 									Evaluate capacity bottlenecks
@@ -2163,7 +2177,7 @@ function AssuranceStudioPage() {
 													<table className="w-full border-collapse text-sm">
 														<thead>
 															<tr className="border-b">
-																<th className="p-2 text-left">Scope</th>
+																<th className="p-2 text-left">Type</th>
 																<th className="p-2 text-left">Target</th>
 																<th className="p-2 text-left">Speed</th>
 																<th className="p-2 text-left">Worst</th>
@@ -2175,9 +2189,9 @@ function AssuranceStudioPage() {
 														<tbody>
 															{up.items.slice(0, 5).map((it, idx) => (
 																<tr key={idx} className="border-b">
-																	<td className="p-2 font-mono text-xs">
-																		{it.scopeType}
-																	</td>
+																		<td className="p-2 font-mono text-xs">
+																			{it.targetType}
+																		</td>
 																	<td className="p-2 font-mono text-xs">
 																		{it.device}:{it.name}
 																		{it.members?.length ? (
@@ -2448,7 +2462,7 @@ function AssuranceStudioPage() {
 							<div className="flex flex-wrap items-center gap-2">
 								<Button
 									disabled={
-										!workspaceId || secRunM.isPending || !forwardNetworkId
+										!userContextId || secRunM.isPending || !forwardNetworkId
 									}
 									onClick={() => secRunM.mutate()}
 								>
@@ -2457,7 +2471,7 @@ function AssuranceStudioPage() {
 								<Button
 									variant="secondary"
 									disabled={
-										!workspaceId || secStoreM.isPending || !forwardNetworkId
+										!userContextId || secStoreM.isPending || !forwardNetworkId
 									}
 									onClick={() => secStoreM.mutate()}
 								>

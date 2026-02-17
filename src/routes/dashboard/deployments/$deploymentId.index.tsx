@@ -66,7 +66,7 @@ import {
 	type DashboardSnapshot,
 	type JSONMap,
 	type UserForwardCollectorConfigSummary,
-	type WorkspaceDeployment,
+	type UserDeployment,
 	deleteDeployment,
 	getDeploymentTopology,
 	listUserForwardCollectorConfigs,
@@ -74,6 +74,7 @@ import {
 	startDeployment,
 	stopDeployment,
 	syncDeploymentForward,
+	toUserContextId,
 	updateDeploymentForwardConfig,
 } from "../../../lib/skyforge-api";
 
@@ -110,11 +111,11 @@ function DeploymentDetailPage() {
 
 	const deployment = useMemo(() => {
 		return (snap.data?.deployments ?? []).find(
-			(d: WorkspaceDeployment) => d.id === deploymentId,
+			(d: UserDeployment) => d.id === deploymentId,
 		);
 	}, [snap.data?.deployments, deploymentId]);
 
-	const workspaceId = String(deployment?.workspaceId ?? "");
+	const userContextId = toUserContextId(deployment);
 
 	const deploymentType = String(deployment?.type ?? "");
 
@@ -140,7 +141,7 @@ function DeploymentDetailPage() {
 	const handleStart = async () => {
 		try {
 			if (!deployment) throw new Error("deployment not found");
-			await startDeployment(deployment.workspaceId, deployment.id);
+			await startDeployment(userContextId, deployment.id);
 			toast.success("Deployment starting", {
 				description: `${deployment.name} is queued to start.`,
 			});
@@ -152,7 +153,7 @@ function DeploymentDetailPage() {
 	const handleStop = async () => {
 		try {
 			if (!deployment) throw new Error("deployment not found");
-			await stopDeployment(deployment.workspaceId, deployment.id);
+			await stopDeployment(userContextId, deployment.id);
 			toast.success("Deployment stopping", {
 				description: `${deployment.name} is queued to stop.`,
 			});
@@ -164,14 +165,13 @@ function DeploymentDetailPage() {
 	const handleDestroy = async () => {
 		try {
 			if (!deployment) throw new Error("deployment not found");
-			await deleteDeployment(deployment.workspaceId, deployment.id);
+			await deleteDeployment(userContextId, deployment.id);
 			toast.success("Deployment deleted");
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 			navigate({
 				to: "/dashboard/deployments",
-				search: { workspace: deployment.workspaceId },
 			});
 		} catch (e) {
 			toast.error("Failed to delete", { description: (e as Error).message });
@@ -185,9 +185,7 @@ function DeploymentDetailPage() {
 	const runsForDeployment = useMemo(() => {
 		if (!deployment) return [];
 		const all = (snap.data?.runs ?? []) as JSONMap[];
-		const filtered = all.filter(
-			(r) => String(r.workspaceId ?? "") === deployment.workspaceId,
-		);
+		const filtered = all.filter((r) => toUserContextId(r) === userContextId);
 		const depRuns = filtered.filter(
 			(r) => String(r.deploymentId ?? "") === deployment.id,
 		);
@@ -198,10 +196,10 @@ function DeploymentDetailPage() {
 	}, [deployment, snap.data?.runs]);
 
 	const topology = useQuery({
-		queryKey: queryKeys.deploymentTopology(workspaceId, deploymentId),
+		queryKey: queryKeys.deploymentTopology(userContextId, deploymentId),
 		queryFn: async () => {
 			if (!deployment) throw new Error("deployment not found");
-			return getDeploymentTopology(deployment.workspaceId, deployment.id);
+			return getDeploymentTopology(userContextId, deployment.id);
 		},
 		enabled:
 			!!deployment &&
@@ -213,11 +211,7 @@ function DeploymentDetailPage() {
 	const saveConfig = useMutation({
 		mutationFn: async (nodeId: string) => {
 			if (!deployment) throw new Error("deployment not found");
-			return saveDeploymentNodeConfig(
-				deployment.workspaceId,
-				deployment.id,
-				nodeId,
-			);
+			return saveDeploymentNodeConfig(userContextId, deployment.id, nodeId);
 		},
 		onSuccess: (resp, nodeId) => {
 			if (resp?.skipped) {
@@ -257,7 +251,7 @@ function DeploymentDetailPage() {
 				const cur = ids[idx++];
 				try {
 					const resp = await saveDeploymentNodeConfig(
-						deployment.workspaceId,
+						userContextId,
 						deployment.id,
 						cur,
 					);
@@ -331,11 +325,7 @@ function DeploymentDetailPage() {
 			collectorConfigId?: string;
 		}) => {
 			if (!deployment) throw new Error("deployment not found");
-			return updateDeploymentForwardConfig(
-				deployment.workspaceId,
-				deployment.id,
-				next,
-			);
+			return updateDeploymentForwardConfig(userContextId, deployment.id, next);
 		},
 		onSuccess: async () => {
 			toast.success("Forward settings updated");
@@ -352,7 +342,7 @@ function DeploymentDetailPage() {
 	const syncForward = useMutation({
 		mutationFn: async () => {
 			if (!deployment) throw new Error("deployment not found");
-			return syncDeploymentForward(deployment.workspaceId, deployment.id);
+			return syncDeploymentForward(userContextId, deployment.id);
 		},
 		onSuccess: async (resp) => {
 			toast.success("Forward sync queued", {
@@ -375,7 +365,7 @@ function DeploymentDetailPage() {
 			return (
 				<div className="h-screen w-screen bg-zinc-950 flex flex-col">
 					<TerminalView
-						workspaceId={workspaceId}
+						userContextId={userContextId}
 						deploymentId={deploymentId}
 						nodeId={node}
 						className="flex-1"
@@ -387,7 +377,7 @@ function DeploymentDetailPage() {
 			return (
 				<div className="h-screen w-screen bg-background flex flex-col">
 					<NodeLogsView
-						workspaceId={workspaceId}
+						userContextId={userContextId}
 						deploymentId={deploymentId}
 						nodeId={node}
 						className="flex-1"
@@ -399,7 +389,7 @@ function DeploymentDetailPage() {
 			return (
 				<div className="h-screen w-screen bg-background flex flex-col">
 					<NodeDescribeView
-						workspaceId={workspaceId}
+						userContextId={userContextId}
 						deploymentId={deploymentId}
 						nodeId={node}
 						className="flex-1"
@@ -558,7 +548,7 @@ function DeploymentDetailPage() {
 						<CardContent>
 							<TopologyViewer
 								topology={topology.data}
-								workspaceId={deployment.workspaceId}
+								userContextId={userContextId}
 								deploymentId={deployment.id}
 								enableTerminal={["netlab-c9s", "clabernetes"].includes(
 									deployment.type,

@@ -38,7 +38,6 @@ import {
 	getForwardNetworkCapacityUnhealthyDevices,
 	getForwardNetworkCapacityUpgradeCandidates,
 	listUserForwardNetworks,
-	listWorkspaceForwardNetworks,
 	postForwardNetworkCapacityDeviceMetricsHistory,
 	postForwardNetworkCapacityInterfaceMetricsHistory,
 	refreshForwardNetworkCapacityRollups,
@@ -50,13 +49,9 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
-});
+const searchSchema = z.object({});
 
-export const Route = createFileRoute(
-	"/dashboard/forward-networks/$networkRef/capacity",
-)({
+export const Route = createFileRoute("/dashboard/fwd/$networkRef/capacity")({
 	validateSearch: (search) => searchSchema.parse(search),
 	component: ForwardNetworkCapacityPage,
 });
@@ -274,8 +269,8 @@ type VrfSummaryRow = {
 
 function ForwardNetworkCapacityPage() {
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
 	const qc = useQueryClient();
+	const userContextId = "personal";
 	const [windowLabel, setWindowLabel] = useState<"24h" | "7d" | "30d">("24h");
 	const [ifaceMetric, setIfaceMetric] = useState<
 		| "util_ingress"
@@ -316,12 +311,10 @@ function ForwardNetworkCapacityPage() {
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
 	const [planFilter, setPlanFilter] = useState("");
-	const workspaceId = String(workspace ?? "").trim();
-
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(workspaceId),
-		enabled: Boolean(workspaceId),
+		queryKey: queryKeys.userContextForwardNetworks(userContextId),
+		queryFn: listUserForwardNetworks,
+		enabled: Boolean(userContextId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -343,40 +336,47 @@ function ForwardNetworkCapacityPage() {
 	}, [networksQ.data?.networks, userNetworksQ.data?.networks, networkRef]);
 
 	const summary = useQuery({
-		queryKey: queryKeys.forwardNetworkCapacitySummary(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkCapacitySummary(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkCapacitySummary(
+			userContextId,
+			networkRef,
+		),
+		queryFn: () => getForwardNetworkCapacitySummary(userContextId, networkRef),
+		enabled: Boolean(userContextId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const inventory = useQuery<ForwardNetworkCapacityInventoryResponse>({
 		queryKey: queryKeys.forwardNetworkCapacityInventory(
-			workspaceId,
+			userContextId,
 			networkRef,
 		),
-		queryFn: () => getForwardNetworkCapacityInventory(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryFn: () =>
+			getForwardNetworkCapacityInventory(userContextId, networkRef),
+		enabled: Boolean(userContextId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const coverage = useQuery<ForwardNetworkCapacityCoverageResponse>({
-		queryKey: queryKeys.forwardNetworkCapacityCoverage(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkCapacityCoverage(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkCapacityCoverage(
+			userContextId,
+			networkRef,
+		),
+		queryFn: () => getForwardNetworkCapacityCoverage(userContextId, networkRef),
+		enabled: Boolean(userContextId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const snapshotDelta = useQuery<ForwardNetworkCapacitySnapshotDeltaResponse>({
 		queryKey: queryKeys.forwardNetworkCapacitySnapshotDelta(
-			workspaceId,
+			userContextId,
 			networkRef,
 		),
 		queryFn: () =>
-			getForwardNetworkCapacitySnapshotDelta(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+			getForwardNetworkCapacitySnapshotDelta(userContextId, networkRef),
+		enabled: Boolean(userContextId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -384,15 +384,15 @@ function ForwardNetworkCapacityPage() {
 	const upgradeCandidates =
 		useQuery<ForwardNetworkCapacityUpgradeCandidatesResponse>({
 			queryKey: queryKeys.forwardNetworkCapacityUpgradeCandidates(
-				workspaceId,
+				userContextId,
 				networkRef,
 				windowLabel,
 			),
 			queryFn: () =>
-				getForwardNetworkCapacityUpgradeCandidates(workspaceId, networkRef, {
+				getForwardNetworkCapacityUpgradeCandidates(userContextId, networkRef, {
 					window: windowLabel,
 				}),
-			enabled: Boolean(workspaceId && networkRef),
+			enabled: Boolean(userContextId && networkRef),
 			retry: false,
 			staleTime: 30_000,
 		});
@@ -422,8 +422,8 @@ function ForwardNetworkCapacityPage() {
 
 	const refresh = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace not found");
-			return refreshForwardNetworkCapacityRollups(workspaceId, networkRef);
+			if (!userContextId) throw new Error("user context not found");
+			return refreshForwardNetworkCapacityRollups(userContextId, networkRef);
 		},
 		onSuccess: async (resp) => {
 			toast.success("Refresh queued", {
@@ -431,42 +431,42 @@ function ForwardNetworkCapacityPage() {
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkCapacitySummary(
-					workspaceId,
+					userContextId,
 					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkCapacityInventory(
-					workspaceId,
+					userContextId,
 					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkCapacityCoverage(
-					workspaceId,
+					userContextId,
 					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkCapacitySnapshotDelta(
-					workspaceId,
+					userContextId,
 					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: [
 					"forwardNetworkCapacityUpgradeCandidates",
-					workspaceId,
+					userContextId,
 					networkRef,
 				],
 			});
 			await qc.invalidateQueries({
 				queryKey:
-					queryKeys.workspaceForwardNetworkCapacityPortfolio(workspaceId),
+					queryKeys.userContextForwardNetworkCapacityPortfolio(userContextId),
 			});
 			await qc.invalidateQueries({
 				// Prefix match for all growth queries for this forward network.
-				queryKey: ["forwardNetworkCapacityGrowth", workspaceId, networkRef],
+				queryKey: ["forwardNetworkCapacityGrowth", userContextId, networkRef],
 			});
 		},
 		onError: (e) =>
@@ -476,7 +476,7 @@ function ForwardNetworkCapacityPage() {
 	const loadUnhealthyDevices = useMutation({
 		mutationFn: async () => {
 			return getForwardNetworkCapacityUnhealthyDevices(
-				workspaceId,
+				userContextId,
 				networkRef,
 				{},
 			);
@@ -882,7 +882,7 @@ function ForwardNetworkCapacityPage() {
 	const ifaceHistory = useQuery({
 		queryKey: [
 			"capacityIfaceHistory",
-			workspaceId,
+			userContextId,
 			networkRef,
 			windowLabel,
 			ifaceMetric,
@@ -892,7 +892,7 @@ function ForwardNetworkCapacityPage() {
 			if (!selectedIface) return null;
 			const typ = metricToInterfaceType(ifaceMetric);
 			const resp = await postForwardNetworkCapacityInterfaceMetricsHistory(
-				workspaceId,
+				userContextId,
 				networkRef,
 				{
 					type: typ,
@@ -909,7 +909,7 @@ function ForwardNetworkCapacityPage() {
 			);
 			return resp.body as any;
 		},
-		enabled: Boolean(selectedIface && workspaceId && forwardNetworkId),
+		enabled: Boolean(selectedIface && userContextId && forwardNetworkId),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -917,7 +917,7 @@ function ForwardNetworkCapacityPage() {
 	const deviceHistory = useQuery({
 		queryKey: [
 			"capacityDeviceHistory",
-			workspaceId,
+			userContextId,
 			networkRef,
 			windowLabel,
 			deviceMetric,
@@ -927,7 +927,7 @@ function ForwardNetworkCapacityPage() {
 			if (!selectedDevice) return null;
 			const typ = metricToDeviceType(deviceMetric);
 			const resp = await postForwardNetworkCapacityDeviceMetricsHistory(
-				workspaceId,
+				userContextId,
 				networkRef,
 				{
 					type: typ,
@@ -938,7 +938,7 @@ function ForwardNetworkCapacityPage() {
 			);
 			return resp.body as any;
 		},
-		enabled: Boolean(selectedDevice && workspaceId && forwardNetworkId),
+		enabled: Boolean(selectedDevice && userContextId && forwardNetworkId),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -1294,7 +1294,7 @@ function ForwardNetworkCapacityPage() {
 
 	const ifaceGrowth = useQuery({
 		queryKey: queryKeys.forwardNetworkCapacityGrowth(
-			workspaceId,
+			userContextId,
 			networkRef,
 			windowLabel,
 			growthIfaceMetric,
@@ -1302,21 +1302,21 @@ function ForwardNetworkCapacityPage() {
 			"interface",
 		),
 		queryFn: () =>
-			getForwardNetworkCapacityGrowth(workspaceId, networkRef, {
+			getForwardNetworkCapacityGrowth(userContextId, networkRef, {
 				metric: growthIfaceMetric,
 				window: windowLabel,
 				objectType: "interface",
 				compareHours,
 				limit: 50,
 			}),
-		enabled: Boolean(workspaceId && networkRef && forwardNetworkId),
+		enabled: Boolean(userContextId && networkRef && forwardNetworkId),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const deviceGrowth = useQuery({
 		queryKey: queryKeys.forwardNetworkCapacityGrowth(
-			workspaceId,
+			userContextId,
 			networkRef,
 			windowLabel,
 			growthDeviceMetric,
@@ -1324,14 +1324,14 @@ function ForwardNetworkCapacityPage() {
 			"device",
 		),
 		queryFn: () =>
-			getForwardNetworkCapacityGrowth(workspaceId, networkRef, {
+			getForwardNetworkCapacityGrowth(userContextId, networkRef, {
 				metric: growthDeviceMetric,
 				window: windowLabel,
 				objectType: "device",
 				compareHours,
 				limit: 50,
 			}),
-		enabled: Boolean(workspaceId && networkRef && forwardNetworkId),
+		enabled: Boolean(userContextId && networkRef && forwardNetworkId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -1575,13 +1575,12 @@ function ForwardNetworkCapacityPage() {
 		windowLabel,
 	]);
 
-	if (!workspaceId) {
+	if (!userContextId) {
 		return (
 			<div className="space-y-6 p-6">
 				<div className="flex items-center gap-3">
 					<Link
-						to="/dashboard/forward-networks"
-						search={{ workspace: "" } as any}
+						to="/dashboard/fwd"
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -1594,7 +1593,7 @@ function ForwardNetworkCapacityPage() {
 				</div>
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
-						Workspace is required.
+						User context is unavailable.
 					</CardContent>
 				</Card>
 			</div>
@@ -1606,8 +1605,7 @@ function ForwardNetworkCapacityPage() {
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 				<div className="flex items-center gap-3">
 					<Link
-						to="/dashboard/forward-networks"
-						search={{ workspace: workspaceId } as any}
+						to="/dashboard/fwd"
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -2004,7 +2002,7 @@ function ForwardNetworkCapacityPage() {
 															<div className="text-xs">
 																<div className="flex items-center gap-2">
 																	<span className="font-mono">{r.name}</span>
-																	{r.scopeType === "lag" ? (
+																{r.targetType === "lag" ? (
 																		<Badge variant="secondary">LAG</Badge>
 																	) : null}
 																</div>
@@ -2051,7 +2049,7 @@ function ForwardNetworkCapacityPage() {
 												>
 											}
 											rows={top}
-											getRowId={(r) => `${r.scopeType}:${r.device}:${r.name}`}
+											getRowId={(r) => `${r.targetType}:${r.device}:${r.name}`}
 											emptyText="No upgrade candidates yet. Click Refresh to enqueue rollups."
 											maxHeightClassName="max-h-[320px]"
 											minWidthClassName="min-w-0"
@@ -2928,7 +2926,7 @@ function ForwardNetworkCapacityPage() {
 												})
 											: items;
 										const headers = [
-											"scopeType",
+											"targetType",
 											"device",
 											"name",
 											"members",
@@ -2945,7 +2943,7 @@ function ForwardNetworkCapacityPage() {
 											"worstMemberMaxUtil",
 										];
 										const rows = filtered.map((it) => [
-											it.scopeType ?? "",
+											it.targetType ?? "",
 											it.device ?? "",
 											it.name ?? "",
 											(it.members ?? []).join(" "),
@@ -3016,7 +3014,7 @@ function ForwardNetworkCapacityPage() {
 															<div className="text-xs">
 																<div className="flex items-center gap-2">
 																	<span className="font-mono">{r.name}</span>
-																	{r.scopeType === "lag" ? (
+																{r.targetType === "lag" ? (
 																		<Badge variant="secondary">LAG</Badge>
 																	) : null}
 																	{r.recommendedSpeedMbps ? (
@@ -3163,7 +3161,7 @@ function ForwardNetworkCapacityPage() {
 												>
 											}
 											rows={filtered}
-											getRowId={(r) => `${r.scopeType}:${r.device}:${r.name}`}
+											getRowId={(r) => `${r.targetType}:${r.device}:${r.name}`}
 											emptyText="No upgrade candidates for this window (no hot links / no near-term forecasts)."
 											maxHeightClassName="max-h-[520px]"
 											minWidthClassName="min-w-0"

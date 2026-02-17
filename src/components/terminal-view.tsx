@@ -4,9 +4,10 @@ import { Terminal as XTerm } from "xterm";
 import "xterm/css/xterm.css";
 import { Button } from "@/components/ui/button";
 import { SKYFORGE_PROXY_ROOT } from "@/lib/skyforge-api";
+import { userContextRelativePath } from "@/lib/user-context-path";
 
 type Props = {
-	workspaceId: string;
+	userContextId: string;
 	deploymentId: string;
 	nodeId: string;
 	nodeKind?: string;
@@ -17,7 +18,7 @@ type Props = {
 type ServerMsg = { type: string; data?: string; stream?: string };
 
 export function TerminalView({
-	workspaceId,
+	userContextId,
 	deploymentId,
 	nodeId,
 	nodeKind,
@@ -37,16 +38,17 @@ export function TerminalView({
 	}, []);
 
 	const wsURL = useMemo(() => {
-		if (!workspaceId || !deploymentId || !nodeId) return "";
+		if (!userContextId || !deploymentId || !nodeId) return "";
 		const proto = window.location.protocol === "https:" ? "wss" : "ws";
-		const base = `${proto}://${window.location.host}${SKYFORGE_PROXY_ROOT}/api/workspaces/${encodeURIComponent(
-			workspaceId,
-		)}/deployments/${encodeURIComponent(deploymentId)}/terminal/ws`;
+		const base = `${proto}://${window.location.host}${SKYFORGE_PROXY_ROOT}${userContextRelativePath(
+			userContextId,
+			`/deployments/${encodeURIComponent(deploymentId)}/terminal/ws`,
+		)}`;
 		const params = new URLSearchParams();
 		params.set("node", nodeId);
 		params.set("command", command);
 		return `${base}?${params.toString()}`;
-	}, [command, deploymentId, nodeId, workspaceId]);
+	}, [command, deploymentId, nodeId, userContextId]);
 
 	useEffect(() => {
 		if (!containerRef.current) return;

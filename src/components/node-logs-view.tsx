@@ -5,7 +5,7 @@ import { RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 
 type Props = {
-	workspaceId: string;
+	userContextId: string;
 	deploymentId: string;
 	nodeId: string;
 	nodeKind?: string;
@@ -15,7 +15,7 @@ type Props = {
 };
 
 export function NodeLogsView({
-	workspaceId,
+	userContextId,
 	deploymentId,
 	nodeId,
 	nodeKind,
@@ -31,10 +31,10 @@ export function NodeLogsView({
 	}, [nodeId, nodeKind]);
 
 	const logs = useQuery({
-		queryKey: ["deploymentNodeLogs", workspaceId, deploymentId, nodeId, tail],
-		enabled: !!workspaceId && !!deploymentId && !!nodeId,
+		queryKey: ["deploymentNodeLogs", userContextId, deploymentId, nodeId, tail],
+		enabled: !!userContextId && !!deploymentId && !!nodeId,
 		queryFn: async () =>
-			getDeploymentNodeLogs(workspaceId, deploymentId, nodeId, {
+			getDeploymentNodeLogs(userContextId, deploymentId, nodeId, {
 				tail,
 				container: nodeId,
 			}),

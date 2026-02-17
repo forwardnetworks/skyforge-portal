@@ -16,7 +16,6 @@ import {
 	Server,
 	Settings,
 	ShieldCheck,
-	Users,
 	Webhook,
 	Workflow,
 } from "lucide-react";
@@ -60,7 +59,6 @@ const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
 	{ label: "Runs", href: "/dashboard/runs", icon: Workflow },
-	{ label: "Workspaces", href: "/dashboard/workspaces", icon: Users },
 	{
 		label: "Designer",
 		href: "/dashboard/labs/designer",
@@ -75,7 +73,12 @@ const items: NavItem[] = [
 			{ label: "Overview", href: "/dashboard/integrations", icon: Workflow },
 			{ label: "Forward Collector", href: "/dashboard/forward", icon: Radio },
 			{
-				label: "Forward Networks",
+				label: "Forward Insights",
+				href: "/dashboard/fwd",
+				icon: Network,
+			},
+			{
+				label: "Forward On-Prem",
 				href: "/fwd/",
 				icon: Network,
 				external: true,
@@ -195,7 +198,9 @@ export function SideNav(props: {
 									item.children?.filter((child) => {
 										if (child.label === "Forward Collector")
 											return !!f.forwardEnabled;
-										if (child.label === "Forward Networks")
+										if (child.label === "Forward Insights")
+											return !!f.forwardEnabled;
+										if (child.label === "Forward On-Prem")
 											return !!f.forwardEnabled;
 										if (child.label === "ServiceNow") return !!f.forwardEnabled;
 										if (child.label === "Elastic")
