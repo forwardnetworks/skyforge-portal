@@ -31,6 +31,7 @@ export type SkyforgeUserContext = {
 	editors?: string[];
 	viewers?: string[];
 };
+export type UserContext = SkyforgeUserContext;
 export type NotificationRecord =
 	components["schemas"]["skyforge.NotificationRecord"];
 
@@ -267,7 +268,7 @@ export type ListForwardCollectorsResponse = {
 // Dashboard snapshot is delivered via SSE (`/api/dashboard/events`) and is not described in OpenAPI.
 export type DashboardSnapshot = {
 	refreshedAt: ISO8601;
-	contexts: SkyforgeUserContext[];
+	contexts: UserContext[];
 	deployments: UserDeployment[];
 	runs: JSONMap[];
 	templatesIndexUpdatedAt?: ISO8601;
@@ -304,7 +305,7 @@ export async function logout(): Promise<void> {
 }
 
 export type GetUserContextsResponse = {
-	contexts: SkyforgeUserContext[];
+	contexts: UserContext[];
 };
 
 export const USER_CONTEXT_ID = "me";
@@ -3363,7 +3364,7 @@ export type AdminPurgeUserRequest = NonNullable<
 >["content"]["application/json"];
 export type AdminPurgeUserResponse =
 	operations["POST:skyforge.PurgeUser"]["responses"][200]["content"]["application/json"] & {
-		deletedScopes?: number;
+		deletedOwners?: number;
 	};
 export async function adminPurgeUser(
 	body: AdminPurgeUserRequest,
@@ -3377,7 +3378,7 @@ export async function adminPurgeUser(
 	);
 	return {
 		...resp,
-		deletedScopes: Number((resp as any)?.deletedScopes ?? 0),
+		deletedOwners: Number((resp as any)?.deletedOwners ?? 0),
 	};
 }
 

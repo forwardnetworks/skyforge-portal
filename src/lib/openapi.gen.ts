@@ -8087,71 +8087,6 @@ export interface components {
 			/** Format: int64 */
 			resourceCount: number;
 		};
-		"skyforge.ScopeDeployment": {
-			/** Format: int64 */
-			activeTaskId: number;
-			activeTaskStatus: string;
-			config: components["schemas"]["skyforge.JSONMap"];
-			createdAt: string;
-			createdBy: string;
-			id: string;
-			lastFinishedAt: string;
-			lastStartedAt: string;
-			lastStatus: string;
-			/** Format: int64 */
-			lastTaskId: number;
-			/** Format: int64 */
-			lastTaskOwnerId: number;
-			name: string;
-			ownerUsername: string;
-			/** Format: int64 */
-			queueDepth: number;
-			type: string;
-			updatedAt: string;
-		};
-		"skyforge.ScopeEveServerConfig": {
-			apiPassword: string;
-			apiUrl: string;
-			apiUser: string;
-			hasPassword: boolean;
-			id: string;
-			name: string;
-			skipTlsVerify: boolean;
-			webUrl: string;
-		};
-		"skyforge.ScopeForwardCollector": {
-			id: string;
-			name: string;
-			username: string;
-		};
-		"skyforge.ScopeNetlabServerConfig": {
-			apiInsecure: boolean;
-			apiPassword: string;
-			apiToken: string;
-			apiUrl: string;
-			apiUser: string;
-			hasPassword: boolean;
-			id: string;
-			name: string;
-		};
-		"skyforge.ScopePodContainer": {
-			image: string;
-			message: string;
-			name: string;
-			ready: boolean;
-			reason: string;
-			/** Format: int32 */
-			restartCount: number;
-			state: string;
-		};
-		"skyforge.ScopeVariableGroup": {
-			/** Format: int64 */
-			id: number;
-			name: string;
-			variables: {
-				[key: string]: string;
-			};
-		};
 		/**
 		 * SkyforgeUserContext is the user-facing context object stored in Postgres and
 		 *     returned by the API.
@@ -8345,6 +8280,28 @@ export interface components {
 			id: string;
 			name: string;
 		};
+		"skyforge.UserDeployment": {
+			/** Format: int64 */
+			activeTaskId: number;
+			activeTaskStatus: string;
+			config: components["schemas"]["skyforge.JSONMap"];
+			createdAt: string;
+			createdBy: string;
+			id: string;
+			lastFinishedAt: string;
+			lastStartedAt: string;
+			lastStatus: string;
+			/** Format: int64 */
+			lastTaskId: number;
+			/** Format: int64 */
+			lastTaskOwnerId: number;
+			name: string;
+			ownerUsername: string;
+			/** Format: int64 */
+			queueDepth: number;
+			type: string;
+			updatedAt: string;
+		};
 		"skyforge.UserEnvVar": {
 			key: string;
 			value: string;
@@ -8362,6 +8319,11 @@ export interface components {
 			sshKey: string;
 			sshUser: string;
 			webUrl: string;
+		};
+		"skyforge.UserForwardCollector": {
+			id: string;
+			name: string;
+			username: string;
 		};
 		"skyforge.UserForwardCollectorConfigSummary": {
 			baseUrl: string;
@@ -8386,6 +8348,16 @@ export interface components {
 			hasPassword: boolean;
 			id: string;
 			name: string;
+		};
+		"skyforge.UserPodContainer": {
+			image: string;
+			message: string;
+			name: string;
+			ready: boolean;
+			reason: string;
+			/** Format: int32 */
+			restartCount: number;
+			state: string;
 		};
 		"skyforge.UserProfile": {
 			actorUsername: string;
@@ -9462,7 +9434,7 @@ export interface operations {
 				content: {
 					"application/json": {
 						/** Format: int64 */
-						deletedScopes: number;
+						deletedOwners: number;
 						status: string;
 						warnings: string[];
 					};
@@ -10240,7 +10212,7 @@ export interface operations {
 					"application/json": {
 						awsSsoStatus: components["schemas"]["skyforge.dashboardAwsSsoStatus"];
 						contexts: components["schemas"]["skyforge.SkyforgeUserContext"][];
-						deployments: components["schemas"]["skyforge.ScopeDeployment"][];
+						deployments: components["schemas"]["skyforge.UserDeployment"][];
 						refreshedAt: string;
 						runs: components["schemas"]["skyforge.JSONMap"][];
 						templatesIndexUpdatedAt: string;
@@ -10266,7 +10238,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployments: components["schemas"]["skyforge.ScopeDeployment"][];
+						deployments: components["schemas"]["skyforge.UserDeployment"][];
 						ownerUsername: string;
 					};
 				};
@@ -10364,7 +10336,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						note: string;
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
@@ -10414,7 +10386,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						note: string;
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
@@ -10450,7 +10422,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						note: string;
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
@@ -10508,7 +10480,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						note: string;
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
@@ -10591,7 +10563,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
 					};
@@ -10625,7 +10597,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
 					};
@@ -10932,7 +10904,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
 					};
@@ -11028,7 +11000,7 @@ export interface operations {
 					"application/json": {
 						clabernetes: components["schemas"]["skyforge.ClabernetesInfo"];
 						containerlab: components["schemas"]["skyforge.ContainerlabInfo"];
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						forwardNetworkId: string;
 						forwardSnapshotUrl: string;
 						log: string;
@@ -11334,7 +11306,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						containers: components["schemas"]["skyforge.ScopePodContainer"][];
+						containers: components["schemas"]["skyforge.UserPodContainer"][];
 						hostIP: string;
 						message: string;
 						namespace: string;
@@ -11619,7 +11591,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
 					};
@@ -11646,7 +11618,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						ownerUsername: string;
 						run: components["schemas"]["skyforge.JSONMap"];
 					};
@@ -11889,7 +11861,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						deployment: components["schemas"]["skyforge.ScopeDeployment"];
+						deployment: components["schemas"]["skyforge.UserDeployment"];
 						ownerUsername: string;
 						path: string;
 						warnings: string[];
@@ -11995,8 +11967,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						ownerUsername: string;
-						servers: components["schemas"]["skyforge.ScopeEveServerConfig"][];
+						servers: components["schemas"]["skyforge.UserEveServerConfig"][];
 					};
 				};
 			};
@@ -12017,9 +11988,13 @@ export interface operations {
 					apiUrl: string;
 					apiUser: string;
 					hasPassword: boolean;
+					hasSshKey: boolean;
 					id: string;
 					name: string;
 					skipTlsVerify: boolean;
+					sshHost: string;
+					sshKey: string;
+					sshUser: string;
 					webUrl: string;
 				};
 			};
@@ -12036,9 +12011,13 @@ export interface operations {
 						apiUrl: string;
 						apiUser: string;
 						hasPassword: boolean;
+						hasSshKey: boolean;
 						id: string;
 						name: string;
 						skipTlsVerify: boolean;
+						sshHost: string;
+						sshKey: string;
+						sshUser: string;
 						webUrl: string;
 					};
 				};
@@ -14321,7 +14300,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						collectors: components["schemas"]["skyforge.ScopeForwardCollector"][];
+						collectors: components["schemas"]["skyforge.UserForwardCollector"][];
 					};
 				};
 			};
@@ -14569,8 +14548,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						ownerUsername: string;
-						servers: components["schemas"]["skyforge.ScopeNetlabServerConfig"][];
+						servers: components["schemas"]["skyforge.UserNetlabServerConfig"][];
 					};
 				};
 			};
@@ -19175,8 +19153,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						groups: components["schemas"]["skyforge.ScopeVariableGroup"][];
-						ownerUsername: string;
+						groups: components["schemas"]["skyforge.UserVariableGroup"][];
 					};
 				};
 			};
@@ -19277,8 +19254,7 @@ export interface operations {
 				};
 				content: {
 					"application/json": {
-						groups: components["schemas"]["skyforge.ScopeVariableGroup"][];
-						ownerUsername: string;
+						groups: components["schemas"]["skyforge.UserVariableGroup"][];
 					};
 				};
 			};
