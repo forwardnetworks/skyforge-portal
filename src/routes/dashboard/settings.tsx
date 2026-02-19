@@ -54,6 +54,8 @@ export const Route = createFileRoute("/dashboard/settings")({
 	component: UserSettingsPage,
 });
 
+const DEFAULT_AWS_SSO_START_URL = "https://d-9067d98db1.awsapps.com/start/#";
+
 function UserSettingsPage() {
 	const queryClient = useQueryClient();
 
@@ -241,7 +243,7 @@ function UserSettingsPage() {
 		const userRegion = (userAwsSsoQ.data?.region ?? "").trim();
 		const defaultStart = (awsSsoConfigQ.data?.startUrl ?? "").trim();
 		const defaultRegion = (awsSsoConfigQ.data?.region ?? "").trim();
-		setAwsSsoStartUrl(userStart || defaultStart);
+		setAwsSsoStartUrl(userStart || defaultStart || DEFAULT_AWS_SSO_START_URL);
 		setAwsSsoRegion(userRegion || defaultRegion);
 	}, [
 		userAwsSsoQ.data?.startUrl,
@@ -287,7 +289,10 @@ function UserSettingsPage() {
 	const deleteAwsSsoConfigM = useMutation({
 		mutationFn: async () => deleteUserAWSSSOCredentials(),
 		onSuccess: async () => {
-			setAwsSsoStartUrl((awsSsoConfigQ.data?.startUrl ?? "").trim());
+			setAwsSsoStartUrl(
+				(awsSsoConfigQ.data?.startUrl ?? "").trim() ||
+					DEFAULT_AWS_SSO_START_URL,
+			);
 			setAwsSsoRegion((awsSsoConfigQ.data?.region ?? "").trim());
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.userAwsSsoCredentials(),
@@ -686,11 +691,19 @@ function UserSettingsPage() {
 								: `<username>@${forwardHostLabel(forwardProfileHost)}`}
 						</div>
 						<div className="grid gap-3 md:grid-cols-2">
-							<Input
-								value={forwardProfileHost}
-								onChange={(e) => setForwardProfileHost(e.target.value)}
-								placeholder="Host (optional, defaults to https://fwd.app)"
-							/>
+							<div className="space-y-1">
+								<Input
+									value={forwardProfileHost}
+									onChange={(e) => setForwardProfileHost(e.target.value)}
+									placeholder="Host (optional, defaults to https://fwd.app)"
+								/>
+								<div className="text-xs text-muted-foreground">
+									For Skyforge Forward Cluster use:{" "}
+									<code>
+										http://fwd-appserver.forward.svc.cluster.local:8080
+									</code>
+								</div>
+							</div>
 							<Input
 								value={forwardProfileUsername}
 								onChange={(e) => setForwardProfileUsername(e.target.value)}
@@ -702,11 +715,6 @@ function UserSettingsPage() {
 								onChange={(e) => setForwardProfilePassword(e.target.value)}
 								placeholder="Forward password"
 							/>
-						</div>
-						<div className="text-xs text-muted-foreground">
-							Leave blank for SaaS: <code>https://fwd.app</code>. For in-app
-							Forward Cluster use:{" "}
-							<code>http://fwd-appserver.forward.svc.cluster.local:8080</code>.
 						</div>
 						<label className="flex items-center gap-2 text-sm">
 							<input
@@ -831,13 +839,6 @@ function UserSettingsPage() {
 								value={awsSsoRegion}
 								onChange={(e) => setAwsSsoRegion(e.target.value)}
 							/>
-							<div className="text-xs text-muted-foreground">
-								Default:{" "}
-								<span className="font-mono">
-									https://d-9067d98db1.awsapps.com/start/#
-								</span>{" "}
-								/ <span className="font-mono">us-east-1</span>
-							</div>
 							{awsSsoStatusQ.data?.lastAuthenticatedAt ? (
 								<div className="text-xs text-muted-foreground">
 									Last authenticated:{" "}
