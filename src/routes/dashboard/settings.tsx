@@ -47,9 +47,9 @@ import {
 	getAwsSsoConfig,
 	getAwsSsoStatus,
 	getUserAWSStaticCredentials,
+	getUserAWSSSOCredentials,
 	getUserAzureCredentials,
 	getUserGCPCredentials,
-	getUserGeminiConfig,
 	getUserIBMCredentials,
 	getUserServiceNowConfig,
 	getUserSettings,
@@ -60,6 +60,7 @@ import {
 	logoutAwsSso,
 	pollAwsSso,
 	putUserAWSStaticCredentials,
+	putUserAWSSSOCredentials,
 	putUserAzureCredentials,
 	putUserGCPCredentials,
 	putUserIBMCredentials,
@@ -68,6 +69,7 @@ import {
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
 	upsertUserNetlabServer,
+	deleteUserAWSSSOCredentials,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/settings")({
@@ -109,7 +111,7 @@ function UserSettingsPage() {
 	const collectors = collectorsQ.data?.collectors ?? [];
 	const defaultCollectorId = useMemo(() => {
 		const explicit = settingsQ.data?.defaultForwardCollectorConfigId;
-		if (explicit) return explicit;
+		if (explicit && collectors.some((c) => c.id === explicit)) return explicit;
 		return (
 			collectors.find((c) => c.name === "default")?.id ??
 			collectors[0]?.id ??
@@ -153,6 +155,15 @@ function UserSettingsPage() {
 			);
 			return putUserSettings({
 				defaultForwardCollectorConfigId: values.defaultForwardCollectorConfigId,
+				forwardSaasBaseUrl: forwardSaasBaseUrl.trim(),
+				forwardSaasUsername: forwardSaasUsername.trim(),
+				forwardSaasPassword: forwardSaasPassword.trim() || undefined,
+				clearForwardSaasProfile,
+				forwardOnPremBaseUrl: forwardOnPremBaseUrl.trim(),
+				forwardOnPremSkipTlsVerify: forwardOnPremSkipTlsVerify,
+				forwardOnPremUsername: forwardOnPremUsername.trim(),
+				forwardOnPremPassword: forwardOnPremPassword.trim() || undefined,
+				clearForwardOnPremProfile,
 				defaultEnv: values.defaultEnv ?? [],
 				externalTemplateRepos,
 			});
@@ -188,6 +199,12 @@ function UserSettingsPage() {
 	const awsSsoStatusQ = useQuery({
 		queryKey: queryKeys.awsSsoStatus(),
 		queryFn: getAwsSsoStatus,
+		staleTime: 10_000,
+		retry: false,
+	});
+	const userAwsSsoQ = useQuery({
+		queryKey: queryKeys.userAwsSsoCredentials(),
+		queryFn: getUserAWSSSOCredentials,
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -236,15 +253,10 @@ function UserSettingsPage() {
 		retry: false,
 	});
 
-	const geminiQ = useQuery({
-		queryKey: queryKeys.userGeminiConfig(),
-		queryFn: getUserGeminiConfig,
-		staleTime: 10_000,
-		retry: false,
-	});
-
 	const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
 	const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
+	const [awsSsoStartUrl, setAwsSsoStartUrl] = useState("");
+	const [awsSsoRegion, setAwsSsoRegion] = useState("");
 
 	const [azureTenantId, setAzureTenantId] = useState("");
 	const [azureClientId, setAzureClientId] = useState("");
@@ -255,6 +267,18 @@ function UserSettingsPage() {
 	const [gcpServiceAccountJson, setGcpServiceAccountJson] = useState("");
 
 	const [ibmApiKey, setIbmApiKey] = useState("");
+	const [forwardSaasBaseUrl, setForwardSaasBaseUrl] =
+		useState("https://fwd.app");
+	const [forwardSaasUsername, setForwardSaasUsername] = useState("");
+	const [forwardSaasPassword, setForwardSaasPassword] = useState("");
+	const [clearForwardSaasProfile, setClearForwardSaasProfile] = useState(false);
+	const [forwardOnPremBaseUrl, setForwardOnPremBaseUrl] = useState("");
+	const [forwardOnPremSkipTlsVerify, setForwardOnPremSkipTlsVerify] =
+		useState(false);
+	const [forwardOnPremUsername, setForwardOnPremUsername] = useState("");
+	const [forwardOnPremPassword, setForwardOnPremPassword] = useState("");
+	const [clearForwardOnPremProfile, setClearForwardOnPremProfile] =
+		useState(false);
 	const [ibmRegion, setIbmRegion] = useState("");
 	const [ibmResourceGroupId, setIbmResourceGroupId] = useState("");
 
@@ -281,6 +305,28 @@ function UserSettingsPage() {
 			return value;
 		}
 	};
+
+	useEffect(() => {
+		setForwardSaasBaseUrl(
+			settingsQ.data?.forwardSaasBaseUrl?.trim() || "https://fwd.app",
+		);
+		setForwardSaasUsername(settingsQ.data?.forwardSaasUsername ?? "");
+		setForwardSaasPassword("");
+		setClearForwardSaasProfile(false);
+		setForwardOnPremBaseUrl(settingsQ.data?.forwardOnPremBaseUrl ?? "");
+		setForwardOnPremSkipTlsVerify(
+			Boolean(settingsQ.data?.forwardOnPremSkipTlsVerify),
+		);
+		setForwardOnPremUsername(settingsQ.data?.forwardOnPremUsername ?? "");
+		setForwardOnPremPassword("");
+		setClearForwardOnPremProfile(false);
+	}, [
+		settingsQ.data?.forwardSaasBaseUrl,
+		settingsQ.data?.forwardSaasUsername,
+		settingsQ.data?.forwardOnPremBaseUrl,
+		settingsQ.data?.forwardOnPremSkipTlsVerify,
+		settingsQ.data?.forwardOnPremUsername,
+	]);
 
 	const saveAwsStaticM = useMutation({
 		mutationFn: async () =>
@@ -325,6 +371,74 @@ function UserSettingsPage() {
 		intervalSeconds: number;
 	} | null>(null);
 	const [awsSsoPollStatus, setAwsSsoPollStatus] = useState<string>("");
+	const awsSsoConfigured = Boolean(
+		awsSsoStartUrl.trim() && awsSsoRegion.trim(),
+	);
+
+	useEffect(() => {
+		const userStart = (userAwsSsoQ.data?.startUrl ?? "").trim();
+		const userRegion = (userAwsSsoQ.data?.region ?? "").trim();
+		const defaultStart = (awsSsoConfigQ.data?.startUrl ?? "").trim();
+		const defaultRegion = (awsSsoConfigQ.data?.region ?? "").trim();
+		setAwsSsoStartUrl(userStart || defaultStart);
+		setAwsSsoRegion(userRegion || defaultRegion);
+	}, [
+		userAwsSsoQ.data?.startUrl,
+		userAwsSsoQ.data?.region,
+		awsSsoConfigQ.data?.startUrl,
+		awsSsoConfigQ.data?.region,
+	]);
+
+		const saveAwsSsoConfigM = useMutation({
+			mutationFn: async () => {
+				const ssoAccountId = (userAwsSsoQ.data?.accountId ??
+					awsSsoConfigQ.data?.accountId ??
+					"")
+					.trim();
+			const roleName = (userAwsSsoQ.data?.roleName ??
+				awsSsoConfigQ.data?.roleName ??
+				"")
+				.trim();
+			return putUserAWSSSOCredentials({
+				startUrl: awsSsoStartUrl.trim(),
+				region: awsSsoRegion.trim(),
+				accountId: ssoAccountId,
+				roleName,
+			});
+		},
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userAwsSsoCredentials(),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.awsSsoConfig(),
+			});
+			toast.success("AWS SSO settings saved");
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to save AWS SSO settings", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
+	const deleteAwsSsoConfigM = useMutation({
+		mutationFn: async () => deleteUserAWSSSOCredentials(),
+		onSuccess: async () => {
+			setAwsSsoStartUrl((awsSsoConfigQ.data?.startUrl ?? "").trim());
+			setAwsSsoRegion((awsSsoConfigQ.data?.region ?? "").trim());
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userAwsSsoCredentials(),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.awsSsoConfig(),
+			});
+			toast.success("AWS SSO settings reset");
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to reset AWS SSO settings", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
 
 	const startAwsSsoM = useMutation({
 		mutationFn: startAwsSso,
@@ -452,7 +566,7 @@ function UserSettingsPage() {
 	const saveGcpM = useMutation({
 		mutationFn: async () =>
 			putUserGCPCredentials({
-				projectId: gcpProjectId.trim(),
+				projectIdOverride: gcpProjectId.trim() || undefined,
 				serviceAccountJSON: gcpServiceAccountJson,
 			}),
 		onSuccess: async () => {
@@ -670,7 +784,7 @@ function UserSettingsPage() {
 									</div>
 								</div>
 								<Button asChild variant="outline">
-									<Link to="/dashboard/forward">Open</Link>
+									<Link to="/dashboard/fwd/collector">Open</Link>
 								</Button>
 							</div>
 
@@ -687,22 +801,6 @@ function UserSettingsPage() {
 									<Link to="/dashboard/servicenow">Open</Link>
 								</Button>
 							</div>
-
-							<div className="flex items-center justify-between gap-3">
-								<div className="min-w-0">
-									<div className="text-sm font-medium">Connect AI (Gemini)</div>
-									<div className="text-sm text-muted-foreground">
-										{geminiQ.data?.enabled
-											? geminiQ.data?.configured
-												? "Connected"
-												: "Not connected"
-											: "Disabled"}
-									</div>
-								</div>
-								<Button asChild variant="outline">
-									<Link to="/dashboard/gemini">Open</Link>
-								</Button>
-							</div>
 						</CardContent>
 					</Card>
 
@@ -711,6 +809,95 @@ function UserSettingsPage() {
 							<CardTitle>Defaults</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-6">
+							<div className="grid gap-4 md:grid-cols-2">
+								<div className="space-y-3 rounded border p-4">
+									<div className="text-sm font-medium">
+										Forward credential set: SaaS
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Default hosted Forward endpoint credentials.
+									</div>
+									<Input
+										value={forwardSaasBaseUrl}
+										onChange={(e) => setForwardSaasBaseUrl(e.target.value)}
+										placeholder="https://fwd.app"
+									/>
+									<Input
+										value={forwardSaasUsername}
+										onChange={(e) => setForwardSaasUsername(e.target.value)}
+										placeholder="Forward username"
+									/>
+									<Input
+										type="password"
+										value={forwardSaasPassword}
+										onChange={(e) => setForwardSaasPassword(e.target.value)}
+										placeholder={
+											settingsQ.data?.forwardSaasHasPassword
+												? "(leave blank to keep stored password)"
+												: "Forward password"
+										}
+									/>
+									<label className="flex items-center gap-2 text-sm">
+										<input
+											type="checkbox"
+											checked={clearForwardSaasProfile}
+											onChange={(e) =>
+												setClearForwardSaasProfile(e.target.checked)
+											}
+										/>
+										Clear stored SaaS credential set
+									</label>
+								</div>
+								<div className="space-y-3 rounded border p-4">
+									<div className="text-sm font-medium">
+										Forward credential set: On-prem
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Custom Forward host credentials.
+									</div>
+									<Input
+										value={forwardOnPremBaseUrl}
+										onChange={(e) => setForwardOnPremBaseUrl(e.target.value)}
+										placeholder="https://forward.example.com"
+									/>
+									<label className="flex items-center gap-2 text-sm">
+										<input
+											type="checkbox"
+											checked={forwardOnPremSkipTlsVerify}
+											onChange={(e) =>
+												setForwardOnPremSkipTlsVerify(e.target.checked)
+											}
+										/>
+										Skip TLS verify
+									</label>
+									<Input
+										value={forwardOnPremUsername}
+										onChange={(e) => setForwardOnPremUsername(e.target.value)}
+										placeholder="Forward username"
+									/>
+									<Input
+										type="password"
+										value={forwardOnPremPassword}
+										onChange={(e) => setForwardOnPremPassword(e.target.value)}
+										placeholder={
+											settingsQ.data?.forwardOnPremHasPassword
+												? "(leave blank to keep stored password)"
+												: "Forward password"
+										}
+									/>
+									<label className="flex items-center gap-2 text-sm">
+										<input
+											type="checkbox"
+											checked={clearForwardOnPremProfile}
+											onChange={(e) =>
+												setClearForwardOnPremProfile(e.target.checked)
+											}
+										/>
+										Clear stored On-prem credential set
+									</label>
+								</div>
+							</div>
+
 							<FormField
 								control={form.control}
 								name="defaultForwardCollectorConfigId"
@@ -1053,12 +1240,26 @@ function UserSettingsPage() {
 							<div className="flex items-center justify-between">
 								<div className="text-sm font-medium">AWS (SSO)</div>
 								<div className="text-xs text-muted-foreground">
-									{awsSsoConfigQ.data?.configured
+									{awsSsoConfigured
 										? awsSsoStatusQ.data?.connected
 											? "Connected"
 											: "Not connected"
 										: "Not configured"}
 								</div>
+							</div>
+							<Input
+								placeholder="SSO start URL"
+								value={awsSsoStartUrl}
+								onChange={(e) => setAwsSsoStartUrl(e.target.value)}
+							/>
+							<Input
+								placeholder="Region"
+								value={awsSsoRegion}
+								onChange={(e) => setAwsSsoRegion(e.target.value)}
+							/>
+							<div className="text-xs text-muted-foreground">
+								Default: <span className="font-mono">https://d-9067d98db1.awsapps.com/start/#</span> /{" "}
+								<span className="font-mono">us-east-1</span>
 							</div>
 							{awsSsoStatusQ.data?.lastAuthenticatedAt ? (
 								<div className="text-xs text-muted-foreground">
@@ -1099,9 +1300,25 @@ function UserSettingsPage() {
 							<div className="flex gap-2">
 								<Button
 									type="button"
+									variant="outline"
+									onClick={() => saveAwsSsoConfigM.mutate()}
+									disabled={saveAwsSsoConfigM.isPending}
+								>
+									Save
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => deleteAwsSsoConfigM.mutate()}
+									disabled={deleteAwsSsoConfigM.isPending}
+								>
+									Reset
+								</Button>
+								<Button
+									type="button"
 									onClick={() => startAwsSsoM.mutate()}
 									disabled={
-										!awsSsoConfigQ.data?.configured ||
+										!awsSsoConfigured ||
 										startAwsSsoM.isPending ||
 										!!awsSsoSession
 									}
