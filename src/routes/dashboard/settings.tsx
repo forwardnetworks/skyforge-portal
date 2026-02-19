@@ -856,6 +856,11 @@ function UserSettingsPage() {
 										placeholder="Forward password"
 									/>
 								</div>
+								<div className="text-xs text-muted-foreground">
+									Leave blank for SaaS: <code>https://fwd.app</code>. For in-app
+									Forward Cluster use:{" "}
+									<code>https://skyforge.local.forwardnetworks.com/fwd</code>.
+								</div>
 								<label className="flex items-center gap-2 text-sm">
 									<input
 										type="checkbox"
