@@ -256,7 +256,6 @@ function UserSettingsPage() {
 	const [gcpServiceAccountJson, setGcpServiceAccountJson] = useState("");
 
 	const [ibmApiKey, setIbmApiKey] = useState("");
-	const [forwardProfileName, setForwardProfileName] = useState("");
 	const [forwardProfileHost, setForwardProfileHost] = useState("");
 	const [forwardProfileVerifyTLS, setForwardProfileVerifyTLS] = useState(true);
 	const [forwardProfileUsername, setForwardProfileUsername] = useState("");
@@ -285,6 +284,16 @@ function UserSettingsPage() {
 			return new URL(value).hostname || value;
 		} catch {
 			return value;
+		}
+	};
+
+	const forwardHostLabel = (value: string) => {
+		const raw = value.trim() || "https://fwd.app";
+		const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+		try {
+			return new URL(withScheme).host || "fwd.app";
+		} catch {
+			return raw.replace(/^https?:\/\//i, "").split("/")[0] || "fwd.app";
 		}
 	};
 
@@ -582,15 +591,12 @@ function UserSettingsPage() {
 
 	const saveForwardProfileM = useMutation({
 		mutationFn: async () => {
-			const name = forwardProfileName.trim();
 			const username = forwardProfileUsername.trim();
 			const password = forwardProfilePassword.trim();
 			const host = forwardProfileHost.trim();
-			if (!name) throw new Error("Credential set name is required");
 			if (!username) throw new Error("Username is required");
 			if (!password) throw new Error("Password is required");
 			return upsertUserForwardCredentialProfile({
-				name,
 				baseUrl: host || "https://fwd.app",
 				skipTlsVerify: !forwardProfileVerifyTLS,
 				username,
@@ -824,12 +830,15 @@ function UserSettingsPage() {
 									These credentials are reused by collectors and other Forward
 									integrations.
 								</div>
+								<div className="text-xs font-mono text-muted-foreground">
+									Identifier:{" "}
+									{forwardProfileUsername.trim()
+										? `${forwardProfileUsername.trim()}@${forwardHostLabel(
+												forwardProfileHost,
+											)}`
+										: `<username>@${forwardHostLabel(forwardProfileHost)}`}
+								</div>
 								<div className="grid gap-3 md:grid-cols-2">
-									<Input
-										value={forwardProfileName}
-										onChange={(e) => setForwardProfileName(e.target.value)}
-										placeholder="Credential set name"
-									/>
 									<Input
 										value={forwardProfileHost}
 										onChange={(e) => setForwardProfileHost(e.target.value)}

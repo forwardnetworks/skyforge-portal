@@ -2234,7 +2234,7 @@ export type ListUserForwardCredentialProfilesResponse = {
 };
 
 export type UpsertUserForwardCredentialProfileRequest = {
-	name: string;
+	name?: string;
 	baseUrl: string;
 	skipTlsVerify: boolean;
 	username: string;

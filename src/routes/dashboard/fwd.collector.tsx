@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "../../components/ui/badge";
@@ -194,15 +194,12 @@ function ForwardCollectorPage() {
 						Manage shared Forward credential sets in My Settings.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="flex items-center justify-between gap-3">
+				<CardContent className="text-sm text-muted-foreground">
 					<div className="text-sm text-muted-foreground">
 						{profiles.length
 							? `${profiles.length} credential set(s) available`
 							: "No credential sets configured"}
 					</div>
-					<Button asChild variant="outline">
-						<Link to="/dashboard/settings">Open My Settings</Link>
-					</Button>
 				</CardContent>
 			</Card>
 
