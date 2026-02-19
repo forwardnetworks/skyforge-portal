@@ -11,23 +11,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../components/ui/card";
-import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../../components/ui/select";
 import { queryKeys } from "../../lib/query-keys";
 import {
 	type UserForwardCollectorConfigSummary,
 	createUserForwardCollectorConfig,
 	deleteUserForwardCollectorConfig,
 	getUserForwardCollectorConfigLogs,
-	getUserSettings,
 	getUserGitCredentials,
 	listUserForwardCollectorConfigs,
 	restartUserForwardCollectorConfig,
@@ -37,10 +28,8 @@ export const Route = createFileRoute("/dashboard/fwd/collector")({
 	component: ForwardCollectorPage,
 });
 
-type CredentialProfile = "saas" | "onprem";
-
-function normalizeBaseURL(onPremHost: string): string {
-	const raw = onPremHost.trim();
+function normalizeBaseURL(hostOrUrl: string): string {
+	const raw = hostOrUrl.trim();
 	if (!raw) return "";
 	if (/^https?:\/\//i.test(raw)) return raw;
 	return `https://${raw}`;
@@ -56,14 +45,14 @@ function ForwardCollectorPage() {
 		refetchInterval: 5000,
 		staleTime: 10_000,
 		retry: false,
-	})
+	});
 
 	const collectors = useMemo(
 		() =>
 			(collectorsQ.data?.collectors ??
 				[]) as UserForwardCollectorConfigSummary[],
 		[collectorsQ.data?.collectors],
-	)
+	);
 
 	const [showLogsId, setShowLogsId] = useState<string>("");
 	const logsQ = useQuery({
@@ -72,69 +61,48 @@ function ForwardCollectorPage() {
 		enabled: !!showLogsId,
 		refetchInterval: showLogsId ? 3000 : false,
 		retry: false,
-	})
+	});
 
-	const [credentialProfile, setCredentialProfile] =
-		useState<CredentialProfile>("saas");
-	const [collectorName, setCollectorName] = useState("");
-	const [collectorNameTouched, setCollectorNameTouched] = useState(false);
-	const [setDefault, setSetDefault] = useState(true);
+	const [credentialName, setCredentialName] = useState("");
+	const [credentialNameTouched, setCredentialNameTouched] = useState(false);
+	const [forwardUsername, setForwardUsername] = useState("");
+	const [forwardPassword, setForwardPassword] = useState("");
+	const [forwardHost, setForwardHost] = useState("");
+	const [verifyTLS, setVerifyTLS] = useState(true);
 
 	const userGitQ = useQuery({
 		queryKey: queryKeys.userGitCredentials(),
 		queryFn: getUserGitCredentials,
 		staleTime: 60_000,
 		retry: false,
-	})
-	const settingsQ = useQuery({
-		queryKey: queryKeys.userSettings(),
-		queryFn: getUserSettings,
-		staleTime: 60_000,
-		retry: false,
 	});
-	const saasBaseUrl = (
-		settingsQ.data?.forwardSaasBaseUrl?.trim() || "https://fwd.app"
-	).trim();
-	const onPremBaseUrl = (settingsQ.data?.forwardOnPremBaseUrl ?? "").trim();
-	const onPremSkipTlsVerify = !!settingsQ.data?.forwardOnPremSkipTlsVerify;
-	const hasSaaSCreds = !!settingsQ.data?.forwardSaasHasPassword;
-	const hasOnPremCreds = !!settingsQ.data?.forwardOnPremHasPassword;
-
 	useEffect(() => {
-		if (collectorNameTouched) return;
-		if (collectorName.trim()) return;
+		if (credentialNameTouched) return;
+		if (credentialName.trim()) return;
 		const u = (userGitQ.data?.username ?? "").trim();
 		if (!u) return;
-		setCollectorName(`skyforge-${u}`);
-	}, [collectorNameTouched, collectorName, userGitQ.data?.username]);
+		setCredentialName(`skyforge-${u}`);
+	}, [credentialNameTouched, credentialName, userGitQ.data?.username]);
 
 	const createMutation = useMutation({
 		mutationFn: async () => {
-			const name = collectorName.trim();
-			if (!name) throw new Error("Collector name is required");
-			const isOnPremProfile = credentialProfile === "onprem";
-			const baseUrl = isOnPremProfile
-				? normalizeBaseURL(onPremBaseUrl)
-				: (saasBaseUrl || "https://fwd.app").trim();
-			if (!baseUrl) throw new Error("Forward URL is required");
-			if (credentialProfile === "saas" && !hasSaaSCreds) {
-				throw new Error(
-					"SaaS credentials are not set in My Settings",
-				);
+			const name = credentialName.trim();
+			if (!name) throw new Error("Credential name is required");
+			const username = forwardUsername.trim();
+			const password = forwardPassword.trim();
+			if (!username || !password) {
+				throw new Error("Username and password are required");
 			}
-			if (credentialProfile === "onprem" && !hasOnPremCreds) {
-				throw new Error(
-					"On-prem credentials are not set in My Settings",
-				);
-			}
+			const normalizedHost = normalizeBaseURL(forwardHost);
+			const baseUrl = normalizedHost || "https://fwd.app";
 			return createUserForwardCollectorConfig({
 				name,
 				baseUrl,
-				skipTlsVerify: isOnPremProfile ? onPremSkipTlsVerify : false,
-				username: "",
-				password: "",
-				setDefault,
-			})
+				skipTlsVerify: !verifyTLS,
+				username,
+				password,
+				setDefault: false,
+			});
 		},
 		onSuccess: async () => {
 			toast.success("Collector created");
@@ -144,7 +112,7 @@ function ForwardCollectorPage() {
 			toast.error("Failed to create collector", {
 				description: (e as Error).message,
 			}),
-	})
+	});
 
 	const restartMutation = useMutation({
 		mutationFn: async (id: string) => restartUserForwardCollectorConfig(id),
@@ -156,7 +124,7 @@ function ForwardCollectorPage() {
 			toast.error("Failed to restart collector", {
 				description: (e as Error).message,
 			}),
-	})
+	});
 
 	const deleteMutation = useMutation({
 		mutationFn: async (id: string) => deleteUserForwardCollectorConfig(id),
@@ -171,15 +139,15 @@ function ForwardCollectorPage() {
 					collectors: prevCollectors.filter(
 						(c) => String(c?.id ?? "") !== String(id),
 					),
-				}
-			})
+				};
+			});
 			await queryClient.invalidateQueries({ queryKey: collectorsKey });
 		},
 		onError: (e) =>
 			toast.error("Failed to delete collector", {
 				description: (e as Error).message,
 			}),
-	})
+	});
 
 	const deleteAllMutation = useMutation({
 		mutationFn: async (ids: string[]) => {
@@ -193,14 +161,14 @@ function ForwardCollectorPage() {
 			queryClient.setQueryData(collectorsKey, (prev: any) => ({
 				...(prev ?? {}),
 				collectors: [],
-			}))
+			}));
 			await queryClient.invalidateQueries({ queryKey: collectorsKey });
 		},
 		onError: (e) =>
 			toast.error("Failed to delete collectors", {
 				description: (e as Error).message,
 			}),
-	})
+	});
 
 	return (
 		<div className="p-6 space-y-6">
@@ -226,12 +194,12 @@ function ForwardCollectorPage() {
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="space-y-2">
-						<Label>Collector name</Label>
+						<Label>Credential name</Label>
 						<Input
-							value={collectorName}
+							value={credentialName}
 							onChange={(e) => {
-								setCollectorNameTouched(true);
-								setCollectorName(e.target.value);
+								setCredentialNameTouched(true);
+								setCredentialName(e.target.value);
 							}}
 							placeholder="skyforge-yourname"
 						/>
@@ -239,68 +207,55 @@ function ForwardCollectorPage() {
 
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
-							<Label>Credentials set</Label>
-							<Select
-								value={credentialProfile}
-								onValueChange={(v) => setCredentialProfile(v as CredentialProfile)}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="saas">
-										SaaS
-									</SelectItem>
-									<SelectItem value="onprem">
-										On-prem
-									</SelectItem>
-								</SelectContent>
-							</Select>
+							<Label>Username</Label>
+							<Input
+								value={forwardUsername}
+								onChange={(e) => setForwardUsername(e.target.value)}
+								placeholder="Forward username"
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label>Password</Label>
+							<Input
+								type="password"
+								value={forwardPassword}
+								onChange={(e) => setForwardPassword(e.target.value)}
+								placeholder="Forward password"
+							/>
 						</div>
 					</div>
 
 					<div className="rounded border p-3 text-sm text-muted-foreground">
 						<div>
 							Forward URL:{" "}
-							<code>
-								{credentialProfile === "onprem"
-									? normalizeBaseURL(onPremBaseUrl) || "(not set)"
-									: saasBaseUrl || "https://fwd.app"}
-							</code>
-						</div>
-						{credentialProfile === "onprem" ? (
-							<div className="mt-1">
-								Skip TLS verify: {onPremSkipTlsVerify ? "enabled" : "disabled"}
-							</div>
-						) : null}
-						<div className="mt-1">
-							Profile status:{" "}
-							{credentialProfile === "onprem"
-								? hasOnPremCreds
-									? "configured"
-									: "missing credentials in My Settings"
-								: hasSaaSCreds
-									? "configured"
-									: "missing credentials in My Settings"}
+							<code>{normalizeBaseURL(forwardHost) || "https://fwd.app"}</code>
 						</div>
 					</div>
 
-					<div className="flex items-center gap-2">
-						<Checkbox
-							checked={setDefault}
-							onCheckedChange={(v) => setSetDefault(Boolean(v))}
-						/>
-						<Label className="text-sm">Make default</Label>
+					<div className="grid gap-4 md:grid-cols-2">
+						<div className="space-y-2">
+							<Label>Host (optional)</Label>
+							<Input
+								value={forwardHost}
+								onChange={(e) => setForwardHost(e.target.value)}
+								placeholder="https://fwd.app"
+							/>
+						</div>
+						<div className="flex items-end pb-2">
+							<label className="flex items-center gap-2 text-sm">
+								<input
+									type="checkbox"
+									checked={verifyTLS}
+									onChange={(e) => setVerifyTLS(e.target.checked)}
+								/>
+								Verify TLS certificate
+							</label>
+						</div>
 					</div>
 
 					<Button
 						onClick={() => createMutation.mutate()}
-						disabled={
-							createMutation.isPending ||
-							(credentialProfile === "onprem" &&
-								(!hasOnPremCreds || !normalizeBaseURL(onPremBaseUrl))) ||
-							(credentialProfile === "saas" && !hasSaaSCreds)
-						}
+						disabled={createMutation.isPending || !credentialName.trim()}
 					>
 						{createMutation.isPending ? "Creating…" : "Create"}
 					</Button>
@@ -319,14 +274,14 @@ function ForwardCollectorPage() {
 								onClick={() => {
 									const ids = collectors
 										.map((c) => String(c.id))
-										.filter(Boolean)
+										.filter(Boolean);
 									if (ids.length === 0) return;
 									if (
 										!confirm(
 											`Delete ${ids.length} collector(s)? This removes in-cluster Deployments and saved credentials.`,
 										)
 									)
-										return
+										return;
 									deleteAllMutation.mutate(ids);
 								}}
 							>
@@ -358,7 +313,7 @@ function ForwardCollectorPage() {
 						const connected =
 							typeof c.forwardCollector?.connected === "boolean"
 								? c.forwardCollector.connected
-								: undefined
+								: undefined;
 
 						return (
 							<div key={c.id} className="rounded-md border p-3 space-y-2">
@@ -366,9 +321,6 @@ function ForwardCollectorPage() {
 									<div className="min-w-0">
 										<div className="flex items-center gap-2 min-w-0">
 											<div className="font-medium truncate">{c.name}</div>
-											{c.isDefault ? (
-												<Badge variant="secondary">default</Badge>
-											) : null}
 											{c.decryptionFailed ? (
 												<Badge variant="destructive">re-save creds</Badge>
 											) : null}
@@ -400,7 +352,7 @@ function ForwardCollectorPage() {
 											size="sm"
 											onClick={() => {
 												if (!confirm(`Delete collector "${c.name}"?`)) return;
-												deleteMutation.mutate(c.id)
+												deleteMutation.mutate(c.id);
 											}}
 											disabled={deleteMutation.isPending}
 										>
@@ -487,10 +439,10 @@ function ForwardCollectorPage() {
 									</pre>
 								) : null}
 							</div>
-						)
+						);
 					})}
 				</CardContent>
 			</Card>
 		</div>
-	)
+	);
 }

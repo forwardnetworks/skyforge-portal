@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Loader2, Save, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -37,6 +37,7 @@ import {
 } from "../../lib/netlab-env";
 import { queryKeys } from "../../lib/query-keys";
 import {
+	deleteUserAWSSSOCredentials,
 	deleteUserAWSStaticCredentials,
 	deleteUserAzureCredentials,
 	deleteUserContainerlabServer,
@@ -46,8 +47,8 @@ import {
 	deleteUserNetlabServer,
 	getAwsSsoConfig,
 	getAwsSsoStatus,
-	getUserAWSStaticCredentials,
 	getUserAWSSSOCredentials,
+	getUserAWSStaticCredentials,
 	getUserAzureCredentials,
 	getUserGCPCredentials,
 	getUserIBMCredentials,
@@ -59,8 +60,8 @@ import {
 	listUserNetlabServers,
 	logoutAwsSso,
 	pollAwsSso,
-	putUserAWSStaticCredentials,
 	putUserAWSSSOCredentials,
+	putUserAWSStaticCredentials,
 	putUserAzureCredentials,
 	putUserGCPCredentials,
 	putUserIBMCredentials,
@@ -69,7 +70,6 @@ import {
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
 	upsertUserNetlabServer,
-	deleteUserAWSSSOCredentials,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/settings")({
@@ -77,7 +77,6 @@ export const Route = createFileRoute("/dashboard/settings")({
 });
 
 const formSchema = z.object({
-	defaultForwardCollectorConfigId: z.string().optional(),
 	defaultEnv: z
 		.array(z.object({ key: z.string().min(1), value: z.string() }))
 		.optional(),
@@ -109,20 +108,10 @@ function UserSettingsPage() {
 	});
 
 	const collectors = collectorsQ.data?.collectors ?? [];
-	const defaultCollectorId = useMemo(() => {
-		const explicit = settingsQ.data?.defaultForwardCollectorConfigId;
-		if (explicit && collectors.some((c) => c.id === explicit)) return explicit;
-		return (
-			collectors.find((c) => c.name === "default")?.id ??
-			collectors[0]?.id ??
-			""
-		);
-	}, [collectors, settingsQ.data?.defaultForwardCollectorConfigId]);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		values: {
-			defaultForwardCollectorConfigId: defaultCollectorId || undefined,
 			defaultEnv: settingsQ.data?.defaultEnv ?? [],
 			externalTemplateRepos: settingsQ.data?.externalTemplateRepos ?? [],
 		},
@@ -154,16 +143,15 @@ function UserSettingsPage() {
 				},
 			);
 			return putUserSettings({
-				defaultForwardCollectorConfigId: values.defaultForwardCollectorConfigId,
-				forwardSaasBaseUrl: forwardSaasBaseUrl.trim(),
-				forwardSaasUsername: forwardSaasUsername.trim(),
-				forwardSaasPassword: forwardSaasPassword.trim() || undefined,
-				clearForwardSaasProfile,
-				forwardOnPremBaseUrl: forwardOnPremBaseUrl.trim(),
-				forwardOnPremSkipTlsVerify: forwardOnPremSkipTlsVerify,
-				forwardOnPremUsername: forwardOnPremUsername.trim(),
-				forwardOnPremPassword: forwardOnPremPassword.trim() || undefined,
-				clearForwardOnPremProfile,
+				forwardSaasBaseUrl: (forwardHost.trim() || "https://fwd.app").trim(),
+				forwardSaasUsername: forwardUsername.trim(),
+				forwardSaasPassword: forwardPassword.trim() || undefined,
+				clearForwardSaasProfile: false,
+				forwardOnPremBaseUrl: (forwardHost.trim() || "https://fwd.app").trim(),
+				forwardOnPremSkipTlsVerify: !forwardVerifyTLS,
+				forwardOnPremUsername: forwardUsername.trim(),
+				forwardOnPremPassword: forwardPassword.trim() || undefined,
+				clearForwardOnPremProfile: false,
 				defaultEnv: values.defaultEnv ?? [],
 				externalTemplateRepos,
 			});
@@ -267,18 +255,10 @@ function UserSettingsPage() {
 	const [gcpServiceAccountJson, setGcpServiceAccountJson] = useState("");
 
 	const [ibmApiKey, setIbmApiKey] = useState("");
-	const [forwardSaasBaseUrl, setForwardSaasBaseUrl] =
-		useState("https://fwd.app");
-	const [forwardSaasUsername, setForwardSaasUsername] = useState("");
-	const [forwardSaasPassword, setForwardSaasPassword] = useState("");
-	const [clearForwardSaasProfile, setClearForwardSaasProfile] = useState(false);
-	const [forwardOnPremBaseUrl, setForwardOnPremBaseUrl] = useState("");
-	const [forwardOnPremSkipTlsVerify, setForwardOnPremSkipTlsVerify] =
-		useState(false);
-	const [forwardOnPremUsername, setForwardOnPremUsername] = useState("");
-	const [forwardOnPremPassword, setForwardOnPremPassword] = useState("");
-	const [clearForwardOnPremProfile, setClearForwardOnPremProfile] =
-		useState(false);
+	const [forwardHost, setForwardHost] = useState("");
+	const [forwardUsername, setForwardUsername] = useState("");
+	const [forwardPassword, setForwardPassword] = useState("");
+	const [forwardVerifyTLS, setForwardVerifyTLS] = useState(true);
 	const [ibmRegion, setIbmRegion] = useState("");
 	const [ibmResourceGroupId, setIbmResourceGroupId] = useState("");
 
@@ -307,19 +287,18 @@ function UserSettingsPage() {
 	};
 
 	useEffect(() => {
-		setForwardSaasBaseUrl(
-			settingsQ.data?.forwardSaasBaseUrl?.trim() || "https://fwd.app",
+		const existingBase =
+			settingsQ.data?.forwardSaasBaseUrl?.trim() ||
+			settingsQ.data?.forwardOnPremBaseUrl?.trim() ||
+			"https://fwd.app";
+		setForwardHost(existingBase === "https://fwd.app" ? "" : existingBase);
+		setForwardUsername(
+			settingsQ.data?.forwardSaasUsername ??
+				settingsQ.data?.forwardOnPremUsername ??
+				"",
 		);
-		setForwardSaasUsername(settingsQ.data?.forwardSaasUsername ?? "");
-		setForwardSaasPassword("");
-		setClearForwardSaasProfile(false);
-		setForwardOnPremBaseUrl(settingsQ.data?.forwardOnPremBaseUrl ?? "");
-		setForwardOnPremSkipTlsVerify(
-			Boolean(settingsQ.data?.forwardOnPremSkipTlsVerify),
-		);
-		setForwardOnPremUsername(settingsQ.data?.forwardOnPremUsername ?? "");
-		setForwardOnPremPassword("");
-		setClearForwardOnPremProfile(false);
+		setForwardPassword("");
+		setForwardVerifyTLS(!settingsQ.data?.forwardOnPremSkipTlsVerify);
 	}, [
 		settingsQ.data?.forwardSaasBaseUrl,
 		settingsQ.data?.forwardSaasUsername,
@@ -389,16 +368,18 @@ function UserSettingsPage() {
 		awsSsoConfigQ.data?.region,
 	]);
 
-		const saveAwsSsoConfigM = useMutation({
-			mutationFn: async () => {
-				const ssoAccountId = (userAwsSsoQ.data?.accountId ??
-					awsSsoConfigQ.data?.accountId ??
-					"")
-					.trim();
-			const roleName = (userAwsSsoQ.data?.roleName ??
+	const saveAwsSsoConfigM = useMutation({
+		mutationFn: async () => {
+			const ssoAccountId = (
+				userAwsSsoQ.data?.accountId ??
+				awsSsoConfigQ.data?.accountId ??
+				""
+			).trim();
+			const roleName = (
+				userAwsSsoQ.data?.roleName ??
 				awsSsoConfigQ.data?.roleName ??
-				"")
-				.trim();
+				""
+			).trim();
 			return putUserAWSSSOCredentials({
 				startUrl: awsSsoStartUrl.trim(),
 				region: awsSsoRegion.trim(),
@@ -809,136 +790,41 @@ function UserSettingsPage() {
 							<CardTitle>Defaults</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-6">
-							<div className="grid gap-4 md:grid-cols-2">
-								<div className="space-y-3 rounded border p-4">
-									<div className="text-sm font-medium">
-										Forward credential set: SaaS
-									</div>
-									<div className="text-xs text-muted-foreground">
-										Default hosted Forward endpoint credentials.
-									</div>
-									<Input
-										value={forwardSaasBaseUrl}
-										onChange={(e) => setForwardSaasBaseUrl(e.target.value)}
-										placeholder="https://fwd.app"
-									/>
-									<Input
-										value={forwardSaasUsername}
-										onChange={(e) => setForwardSaasUsername(e.target.value)}
-										placeholder="Forward username"
-									/>
-									<Input
-										type="password"
-										value={forwardSaasPassword}
-										onChange={(e) => setForwardSaasPassword(e.target.value)}
-										placeholder={
-											settingsQ.data?.forwardSaasHasPassword
-												? "(leave blank to keep stored password)"
-												: "Forward password"
-										}
-									/>
-									<label className="flex items-center gap-2 text-sm">
-										<input
-											type="checkbox"
-											checked={clearForwardSaasProfile}
-											onChange={(e) =>
-												setClearForwardSaasProfile(e.target.checked)
-											}
-										/>
-										Clear stored SaaS credential set
-									</label>
+							<div className="space-y-3 rounded border p-4">
+								<div className="text-sm font-medium">Forward credentials</div>
+								<div className="text-xs text-muted-foreground">
+									Used by collectors and other Forward integrations.
 								</div>
-								<div className="space-y-3 rounded border p-4">
-									<div className="text-sm font-medium">
-										Forward credential set: On-prem
-									</div>
-									<div className="text-xs text-muted-foreground">
-										Custom Forward host credentials.
-									</div>
-									<Input
-										value={forwardOnPremBaseUrl}
-										onChange={(e) => setForwardOnPremBaseUrl(e.target.value)}
-										placeholder="https://forward.example.com"
+								<Input
+									value={forwardHost}
+									onChange={(e) => setForwardHost(e.target.value)}
+									placeholder="Host (optional, defaults to https://fwd.app)"
+								/>
+								<label className="flex items-center gap-2 text-sm">
+									<input
+										type="checkbox"
+										checked={forwardVerifyTLS}
+										onChange={(e) => setForwardVerifyTLS(e.target.checked)}
 									/>
-									<label className="flex items-center gap-2 text-sm">
-										<input
-											type="checkbox"
-											checked={forwardOnPremSkipTlsVerify}
-											onChange={(e) =>
-												setForwardOnPremSkipTlsVerify(e.target.checked)
-											}
-										/>
-										Skip TLS verify
-									</label>
-									<Input
-										value={forwardOnPremUsername}
-										onChange={(e) => setForwardOnPremUsername(e.target.value)}
-										placeholder="Forward username"
-									/>
-									<Input
-										type="password"
-										value={forwardOnPremPassword}
-										onChange={(e) => setForwardOnPremPassword(e.target.value)}
-										placeholder={
-											settingsQ.data?.forwardOnPremHasPassword
-												? "(leave blank to keep stored password)"
-												: "Forward password"
-										}
-									/>
-									<label className="flex items-center gap-2 text-sm">
-										<input
-											type="checkbox"
-											checked={clearForwardOnPremProfile}
-											onChange={(e) =>
-												setClearForwardOnPremProfile(e.target.checked)
-											}
-										/>
-										Clear stored On-prem credential set
-									</label>
-								</div>
+									Verify TLS certificate
+								</label>
+								<Input
+									value={forwardUsername}
+									onChange={(e) => setForwardUsername(e.target.value)}
+									placeholder="Forward username"
+								/>
+								<Input
+									type="password"
+									value={forwardPassword}
+									onChange={(e) => setForwardPassword(e.target.value)}
+									placeholder={
+										settingsQ.data?.forwardSaasHasPassword ||
+										settingsQ.data?.forwardOnPremHasPassword
+											? "(leave blank to keep stored password)"
+											: "Forward password"
+									}
+								/>
 							</div>
-
-							<FormField
-								control={form.control}
-								name="defaultForwardCollectorConfigId"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Default Forward collector</FormLabel>
-										<Select
-											value={field.value ?? ""}
-											onValueChange={(v) => field.onChange(v)}
-											disabled={collectors.length === 0}
-										>
-											<SelectTrigger>
-												<SelectValue
-													placeholder={
-														collectors.length
-															? "Select collector"
-															: "No collectors"
-													}
-												/>
-											</SelectTrigger>
-											<SelectContent>
-												{collectors
-													.slice()
-													.sort((a, b) =>
-														a.name === "default"
-															? -1
-															: b.name === "default"
-																? 1
-																: 0,
-													)
-													.map((c) => (
-														<SelectItem key={c.id} value={c.id}>
-															{c.name}
-														</SelectItem>
-													))}
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
 
 							<div className="space-y-3">
 								<div className="flex items-center justify-between">
@@ -1258,8 +1144,11 @@ function UserSettingsPage() {
 								onChange={(e) => setAwsSsoRegion(e.target.value)}
 							/>
 							<div className="text-xs text-muted-foreground">
-								Default: <span className="font-mono">https://d-9067d98db1.awsapps.com/start/#</span> /{" "}
-								<span className="font-mono">us-east-1</span>
+								Default:{" "}
+								<span className="font-mono">
+									https://d-9067d98db1.awsapps.com/start/#
+								</span>{" "}
+								/ <span className="font-mono">us-east-1</span>
 							</div>
 							{awsSsoStatusQ.data?.lastAuthenticatedAt ? (
 								<div className="text-xs text-muted-foreground">
