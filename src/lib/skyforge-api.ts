@@ -2146,6 +2146,7 @@ export type CreateUserForwardCollectorConfigRequest = {
 	skipTlsVerify: boolean;
 	username: string;
 	password: string;
+	credentialProfileName?: string;
 	setDefault?: boolean;
 };
 
@@ -2214,6 +2215,58 @@ export async function restartUserForwardCollectorConfig(
 		{
 			method: "POST",
 			body: "{}",
+		},
+	);
+}
+
+export type UserForwardCredentialProfile = {
+	id: string;
+	name: string;
+	baseUrl: string;
+	skipTlsVerify: boolean;
+	username: string;
+	hasPassword: boolean;
+	updatedAt?: ISO8601;
+};
+
+export type ListUserForwardCredentialProfilesResponse = {
+	profiles: UserForwardCredentialProfile[];
+};
+
+export type UpsertUserForwardCredentialProfileRequest = {
+	name: string;
+	baseUrl: string;
+	skipTlsVerify: boolean;
+	username: string;
+	password: string;
+};
+
+export type DeleteUserForwardCredentialProfileResponse = {
+	deleted: boolean;
+};
+
+export async function listUserForwardCredentialProfiles(): Promise<ListUserForwardCredentialProfilesResponse> {
+	return apiFetch<ListUserForwardCredentialProfilesResponse>(
+		"/api/forward/credential-profiles",
+	);
+}
+
+export async function upsertUserForwardCredentialProfile(
+	body: UpsertUserForwardCredentialProfileRequest,
+): Promise<UserForwardCredentialProfile> {
+	return apiFetch<UserForwardCredentialProfile>("/api/forward/credential-profiles", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function deleteUserForwardCredentialProfile(
+	name: string,
+): Promise<DeleteUserForwardCredentialProfileResponse> {
+	return apiFetch<DeleteUserForwardCredentialProfileResponse>(
+		`/api/forward/credential-profiles/${encodeURIComponent(name)}`,
+		{
+			method: "DELETE",
 		},
 	);
 }

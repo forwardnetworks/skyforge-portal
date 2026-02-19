@@ -143,15 +143,6 @@ function UserSettingsPage() {
 				},
 			);
 			return putUserSettings({
-				forwardSaasBaseUrl: (forwardHost.trim() || "https://fwd.app").trim(),
-				forwardSaasUsername: forwardUsername.trim(),
-				forwardSaasPassword: forwardPassword.trim() || undefined,
-				clearForwardSaasProfile: false,
-				forwardOnPremBaseUrl: (forwardHost.trim() || "https://fwd.app").trim(),
-				forwardOnPremSkipTlsVerify: !forwardVerifyTLS,
-				forwardOnPremUsername: forwardUsername.trim(),
-				forwardOnPremPassword: forwardPassword.trim() || undefined,
-				clearForwardOnPremProfile: false,
 				defaultEnv: values.defaultEnv ?? [],
 				externalTemplateRepos,
 			});
@@ -255,10 +246,6 @@ function UserSettingsPage() {
 	const [gcpServiceAccountJson, setGcpServiceAccountJson] = useState("");
 
 	const [ibmApiKey, setIbmApiKey] = useState("");
-	const [forwardHost, setForwardHost] = useState("");
-	const [forwardUsername, setForwardUsername] = useState("");
-	const [forwardPassword, setForwardPassword] = useState("");
-	const [forwardVerifyTLS, setForwardVerifyTLS] = useState(true);
 	const [ibmRegion, setIbmRegion] = useState("");
 	const [ibmResourceGroupId, setIbmResourceGroupId] = useState("");
 
@@ -285,27 +272,6 @@ function UserSettingsPage() {
 			return value;
 		}
 	};
-
-	useEffect(() => {
-		const existingBase =
-			settingsQ.data?.forwardSaasBaseUrl?.trim() ||
-			settingsQ.data?.forwardOnPremBaseUrl?.trim() ||
-			"https://fwd.app";
-		setForwardHost(existingBase === "https://fwd.app" ? "" : existingBase);
-		setForwardUsername(
-			settingsQ.data?.forwardSaasUsername ??
-				settingsQ.data?.forwardOnPremUsername ??
-				"",
-		);
-		setForwardPassword("");
-		setForwardVerifyTLS(!settingsQ.data?.forwardOnPremSkipTlsVerify);
-	}, [
-		settingsQ.data?.forwardSaasBaseUrl,
-		settingsQ.data?.forwardSaasUsername,
-		settingsQ.data?.forwardOnPremBaseUrl,
-		settingsQ.data?.forwardOnPremSkipTlsVerify,
-		settingsQ.data?.forwardOnPremUsername,
-	]);
 
 	const saveAwsStaticM = useMutation({
 		mutationFn: async () =>
@@ -790,40 +756,8 @@ function UserSettingsPage() {
 							<CardTitle>Defaults</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-6">
-							<div className="space-y-3 rounded border p-4">
-								<div className="text-sm font-medium">Forward credentials</div>
-								<div className="text-xs text-muted-foreground">
-									Used by collectors and other Forward integrations.
-								</div>
-								<Input
-									value={forwardHost}
-									onChange={(e) => setForwardHost(e.target.value)}
-									placeholder="Host (optional, defaults to https://fwd.app)"
-								/>
-								<label className="flex items-center gap-2 text-sm">
-									<input
-										type="checkbox"
-										checked={forwardVerifyTLS}
-										onChange={(e) => setForwardVerifyTLS(e.target.checked)}
-									/>
-									Verify TLS certificate
-								</label>
-								<Input
-									value={forwardUsername}
-									onChange={(e) => setForwardUsername(e.target.value)}
-									placeholder="Forward username"
-								/>
-								<Input
-									type="password"
-									value={forwardPassword}
-									onChange={(e) => setForwardPassword(e.target.value)}
-									placeholder={
-										settingsQ.data?.forwardSaasHasPassword ||
-										settingsQ.data?.forwardOnPremHasPassword
-											? "(leave blank to keep stored password)"
-											: "Forward password"
-									}
-								/>
+							<div className="rounded border p-4 text-sm text-muted-foreground">
+								Forward credential sets are managed in Collector.
 							</div>
 
 							<div className="space-y-3">
