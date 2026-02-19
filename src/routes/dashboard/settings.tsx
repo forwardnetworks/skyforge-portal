@@ -42,6 +42,7 @@ import {
 	deleteUserAzureCredentials,
 	deleteUserContainerlabServer,
 	deleteUserEveServer,
+	deleteUserForwardCredentialProfile,
 	deleteUserGCPCredentials,
 	deleteUserIBMCredentials,
 	deleteUserNetlabServer,
@@ -57,6 +58,7 @@ import {
 	listUserContainerlabServers,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
+	listUserForwardCredentialProfiles,
 	listUserNetlabServers,
 	logoutAwsSso,
 	pollAwsSso,
@@ -69,6 +71,7 @@ import {
 	startAwsSso,
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
+	upsertUserForwardCredentialProfile,
 	upsertUserNetlabServer,
 } from "../../lib/skyforge-api";
 
@@ -99,6 +102,13 @@ function UserSettingsPage() {
 		queryKey: queryKeys.userForwardCollectorConfigs(),
 		queryFn: listUserForwardCollectorConfigs,
 		staleTime: 10_000,
+	});
+	const forwardProfilesKey = ["user", "forward", "credentialProfiles"] as const;
+	const forwardProfilesQ = useQuery({
+		queryKey: forwardProfilesKey,
+		queryFn: listUserForwardCredentialProfiles,
+		staleTime: 10_000,
+		retry: false,
 	});
 
 	const settingsQ = useQuery({
@@ -246,6 +256,11 @@ function UserSettingsPage() {
 	const [gcpServiceAccountJson, setGcpServiceAccountJson] = useState("");
 
 	const [ibmApiKey, setIbmApiKey] = useState("");
+	const [forwardProfileName, setForwardProfileName] = useState("");
+	const [forwardProfileHost, setForwardProfileHost] = useState("");
+	const [forwardProfileVerifyTLS, setForwardProfileVerifyTLS] = useState(true);
+	const [forwardProfileUsername, setForwardProfileUsername] = useState("");
+	const [forwardProfilePassword, setForwardProfilePassword] = useState("");
 	const [ibmRegion, setIbmRegion] = useState("");
 	const [ibmResourceGroupId, setIbmResourceGroupId] = useState("");
 
@@ -565,6 +580,51 @@ function UserSettingsPage() {
 			}),
 	});
 
+	const saveForwardProfileM = useMutation({
+		mutationFn: async () => {
+			const name = forwardProfileName.trim();
+			const username = forwardProfileUsername.trim();
+			const password = forwardProfilePassword.trim();
+			const host = forwardProfileHost.trim();
+			if (!name) throw new Error("Credential set name is required");
+			if (!username) throw new Error("Username is required");
+			if (!password) throw new Error("Password is required");
+			return upsertUserForwardCredentialProfile({
+				name,
+				baseUrl: host || "https://fwd.app",
+				skipTlsVerify: !forwardProfileVerifyTLS,
+				username,
+				password,
+			});
+		},
+		onSuccess: async () => {
+			setForwardProfilePassword("");
+			await queryClient.invalidateQueries({
+				queryKey: forwardProfilesKey,
+			});
+			toast.success("Forward credential set saved");
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to save Forward credential set", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
+	const deleteForwardProfileM = useMutation({
+		mutationFn: async (name: string) =>
+			deleteUserForwardCredentialProfile(name),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: forwardProfilesKey,
+			});
+			toast.success("Forward credential set deleted");
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to delete Forward credential set", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
 	const deleteIbmM = useMutation({
 		mutationFn: async () => deleteUserIBMCredentials(),
 		onSuccess: async () => {
@@ -756,8 +816,90 @@ function UserSettingsPage() {
 							<CardTitle>Defaults</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-6">
-							<div className="rounded border p-4 text-sm text-muted-foreground">
-								Forward credential sets are managed in Collector.
+							<div className="space-y-3 rounded border p-4">
+								<div className="text-sm font-medium">
+									Forward credential sets
+								</div>
+								<div className="text-xs text-muted-foreground">
+									These credentials are reused by collectors and other Forward
+									integrations.
+								</div>
+								<div className="grid gap-3 md:grid-cols-2">
+									<Input
+										value={forwardProfileName}
+										onChange={(e) => setForwardProfileName(e.target.value)}
+										placeholder="Credential set name"
+									/>
+									<Input
+										value={forwardProfileHost}
+										onChange={(e) => setForwardProfileHost(e.target.value)}
+										placeholder="Host (optional, defaults to https://fwd.app)"
+									/>
+									<Input
+										value={forwardProfileUsername}
+										onChange={(e) => setForwardProfileUsername(e.target.value)}
+										placeholder="Forward username"
+									/>
+									<Input
+										type="password"
+										value={forwardProfilePassword}
+										onChange={(e) => setForwardProfilePassword(e.target.value)}
+										placeholder="Forward password"
+									/>
+								</div>
+								<label className="flex items-center gap-2 text-sm">
+									<input
+										type="checkbox"
+										checked={forwardProfileVerifyTLS}
+										onChange={(e) =>
+											setForwardProfileVerifyTLS(e.target.checked)
+										}
+									/>
+									Verify TLS certificate
+								</label>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => saveForwardProfileM.mutate()}
+									disabled={saveForwardProfileM.isPending}
+								>
+									Save credential set
+								</Button>
+
+								{forwardProfilesQ.isLoading ? (
+									<div className="text-sm text-muted-foreground">
+										Loading credential sets...
+									</div>
+								) : null}
+								{forwardProfilesQ.isError ? (
+									<div className="text-sm text-destructive">
+										Failed to load credential sets.
+									</div>
+								) : null}
+								<div className="space-y-2">
+									{(forwardProfilesQ.data?.profiles ?? []).map((p) => (
+										<div
+											key={p.id}
+											className="flex items-center justify-between gap-3 rounded border p-2"
+										>
+											<div className="min-w-0 text-sm">
+												<div className="font-medium truncate">{p.name}</div>
+												<div className="truncate text-muted-foreground">
+													{p.username} @ {p.baseUrl}
+												</div>
+											</div>
+											<Button
+												type="button"
+												size="sm"
+												variant="destructive"
+												onClick={() => deleteForwardProfileM.mutate(p.name)}
+												disabled={deleteForwardProfileM.isPending}
+											>
+												Delete
+											</Button>
+										</div>
+									))}
+								</div>
 							</div>
 
 							<div className="space-y-3">

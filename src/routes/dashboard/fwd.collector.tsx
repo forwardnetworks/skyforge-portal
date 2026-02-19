@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "../../components/ui/badge";
@@ -25,25 +25,16 @@ import {
 	type UserForwardCollectorConfigSummary,
 	createUserForwardCollectorConfig,
 	deleteUserForwardCollectorConfig,
-	deleteUserForwardCredentialProfile,
 	getUserForwardCollectorConfigLogs,
 	getUserGitCredentials,
 	listUserForwardCollectorConfigs,
 	listUserForwardCredentialProfiles,
 	restartUserForwardCollectorConfig,
-	upsertUserForwardCredentialProfile,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/fwd/collector")({
 	component: ForwardCollectorPage,
 });
-
-function normalizeBaseURL(hostOrUrl: string): string {
-	const raw = hostOrUrl.trim();
-	if (!raw) return "";
-	if (/^https?:\/\//i.test(raw)) return raw;
-	return `https://${raw}`;
-}
 
 function ForwardCollectorPage() {
 	const queryClient = useQueryClient();
@@ -86,12 +77,6 @@ function ForwardCollectorPage() {
 	const [collectorNameTouched, setCollectorNameTouched] = useState(false);
 	const [selectedProfileName, setSelectedProfileName] = useState("");
 
-	const [profileName, setProfileName] = useState("");
-	const [profileUsername, setProfileUsername] = useState("");
-	const [profilePassword, setProfilePassword] = useState("");
-	const [profileHost, setProfileHost] = useState("");
-	const [profileVerifyTLS, setProfileVerifyTLS] = useState(true);
-
 	const userGitQ = useQuery({
 		queryKey: queryKeys.userGitCredentials(),
 		queryFn: getUserGitCredentials,
@@ -130,47 +115,6 @@ function ForwardCollectorPage() {
 		},
 		onError: (e) =>
 			toast.error("Failed to create collector", {
-				description: (e as Error).message,
-			}),
-	});
-
-	const saveProfileMutation = useMutation({
-		mutationFn: async () => {
-			const name = profileName.trim();
-			const username = profileUsername.trim();
-			const password = profilePassword.trim();
-			if (!name) throw new Error("Credential set name is required");
-			if (!username) throw new Error("Username is required");
-			if (!password) throw new Error("Password is required");
-			return upsertUserForwardCredentialProfile({
-				name,
-				baseUrl: normalizeBaseURL(profileHost) || "https://fwd.app",
-				skipTlsVerify: !profileVerifyTLS,
-				username,
-				password,
-			});
-		},
-		onSuccess: async () => {
-			toast.success("Credential set saved");
-			setProfilePassword("");
-			await queryClient.invalidateQueries({ queryKey: profilesKey });
-		},
-		onError: (e) =>
-			toast.error("Failed to save credential set", {
-				description: (e as Error).message,
-			}),
-	});
-
-	const deleteProfileMutation = useMutation({
-		mutationFn: async (name: string) =>
-			deleteUserForwardCredentialProfile(name),
-		onSuccess: async (_data, name) => {
-			toast.success("Credential set deleted");
-			if (selectedProfileName === name) setSelectedProfileName("");
-			await queryClient.invalidateQueries({ queryKey: profilesKey });
-		},
-		onError: (e) =>
-			toast.error("Failed to delete credential set", {
 				description: (e as Error).message,
 			}),
 	});
@@ -247,110 +191,18 @@ function ForwardCollectorPage() {
 				<CardHeader>
 					<CardTitle>Credential sets</CardTitle>
 					<CardDescription>
-						Create named Forward credential sets, then select one when creating
-						a collector.
+						Manage shared Forward credential sets in My Settings.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label>Credential set name</Label>
-							<Input
-								value={profileName}
-								onChange={(e) => setProfileName(e.target.value)}
-								placeholder="forward-prod"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Username</Label>
-							<Input
-								value={profileUsername}
-								onChange={(e) => setProfileUsername(e.target.value)}
-								placeholder="Forward username"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Password</Label>
-							<Input
-								type="password"
-								value={profilePassword}
-								onChange={(e) => setProfilePassword(e.target.value)}
-								placeholder="Forward password"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Host (optional)</Label>
-							<Input
-								value={profileHost}
-								onChange={(e) => setProfileHost(e.target.value)}
-								placeholder="https://fwd.app"
-							/>
-						</div>
-						<div className="flex items-end pb-2">
-							<label className="flex items-center gap-2 text-sm">
-								<input
-									type="checkbox"
-									checked={profileVerifyTLS}
-									onChange={(e) => setProfileVerifyTLS(e.target.checked)}
-								/>
-								Verify TLS certificate
-							</label>
-						</div>
+				<CardContent className="flex items-center justify-between gap-3">
+					<div className="text-sm text-muted-foreground">
+						{profiles.length
+							? `${profiles.length} credential set(s) available`
+							: "No credential sets configured"}
 					</div>
-
-					<div className="rounded border p-3 text-sm text-muted-foreground">
-						<div>
-							Forward URL:{" "}
-							<code>{normalizeBaseURL(profileHost) || "https://fwd.app"}</code>
-						</div>
-					</div>
-
-					<Button
-						onClick={() => saveProfileMutation.mutate()}
-						disabled={saveProfileMutation.isPending}
-					>
-						{saveProfileMutation.isPending ? "Saving…" : "Save credential set"}
+					<Button asChild variant="outline">
+						<Link to="/dashboard/settings">Open My Settings</Link>
 					</Button>
-
-					{profilesQ.isLoading ? (
-						<div className="text-sm text-muted-foreground">
-							Loading credential sets…
-						</div>
-					) : null}
-					{profilesQ.isError ? (
-						<div className="text-sm text-destructive">
-							Failed to load credential sets.
-						</div>
-					) : null}
-					<div className="space-y-2">
-						{profiles.map((p) => (
-							<div key={p.id} className="rounded-md border p-3">
-								<div className="flex items-center justify-between gap-3">
-									<div className="min-w-0">
-										<div className="font-medium truncate">{p.name}</div>
-										<div className="text-xs text-muted-foreground font-mono truncate">
-											{p.id}
-										</div>
-										<div className="text-xs text-muted-foreground truncate">
-											{p.username} @ {p.baseUrl}
-										</div>
-									</div>
-									<Button
-										variant="destructive"
-										size="sm"
-										disabled={deleteProfileMutation.isPending}
-										onClick={() => {
-											if (!confirm(`Delete credential set "${p.name}"?`))
-												return;
-											deleteProfileMutation.mutate(p.name);
-										}}
-									>
-										Delete
-									</Button>
-								</div>
-							</div>
-						))}
-					</div>
 				</CardContent>
 			</Card>
 
