@@ -294,11 +294,7 @@ function PolicyReportsPage() {
 		selectedForwardCredentialProfileId,
 		setSelectedForwardCredentialProfileId,
 	] = useState<string>("");
-	const [networkSearch, setNetworkSearch] = useState<string>("");
-	const [addNetworkOpen, setAddNetworkOpen] = useState<boolean>(false);
-	const [addNetworkForwardId, setAddNetworkForwardId] = useState<string>("");
-	const [addNetworkName, setAddNetworkName] = useState<string>("");
-	const [addNetworkDesc, setAddNetworkDesc] = useState<string>("");
+	const [sourceNetworkId, setSourceNetworkId] = useState<string>("");
 	const [flowSrcIp, setFlowSrcIp] = useState<string>("");
 	const [flowDstIp, setFlowDstIp] = useState<string>("");
 	const [flowIpProto, setFlowIpProto] = useState<string>("6");
@@ -945,8 +941,9 @@ function PolicyReportsPage() {
 
 	const createForwardNetwork = useMutation({
 		mutationFn: async () => {
-			const forwardNetworkId = addNetworkForwardId.trim();
-			const name = addNetworkName.trim();
+			const forwardNetworkId = sourceNetworkId.trim();
+			const source = sourceNetworksList.find((n) => n.id === forwardNetworkId);
+			const name = source?.name?.trim() || forwardNetworkId;
 			const forwardCredentialProfileId =
 				selectedForwardCredentialProfileId.trim();
 			if (!forwardNetworkId) throw new Error("Forward Network ID is required");
@@ -957,16 +954,17 @@ function PolicyReportsPage() {
 			return createUserPolicyReportForwardNetwork({
 				forwardNetworkId,
 				name,
-				description: addNetworkDesc.trim() || undefined,
 				forwardCredentialProfileId,
 			});
 		},
 		onSuccess: async (n) => {
 			toast.success("Network saved", { description: n.forwardNetworkId });
-			setAddNetworkOpen(false);
-			setAddNetworkForwardId("");
-			setAddNetworkName("");
-			setAddNetworkDesc("");
+			setSavedNetworkRef(n.id);
+			setNetworkId(n.forwardNetworkId);
+			setSnapshotId("");
+			if (n.forwardCredentialProfileId) {
+				setSelectedForwardCredentialProfileId(n.forwardCredentialProfileId);
+			}
 			await forwardNetworks.refetch();
 		},
 		onError: (e) =>
@@ -1572,15 +1570,6 @@ function PolicyReportsPage() {
 			),
 		[sourceNetworks.data?.networks],
 	);
-	const sourceNetworksFiltered = useMemo(() => {
-		const q = networkSearch.trim().toLowerCase();
-		if (!q) return sourceNetworksList;
-		return sourceNetworksList.filter((n) => {
-			const id = String(n.id ?? "").toLowerCase();
-			const name = String(n.name ?? "").toLowerCase();
-			return id.includes(q) || name.includes(q);
-		});
-	}, [networkSearch, sourceNetworksList]);
 
 	const approvedExceptionsByKey = useMemo(() => {
 		const now = Date.now();
@@ -1889,28 +1878,15 @@ function PolicyReportsPage() {
 					<div className="space-y-2">
 						<div className="flex items-center justify-between gap-2">
 							<div className="text-sm font-medium">Saved network targets</div>
-							<div className="flex items-center gap-2">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => forwardNetworks.refetch()}
-									disabled={forwardNetworks.isFetching}
-								>
-									<RefreshCw className="mr-2 h-4 w-4" />
-									Refresh
-								</Button>
-								<Button
-									size="sm"
-									onClick={() => {
-										setAddNetworkForwardId(networkId.trim());
-										setAddNetworkName("");
-										setAddNetworkDesc("");
-										setAddNetworkOpen(true);
-									}}
-								>
-									Add
-								</Button>
-							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => forwardNetworks.refetch()}
+								disabled={forwardNetworks.isFetching}
+							>
+								<RefreshCw className="mr-2 h-4 w-4" />
+								Refresh
+							</Button>
 						</div>
 						<Select
 							value={savedNetworkRef}
@@ -1983,33 +1959,36 @@ function PolicyReportsPage() {
 						) : null}
 						<div className="flex items-center justify-between">
 							<div className="text-sm font-medium">Forward Network</div>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => sourceNetworks.refetch()}
-								disabled={
-									!selectedForwardCredentialProfileId.trim() ||
-									sourceNetworks.isFetching
-								}
-							>
-								<RefreshCw className="mr-2 h-4 w-4" />
-								Refresh
-							</Button>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => sourceNetworks.refetch()}
+									disabled={
+										!selectedForwardCredentialProfileId.trim() ||
+										sourceNetworks.isFetching
+									}
+								>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Refresh
+								</Button>
+								<Button
+									size="sm"
+									onClick={() => createForwardNetwork.mutate()}
+									disabled={
+										!selectedForwardCredentialProfileId.trim() ||
+										!sourceNetworkId.trim() ||
+										createForwardNetwork.isPending
+									}
+								>
+									Add
+								</Button>
+							</div>
 						</div>
-						<Input
-							value={networkSearch}
-							onChange={(e) => setNetworkSearch(e.target.value)}
-							placeholder="Search by id or name"
-						/>
 						<Select
-							value={networkId}
+							value={sourceNetworkId}
 							onValueChange={(v) => {
-								const pick = sourceNetworksList.find((n) => n.id === v);
-								if (!pick) return;
-								setNetworkId(pick.id);
-								if (!addNetworkName.trim()) {
-									setAddNetworkName(pick.name);
-								}
+								setSourceNetworkId(v);
 							}}
 							disabled={!selectedForwardCredentialProfileId.trim()}
 						>
@@ -2017,7 +1996,7 @@ function PolicyReportsPage() {
 								<SelectValue placeholder="Select network from Forward /api/networks" />
 							</SelectTrigger>
 							<SelectContent>
-								{sourceNetworksFiltered.map((n) => (
+								{sourceNetworksList.map((n) => (
 									<SelectItem key={n.id} value={n.id}>
 										{n.name} ({n.id})
 									</SelectItem>
@@ -2031,8 +2010,8 @@ function PolicyReportsPage() {
 							</p>
 						) : null}
 						<p className="text-xs text-muted-foreground">
-							Network Analytics uses the selected Forward credential profile to
-							discover network IDs directly from Forward.
+							Select a discovered network and click Add to save and activate it
+							as a target.
 						</p>
 					</div>
 					<div className="space-y-2">
@@ -2059,7 +2038,7 @@ function PolicyReportsPage() {
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value={LATEST_SNAPSHOT}>
-									(Let Forward choose)
+									Latest Processed
 								</SelectItem>
 								{snapshotItems.map((s) => (
 									<SelectItem key={s.id} value={s.id}>
@@ -5343,80 +5322,6 @@ function PolicyReportsPage() {
 					) : (
 						<div className="text-sm text-muted-foreground">No parameters.</div>
 					)}
-				</DialogContent>
-			</Dialog>
-
-			<Dialog open={addNetworkOpen} onOpenChange={setAddNetworkOpen}>
-				<DialogContent className="max-w-2xl">
-					<DialogHeader>
-						<DialogTitle>Add Forward Network</DialogTitle>
-						<DialogDescription>
-							Save one or more Forward Network IDs so Network Analytics is
-							organized per network.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-3">
-						<div className="grid gap-3 md:grid-cols-2">
-							<div className="space-y-2">
-								<div className="text-sm font-medium">Forward Network</div>
-								<Select
-									value={addNetworkForwardId}
-									onValueChange={(v) => {
-										const pick = sourceNetworksList.find((n) => n.id === v);
-										if (!pick) return;
-										setAddNetworkForwardId(pick.id);
-										if (!addNetworkName.trim()) {
-											setAddNetworkName(pick.name);
-										}
-									}}
-									disabled={!selectedForwardCredentialProfileId.trim()}
-								>
-									<SelectTrigger>
-										<SelectValue placeholder="Select network from Forward /api/networks" />
-									</SelectTrigger>
-									<SelectContent>
-										{sourceNetworksFiltered.map((n) => (
-											<SelectItem key={n.id} value={n.id}>
-												{n.name} ({n.id})
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="space-y-2">
-								<div className="text-sm font-medium">Name</div>
-								<Input
-									value={addNetworkName}
-									onChange={(e) => setAddNetworkName(e.target.value)}
-									placeholder="Prod Branch WAN"
-								/>
-							</div>
-						</div>
-						<div className="space-y-2">
-							<div className="text-sm font-medium">Description (optional)</div>
-							<Textarea
-								value={addNetworkDesc}
-								onChange={(e) => setAddNetworkDesc(e.target.value)}
-								rows={3}
-								placeholder="Optional notes"
-							/>
-						</div>
-						<div className="flex items-center justify-end gap-2 pt-2">
-							<Button
-								variant="outline"
-								onClick={() => setAddNetworkOpen(false)}
-								disabled={createForwardNetwork.isPending}
-							>
-								Cancel
-							</Button>
-							<Button
-								onClick={() => createForwardNetwork.mutate()}
-								disabled={createForwardNetwork.isPending}
-							>
-								Save
-							</Button>
-						</div>
-					</div>
 				</DialogContent>
 			</Dialog>
 
