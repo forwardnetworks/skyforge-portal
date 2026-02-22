@@ -49,7 +49,6 @@ import {
 	getUserAWSStaticCredentials,
 	getUserAzureCredentials,
 	getUserGCPCredentials,
-	getUserGeminiConfig,
 	getUserIBMCredentials,
 	getUserServiceNowConfig,
 	getUserSettings,
@@ -232,13 +231,6 @@ function UserSettingsPage() {
 	const serviceNowQ = useQuery({
 		queryKey: queryKeys.userServiceNowConfig(),
 		queryFn: getUserServiceNowConfig,
-		staleTime: 10_000,
-		retry: false,
-	});
-
-	const geminiQ = useQuery({
-		queryKey: queryKeys.userGeminiConfig(),
-		queryFn: getUserGeminiConfig,
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -685,22 +677,6 @@ function UserSettingsPage() {
 								</div>
 								<Button asChild variant="outline">
 									<Link to="/dashboard/servicenow">Open</Link>
-								</Button>
-							</div>
-
-							<div className="flex items-center justify-between gap-3">
-								<div className="min-w-0">
-									<div className="text-sm font-medium">Connect AI (Gemini)</div>
-									<div className="text-sm text-muted-foreground">
-										{geminiQ.data?.enabled
-											? geminiQ.data?.configured
-												? "Connected"
-												: "Not connected"
-											: "Disabled"}
-									</div>
-								</div>
-								<Button asChild variant="outline">
-									<Link to="/dashboard/gemini">Open</Link>
 								</Button>
 							</div>
 						</CardContent>

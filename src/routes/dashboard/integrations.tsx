@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { queryKeys } from "@/lib/query-keys";
 import {
 	getUserElasticConfig,
-	getUserGeminiConfig,
 	getUserServiceNowConfig,
 	listUserForwardCollectorConfigs,
 } from "@/lib/skyforge-api";
@@ -17,12 +16,6 @@ export const Route = createFileRoute("/dashboard/integrations")({
 });
 
 function IntegrationsPage() {
-	const geminiQ = useQuery({
-		queryKey: queryKeys.userGeminiConfig(),
-		queryFn: getUserGeminiConfig,
-		retry: false,
-		staleTime: 10_000,
-	});
 	const snQ = useQuery({
 		queryKey: queryKeys.userServiceNowConfig(),
 		queryFn: getUserServiceNowConfig,
@@ -98,39 +91,6 @@ function IntegrationsPage() {
 								<Link
 									to="/dashboard/docs/$slug"
 									params={{ slug: "servicenow" }}
-								>
-									Docs
-								</Link>
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card variant="glass">
-					<CardHeader>
-						<CardTitle>AI (Gemini)</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3 text-sm">
-						<div className="text-muted-foreground">
-							{geminiQ.isLoading
-								? "Loading…"
-								: !geminiQ.data?.enabled
-									? "Disabled"
-									: geminiQ.data?.configured
-										? `Connected (${geminiQ.data.email ?? "account"})`
-										: "Not connected"}
-						</div>
-						<div className="flex flex-wrap gap-2">
-							<Button asChild size="sm">
-								<Link to="/dashboard/gemini">Connect</Link>
-							</Button>
-							<Button asChild size="sm" variant="secondary">
-								<Link to="/dashboard/ai">AI Templates</Link>
-							</Button>
-							<Button asChild size="sm" variant="secondary">
-								<Link
-									to="/dashboard/docs/$slug"
-									params={{ slug: "ai-templates" }}
 								>
 									Docs
 								</Link>

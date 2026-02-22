@@ -50,7 +50,6 @@ import {
 } from "@/lib/containerlab-yaml";
 import { queryKeys } from "@/lib/query-keys";
 import {
-	autofixUserAITemplate,
 	createClabernetesDeploymentFromTemplate,
 	createContainerlabDeploymentFromTemplate,
 	getDeploymentTopology,
@@ -61,7 +60,6 @@ import {
 	listRegistryTags,
 	listUserContainerlabServers,
 	saveContainerlabTopologyYAML,
-	validateUserAITemplate,
 } from "@/lib/skyforge-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactFlowInstance } from "@xyflow/react";
@@ -539,67 +537,6 @@ function LabDesignerPage() {
 		if (yamlMode === "custom") return String(customYaml ?? "");
 		return yaml;
 	}, [customYaml, yaml, yamlMode]);
-
-	const validateYaml = useMutation({
-		mutationFn: async () => {
-			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
-			return validateUserAITemplate({
-				kind: "containerlab",
-				content: effectiveYaml,
-			});
-		},
-	});
-
-	const autofixYaml = useMutation({
-		mutationFn: async () => {
-			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
-			return autofixUserAITemplate({
-				kind: "containerlab",
-				content: effectiveYaml,
-				maxIterations: 5,
-			});
-		},
-		onSuccess: (res) => {
-			setYamlMode("custom");
-			setCustomYaml(res.content ?? "");
-			if (res.ok) {
-				toast.success("Auto-fix succeeded", {
-					description: `Iterations: ${res.iterations}`,
-				});
-			} else {
-				toast.error("Auto-fix still has errors", {
-					description: `Iterations: ${res.iterations}`,
-				});
-			}
-		},
-	});
-
-	const yamlValidation = useMemo(() => {
-		const task = (validateYaml.data as any)?.task;
-		const ok = task?.ok === true;
-		const rawErrs = task?.errors;
-		const errs: string[] = [];
-		if (Array.isArray(rawErrs)) {
-			for (const e of rawErrs) errs.push(String(e));
-		} else if (typeof rawErrs === "string") {
-			errs.push(rawErrs);
-		} else if (rawErrs != null) {
-			try {
-				errs.push(JSON.stringify(rawErrs));
-			} catch {
-				errs.push(String(rawErrs));
-			}
-		}
-		return { ok, errs };
-	}, [validateYaml.data]);
-
-	const yamlAutofix = useMemo(() => {
-		const ok = autofixYaml.data?.ok === true;
-		const errs = Array.isArray(autofixYaml.data?.errors)
-			? (autofixYaml.data?.errors ?? []).map((e) => String(e))
-			: [];
-		return { ok, errs };
-	}, [autofixYaml.data]);
 
 	const effectiveTemplatesDir = useMemo(() => {
 		const d = String(templatesDir ?? "")
@@ -2240,22 +2177,6 @@ function LabDesignerPage() {
 									<Button
 										size="sm"
 										variant="outline"
-										onClick={() => autofixYaml.mutate()}
-										disabled={autofixYaml.isPending}
-									>
-										{autofixYaml.isPending ? "Auto-fixing…" : "Auto-fix"}
-									</Button>
-									<Button
-										size="sm"
-										variant="outline"
-										onClick={() => validateYaml.mutate()}
-										disabled={validateYaml.isPending}
-									>
-										{validateYaml.isPending ? "Validating…" : "Validate"}
-									</Button>
-									<Button
-										size="sm"
-										variant="outline"
 										onClick={() => {
 											void navigator.clipboard?.writeText(effectiveYaml);
 											toast.success("Copied YAML");
@@ -2298,48 +2219,6 @@ function LabDesignerPage() {
 												.slice(0, 6)
 												.map((w) => <div key={w}>{w}</div>)
 										: null}
-								</div>
-							) : null}
-							{validateYaml.isError ? (
-								<div className="rounded-md border bg-red-500/10 text-red-900 dark:text-red-200 px-3 py-2 text-xs">
-									Validation failed: {(validateYaml.error as Error).message}
-								</div>
-							) : validateYaml.isSuccess && yamlValidation.ok ? (
-								<div className="rounded-md border bg-emerald-500/10 text-emerald-900 dark:text-emerald-200 px-3 py-2 text-xs">
-									Valid Containerlab YAML
-								</div>
-							) : validateYaml.isSuccess && yamlValidation.errs.length ? (
-								<div className="rounded-md border bg-red-500/10 text-red-900 dark:text-red-200 px-3 py-2 text-xs space-y-1">
-									<div className="font-medium">Invalid Containerlab YAML</div>
-									{yamlValidation.errs.slice(0, 8).map((e) => (
-										<div key={e}>{e}</div>
-									))}
-									{yamlValidation.errs.length > 8 ? (
-										<div className="text-muted-foreground">
-											+{yamlValidation.errs.length - 8} more…
-										</div>
-									) : null}
-								</div>
-							) : null}
-							{autofixYaml.isError ? (
-								<div className="rounded-md border bg-red-500/10 text-red-900 dark:text-red-200 px-3 py-2 text-xs">
-									Auto-fix failed: {(autofixYaml.error as Error).message}
-								</div>
-							) : autofixYaml.isSuccess &&
-								!yamlAutofix.ok &&
-								yamlAutofix.errs.length ? (
-								<div className="rounded-md border bg-amber-500/10 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs space-y-1">
-									<div className="font-medium">
-										Auto-fix incomplete (still failing schema)
-									</div>
-									{yamlAutofix.errs.slice(0, 6).map((e) => (
-										<div key={e}>{e}</div>
-									))}
-									{yamlAutofix.errs.length > 6 ? (
-										<div className="text-muted-foreground">
-											+{yamlAutofix.errs.length - 6} more…
-										</div>
-									) : null}
 								</div>
 							) : null}
 							<Textarea

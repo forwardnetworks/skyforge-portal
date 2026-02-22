@@ -14,7 +14,7 @@
 		"format": "biome format --write .",
 		"test": "vitest",
 		"e2e:ui": "node scripts/ui-e2e.mjs",
-		"gen:openapi": "openapi-typescript ../charts/skyforge/files/swagger-openapi.json -o src/lib/openapi.gen.ts"
+		"gen:openapi": "openapi-typescript ../charts/skyforge/files/openapi.json -o src/lib/openapi.gen.ts"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.2.2",

@@ -25,10 +25,8 @@ import { Route as DashboardServicenowRouteImport } from './routes/dashboard/serv
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
 import { Route as DashboardPolicyReportsRouteImport } from './routes/dashboard/policy-reports'
 import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
-import { Route as DashboardGeminiRouteImport } from './routes/dashboard/gemini'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as DashboardElasticRouteImport } from './routes/dashboard/elastic'
-import { Route as DashboardAiRouteImport } from './routes/dashboard/ai'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
 import { Route as DashboardWorkspacesIndexRouteImport } from './routes/dashboard/workspaces/index'
@@ -128,11 +126,6 @@ const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
   path: '/dashboard/integrations',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardGeminiRoute = DashboardGeminiRouteImport.update({
-  id: '/dashboard/gemini',
-  path: '/dashboard/gemini',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardForwardRoute = DashboardForwardRouteImport.update({
   id: '/dashboard/forward',
   path: '/dashboard/forward',
@@ -141,11 +134,6 @@ const DashboardForwardRoute = DashboardForwardRouteImport.update({
 const DashboardElasticRoute = DashboardElasticRouteImport.update({
   id: '/dashboard/elastic',
   path: '/dashboard/elastic',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardAiRoute = DashboardAiRouteImport.update({
-  id: '/dashboard/ai',
-  path: '/dashboard/ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
@@ -258,10 +246,8 @@ export interface FileRoutesByFullPath {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/ai': typeof DashboardAiRoute
   '/dashboard/elastic': typeof DashboardElasticRoute
   '/dashboard/forward': typeof DashboardForwardRoute
-  '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
@@ -298,10 +284,8 @@ export interface FileRoutesByTo {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/ai': typeof DashboardAiRoute
   '/dashboard/elastic': typeof DashboardElasticRoute
   '/dashboard/forward': typeof DashboardForwardRoute
-  '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
@@ -339,10 +323,8 @@ export interface FileRoutesById {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/ai': typeof DashboardAiRoute
   '/dashboard/elastic': typeof DashboardElasticRoute
   '/dashboard/forward': typeof DashboardForwardRoute
-  '/dashboard/gemini': typeof DashboardGeminiRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
@@ -381,10 +363,8 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
-    | '/dashboard/ai'
     | '/dashboard/elastic'
     | '/dashboard/forward'
-    | '/dashboard/gemini'
     | '/dashboard/integrations'
     | '/dashboard/policy-reports'
     | '/dashboard/s3'
@@ -421,10 +401,8 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
-    | '/dashboard/ai'
     | '/dashboard/elastic'
     | '/dashboard/forward'
-    | '/dashboard/gemini'
     | '/dashboard/integrations'
     | '/dashboard/policy-reports'
     | '/dashboard/s3'
@@ -461,10 +439,8 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
-    | '/dashboard/ai'
     | '/dashboard/elastic'
     | '/dashboard/forward'
-    | '/dashboard/gemini'
     | '/dashboard/integrations'
     | '/dashboard/policy-reports'
     | '/dashboard/s3'
@@ -502,10 +478,8 @@ export interface RootRouteChildren {
   WebhooksRoute: typeof WebhooksRoute
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
-  DashboardAiRoute: typeof DashboardAiRoute
   DashboardElasticRoute: typeof DashboardElasticRoute
   DashboardForwardRoute: typeof DashboardForwardRoute
-  DashboardGeminiRoute: typeof DashboardGeminiRoute
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
   DashboardPolicyReportsRoute: typeof DashboardPolicyReportsRoute
   DashboardS3Route: typeof DashboardS3Route
@@ -646,13 +620,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIntegrationsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/gemini': {
-      id: '/dashboard/gemini'
-      path: '/dashboard/gemini'
-      fullPath: '/dashboard/gemini'
-      preLoaderRoute: typeof DashboardGeminiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/forward': {
       id: '/dashboard/forward'
       path: '/dashboard/forward'
@@ -665,13 +632,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/elastic'
       fullPath: '/dashboard/elastic'
       preLoaderRoute: typeof DashboardElasticRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/ai': {
-      id: '/dashboard/ai'
-      path: '/dashboard/ai'
-      fullPath: '/dashboard/ai'
-      preLoaderRoute: typeof DashboardAiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/settings': {
@@ -828,10 +788,8 @@ const rootRouteChildren: RootRouteChildren = {
   WebhooksRoute: WebhooksRoute,
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
-  DashboardAiRoute: DashboardAiRoute,
   DashboardElasticRoute: DashboardElasticRoute,
   DashboardForwardRoute: DashboardForwardRoute,
-  DashboardGeminiRoute: DashboardGeminiRoute,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
   DashboardPolicyReportsRoute: DashboardPolicyReportsRoute,
   DashboardS3Route: DashboardS3Route,

@@ -73,23 +73,6 @@ export type ServiceNowSchemaStatusResponse = {
 	checkedAt?: ISO8601;
 };
 
-export type UserGeminiConfigResponse = {
-	enabled: boolean;
-	aiEnabled: boolean;
-	oauthConfigured: boolean;
-	vertexConfigured: boolean;
-	configured: boolean;
-	email?: string;
-	scopes?: string;
-	hasToken: boolean;
-	updatedAt?: ISO8601;
-	redirectUrl?: string;
-	projectId?: string;
-	location?: string;
-	model?: string;
-	fallbackModel?: string;
-};
-
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
 // This type reflects the fields Skyforge currently emits in the dashboard snapshot and related APIs.
 export type WorkspaceDeployment = {
@@ -610,17 +593,6 @@ export async function configureForwardServiceNowTicketing(): Promise<ConfigureFo
 	);
 }
 
-export async function getUserGeminiConfig(): Promise<UserGeminiConfigResponse> {
-	return apiFetch<UserGeminiConfigResponse>("/api/user/integrations/gemini");
-}
-
-export async function disconnectUserGemini(): Promise<void> {
-	await apiFetch<void>("/api/user/integrations/gemini/disconnect", {
-		method: "POST",
-		body: "{}",
-	});
-}
-
 export type UserElasticConfigResponse = {
 	enabled: boolean;
 	configured: boolean;
@@ -714,125 +686,6 @@ export async function wakeElasticTools(): Promise<{
 			body: "{}",
 		},
 	);
-}
-
-export type UserAIGenerateRequest = {
-	provider?: "gemini";
-	kind: "netlab" | "containerlab";
-	prompt: string;
-	constraints?: string[];
-	seedTemplate?: string;
-	maxOutputTokens?: number;
-	temperature?: number;
-};
-
-export type UserAIGenerateResponse = {
-	id: string;
-	provider: string;
-	kind: string;
-	filename: string;
-	content: string;
-	warnings?: string[];
-	createdAt: string;
-};
-
-export type UserAIHistoryResponse = {
-	items: Array<{
-		id: string;
-		provider: string;
-		kind: string;
-		filename: string;
-		createdAt: string;
-	}>;
-};
-
-export async function generateUserAITemplate(
-	payload: UserAIGenerateRequest,
-	opts?: { signal?: AbortSignal },
-): Promise<UserAIGenerateResponse> {
-	return apiFetch<UserAIGenerateResponse>("/api/user/ai/generate", {
-		method: "POST",
-		body: JSON.stringify(payload),
-		signal: opts?.signal,
-	});
-}
-
-export async function getUserAIHistory(): Promise<UserAIHistoryResponse> {
-	return apiFetch<UserAIHistoryResponse>("/api/user/ai/history");
-}
-
-export type UserAISaveRequest = {
-	kind: "netlab" | "containerlab";
-	content: string;
-	pathHint?: string;
-	filename?: string;
-	message?: string;
-};
-
-export type UserAISaveResponse = {
-	workspaceId: string;
-	repo: string;
-	branch: string;
-	path: string;
-};
-
-export async function saveUserAITemplate(
-	payload: UserAISaveRequest,
-): Promise<UserAISaveResponse> {
-	return apiFetch<UserAISaveResponse>("/api/user/ai/save", {
-		method: "POST",
-		body: JSON.stringify(payload),
-	});
-}
-
-export type UserAIValidateRequest = {
-	kind: "netlab" | "containerlab";
-	content: string;
-	environment?: Record<string, unknown>;
-	setOverrides?: string[];
-};
-
-export type UserAIValidateResponse = {
-	workspaceId: string;
-	task: {
-		id?: number;
-		ok?: boolean;
-		errors?: unknown;
-	} & Record<string, unknown>;
-};
-
-export async function validateUserAITemplate(
-	payload: UserAIValidateRequest,
-): Promise<UserAIValidateResponse> {
-	return apiFetch<UserAIValidateResponse>("/api/user/ai/validate", {
-		method: "POST",
-		body: JSON.stringify(payload),
-	});
-}
-
-export type UserAIAutofixRequest = {
-	kind: "containerlab";
-	content: string;
-	maxIterations?: number;
-};
-
-export type UserAIAutofixResponse = {
-	kind: string;
-	content: string;
-	ok: boolean;
-	errors?: string[];
-	iterations: number;
-	warnings?: string[];
-	lastValidated: string;
-};
-
-export async function autofixUserAITemplate(
-	payload: UserAIAutofixRequest,
-): Promise<UserAIAutofixResponse> {
-	return apiFetch<UserAIAutofixResponse>("/api/user/ai/autofix", {
-		method: "POST",
-		body: JSON.stringify(payload),
-	});
 }
 
 export type UserGitCredentialsResponse = {
@@ -2879,58 +2732,6 @@ export type StorageListResponse =
 
 export async function listStorageFiles(): Promise<StorageListResponse> {
 	return apiFetch<StorageListResponse>("/storage.List");
-}
-
-export type PKIRootResponse =
-	operations["GET:skyforge.GetPKIRoot"]["responses"][200]["content"]["application/json"];
-export async function getPKIRoot(): Promise<PKIRootResponse> {
-	return apiFetch<PKIRootResponse>("/api/pki/root");
-}
-
-export type PKISSHRootResponse =
-	operations["GET:skyforge.GetPKISSHRoot"]["responses"][200]["content"]["application/json"];
-export async function getPKISSHRoot(): Promise<PKISSHRootResponse> {
-	return apiFetch<PKISSHRootResponse>("/api/pki/ssh/root");
-}
-
-export type PKICertsResponse =
-	operations["GET:skyforge.ListPKICerts"]["responses"][200]["content"]["application/json"];
-export async function listPKICerts(): Promise<PKICertsResponse> {
-	return apiFetch<PKICertsResponse>("/api/pki/certs");
-}
-
-export type PKISSHCertsResponse =
-	operations["GET:skyforge.ListPKISSHCerts"]["responses"][200]["content"]["application/json"];
-export async function listPKISSHCerts(): Promise<PKISSHCertsResponse> {
-	return apiFetch<PKISSHCertsResponse>("/api/pki/ssh/certs");
-}
-
-export type IssuePKICertRequest = NonNullable<
-	operations["POST:skyforge.IssuePKICert"]["requestBody"]
->["content"]["application/json"];
-export type IssuePKICertResponse =
-	operations["POST:skyforge.IssuePKICert"]["responses"][200]["content"]["application/json"];
-export async function issuePKICert(
-	body: IssuePKICertRequest,
-): Promise<IssuePKICertResponse> {
-	return apiFetch<IssuePKICertResponse>("/api/pki/issue", {
-		method: "POST",
-		body: JSON.stringify(body),
-	});
-}
-
-export type IssuePKISSHCertRequest = NonNullable<
-	operations["POST:skyforge.IssuePKISSHCert"]["requestBody"]
->["content"]["application/json"];
-export type IssuePKISSHCertResponse =
-	operations["POST:skyforge.IssuePKISSHCert"]["responses"][200]["content"]["application/json"];
-export async function issuePKISSHCert(
-	body: IssuePKISSHCertRequest,
-): Promise<IssuePKISSHCertResponse> {
-	return apiFetch<IssuePKISSHCertResponse>("/api/pki/ssh/issue", {
-		method: "POST",
-		body: JSON.stringify(body),
-	});
 }
 
 export type ListWebhookEventsResponse =

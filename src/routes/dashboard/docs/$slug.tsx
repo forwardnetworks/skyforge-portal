@@ -203,65 +203,6 @@ const DOC_PAGES: DocPage[] = [
 			</div>
 		),
 	},
-	{
-		slug: "ai-templates",
-		title: "AI templates (Gemini)",
-		content: (
-			<div className="space-y-4 text-sm">
-				<p>
-					Skyforge can generate Netlab and Containerlab templates using your
-					connected Gemini account. The workflow is intended to be safe and
-					iterative: generate → save → validate → deploy.
-				</p>
-				<ol className="list-decimal pl-5 space-y-2">
-					<li>
-						Connect Gemini from{" "}
-						<Link className="underline" to="/dashboard/gemini">
-							AI → Gemini
-						</Link>
-						.
-					</li>
-					<li>
-						Open{" "}
-						<Link className="underline" to="/dashboard/ai">
-							AI Templates
-						</Link>{" "}
-						and generate a template from a prompt.
-					</li>
-					<li>
-						Click <strong>Save to Repo</strong> to store the generated file into
-						your default workspace under <span className="font-mono">ai/</span>.
-					</li>
-					<li>
-						For Netlab templates, click <strong>Validate (Netlab)</strong> and
-						open the resulting run to see the netlab validation output.
-					</li>
-				</ol>
-				<p className="text-xs text-muted-foreground">
-					Note: The AI feature can be disabled by the instance admin. If the
-					generate button is disabled, verify Gemini is connected and AI is
-					enabled on the server.
-				</p>
-				<div className="rounded-md border p-3 text-xs text-muted-foreground">
-					<div className="font-medium text-foreground">Common issues</div>
-					<ul className="mt-2 list-disc space-y-1 pl-5">
-						<li>
-							If you see an error about the{" "}
-							<span className="font-mono">Vertex AI API</span> being disabled,
-							an admin must enable{" "}
-							<span className="font-mono">aiplatform.googleapis.com</span> for
-							the configured project. Skyforge often includes a direct “Enable
-							API” link in the error.
-						</li>
-						<li>
-							If you see a permissions error, an admin must grant you Vertex AI
-							access in the shared project (typically “Vertex AI User”).
-						</li>
-					</ul>
-				</div>
-			</div>
-		),
-	},
 ];
 
 export const Route = createFileRoute("/dashboard/docs/$slug")({
