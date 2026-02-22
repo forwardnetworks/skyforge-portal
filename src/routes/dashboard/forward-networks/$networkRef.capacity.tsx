@@ -315,12 +315,12 @@ function ForwardNetworkCapacityPage() {
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
 	const [planFilter, setPlanFilter] = useState("");
-	const userScopeId = String(userId ?? "").trim();
+	const ownerUserId = String(userId ?? "").trim();
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.userForwardNetworks(userScopeId),
-		queryFn: () => listUserScopeForwardNetworks(userScopeId),
-		enabled: Boolean(userScopeId),
+		queryKey: queryKeys.userForwardNetworks(ownerUserId),
+		queryFn: () => listUserScopeForwardNetworks(ownerUserId),
+		enabled: Boolean(ownerUserId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -411,7 +411,7 @@ function ForwardNetworkCapacityPage() {
 
 	const refresh = useMutation({
 		mutationFn: async () => {
-			if (!userScopeId) throw new Error("user scope not found");
+			if (!ownerUserId) throw new Error("user not found");
 			return refreshForwardNetworkCapacityRollups(userId, networkRef);
 		},
 		onSuccess: async (resp) => {
@@ -451,7 +451,7 @@ function ForwardNetworkCapacityPage() {
 			});
 			await qc.invalidateQueries({
 				queryKey:
-					queryKeys.userForwardNetworkCapacityPortfolio(userScopeId),
+					queryKeys.userForwardNetworkCapacityPortfolio(ownerUserId),
 			});
 			await qc.invalidateQueries({
 				// Prefix match for all growth queries for this forward network.
@@ -1564,7 +1564,7 @@ function ForwardNetworkCapacityPage() {
 		windowLabel,
 	]);
 
-	if (!userScopeId) {
+	if (!ownerUserId) {
 		return (
 			<div className="space-y-6 p-6">
 				<div className="flex items-center gap-3">
@@ -1582,9 +1582,9 @@ function ForwardNetworkCapacityPage() {
 					<h1 className="text-2xl font-bold tracking-tight">Capacity</h1>
 				</div>
 				<Card>
-					<CardContent className="pt-6 text-sm text-muted-foreground">
-						User scope is required.
-					</CardContent>
+						<CardContent className="pt-6 text-sm text-muted-foreground">
+							User is required.
+						</CardContent>
 				</Card>
 			</div>
 		);
@@ -1596,7 +1596,7 @@ function ForwardNetworkCapacityPage() {
 				<div className="flex items-center gap-3">
 					<Link
 						to="/dashboard/forward-networks"
-						search={{ userId: userScopeId } as any}
+							search={{ userId: ownerUserId } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",

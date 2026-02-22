@@ -5263,7 +5263,7 @@ export interface components {
             resourceId: string;
             source: string;
             userId: string;
-            workspaceName: string;
+            userScopeName: string;
         };
         /**
          * GovernancePolicy is a lightweight guardrail layer (admin-configurable).
@@ -5323,7 +5323,7 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             userId: string;
-            workspaceName: string;
+            userScopeName: string;
         };
         "skyforge.GovernanceResourceInput": {
             accountId: string;
@@ -5367,7 +5367,7 @@ export interface components {
             unit: string;
             userId: string;
             value: number;
-            workspaceName: string;
+            userScopeName: string;
         };
         "skyforge.JSONMap": {
             [key: string]: Record<string, never>;
@@ -5809,7 +5809,7 @@ export interface components {
             /** Format: int64 */
             size: number;
         };
-        "skyforge.workspaceSyncReport": {
+        "skyforge.userScopeSyncReport": {
             errors: string[];
             slug: string;
             steps: string[];
@@ -6226,7 +6226,7 @@ export interface operations {
                         /** Format: int64 */
                         resourceCount: number;
                         /** Format: int64 */
-                        workspacesTracked: number;
+                        userScopesTracked: number;
                     };
                 };
             };
@@ -6598,7 +6598,7 @@ export interface operations {
                     "application/json": {
                         /** Format: int64 */
                         errors: number;
-                        reports: components["schemas"]["skyforge.workspaceSyncReport"][];
+                        reports: components["schemas"]["skyforge.userScopeSyncReport"][];
                         timestamp: string;
                         /** Format: int64 */
                         updated: number;
@@ -9828,7 +9828,7 @@ export interface operations {
                         uploadedAtUtc: string;
                         uploadedBy: string;
                         userId: string;
-                        workspaceSlug: string;
+                        userScopeSlug: string;
                     };
                 };
             };
