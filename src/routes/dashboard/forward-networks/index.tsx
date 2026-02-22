@@ -25,13 +25,13 @@ import {
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type PolicyReportForwardNetwork,
-	type SkyforgeWorkspace,
-	createWorkspaceForwardNetwork,
-	deleteWorkspaceForwardNetwork,
-	getWorkspaceForwardNetworkCapacityPortfolio,
+	type SkyforgeUserScope,
+	createUserScopeForwardNetwork,
+	deleteUserScopeForwardNetwork,
+	getUserScopeForwardNetworkCapacityPortfolio,
 	listUserScopes,
 	listUserForwardCollectorConfigs,
-	listWorkspaceForwardNetworks,
+	listUserScopeForwardNetworks,
 } from "../../../lib/skyforge-api";
 
 const searchSchema = z.object({
@@ -63,7 +63,7 @@ function ForwardNetworksPage() {
 		retry: false,
 	});
 	const userScopes = useMemo(
-		() => (userScopesQ.data ?? []) as SkyforgeWorkspace[],
+		() => (userScopesQ.data ?? []) as SkyforgeUserScope[],
 		[userScopesQ.data],
 	);
 
@@ -92,7 +92,7 @@ function ForwardNetworksPage() {
 
 	const networksQ = useQuery({
 		queryKey: queryKeys.userForwardNetworks(selectedUserScopeId),
-		queryFn: () => listWorkspaceForwardNetworks(selectedUserScopeId),
+		queryFn: () => listUserScopeForwardNetworks(selectedUserScopeId),
 		enabled: Boolean(selectedUserScopeId),
 		staleTime: 10_000,
 		retry: false,
@@ -107,7 +107,7 @@ function ForwardNetworksPage() {
 		queryKey:
 			queryKeys.userForwardNetworkCapacityPortfolio(selectedUserScopeId),
 		queryFn: () =>
-			getWorkspaceForwardNetworkCapacityPortfolio(selectedUserScopeId),
+			getUserScopeForwardNetworkCapacityPortfolio(selectedUserScopeId),
 		enabled: Boolean(selectedUserScopeId),
 		staleTime: 10_000,
 		retry: false,
@@ -143,7 +143,7 @@ function ForwardNetworksPage() {
 			const fid = forwardNetworkId.trim();
 			if (!n) throw new Error("Name is required");
 			if (!fid) throw new Error("Forward Network ID is required");
-			return createWorkspaceForwardNetwork(ws, {
+			return createUserScopeForwardNetwork(ws, {
 				name: n,
 				forwardNetworkId: fid,
 				description: description.trim() || undefined,
@@ -173,7 +173,7 @@ function ForwardNetworksPage() {
 		mutationFn: async (networkRef: string) => {
 			const ws = selectedUserScopeId.trim();
 			if (!ws) throw new Error("Select a user scope");
-			return deleteWorkspaceForwardNetwork(ws, networkRef);
+			return deleteUserScopeForwardNetwork(ws, networkRef);
 		},
 		onSuccess: async () => {
 			toast.success("Forward network deleted");
@@ -209,7 +209,7 @@ function ForwardNetworksPage() {
 								<SelectValue placeholder="Select user scope" />
 							</SelectTrigger>
 							<SelectContent>
-								{userScopes.map((w: SkyforgeWorkspace) => (
+								{userScopes.map((w: SkyforgeUserScope) => (
 									<SelectItem key={w.id} value={w.id}>
 										{w.name} ({w.slug})
 									</SelectItem>

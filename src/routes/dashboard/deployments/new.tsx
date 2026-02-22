@@ -54,31 +54,31 @@ import {
 } from "../../../lib/netlab-env";
 import { queryKeys } from "../../../lib/query-keys";
 import {
-	type CreateWorkspaceDeploymentRequest,
+	type CreateUserScopeDeploymentRequest,
 	type DashboardSnapshot,
 	type ExternalTemplateRepo,
-	type SkyforgeWorkspace,
+	type SkyforgeUserScope,
 	type UserVariableGroup,
-	type WorkspaceTemplatesResponse,
-	convertWorkspaceEveLab,
-	createWorkspaceDeployment,
+	type UserScopeTemplatesResponse,
+	convertUserScopeEveLab,
+	createUserScopeDeployment,
 	getDashboardSnapshot,
 	getUserSettings,
-	getWorkspaceContainerlabTemplate,
-	getWorkspaceContainerlabTemplates,
-	getWorkspaceEveNgTemplates,
-	getWorkspaceNetlabTemplate,
-	getWorkspaceNetlabTemplates,
-	getWorkspaceTerraformTemplates,
-	importWorkspaceEveLab,
+	getUserScopeContainerlabTemplate,
+	getUserScopeContainerlabTemplates,
+	getUserScopeEveNgTemplates,
+	getUserScopeNetlabTemplate,
+	getUserScopeNetlabTemplates,
+	getUserScopeTerraformTemplates,
+	importUserScopeEveLab,
 	listUserScopes,
 	listUserContainerlabServers,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
 	listUserVariableGroups,
-	listWorkspaceEveLabs,
-	validateWorkspaceNetlabTemplate,
+	listUserScopeEveLabs,
+	validateUserScopeNetlabTemplate,
 } from "../../../lib/skyforge-api";
 
 const deploymentsSearchSchema = z.object({
@@ -175,7 +175,7 @@ function CreateDeploymentPage() {
 		queryFn: listUserScopes,
 		staleTime: 30_000,
 	});
-	const userScopes = (userScopesQ.data ?? []) as SkyforgeWorkspace[];
+	const userScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -314,7 +314,7 @@ function CreateDeploymentPage() {
 			true,
 		),
 		queryFn: () =>
-			listWorkspaceEveLabs(watchUserScopeId, {
+			listUserScopeEveLabs(watchUserScopeId, {
 				server: importServer,
 				recursive: true,
 			}),
@@ -382,7 +382,7 @@ function CreateDeploymentPage() {
 		return USER_REPO_SOURCE;
 	}, [watchKind, watchSource]);
 
-	const templatesQ = useQuery<WorkspaceTemplatesResponse>({
+	const templatesQ = useQuery<UserScopeTemplatesResponse>({
 		queryKey: queryKeys.userTemplates(
 			watchUserScopeId,
 			watchKind,
@@ -401,16 +401,16 @@ function CreateDeploymentPage() {
 			switch (watchKind) {
 				case "netlab":
 				case "netlab-c9s":
-					return getWorkspaceNetlabTemplates(watchUserScopeId, query);
+					return getUserScopeNetlabTemplates(watchUserScopeId, query);
 				case "eve_ng":
-					return getWorkspaceEveNgTemplates(watchUserScopeId, query);
+					return getUserScopeEveNgTemplates(watchUserScopeId, query);
 				case "containerlab":
 				case "clabernetes":
-					return getWorkspaceContainerlabTemplates(watchUserScopeId, query);
+					return getUserScopeContainerlabTemplates(watchUserScopeId, query);
 				case "terraform":
-					return getWorkspaceTerraformTemplates(watchUserScopeId, query);
+					return getUserScopeTerraformTemplates(watchUserScopeId, query);
 				default:
-					return getWorkspaceNetlabTemplates(watchUserScopeId, query);
+					return getUserScopeNetlabTemplates(watchUserScopeId, query);
 			}
 		},
 		staleTime: 5 * 60_000,
@@ -481,13 +481,13 @@ function CreateDeploymentPage() {
 				query.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
 			if (watchKind === "containerlab" || watchKind === "clabernetes") {
-				return getWorkspaceContainerlabTemplate(watchUserScopeId, {
+				return getUserScopeContainerlabTemplate(watchUserScopeId, {
 					...query,
 					file: watchTemplate,
 				});
 			}
 			// Default: treat as netlab-like.
-			return getWorkspaceNetlabTemplate(watchUserScopeId, {
+			return getUserScopeNetlabTemplate(watchUserScopeId, {
 				...query,
 				template: watchTemplate,
 			});
@@ -579,12 +579,12 @@ function CreateDeploymentPage() {
 				config.eveServer = eve;
 			}
 
-			const body: CreateWorkspaceDeploymentRequest = {
+			const body: CreateUserScopeDeploymentRequest = {
 				name: values.name,
 				type: values.kind,
 				config: config as any,
 			};
-			return createWorkspaceDeployment(values.userId, body);
+			return createUserScopeDeployment(values.userId, body);
 		},
 		onSuccess: async (_, variables) => {
 			toast.success("Deployment created successfully", {
@@ -612,7 +612,7 @@ function CreateDeploymentPage() {
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
 			if (!labPath) throw new Error("Select an EVE-NG lab.");
-			return importWorkspaceEveLab(watchUserScopeId, {
+			return importUserScopeEveLab(watchUserScopeId, {
 				server,
 				labPath,
 				deploymentName: importDeploymentName.trim() || undefined,
@@ -650,7 +650,7 @@ function CreateDeploymentPage() {
 			if (createDeployment && !containerlabServer) {
 				throw new Error("Select a Containerlab server.");
 			}
-			return convertWorkspaceEveLab(watchUserScopeId, {
+			return convertUserScopeEveLab(watchUserScopeId, {
 				server,
 				labPath,
 				createDeployment,
@@ -715,7 +715,7 @@ function CreateDeploymentPage() {
 			if (effectiveSource === "external" && watchTemplateRepoId)
 				body.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
-			return validateWorkspaceNetlabTemplate(watchUserScopeId, body);
+			return validateUserScopeNetlabTemplate(watchUserScopeId, body);
 		},
 		onSuccess: async (res: any) => {
 			const runId = String(res?.task?.id ?? res?.task?.task_id ?? "").trim();

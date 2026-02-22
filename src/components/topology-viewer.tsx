@@ -43,7 +43,7 @@ import {
 	type LinkCaptureResponse,
 	type LinkStatsSnapshot,
 	captureDeploymentLinkPcap,
-	downloadWorkspaceArtifact,
+	downloadUserScopeArtifact,
 	getDeploymentInventory,
 	getDeploymentLinkStats,
 	getDeploymentNodeInterfaces,
@@ -638,7 +638,7 @@ export function TopologyViewer({
 	const downloadPcap = useCallback(
 		async (key: string) => {
 			if (!userId) return;
-			const resp = await downloadWorkspaceArtifact(userId, key);
+			const resp = await downloadUserScopeArtifact(userId, key);
 			const b64 = String((resp as any)?.fileData ?? "");
 			if (!b64) throw new Error("missing fileData");
 			const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));

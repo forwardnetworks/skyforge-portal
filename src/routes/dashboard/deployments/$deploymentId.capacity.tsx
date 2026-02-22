@@ -27,7 +27,7 @@ import {
 	type CapacityRollupRow,
 	type DashboardSnapshot,
 	type DeploymentCapacityInventoryResponse,
-	type WorkspaceDeployment,
+	type UserScopeDeployment,
 	getDeploymentCapacityGrowth,
 	getDeploymentCapacityInventory,
 	getDeploymentCapacitySummary,
@@ -310,7 +310,7 @@ function DeploymentCapacityPage() {
 
 	const deployment = useMemo(() => {
 		return (snap.data?.deployments ?? []).find(
-			(d: WorkspaceDeployment) => d.id === deploymentId,
+			(d: UserScopeDeployment) => d.id === deploymentId,
 		);
 	}, [snap.data?.deployments, deploymentId]);
 

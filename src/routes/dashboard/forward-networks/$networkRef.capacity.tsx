@@ -37,7 +37,7 @@ import {
 	getForwardNetworkCapacitySummary,
 	getForwardNetworkCapacityUnhealthyDevices,
 	getForwardNetworkCapacityUpgradeCandidates,
-	listWorkspaceForwardNetworks,
+	listUserScopeForwardNetworks,
 	postForwardNetworkCapacityDeviceMetricsHistory,
 	postForwardNetworkCapacityInterfaceMetricsHistory,
 	refreshForwardNetworkCapacityRollups,
@@ -319,7 +319,7 @@ function ForwardNetworkCapacityPage() {
 
 	const networksQ = useQuery({
 		queryKey: queryKeys.userForwardNetworks(userScopeId),
-		queryFn: () => listWorkspaceForwardNetworks(userScopeId),
+		queryFn: () => listUserScopeForwardNetworks(userScopeId),
 		enabled: Boolean(userScopeId),
 		retry: false,
 		staleTime: 30_000,

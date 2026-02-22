@@ -151,7 +151,7 @@ function AdminSettingsPage() {
 			adminPurgeUser({ username: purgeUsername, confirm: purgeUsername }),
 		onSuccess: (res) => {
 			toast.success("User purged", {
-				description: `Deleted user scopes: ${res.deletedWorkspaces}`,
+				description: `Deleted user scopes: ${res.deletedUserScopes}`,
 			});
 		},
 		onError: (e) => {

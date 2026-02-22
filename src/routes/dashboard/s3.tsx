@@ -27,12 +27,12 @@ import {
 import { Skeleton } from "../../components/ui/skeleton";
 import { queryKeys } from "../../lib/query-keys";
 import {
-	createWorkspaceArtifactFolder,
-	deleteWorkspaceArtifactObject,
-	downloadWorkspaceArtifact,
+	createUserScopeArtifactFolder,
+	deleteUserScopeArtifactObject,
+	downloadUserScopeArtifact,
 	listUserScopes,
-	listWorkspaceArtifacts,
-	putWorkspaceArtifactObject,
+	listUserScopeArtifacts,
+	putUserScopeArtifactObject,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/s3")({
@@ -63,7 +63,7 @@ function S3Page() {
 	const artifacts = useQuery({
 		queryKey: queryKeys.userArtifacts(selectedUserScopeId),
 		queryFn: async () =>
-			listWorkspaceArtifacts(selectedUserScopeId, {
+			listUserScopeArtifacts(selectedUserScopeId, {
 				prefix: prefix || undefined,
 			}),
 		staleTime: 10_000,
@@ -92,7 +92,7 @@ function S3Page() {
 								size="sm"
 								onClick={async () => {
 									try {
-										const resp = await downloadWorkspaceArtifact(
+										const resp = await downloadUserScopeArtifact(
 											selectedUserScopeId,
 											item.key,
 										);
@@ -125,7 +125,7 @@ function S3Page() {
 							size="sm"
 							onClick={async () => {
 								try {
-									const resp = await downloadWorkspaceArtifact(
+									const resp = await downloadUserScopeArtifact(
 										selectedUserScopeId,
 										item.key,
 									);
@@ -159,7 +159,7 @@ function S3Page() {
 							onClick={async () => {
 								if (!confirm(`Delete ${item.key}?`)) return;
 								try {
-									await deleteWorkspaceArtifactObject(
+									await deleteUserScopeArtifactObject(
 										selectedUserScopeId,
 										item.key,
 									);
@@ -230,7 +230,7 @@ function S3Page() {
 						const folder = window.prompt("Folder prefix (e.g. uploads/)");
 						if (!folder) return;
 						try {
-							await createWorkspaceArtifactFolder(selectedUserScopeId, folder);
+							await createUserScopeArtifactFolder(selectedUserScopeId, folder);
 							toast.success("Folder created");
 							await artifacts.refetch();
 						} catch (e) {
@@ -265,7 +265,7 @@ function S3Page() {
 										b64 += btoa(String.fromCharCode(...chunk));
 									}
 									const key = (prefix || "") + file.name;
-									await putWorkspaceArtifactObject(selectedUserScopeId, {
+									await putUserScopeArtifactObject(selectedUserScopeId, {
 										key,
 										contentBase64: b64,
 										contentType: file.type || "application/octet-stream",

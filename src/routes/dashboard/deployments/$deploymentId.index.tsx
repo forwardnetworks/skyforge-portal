@@ -66,7 +66,7 @@ import {
 	type DashboardSnapshot,
 	type JSONMap,
 	type UserForwardCollectorConfigSummary,
-	type WorkspaceDeployment,
+	type UserScopeDeployment,
 	deleteDeployment,
 	getDeploymentTopology,
 	listUserForwardCollectorConfigs,
@@ -110,7 +110,7 @@ function DeploymentDetailPage() {
 
 	const deployment = useMemo(() => {
 		return (snap.data?.deployments ?? []).find(
-			(d: WorkspaceDeployment) => d.id === deploymentId,
+			(d: UserScopeDeployment) => d.id === deploymentId,
 		);
 	}, [snap.data?.deployments, deploymentId]);
 

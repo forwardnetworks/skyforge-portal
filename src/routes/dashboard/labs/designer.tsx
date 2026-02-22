@@ -53,8 +53,8 @@ import {
 	createClabernetesDeploymentFromTemplate,
 	createContainerlabDeploymentFromTemplate,
 	getDeploymentTopology,
-	getWorkspaceContainerlabTemplate,
-	getWorkspaceContainerlabTemplates,
+	getUserScopeContainerlabTemplate,
+	getUserScopeContainerlabTemplates,
 	listUserScopes,
 	listRegistryRepositories,
 	listRegistryTags,
@@ -960,7 +960,7 @@ function LabDesignerPage() {
 			? ["containerlabTemplates", userId, importSource, importDir]
 			: ["containerlabTemplates", "none"],
 		queryFn: async () =>
-			getWorkspaceContainerlabTemplates(userId, {
+			getUserScopeContainerlabTemplates(userId, {
 				source: toAPISource(importSource),
 				dir: importDir,
 			}),
@@ -982,7 +982,7 @@ function LabDesignerPage() {
 		queryFn: async () => {
 			if (!userId) throw new Error("missing user scope");
 			if (!importFile) return null;
-			return getWorkspaceContainerlabTemplate(userId, {
+			return getUserScopeContainerlabTemplate(userId, {
 				source: toAPISource(importSource),
 				dir: importDir,
 				file: importFile,
@@ -1112,7 +1112,7 @@ function LabDesignerPage() {
 			if (!userId) throw new Error("Select a user scope");
 			const file = importFile.trim();
 			if (!file) throw new Error("Select a template");
-			return getWorkspaceContainerlabTemplate(userId, {
+			return getUserScopeContainerlabTemplate(userId, {
 				source: toAPISource(importSource),
 				dir: importDir,
 				file,

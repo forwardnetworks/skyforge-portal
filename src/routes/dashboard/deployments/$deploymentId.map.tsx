@@ -11,7 +11,7 @@ import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
-	type WorkspaceDeployment,
+	type UserScopeDeployment,
 	getDeploymentTopology,
 } from "../../../lib/skyforge-api";
 
@@ -35,7 +35,7 @@ function DeploymentMapPage() {
 
 	const deployment = useMemo(() => {
 		return (snap.data?.deployments ?? []).find(
-			(d: WorkspaceDeployment) => d.id === deploymentId,
+			(d: UserScopeDeployment) => d.id === deploymentId,
 		);
 	}, [deploymentId, snap.data?.deployments]);
 

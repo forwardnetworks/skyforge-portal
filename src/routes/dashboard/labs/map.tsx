@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/query-keys";
 import {
 	type DeploymentTopology,
-	getWorkspaceContainerlabTemplate,
+	getUserScopeContainerlabTemplate,
 	listUserScopes,
 } from "@/lib/skyforge-api";
 import { useQuery } from "@tanstack/react-query";
@@ -86,7 +86,7 @@ function LabsMapPage() {
 		queryFn: async () => {
 			if (!userId) throw new Error("userId is required");
 			if (!file) throw new Error("file is required");
-			return getWorkspaceContainerlabTemplate(userId, {
+			return getUserScopeContainerlabTemplate(userId, {
 				source: toAPISource(source),
 				dir,
 				file,

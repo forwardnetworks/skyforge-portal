@@ -75,12 +75,12 @@ import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
 	type JSONMap,
-	type SkyforgeWorkspace,
-	type WorkspaceDeployment,
+	type SkyforgeUserScope,
+	type UserScopeDeployment,
 	buildLoginUrl,
-	createWorkspace,
+	createUserScope,
 	deleteDeployment,
-	deleteWorkspace,
+	deleteUserScope,
 	destroyDeployment,
 	getDashboardSnapshot,
 	getSession,
@@ -127,7 +127,7 @@ function DeploymentsPage() {
 	});
 
 	const [destroyTarget, setDestroyTarget] =
-		useState<WorkspaceDeployment | null>(null);
+		useState<UserScopeDeployment | null>(null);
 	const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 	const [destroyAlsoDeleteForward, setDestroyAlsoDeleteForward] =
 		useState(false);
@@ -157,7 +157,7 @@ function DeploymentsPage() {
 		queryFn: listUserScopes,
 		staleTime: 30_000,
 	});
-	const userScopes = (userScopesQ.data ?? []) as SkyforgeWorkspace[];
+	const userScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
 
 	const lastUserScopeKey = "skyforge.lastUserScopeId.deployments";
 
@@ -165,14 +165,14 @@ function DeploymentsPage() {
 	const selectedUserScopeId = useMemo(() => {
 		if (
 			userId &&
-			userScopes.some((w: SkyforgeWorkspace) => w.id === userId)
+			userScopes.some((w: SkyforgeUserScope) => w.id === userId)
 		)
 			return userId;
 		const stored =
 			typeof window !== "undefined"
 				? (window.localStorage.getItem(lastUserScopeKey) ?? "")
 				: "";
-		if (stored && userScopes.some((w: SkyforgeWorkspace) => w.id === stored))
+		if (stored && userScopes.some((w: SkyforgeUserScope) => w.id === stored))
 			return stored;
 		return userScopes[0]?.id ?? "";
 	}, [userId, userScopes]);
@@ -193,7 +193,7 @@ function DeploymentsPage() {
 
 	const selectedUserScope = useMemo(() => {
 		return (
-			userScopes.find((w: SkyforgeWorkspace) => w.id === selectedUserScopeId) ??
+			userScopes.find((w: SkyforgeUserScope) => w.id === selectedUserScopeId) ??
 			null
 		);
 	}, [userScopes, selectedUserScopeId]);
@@ -202,7 +202,7 @@ function DeploymentsPage() {
 		mutationFn: async () => {
 			const name = String(createUserScopeName ?? "").trim();
 			if (!name) throw new Error("User scope name is required");
-			return createWorkspace({
+			return createUserScope({
 				name,
 				slug: String(createUserScopeSlug ?? "").trim() || undefined,
 			} as any);
@@ -234,7 +234,7 @@ function DeploymentsPage() {
 					`Type the user-scope slug (“${selectedUserScope?.slug ?? ""}”) to confirm`,
 				);
 			}
-			return deleteWorkspace(selectedUserScopeId, { confirm });
+			return deleteUserScope(selectedUserScopeId, { confirm });
 		},
 		onSuccess: async () => {
 			toast.success("User scope deleted");
@@ -265,10 +265,10 @@ function DeploymentsPage() {
 	};
 
 	const allDeployments = useMemo(() => {
-		const all = (snap.data?.deployments ?? []) as WorkspaceDeployment[];
+		const all = (snap.data?.deployments ?? []) as UserScopeDeployment[];
 		return selectedUserScopeId
 			? all.filter(
-					(d: WorkspaceDeployment) => d.userId === selectedUserScopeId,
+					(d: UserScopeDeployment) => d.userId === selectedUserScopeId,
 				)
 			: all;
 	}, [selectedUserScopeId, snap.data?.deployments]);
@@ -323,7 +323,7 @@ function DeploymentsPage() {
 		});
 	}, [allDeployments, searchQuery, statusFilter, typeFilter]);
 
-	const handleStart = async (d: WorkspaceDeployment) => {
+	const handleStart = async (d: UserScopeDeployment) => {
 		try {
 			await startDeployment(d.userId, d.id);
 			toast.success("Deployment starting", {
@@ -334,7 +334,7 @@ function DeploymentsPage() {
 		}
 	};
 
-	const handleStop = async (d: WorkspaceDeployment) => {
+	const handleStop = async (d: UserScopeDeployment) => {
 		try {
 			await stopDeployment(d.userId, d.id);
 			toast.success("Deployment stopping", {
@@ -346,7 +346,7 @@ function DeploymentsPage() {
 	};
 
 	const deploymentColumns = useMemo((): Array<
-		DataTableColumn<WorkspaceDeployment>
+		DataTableColumn<UserScopeDeployment>
 	> => {
 		return [
 			{
@@ -524,7 +524,7 @@ function DeploymentsPage() {
 								<SelectValue placeholder="Select user scope" />
 							</SelectTrigger>
 							<SelectContent>
-								{userScopes.map((w: SkyforgeWorkspace) => (
+								{userScopes.map((w: SkyforgeUserScope) => (
 									<SelectItem key={w.id} value={w.id}>
 										{w.name} ({w.slug})
 									</SelectItem>
