@@ -16,7 +16,7 @@ The API endpoint is:
 
 ## Run locally
 
-From `skyforge-private/portal-tanstack`:
+From `components/portal`:
 
 ```bash
 export SKYFORGE_UI_E2E_BASE_URL=http://localhost:5173

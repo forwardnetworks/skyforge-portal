@@ -84,7 +84,7 @@ import {
 	destroyDeployment,
 	getDashboardSnapshot,
 	getSession,
-	getWorkspaces,
+	listUserScopes,
 	startDeployment,
 	stopDeployment,
 } from "../../../lib/skyforge-api";
@@ -92,17 +92,17 @@ import { cn } from "../../../lib/utils";
 
 // Search Schema
 const deploymentsSearchSchema = z.object({
-	workspace: z.string().optional().catch(""),
+	userId: z.string().optional().catch(""),
 });
 
 export const Route = createFileRoute("/dashboard/deployments/")({
 	validateSearch: (search) => deploymentsSearchSchema.parse(search),
-	loaderDeps: ({ search: { workspace } }) => ({ workspace }),
+	loaderDeps: ({ search: { userId } }) => ({ userId }),
 	loader: async ({ context: { queryClient } }) => {
-		// Prefetch workspaces to ensure selector is ready
+		// Prefetch userScopes to ensure selector is ready
 		await queryClient.ensureQueryData({
-			queryKey: queryKeys.workspaces(),
-			queryFn: getWorkspaces,
+			queryKey: queryKeys.userScopes(),
+			queryFn: listUserScopes,
 			staleTime: 30_000,
 		});
 	},
@@ -113,7 +113,7 @@ function DeploymentsPage() {
 	useDashboardEvents(true);
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { workspace } = Route.useSearch();
+	const { userId } = Route.useSearch();
 
 	const snap = useQuery<DashboardSnapshot | null>({
 		queryKey: queryKeys.dashboardSnapshot(),
@@ -146,133 +146,132 @@ function DeploymentsPage() {
 
 	// UI state
 	const [isFeedOpen, setIsFeedOpen] = useState(true);
-	const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
-	const [createWorkspaceName, setCreateWorkspaceName] = useState("");
-	const [createWorkspaceSlug, setCreateWorkspaceSlug] = useState("");
-	const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false);
-	const [deleteWorkspaceConfirm, setDeleteWorkspaceConfirm] = useState("");
+	const [createUserScopeOpen, setCreateUserScopeOpen] = useState(false);
+	const [createUserScopeName, setCreateUserScopeName] = useState("");
+	const [createUserScopeSlug, setCreateUserScopeSlug] = useState("");
+	const [deleteUserScopeOpen, setDeleteUserScopeOpen] = useState(false);
+	const [deleteUserScopeConfirm, setDeleteUserScopeConfirm] = useState("");
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userScopesQ = useQuery({
+		queryKey: queryKeys.userScopes(),
+		queryFn: listUserScopes,
 		staleTime: 30_000,
 	});
-	const workspaces = (workspacesQ.data?.workspaces ??
-		[]) as SkyforgeWorkspace[];
+	const userScopes = (userScopesQ.data ?? []) as SkyforgeWorkspace[];
 
-	const lastWorkspaceKey = "skyforge.lastWorkspaceId.deployments";
+	const lastUserScopeKey = "skyforge.lastUserScopeId.deployments";
 
-	// Use URL param if available, otherwise fallback to last-selected, then first workspace
-	const selectedWorkspaceId = useMemo(() => {
+	// Use URL param if available, otherwise fallback to last-selected, then first user scope.
+	const selectedUserScopeId = useMemo(() => {
 		if (
-			workspace &&
-			workspaces.some((w: SkyforgeWorkspace) => w.id === workspace)
+			userId &&
+			userScopes.some((w: SkyforgeWorkspace) => w.id === userId)
 		)
-			return workspace;
+			return userId;
 		const stored =
 			typeof window !== "undefined"
-				? (window.localStorage.getItem(lastWorkspaceKey) ?? "")
+				? (window.localStorage.getItem(lastUserScopeKey) ?? "")
 				: "";
-		if (stored && workspaces.some((w: SkyforgeWorkspace) => w.id === stored))
+		if (stored && userScopes.some((w: SkyforgeWorkspace) => w.id === stored))
 			return stored;
-		return workspaces[0]?.id ?? "";
-	}, [workspace, workspaces]);
+		return userScopes[0]?.id ?? "";
+	}, [userId, userScopes]);
 
 	useEffect(() => {
-		if (!selectedWorkspaceId) return;
+		if (!selectedUserScopeId) return;
 		if (typeof window !== "undefined") {
-			window.localStorage.setItem(lastWorkspaceKey, selectedWorkspaceId);
+			window.localStorage.setItem(lastUserScopeKey, selectedUserScopeId);
 		}
-		if (workspace !== selectedWorkspaceId) {
+		if (userId !== selectedUserScopeId) {
 			navigate({
-				search: { workspace: selectedWorkspaceId } as any,
+				search: { userId: selectedUserScopeId } as any,
 				replace: true,
 			});
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selectedWorkspaceId]);
+	}, [selectedUserScopeId]);
 
-	const selectedWorkspace = useMemo(() => {
+	const selectedUserScope = useMemo(() => {
 		return (
-			workspaces.find((w: SkyforgeWorkspace) => w.id === selectedWorkspaceId) ??
+			userScopes.find((w: SkyforgeWorkspace) => w.id === selectedUserScopeId) ??
 			null
 		);
-	}, [workspaces, selectedWorkspaceId]);
+	}, [userScopes, selectedUserScopeId]);
 
 	const createWs = useMutation({
 		mutationFn: async () => {
-			const name = String(createWorkspaceName ?? "").trim();
-			if (!name) throw new Error("Workspace name is required");
+			const name = String(createUserScopeName ?? "").trim();
+			if (!name) throw new Error("User scope name is required");
 			return createWorkspace({
 				name,
-				slug: String(createWorkspaceSlug ?? "").trim() || undefined,
+				slug: String(createUserScopeSlug ?? "").trim() || undefined,
 			} as any);
 		},
 		onSuccess: async (created) => {
-			toast.success("Workspace created");
-			setCreateWorkspaceOpen(false);
-			setCreateWorkspaceName("");
-			setCreateWorkspaceSlug("");
-			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
+			toast.success("User scope created");
+			setCreateUserScopeOpen(false);
+			setCreateUserScopeName("");
+			setCreateUserScopeSlug("");
+			await queryClient.invalidateQueries({ queryKey: queryKeys.userScopes() });
 			if (created?.id) {
 				navigate({
-					search: { workspace: created.id } as any,
+					search: { userId: created.id } as any,
 					replace: true,
 				});
 			}
 		},
 		onError: (e) =>
-			toast.error("Failed to create workspace", {
+			toast.error("Failed to create user scope", {
 				description: (e as Error).message,
 			}),
 	});
 
 	const delWs = useMutation({
 		mutationFn: async () => {
-			const confirm = String(deleteWorkspaceConfirm ?? "").trim();
+			const confirm = String(deleteUserScopeConfirm ?? "").trim();
 			if (!confirm) {
 				throw new Error(
-					`Type the workspace slug (“${selectedWorkspace?.slug ?? ""}”) to confirm`,
+					`Type the user-scope slug (“${selectedUserScope?.slug ?? ""}”) to confirm`,
 				);
 			}
-			return deleteWorkspace(selectedWorkspaceId, { confirm });
+			return deleteWorkspace(selectedUserScopeId, { confirm });
 		},
 		onSuccess: async () => {
-			toast.success("Workspace deleted");
-			setDeleteWorkspaceOpen(false);
-			setDeleteWorkspaceConfirm("");
-			await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces() });
-			navigate({ search: { workspace: "" } as any, replace: true });
+			toast.success("User scope deleted");
+			setDeleteUserScopeOpen(false);
+			setDeleteUserScopeConfirm("");
+			await queryClient.invalidateQueries({ queryKey: queryKeys.userScopes() });
+			navigate({ search: { userId: "" } as any, replace: true });
 		},
 		onError: (e) =>
-			toast.error("Failed to delete workspace", {
+			toast.error("Failed to delete user scope", {
 				description: (e as Error).message,
 			}),
 	});
 
 	// Sync internal state selection to URL
-	const handleWorkspaceChange = (newId: string) => {
+	const handleUserScopeChange = (newId: string) => {
 		if (newId === "__create__") {
-			setCreateWorkspaceOpen(true);
+			setCreateUserScopeOpen(true);
 			return;
 		}
 		if (typeof window !== "undefined") {
-			window.localStorage.setItem(lastWorkspaceKey, newId);
+			window.localStorage.setItem(lastUserScopeKey, newId);
 		}
 		navigate({
-			search: { workspace: newId } as any,
+			search: { userId: newId } as any,
 			replace: true,
 		});
 	};
 
 	const allDeployments = useMemo(() => {
 		const all = (snap.data?.deployments ?? []) as WorkspaceDeployment[];
-		return selectedWorkspaceId
+		return selectedUserScopeId
 			? all.filter(
-					(d: WorkspaceDeployment) => d.userId === selectedWorkspaceId,
+					(d: WorkspaceDeployment) => d.userId === selectedUserScopeId,
 				)
 			: all;
-	}, [selectedWorkspaceId, snap.data?.deployments]);
+	}, [selectedUserScopeId, snap.data?.deployments]);
 
 	// Apply filters
 	const deployments = useMemo(() => {
@@ -455,11 +454,11 @@ function DeploymentsPage() {
 
 	const runs = useMemo(() => {
 		const all = (snap.data?.runs ?? []) as JSONMap[];
-		if (!selectedWorkspaceId) return all;
+		if (!selectedUserScopeId) return all;
 		return all.filter(
-			(r: JSONMap) => String(r.userId ?? "") === selectedWorkspaceId,
+			(r: JSONMap) => String(r.userId ?? "") === selectedUserScopeId,
 		);
-	}, [selectedWorkspaceId, snap.data?.runs]);
+	}, [selectedUserScopeId, snap.data?.runs]);
 
 	const loginHref = buildLoginUrl(
 		window.location.pathname + window.location.search,
@@ -505,7 +504,7 @@ function DeploymentsPage() {
 
 	return (
 		<div className="space-y-6 p-6">
-			{/* Top Header / Workspace Context */}
+			{/* Top Header / User Scope Context */}
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-6">
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight">Deployments</h1>
@@ -517,15 +516,15 @@ function DeploymentsPage() {
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
 						<Select
-							value={selectedWorkspaceId}
-							onValueChange={handleWorkspaceChange}
+							value={selectedUserScopeId}
+							onValueChange={handleUserScopeChange}
 							disabled={false}
 						>
 							<SelectTrigger className="w-[200px] h-8 bg-transparent border-0 focus:ring-0 shadow-none">
-								<SelectValue placeholder="Select workspace" />
+								<SelectValue placeholder="Select user scope" />
 							</SelectTrigger>
 							<SelectContent>
-								{workspaces.map((w: SkyforgeWorkspace) => (
+								{userScopes.map((w: SkyforgeWorkspace) => (
 									<SelectItem key={w.id} value={w.id}>
 										{w.name} ({w.slug})
 									</SelectItem>
@@ -533,7 +532,7 @@ function DeploymentsPage() {
 								<SelectItem value="__create__">
 									<span className="flex items-center gap-2">
 										<Plus className="h-4 w-4" />
-										Add workspace…
+										Add user scope…
 									</span>
 								</SelectItem>
 							</SelectContent>
@@ -545,13 +544,13 @@ function DeploymentsPage() {
 								variant="outline"
 								size="icon"
 								className="h-8 w-8"
-								disabled={!selectedWorkspaceId}
+								disabled={!selectedUserScopeId}
 							>
 								<Settings className="h-4 w-4" />
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
-							<DropdownMenuLabel>Workspace</DropdownMenuLabel>
+							<DropdownMenuLabel>User Scope</DropdownMenuLabel>
 							<DropdownMenuItem
 								onClick={() =>
 									navigate({
@@ -572,40 +571,40 @@ function DeploymentsPage() {
 							<DropdownMenuItem
 								className="text-destructive focus:text-destructive"
 								onClick={() => {
-									setDeleteWorkspaceOpen(true);
-									setDeleteWorkspaceConfirm("");
+									setDeleteUserScopeOpen(true);
+									setDeleteUserScopeConfirm("");
 								}}
 							>
 								<Trash2 className="mr-2 h-4 w-4" />
-								Delete workspace…
+								Delete user scope…
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>
 			</div>
 
-			<Dialog open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen}>
+			<Dialog open={createUserScopeOpen} onOpenChange={setCreateUserScopeOpen}>
 				<DialogContent className="max-w-lg">
 					<DialogHeader>
-						<DialogTitle>Create workspace</DialogTitle>
+						<DialogTitle>Create user scope</DialogTitle>
 						<DialogDescription>
-							Create a new workspace and its backing Git repo.
+							Create a new user scope and its backing Git repo.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-3">
 						<div className="space-y-1.5">
 							<div className="text-sm font-medium">Name</div>
 							<Input
-								value={createWorkspaceName}
-								onChange={(e) => setCreateWorkspaceName(e.target.value)}
+								value={createUserScopeName}
+								onChange={(e) => setCreateUserScopeName(e.target.value)}
 								placeholder="Customer demo"
 							/>
 						</div>
 						<div className="space-y-1.5">
 							<div className="text-sm font-medium">Slug (optional)</div>
 							<Input
-								value={createWorkspaceSlug}
-								onChange={(e) => setCreateWorkspaceSlug(e.target.value)}
+								value={createUserScopeSlug}
+								onChange={(e) => setCreateUserScopeSlug(e.target.value)}
 								placeholder="customer-demo"
 								className="font-mono"
 							/>
@@ -616,7 +615,7 @@ function DeploymentsPage() {
 						<div className="flex items-center justify-end gap-2 pt-2">
 							<Button
 								variant="outline"
-								onClick={() => setCreateWorkspaceOpen(false)}
+								onClick={() => setCreateUserScopeOpen(false)}
 								disabled={createWs.isPending}
 							>
 								Cancel
@@ -632,12 +631,12 @@ function DeploymentsPage() {
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={deleteWorkspaceOpen} onOpenChange={setDeleteWorkspaceOpen}>
+			<Dialog open={deleteUserScopeOpen} onOpenChange={setDeleteUserScopeOpen}>
 				<DialogContent className="max-w-lg">
 					<DialogHeader>
-						<DialogTitle>Delete workspace</DialogTitle>
+						<DialogTitle>Delete user scope</DialogTitle>
 						<DialogDescription>
-							This deletes the workspace and its backing resources (Git repo,
+							This deletes the user scope and its backing resources (Git repo,
 							artifacts, and state). This cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
@@ -645,20 +644,20 @@ function DeploymentsPage() {
 						<div className="text-sm">
 							Type{" "}
 							<span className="font-mono font-semibold">
-								{selectedWorkspace?.slug ?? ""}
+								{selectedUserScope?.slug ?? ""}
 							</span>{" "}
 							to confirm.
 						</div>
 						<Input
-							value={deleteWorkspaceConfirm}
-							onChange={(e) => setDeleteWorkspaceConfirm(e.target.value)}
-							placeholder={selectedWorkspace?.slug ?? ""}
+							value={deleteUserScopeConfirm}
+							onChange={(e) => setDeleteUserScopeConfirm(e.target.value)}
+							placeholder={selectedUserScope?.slug ?? ""}
 							className="font-mono"
 						/>
 						<div className="flex items-center justify-end gap-2 pt-2">
 							<Button
 								variant="outline"
-								onClick={() => setDeleteWorkspaceOpen(false)}
+								onClick={() => setDeleteUserScopeOpen(false)}
 								disabled={delWs.isPending}
 							>
 								Cancel
@@ -752,7 +751,7 @@ function DeploymentsPage() {
 						</Select>
 						<Link
 							to="/dashboard/deployments/new"
-							search={{ workspace: selectedWorkspaceId }}
+							search={{ userId: selectedUserScopeId }}
 							className={buttonVariants({ variant: "default" })}
 						>
 							<Plus className="mr-2 h-4 w-4" /> Create
@@ -774,7 +773,7 @@ function DeploymentsPage() {
 									description={
 										searchQuery || statusFilter !== "all"
 											? "Try adjusting your filters."
-											: "You haven't created any deployments in this workspace yet."
+											: "You haven't created any deployments in this user scope yet."
 									}
 									action={
 										!searchQuery && statusFilter === "all"
@@ -783,7 +782,7 @@ function DeploymentsPage() {
 													onClick: () =>
 														navigate({
 															to: "/dashboard/deployments/new",
-															search: { workspace: selectedWorkspaceId },
+															search: { userId: selectedUserScopeId },
 														}),
 												}
 											: undefined

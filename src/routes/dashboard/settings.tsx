@@ -1154,12 +1154,12 @@ function UserSettingsPage() {
 								</div>
 							</div>
 							<Input
-								placeholder="Project ID"
+								placeholder="GCP ID"
 								value={gcpProjectId}
 								onChange={(e) => setGcpProjectId(e.target.value)}
 							/>
 							<Textarea
-								placeholder="Service account JSON"
+								placeholder="Service identity JSON"
 								className="min-h-[140px] font-mono text-xs"
 								value={gcpServiceAccountJson}
 								onChange={(e) => setGcpServiceAccountJson(e.target.value)}

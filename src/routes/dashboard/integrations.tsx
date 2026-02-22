@@ -35,7 +35,7 @@ function IntegrationsPage() {
 			<div>
 				<h1 className="text-2xl font-bold">Integrations</h1>
 				<p className="mt-1 text-sm text-muted-foreground">
-					Connect optional tools and accounts that enhance Skyforge workflows.
+					Connect optional tools and services that enhance Skyforge workflows.
 				</p>
 			</div>
 

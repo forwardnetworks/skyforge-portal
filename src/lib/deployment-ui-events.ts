@@ -22,7 +22,7 @@ export function useDeploymentUIEvents(
 	const queryClient = useQueryClient();
 	const url = useMemo(
 		() =>
-			`${SKYFORGE_API}/workspaces/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/ui-events/events`,
+			`${SKYFORGE_API}/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/ui-events/events`,
 		[deploymentId, userId],
 	);
 

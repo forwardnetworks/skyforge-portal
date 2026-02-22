@@ -27,7 +27,7 @@ const cookie = await seedSession();
 const cookieHeader = `${cookie.name}=${cookie.value}`;
 await assertSSE(cookieHeader);
 
-await ensureWorkspace(cookieHeader);
+await ensureUserScope(cookieHeader);
 const deploymentIds = await listDeploymentIds(cookieHeader);
 
 const browser = await chromium.launch({ headless: HEADLESS });
@@ -267,19 +267,19 @@ async function assertSSE(cookieHeader) {
 	}
 }
 
-async function ensureWorkspace(cookieHeader) {
+async function ensureUserScope(cookieHeader) {
 	const listResp = await fetch(`${API_URL}/api/users`, {
 		headers: { Cookie: cookieHeader },
 	});
 	if (!listResp.ok) {
-		throw new Error(`Failed to list workspaces (${listResp.status})`);
+		throw new Error(`Failed to list user scopes (${listResp.status})`);
 	}
 	const listBody = await listResp.json();
-	const workspaces = Array.isArray(listBody?.workspaces)
-		? listBody.workspaces
+	const userScopes = Array.isArray(listBody?.userScopes)
+		? listBody.userScopes
 		: [];
-	if (workspaces.length > 0) {
-		return String(workspaces[0].id || "");
+	if (userScopes.length > 0) {
+		return String(userScopes[0].id || "");
 	}
 
 	const slug = `e2e-${Date.now()}`;
@@ -290,16 +290,16 @@ async function ensureWorkspace(cookieHeader) {
 			Cookie: cookieHeader,
 		},
 		body: JSON.stringify({
-			name: "E2E Workspace",
+			name: "E2E User Scope",
 			slug,
-			description: "UI E2E seed workspace",
+			description: "UI E2E seed user scope",
 			isPublic: false,
 		}),
 	});
 	if (!createResp.ok) {
 		const detail = await createResp.text();
 		throw new Error(
-			`Failed to create workspace (${createResp.status}): ${detail}`,
+			`Failed to create user scope (${createResp.status}): ${detail}`,
 		);
 	}
 	const created = await createResp.json();

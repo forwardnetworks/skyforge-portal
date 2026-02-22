@@ -10,7 +10,7 @@ import { queryKeys } from "@/lib/query-keys";
 import {
 	type DeploymentTopology,
 	getWorkspaceContainerlabTemplate,
-	getWorkspaces,
+	listUserScopes,
 } from "@/lib/skyforge-api";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -63,15 +63,18 @@ function parseContainerlabYamlToTopology(yamlText: string): DeploymentTopology {
 }
 
 function LabsMapPage() {
+	const USER_REPO_SOURCE = "user" as const;
+	const toAPISource = (value: string) =>
+		value === USER_REPO_SOURCE ? "user" : value;
 	const search = Route.useSearch() as any;
 	const userId = String(search?.userId ?? "");
-	const source = String(search?.source ?? "workspace");
+	const source = String(search?.source ?? USER_REPO_SOURCE);
 	const dir = String(search?.dir ?? "containerlab/designer");
 	const file = String(search?.file ?? "");
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userScopesQ = useQuery({
+		queryKey: queryKeys.userScopes(),
+		queryFn: listUserScopes,
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -84,7 +87,7 @@ function LabsMapPage() {
 			if (!userId) throw new Error("userId is required");
 			if (!file) throw new Error("file is required");
 			return getWorkspaceContainerlabTemplate(userId, {
-				source,
+				source: toAPISource(source),
 				dir,
 				file,
 			});
@@ -118,12 +121,12 @@ function LabsMapPage() {
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div className="space-y-1">
-								<Label>Workspace</Label>
+								<Label>User Scope</Label>
 								<Input
 									value={userId}
 									readOnly
 									placeholder={
-										workspacesQ.isLoading ? "Loading…" : "userId missing"
+										userScopesQ.isLoading ? "Loading…" : "userId missing"
 									}
 								/>
 							</div>
@@ -134,7 +137,7 @@ function LabsMapPage() {
 							<div className="text-xs text-muted-foreground">
 								Example:{" "}
 								<span className="font-mono">
-									/dashboard/labs/map?userId=&lt;id&gt;&amp;source=workspace&amp;dir=containerlab/designer&amp;file=lab.clab.yml
+									{`/dashboard/labs/map?userId=<id>&source=${USER_REPO_SOURCE}&dir=containerlab/designer&file=lab.clab.yml`}
 								</span>
 							</div>
 						</CardContent>

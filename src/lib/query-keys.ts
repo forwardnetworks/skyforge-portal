@@ -29,8 +29,8 @@ export const queryKeys = {
 			String(compareHours),
 			objectType,
 		] as const,
-	workspaceForwardNetworks: (userId: string) =>
-		["workspaceForwardNetworks", userId] as const,
+	userForwardNetworks: (userId: string) =>
+		["userForwardNetworks", userId] as const,
 	forwardNetworkCapacitySummary: (userId: string, networkRef: string) =>
 		["forwardNetworkCapacitySummary", userId, networkRef] as const,
 	forwardNetworkCapacityInventory: (userId: string, networkRef: string) =>
@@ -53,8 +53,8 @@ export const queryKeys = {
 			networkRef,
 			window,
 		] as const,
-	workspaceForwardNetworkCapacityPortfolio: (userId: string) =>
-		["workspaceForwardNetworkCapacityPortfolio", userId] as const,
+	userForwardNetworkCapacityPortfolio: (userId: string) =>
+		["userForwardNetworkCapacityPortfolio", userId] as const,
 	forwardNetworkCapacityGrowth: (
 		userId: string,
 		networkRef: string,
@@ -72,11 +72,11 @@ export const queryKeys = {
 			String(compareHours),
 			objectType,
 		] as const,
-	workspaces: () => ["workspaces"] as const,
-	workspaceForwardConfig: (userId: string) =>
-		["workspaceForwardConfig", userId] as const,
-	workspaceForwardCollectors: (userId: string) =>
-		["workspaceForwardCollectors", userId] as const,
+	userScopes: () => ["userScopes"] as const,
+	userForwardConfig: (userId: string) =>
+		["userForwardConfig", userId] as const,
+	userForwardCollectors: (userId: string) =>
+		["userForwardCollectors", userId] as const,
 	forwardCollectors: () => ["forwardCollectors"] as const,
 	userForwardCollector: () => ["userForwardCollector"] as const,
 	userCollectorRuntime: () => ["userCollectorRuntime"] as const,
@@ -103,30 +103,30 @@ export const queryKeys = {
 	userServiceNowPdiStatus: () => ["userServiceNowPdiStatus"] as const,
 	userServiceNowSchemaStatus: () => ["userServiceNowSchemaStatus"] as const,
 	storageFiles: () => ["storageFiles"] as const,
-	workspaceArtifacts: (userId: string) =>
-		["workspaceArtifacts", userId] as const,
-	workspaceEveServers: (userId: string) =>
-		["workspaceEveServers", userId] as const,
-	workspaceEveLabs: (
+	userArtifacts: (userId: string) =>
+		["userArtifacts", userId] as const,
+	userEveServersByScope: (userId: string) =>
+		["userEveServersByScope", userId] as const,
+	userEveLabs: (
 		userId: string,
 		server: string,
 		path: string,
 		recursive: boolean,
 	) =>
 		[
-			"workspaceEveLabs",
+			"userEveLabs",
 			userId,
 			server,
 			path,
 			recursive ? "1" : "0",
 		] as const,
-	workspaceNetlabServers: (userId: string) =>
-		["workspaceNetlabServers", userId] as const,
+	userNetlabServersByScope: (userId: string) =>
+		["userNetlabServersByScope", userId] as const,
 	notifications: (includeRead?: boolean, limit?: string) =>
 		["notifications", includeRead ? "1" : "0", limit ?? ""] as const,
 	syslogEvents: (limit?: string) => ["syslogEvents", limit ?? ""] as const,
 	snmpTrapEvents: (limit?: string) => ["snmpTrapEvents", limit ?? ""] as const,
-	workspaceTemplates: (
+	userTemplates: (
 		userId: string,
 		kind: string,
 		source: string,
@@ -134,7 +134,7 @@ export const queryKeys = {
 		dir?: string,
 	) =>
 		[
-			"workspaceTemplates",
+			"userTemplates",
 			userId,
 			kind,
 			source,

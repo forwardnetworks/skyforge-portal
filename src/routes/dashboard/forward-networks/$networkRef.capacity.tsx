@@ -50,7 +50,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
+	userId: z.string().optional().catch(""),
 });
 
 export const Route = createFileRoute(
@@ -273,7 +273,7 @@ type VrfSummaryRow = {
 
 function ForwardNetworkCapacityPage() {
 	const { networkRef } = Route.useParams();
-	const { workspace } = Route.useSearch();
+	const { userId } = Route.useSearch();
 	const qc = useQueryClient();
 	const [windowLabel, setWindowLabel] = useState<"24h" | "7d" | "30d">("24h");
 	const [ifaceMetric, setIfaceMetric] = useState<
@@ -315,12 +315,12 @@ function ForwardNetworkCapacityPage() {
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
 	const [planFilter, setPlanFilter] = useState("");
-	const userId = String(workspace ?? "").trim();
+	const userScopeId = String(userId ?? "").trim();
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(userId),
-		queryFn: () => listWorkspaceForwardNetworks(userId),
-		enabled: Boolean(userId),
+		queryKey: queryKeys.userForwardNetworks(userScopeId),
+		queryFn: () => listWorkspaceForwardNetworks(userScopeId),
+		enabled: Boolean(userScopeId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -411,7 +411,7 @@ function ForwardNetworkCapacityPage() {
 
 	const refresh = useMutation({
 		mutationFn: async () => {
-			if (!userId) throw new Error("workspace not found");
+			if (!userScopeId) throw new Error("user scope not found");
 			return refreshForwardNetworkCapacityRollups(userId, networkRef);
 		},
 		onSuccess: async (resp) => {
@@ -451,7 +451,7 @@ function ForwardNetworkCapacityPage() {
 			});
 			await qc.invalidateQueries({
 				queryKey:
-					queryKeys.workspaceForwardNetworkCapacityPortfolio(userId),
+					queryKeys.userForwardNetworkCapacityPortfolio(userScopeId),
 			});
 			await qc.invalidateQueries({
 				// Prefix match for all growth queries for this forward network.
@@ -1564,13 +1564,13 @@ function ForwardNetworkCapacityPage() {
 		windowLabel,
 	]);
 
-	if (!userId) {
+	if (!userScopeId) {
 		return (
 			<div className="space-y-6 p-6">
 				<div className="flex items-center gap-3">
 					<Link
 						to="/dashboard/forward-networks"
-						search={{ workspace: "" } as any}
+						search={{ userId: "" } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",
@@ -1583,7 +1583,7 @@ function ForwardNetworkCapacityPage() {
 				</div>
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
-						Workspace is required.
+						User scope is required.
 					</CardContent>
 				</Card>
 			</div>
@@ -1596,7 +1596,7 @@ function ForwardNetworkCapacityPage() {
 				<div className="flex items-center gap-3">
 					<Link
 						to="/dashboard/forward-networks"
-						search={{ workspace: userId } as any}
+						search={{ userId: userScopeId } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",

@@ -171,7 +171,7 @@ function DeploymentDetailPage() {
 			});
 			navigate({
 				to: "/dashboard/deployments",
-				search: { workspace: deployment.userId },
+				search: { userId: deployment.userId },
 			});
 		} catch (e) {
 			toast.error("Failed to delete", { description: (e as Error).message });

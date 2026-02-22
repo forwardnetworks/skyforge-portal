@@ -29,22 +29,22 @@ import {
 	createWorkspaceForwardNetwork,
 	deleteWorkspaceForwardNetwork,
 	getWorkspaceForwardNetworkCapacityPortfolio,
-	getWorkspaces,
+	listUserScopes,
 	listUserForwardCollectorConfigs,
 	listWorkspaceForwardNetworks,
 } from "../../../lib/skyforge-api";
 
 const searchSchema = z.object({
-	workspace: z.string().optional().catch(""),
+	userId: z.string().optional().catch(""),
 });
 
 export const Route = createFileRoute("/dashboard/forward-networks/")({
 	validateSearch: (search) => searchSchema.parse(search),
-	loaderDeps: ({ search: { workspace } }) => ({ workspace }),
+	loaderDeps: ({ search: { userId } }) => ({ userId }),
 	loader: async ({ context: { queryClient } }) => {
 		await queryClient.ensureQueryData({
-			queryKey: queryKeys.workspaces(),
-			queryFn: getWorkspaces,
+			queryKey: queryKeys.userScopes(),
+			queryFn: listUserScopes,
 			staleTime: 30_000,
 		});
 	},
@@ -54,46 +54,46 @@ export const Route = createFileRoute("/dashboard/forward-networks/")({
 function ForwardNetworksPage() {
 	const navigate = useNavigate();
 	const qc = useQueryClient();
-	const { workspace } = Route.useSearch();
+	const { userId } = Route.useSearch();
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userScopesQ = useQuery({
+		queryKey: queryKeys.userScopes(),
+		queryFn: listUserScopes,
 		staleTime: 30_000,
 		retry: false,
 	});
-	const workspaces = useMemo(
-		() => (workspacesQ.data?.workspaces ?? []) as SkyforgeWorkspace[],
-		[workspacesQ.data?.workspaces],
+	const userScopes = useMemo(
+		() => (userScopesQ.data ?? []) as SkyforgeWorkspace[],
+		[userScopesQ.data],
 	);
 
-	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
-		String(workspace ?? ""),
+	const [selectedUserScopeId, setSelectedUserScopeId] = useState(
+		String(userId ?? ""),
 	);
 
 	useEffect(() => {
-		if (selectedWorkspaceId) return;
-		if (workspaces.length === 0) return;
-		setSelectedWorkspaceId(String(workspaces[0]?.id ?? ""));
-	}, [selectedWorkspaceId, workspaces]);
+		if (selectedUserScopeId) return;
+		if (userScopes.length === 0) return;
+		setSelectedUserScopeId(String(userScopes[0]?.id ?? ""));
+	}, [selectedUserScopeId, userScopes]);
 
 	useEffect(() => {
-		const w = String(workspace ?? "");
-		if (w === selectedWorkspaceId) return;
-		setSelectedWorkspaceId(w);
-	}, [workspace, selectedWorkspaceId]);
+		const w = String(userId ?? "");
+		if (w === selectedUserScopeId) return;
+		setSelectedUserScopeId(w);
+	}, [userId, selectedUserScopeId]);
 
-	const handleWorkspaceChange = (id: string) => {
+	const handleUserScopeChange = (id: string) => {
 		void navigate({
-			search: { workspace: id === "__none__" ? "" : id } as any,
+			search: { userId: id === "__none__" ? "" : id } as any,
 			replace: true,
 		});
 	};
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(selectedWorkspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(selectedWorkspaceId),
-		enabled: Boolean(selectedWorkspaceId),
+		queryKey: queryKeys.userForwardNetworks(selectedUserScopeId),
+		queryFn: () => listWorkspaceForwardNetworks(selectedUserScopeId),
+		enabled: Boolean(selectedUserScopeId),
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -105,10 +105,10 @@ function ForwardNetworksPage() {
 
 	const portfolioQ = useQuery({
 		queryKey:
-			queryKeys.workspaceForwardNetworkCapacityPortfolio(selectedWorkspaceId),
+			queryKeys.userForwardNetworkCapacityPortfolio(selectedUserScopeId),
 		queryFn: () =>
-			getWorkspaceForwardNetworkCapacityPortfolio(selectedWorkspaceId),
-		enabled: Boolean(selectedWorkspaceId),
+			getWorkspaceForwardNetworkCapacityPortfolio(selectedUserScopeId),
+		enabled: Boolean(selectedUserScopeId),
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -137,8 +137,8 @@ function ForwardNetworksPage() {
 
 	const createM = useMutation({
 		mutationFn: async () => {
-			const ws = selectedWorkspaceId.trim();
-			if (!ws) throw new Error("Select a workspace");
+			const ws = selectedUserScopeId.trim();
+			if (!ws) throw new Error("Select a user scope");
 			const n = name.trim();
 			const fid = forwardNetworkId.trim();
 			if (!n) throw new Error("Name is required");
@@ -160,7 +160,7 @@ function ForwardNetworksPage() {
 			setDescription("");
 			setCollectorConfigId("__default__");
 			await qc.invalidateQueries({
-				queryKey: queryKeys.workspaceForwardNetworks(selectedWorkspaceId),
+				queryKey: queryKeys.userForwardNetworks(selectedUserScopeId),
 			});
 		},
 		onError: (e) =>
@@ -171,14 +171,14 @@ function ForwardNetworksPage() {
 
 	const deleteM = useMutation({
 		mutationFn: async (networkRef: string) => {
-			const ws = selectedWorkspaceId.trim();
-			if (!ws) throw new Error("Select a workspace");
+			const ws = selectedUserScopeId.trim();
+			if (!ws) throw new Error("Select a user scope");
 			return deleteWorkspaceForwardNetwork(ws, networkRef);
 		},
 		onSuccess: async () => {
 			toast.success("Forward network deleted");
 			await qc.invalidateQueries({
-				queryKey: queryKeys.workspaceForwardNetworks(selectedWorkspaceId),
+				queryKey: queryKeys.userForwardNetworks(selectedUserScopeId),
 			});
 		},
 		onError: (e) =>
@@ -195,21 +195,21 @@ function ForwardNetworksPage() {
 						Forward Networks
 					</h1>
 					<p className="text-muted-foreground text-sm">
-						Save one or more Forward Network IDs per workspace, then open
+						Save one or more Forward Network IDs per user scope, then open
 						Capacity views against them.
 					</p>
 				</div>
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
 						<Select
-							value={selectedWorkspaceId || "__none__"}
-							onValueChange={handleWorkspaceChange}
+							value={selectedUserScopeId || "__none__"}
+							onValueChange={handleUserScopeChange}
 						>
 							<SelectTrigger className="w-[240px] h-8 bg-transparent border-0 focus:ring-0 shadow-none">
-								<SelectValue placeholder="Select workspace" />
+								<SelectValue placeholder="Select user scope" />
 							</SelectTrigger>
 							<SelectContent>
-								{workspaces.map((w: SkyforgeWorkspace) => (
+								{userScopes.map((w: SkyforgeWorkspace) => (
 									<SelectItem key={w.id} value={w.id}>
 										{w.name} ({w.slug})
 									</SelectItem>
@@ -221,7 +221,7 @@ function ForwardNetworksPage() {
 						variant="outline"
 						size="icon"
 						className="h-8 w-8"
-						disabled={!selectedWorkspaceId}
+						disabled={!selectedUserScopeId}
 						onClick={() => {
 							void navigate({ to: "/dashboard/settings" });
 						}}
@@ -288,7 +288,7 @@ function ForwardNetworksPage() {
 					<div className="flex items-center gap-2">
 						<Button
 							onClick={() => createM.mutate()}
-							disabled={!selectedWorkspaceId || createM.isPending}
+							disabled={!selectedUserScopeId || createM.isPending}
 						>
 							<Plus className="h-4 w-4 mr-2" />
 							Save network
@@ -327,7 +327,7 @@ function ForwardNetworksPage() {
 									<Link
 										to="/dashboard/forward-networks/$networkRef/capacity"
 										params={{ networkRef: n.id }}
-										search={{ workspace: selectedWorkspaceId } as any}
+										search={{ userId: selectedUserScopeId } as any}
 									>
 										Capacity
 									</Link>
@@ -355,9 +355,9 @@ function ForwardNetworksPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
-					{!selectedWorkspaceId ? (
+					{!selectedUserScopeId ? (
 						<div className="text-sm text-muted-foreground">
-							Select a workspace to see portfolio rollups.
+							Select a user scope to see portfolio rollups.
 						</div>
 					) : portfolioQ.isLoading ? (
 						<div className="text-sm text-muted-foreground">Loading…</div>
@@ -405,7 +405,7 @@ function ForwardNetworksPage() {
 																to="/dashboard/forward-networks/$networkRef/capacity"
 																params={{ networkRef: String(it.networkRef) }}
 																search={
-																	{ workspace: selectedWorkspaceId } as any
+																	{ userId: selectedUserScopeId } as any
 																}
 															>
 																{String(it.name ?? it.networkRef)}

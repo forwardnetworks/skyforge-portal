@@ -342,7 +342,7 @@ function DeploymentCapacityPage() {
 
 	const refresh = useMutation({
 		mutationFn: async () => {
-			if (!userId) throw new Error("workspace not found");
+			if (!userId) throw new Error("user scope not found");
 			return refreshDeploymentCapacityRollups(userId, deploymentId);
 		},
 		onSuccess: async (resp) => {

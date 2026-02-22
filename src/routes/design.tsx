@@ -197,17 +197,17 @@ function DesignSystemPage() {
 
 			<section className="space-y-4">
 				<h2 className="text-xl font-semibold">Tabs</h2>
-				<Tabs defaultValue="account" className="w-[400px]">
+				<Tabs defaultValue="profile" className="w-[400px]">
 					<TabsList>
-						<TabsTrigger value="account">Account</TabsTrigger>
+						<TabsTrigger value="profile">Profile</TabsTrigger>
 						<TabsTrigger value="password">Password</TabsTrigger>
 					</TabsList>
-					<TabsContent value="account">
+					<TabsContent value="profile">
 						<Card>
 							<CardHeader>
-								<CardTitle>Account</CardTitle>
+								<CardTitle>Profile</CardTitle>
 								<CardDescription>
-									Make changes to your account here.
+									Manage your user profile here.
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-2">

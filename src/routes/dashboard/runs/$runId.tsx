@@ -101,7 +101,7 @@ function RunDetailPage() {
 											});
 											navigate({
 												to: "/dashboard/deployments",
-												search: { workspace: userId } as any,
+												search: { userId } as any,
 											});
 										} catch (e) {
 											toast.error("Cancel failed", {

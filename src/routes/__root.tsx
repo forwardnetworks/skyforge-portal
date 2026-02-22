@@ -447,7 +447,7 @@ function RootLayout() {
 										</div>
 										<a
 											className="hover:text-foreground transition-colors underline hover:no-underline"
-											href="/git/skyforge/skyforge/issues/new"
+											href="/api/gitea/public?next=/skyforge/skyforge/issues/new"
 											target="_blank"
 											rel="noreferrer"
 										>

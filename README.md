@@ -5,7 +5,7 @@ This is the Skyforge portal (TanStack Router + Vite). The legacy Next.js portal 
 ## Local dev
 
 ```bash
-cd portal-tanstack
+cd components/portal
 pnpm install
 pnpm dev
 ```
@@ -15,7 +15,7 @@ By default, the dev server proxies `/api`, `/status`, and `/auth` to `http://loc
 ## Build
 
 ```bash
-cd portal-tanstack
+cd components/portal
 pnpm install
 pnpm build
 ```

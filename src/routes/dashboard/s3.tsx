@@ -30,7 +30,7 @@ import {
 	createWorkspaceArtifactFolder,
 	deleteWorkspaceArtifactObject,
 	downloadWorkspaceArtifact,
-	getWorkspaces,
+	listUserScopes,
 	listWorkspaceArtifacts,
 	putWorkspaceArtifactObject,
 } from "../../lib/skyforge-api";
@@ -40,34 +40,34 @@ export const Route = createFileRoute("/dashboard/s3")({
 });
 
 function S3Page() {
-	const workspaces = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userScopes = useQuery({
+		queryKey: queryKeys.userScopes(),
+		queryFn: listUserScopes,
 		staleTime: 30_000,
 	});
 
-	const workspaceOptions = workspaces.data?.workspaces ?? [];
-	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
+	const userScopeOptions = userScopes.data ?? [];
+	const [selectedUserScopeId, setSelectedUserScopeId] = useState("");
 	const [prefix, setPrefix] = useState("");
 
 	useEffect(() => {
-		if (workspaceOptions.length === 0) return;
+		if (userScopeOptions.length === 0) return;
 		const stored =
-			window.localStorage.getItem("skyforge.lastWorkspaceId.s3") ?? "";
-		const initial = workspaceOptions.some((w) => w.id === stored)
+			window.localStorage.getItem("skyforge.lastUserScopeId.s3") ?? "";
+		const initial = userScopeOptions.some((w) => w.id === stored)
 			? stored
-			: (workspaceOptions[0]?.id ?? "");
-		setSelectedWorkspaceId((prev) => prev || initial);
-	}, [workspaceOptions]);
+			: (userScopeOptions[0]?.id ?? "");
+		setSelectedUserScopeId((prev) => prev || initial);
+	}, [userScopeOptions]);
 
 	const artifacts = useQuery({
-		queryKey: queryKeys.workspaceArtifacts(selectedWorkspaceId),
+		queryKey: queryKeys.userArtifacts(selectedUserScopeId),
 		queryFn: async () =>
-			listWorkspaceArtifacts(selectedWorkspaceId, {
+			listWorkspaceArtifacts(selectedUserScopeId, {
 				prefix: prefix || undefined,
 			}),
 		staleTime: 10_000,
-		enabled: !!selectedWorkspaceId,
+		enabled: !!selectedUserScopeId,
 	});
 
 	const list = artifacts.data?.items ?? [];
@@ -93,7 +93,7 @@ function S3Page() {
 								onClick={async () => {
 									try {
 										const resp = await downloadWorkspaceArtifact(
-											selectedWorkspaceId,
+											selectedUserScopeId,
 											item.key,
 										);
 										const raw = atob(resp.fileData);
@@ -114,7 +114,7 @@ function S3Page() {
 										});
 									}
 								}}
-								disabled={!selectedWorkspaceId}
+								disabled={!selectedUserScopeId}
 							>
 								<Eye className="mr-2 h-3 w-3" />
 								View
@@ -126,7 +126,7 @@ function S3Page() {
 							onClick={async () => {
 								try {
 									const resp = await downloadWorkspaceArtifact(
-										selectedWorkspaceId,
+										selectedUserScopeId,
 										item.key,
 									);
 									const raw = atob(resp.fileData);
@@ -148,7 +148,7 @@ function S3Page() {
 									});
 								}
 							}}
-							disabled={!selectedWorkspaceId}
+							disabled={!selectedUserScopeId}
 						>
 							<Download className="mr-2 h-3 w-3" />
 							Download
@@ -160,7 +160,7 @@ function S3Page() {
 								if (!confirm(`Delete ${item.key}?`)) return;
 								try {
 									await deleteWorkspaceArtifactObject(
-										selectedWorkspaceId,
+										selectedUserScopeId,
 										item.key,
 									);
 									toast.success("Deleted", { description: item.key });
@@ -171,7 +171,7 @@ function S3Page() {
 									});
 								}
 							}}
-							disabled={!selectedWorkspaceId}
+							disabled={!selectedUserScopeId}
 						>
 							<Trash2 className="mr-2 h-3 w-3" />
 							Delete
@@ -180,25 +180,25 @@ function S3Page() {
 				),
 			},
 		];
-	}, [artifacts.refetch, selectedWorkspaceId]);
+	}, [artifacts.refetch, selectedUserScopeId]);
 
 	const toolbar = (
 		<div className="p-4 border-b flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 			<div className="flex items-center gap-3">
-				<div className="text-sm font-medium">Workspace</div>
+				<div className="text-sm font-medium">User Scope</div>
 				<Select
-					value={selectedWorkspaceId}
+					value={selectedUserScopeId}
 					onValueChange={(id) => {
-						setSelectedWorkspaceId(id);
-						window.localStorage.setItem("skyforge.lastWorkspaceId.s3", id);
+						setSelectedUserScopeId(id);
+						window.localStorage.setItem("skyforge.lastUserScopeId.s3", id);
 					}}
-					disabled={workspaceOptions.length === 0}
+					disabled={userScopeOptions.length === 0}
 				>
 					<SelectTrigger className="w-[280px]">
-						<SelectValue placeholder="Select workspace" />
+						<SelectValue placeholder="Select user scope" />
 					</SelectTrigger>
 					<SelectContent>
-						{workspaceOptions.map((w) => (
+						{userScopeOptions.map((w) => (
 							<SelectItem key={w.id} value={w.id}>
 								{w.name} ({w.slug})
 							</SelectItem>
@@ -218,7 +218,7 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={() => artifacts.refetch()}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedUserScopeId}
 				>
 					Refresh
 				</Button>
@@ -226,11 +226,11 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={async () => {
-						if (!selectedWorkspaceId) return;
+						if (!selectedUserScopeId) return;
 						const folder = window.prompt("Folder prefix (e.g. uploads/)");
 						if (!folder) return;
 						try {
-							await createWorkspaceArtifactFolder(selectedWorkspaceId, folder);
+							await createWorkspaceArtifactFolder(selectedUserScopeId, folder);
 							toast.success("Folder created");
 							await artifacts.refetch();
 						} catch (e) {
@@ -239,7 +239,7 @@ function S3Page() {
 							});
 						}
 					}}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedUserScopeId}
 				>
 					<FolderPlus className="mr-2 h-3 w-3" />
 					Folder
@@ -248,7 +248,7 @@ function S3Page() {
 					variant="outline"
 					size="sm"
 					onClick={() => {
-						if (!selectedWorkspaceId) return;
+						if (!selectedUserScopeId) return;
 						const input = document.createElement("input");
 						input.type = "file";
 						input.onchange = () => {
@@ -265,7 +265,7 @@ function S3Page() {
 										b64 += btoa(String.fromCharCode(...chunk));
 									}
 									const key = (prefix || "") + file.name;
-									await putWorkspaceArtifactObject(selectedWorkspaceId, {
+									await putWorkspaceArtifactObject(selectedUserScopeId, {
 										key,
 										contentBase64: b64,
 										contentType: file.type || "application/octet-stream",
@@ -281,7 +281,7 @@ function S3Page() {
 						};
 						input.click();
 					}}
-					disabled={!selectedWorkspaceId}
+					disabled={!selectedUserScopeId}
 				>
 					<Upload className="mr-2 h-3 w-3" />
 					Upload
@@ -296,7 +296,7 @@ function S3Page() {
 				<CardHeader>
 					<CardTitle>S3</CardTitle>
 					<CardDescription>
-						Workspace artifacts and generated files (backed by the platform
+						User-scope artifacts and generated files (backed by the platform
 						object store).
 					</CardDescription>
 				</CardHeader>
@@ -304,7 +304,7 @@ function S3Page() {
 
 			<Card>
 				<CardContent className="p-0">
-					{workspaces.isLoading || artifacts.isLoading ? (
+					{userScopes.isLoading || artifacts.isLoading ? (
 						<div className="p-6 space-y-4">
 							<Skeleton className="h-12 w-full" />
 							<Skeleton className="h-12 w-full" />
@@ -313,7 +313,7 @@ function S3Page() {
 					) : (
 						<div>
 							{toolbar}
-							{workspaces.isError || artifacts.isError ? (
+							{userScopes.isError || artifacts.isError ? (
 								<div className="p-8 text-center text-destructive">
 									Failed to list objects.
 								</div>
@@ -322,7 +322,7 @@ function S3Page() {
 									<EmptyState
 										icon={Inbox}
 										title="No objects found"
-										description="No artifacts found for this workspace."
+										description="No artifacts found for this user scope."
 									/>
 								</div>
 							) : (

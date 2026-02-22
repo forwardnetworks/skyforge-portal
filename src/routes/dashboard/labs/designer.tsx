@@ -55,7 +55,7 @@ import {
 	getDeploymentTopology,
 	getWorkspaceContainerlabTemplate,
 	getWorkspaceContainerlabTemplates,
-	getWorkspaces,
+	listUserScopes,
 	listRegistryRepositories,
 	listRegistryTags,
 	listUserContainerlabServers,
@@ -411,6 +411,9 @@ function DesignerNode(props: NodeProps<DesignNode>) {
 }
 
 function LabDesignerPage() {
+	const USER_REPO_SOURCE = "user" as const;
+	const toAPISource = (value: string) =>
+		value === USER_REPO_SOURCE ? "user" : value;
 	const search = Route.useSearch();
 	const importDeploymentId = String(search.importDeploymentId ?? "").trim();
 	const storageKey = "skyforge.labDesigner.v1";
@@ -418,7 +421,7 @@ function LabDesignerPage() {
 	const queryClient = useQueryClient();
 
 	const [labName, setLabName] = useState("lab");
-	const [userId, setWorkspaceId] = useState("");
+	const [userId, setUserScopeId] = useState("");
 	const [runtime, setRuntime] = useState<"clabernetes" | "containerlab">(
 		"clabernetes",
 	);
@@ -441,7 +444,9 @@ function LabDesignerPage() {
 	const [yamlMode, setYamlMode] = useState<"generated" | "custom">("generated");
 	const [customYaml, setCustomYaml] = useState<string>("");
 	const [importOpen, setImportOpen] = useState(false);
-	const [importSource, setImportSource] = useState<"workspace" | "blueprints">(
+	const [importSource, setImportSource] = useState<
+		typeof USER_REPO_SOURCE | "blueprints"
+	>(
 		"blueprints",
 	);
 	const [importDir, setImportDir] = useState("containerlab");
@@ -559,8 +564,14 @@ function LabDesignerPage() {
 			const raw = window.localStorage.getItem(key);
 			if (!raw) return;
 			const parsed = JSON.parse(raw) as any;
-			if (parsed?.source === "workspace" || parsed?.source === "blueprints")
+			if (parsed?.source === "user") {
+				setImportSource(USER_REPO_SOURCE);
+			} else if (
+				parsed?.source === USER_REPO_SOURCE ||
+				parsed?.source === "blueprints"
+			) {
 				setImportSource(parsed.source);
+			}
 			if (typeof parsed?.dir === "string") setImportDir(parsed.dir);
 		} catch {
 			// ignore
@@ -811,7 +822,7 @@ function LabDesignerPage() {
 		const ws = String(search.userId ?? "").trim();
 		const depId = String(search.importDeploymentId ?? "").trim();
 		if (!ws || !depId) return;
-		setWorkspaceId(ws);
+		setUserScopeId(ws);
 		setUseSavedConfig(false);
 		setLastSaved(null);
 
@@ -898,7 +909,7 @@ function LabDesignerPage() {
 			const parsed = JSON.parse(raw) as any;
 			if (typeof parsed?.labName === "string") setLabName(parsed.labName);
 			if (typeof parsed?.userId === "string")
-				setWorkspaceId(parsed.userId);
+				setUserScopeId(parsed.userId);
 			if (
 				parsed?.runtime === "clabernetes" ||
 				parsed?.runtime === "containerlab"
@@ -922,9 +933,9 @@ function LabDesignerPage() {
 		}
 	};
 
-	const workspacesQ = useQuery({
-		queryKey: queryKeys.workspaces(),
-		queryFn: getWorkspaces,
+	const userScopesQ = useQuery({
+		queryKey: queryKeys.userScopes(),
+		queryFn: listUserScopes,
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -950,7 +961,7 @@ function LabDesignerPage() {
 			: ["containerlabTemplates", "none"],
 		queryFn: async () =>
 			getWorkspaceContainerlabTemplates(userId, {
-				source: importSource,
+				source: toAPISource(importSource),
 				dir: importDir,
 			}),
 		enabled: Boolean(userId) && importOpen,
@@ -969,10 +980,10 @@ function LabDesignerPage() {
 				]
 			: ["containerlabTemplate", "none"],
 		queryFn: async () => {
-			if (!userId) throw new Error("missing workspace");
+			if (!userId) throw new Error("missing user scope");
 			if (!importFile) return null;
 			return getWorkspaceContainerlabTemplate(userId, {
-				source: importSource,
+				source: toAPISource(importSource),
 				dir: importDir,
 				file: importFile,
 			});
@@ -984,7 +995,7 @@ function LabDesignerPage() {
 
 	const createDeployment = useMutation({
 		mutationFn: async () => {
-			if (!userId) throw new Error("Select a workspace");
+			if (!userId) throw new Error("Select a user scope");
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (!/^\s*topology\s*:/m.test(effectiveYaml)) {
 				throw new Error("YAML must contain a top-level 'topology:' section");
@@ -1023,7 +1034,7 @@ function LabDesignerPage() {
 				return createContainerlabDeploymentFromTemplate(userId, {
 					name: labName,
 					netlabServer: containerlabServer,
-					templateSource: "workspace",
+					templateSource: USER_REPO_SOURCE,
 					templatesDir: saved.templatesDir,
 					template: saved.template,
 					autoDeploy: true,
@@ -1032,7 +1043,7 @@ function LabDesignerPage() {
 
 			return createClabernetesDeploymentFromTemplate(userId, {
 				name: labName,
-				templateSource: "workspace",
+				templateSource: USER_REPO_SOURCE,
 				templatesDir: saved.templatesDir,
 				template: saved.template,
 				autoDeploy: true,
@@ -1062,7 +1073,7 @@ function LabDesignerPage() {
 
 	const saveConfig = useMutation({
 		mutationFn: async () => {
-			if (!userId) throw new Error("Select a workspace");
+			if (!userId) throw new Error("Select a user scope");
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (!/^\s*topology\s*:/m.test(effectiveYaml)) {
 				throw new Error("YAML must contain a top-level 'topology:' section");
@@ -1098,11 +1109,11 @@ function LabDesignerPage() {
 
 	const importTemplate = useMutation({
 		mutationFn: async () => {
-			if (!userId) throw new Error("Select a workspace");
+			if (!userId) throw new Error("Select a user scope");
 			const file = importFile.trim();
 			if (!file) throw new Error("Select a template");
 			return getWorkspaceContainerlabTemplate(userId, {
-				source: importSource,
+				source: toAPISource(importSource),
 				dir: importDir,
 				file,
 			});
@@ -1126,9 +1137,6 @@ function LabDesignerPage() {
 		event.preventDefault();
 		if (!rfRef.current || !rfInstance) return;
 		const payload = event.dataTransfer.getData(paletteMimeType);
-		const legacyKind = event.dataTransfer.getData(
-			"application/x-skyforge-kind",
-		);
 		const parsed: PaletteItem | null = payload
 			? (() => {
 					try {
@@ -1138,7 +1146,7 @@ function LabDesignerPage() {
 					}
 				})()
 			: null;
-		const kind = parsed?.kind || legacyKind;
+		const kind = parsed?.kind;
 		if (!kind) return;
 
 		const rect = rfRef.current.getBoundingClientRect();
@@ -1185,7 +1193,7 @@ function LabDesignerPage() {
 
 	const openMapInNewTab = async () => {
 		if (!userId) {
-			toast.error("Select a workspace first");
+			toast.error("Select a user scope first");
 			return;
 		}
 		try {
@@ -1211,7 +1219,7 @@ function LabDesignerPage() {
 
 			const qs = new URLSearchParams();
 			qs.set("userId", userId);
-			qs.set("source", "workspace");
+			qs.set("source", USER_REPO_SOURCE);
 			qs.set("dir", saved.templatesDir);
 			qs.set("file", saved.template);
 			const url = `/dashboard/labs/map?${qs.toString()}`;
@@ -1934,20 +1942,20 @@ function LabDesignerPage() {
 								/>
 							</div>
 							<div className="space-y-1">
-								<Label>Workspace</Label>
+								<Label>User Scope</Label>
 								<Select
 									value={userId}
-									onValueChange={(v) => setWorkspaceId(v)}
+									onValueChange={(v) => setUserScopeId(v)}
 								>
 									<SelectTrigger>
 										<SelectValue
 											placeholder={
-												workspacesQ.isLoading ? "Loading…" : "Select workspace…"
+												userScopesQ.isLoading ? "Loading…" : "Select user scope…"
 											}
 										/>
 									</SelectTrigger>
 									<SelectContent>
-										{(workspacesQ.data?.workspaces ?? []).map((w: any) => (
+										{(userScopesQ.data ?? []).map((w: any) => (
 											<SelectItem key={String(w.id)} value={String(w.id)}>
 												{String(w.name ?? w.slug ?? w.id)}
 											</SelectItem>
@@ -1966,7 +1974,7 @@ function LabDesignerPage() {
 										<SelectValue
 											placeholder={
 												!userId
-													? "Select workspace first…"
+													? "Select user scope first…"
 													: "Select runtime…"
 											}
 										/>
@@ -2050,7 +2058,7 @@ function LabDesignerPage() {
 												runtime !== "containerlab"
 													? "Not required for clabernetes…"
 													: !userId
-														? "Select workspace first…"
+														? "Select user scope first…"
 														: containerlabServersQ.isLoading
 															? "Loading…"
 															: "Select server…"
@@ -2248,10 +2256,10 @@ function LabDesignerPage() {
 								<Select
 									value={importSource}
 									onValueChange={(v) => {
-										const next = v as "workspace" | "blueprints";
+										const next = v as typeof USER_REPO_SOURCE | "blueprints";
 										setImportSource(next);
 										setImportDir(
-											next === "workspace"
+											next === USER_REPO_SOURCE
 												? "containerlab/designer"
 												: "containerlab",
 										);
@@ -2263,7 +2271,9 @@ function LabDesignerPage() {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="blueprints">Blueprints</SelectItem>
-										<SelectItem value="workspace">Workspace repo</SelectItem>
+										<SelectItem value={USER_REPO_SOURCE}>
+											User scope repo
+										</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>

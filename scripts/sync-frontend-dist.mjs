@@ -5,6 +5,7 @@ function copyDir(src, dest) {
 	if (!fs.existsSync(src)) {
 		throw new Error(`source dir does not exist: ${src}`);
 	}
+	fs.rmSync(dest, { recursive: true, force: true });
 	fs.mkdirSync(dest, { recursive: true });
 	fs.cpSync(src, dest, { recursive: true, force: true });
 }
@@ -16,7 +17,7 @@ const canonicalOutDir = path.resolve(
 	"../skyforge-server/skyforge/frontend_dist",
 );
 
-// Keep legacy/alternate code layouts in sync so local builds always work,
+// Keep alternate code layouts in sync so local builds always work,
 // regardless of which server tree is used to build images.
 const targets = [
 	path.resolve(root, "../skyforge/components/server/skyforge/frontend_dist"),

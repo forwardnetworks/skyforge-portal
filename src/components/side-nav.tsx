@@ -78,7 +78,12 @@ const items: NavItem[] = [
 			},
 			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
 			{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
-			{ label: "Git", href: "/git/", icon: GitBranch, external: true },
+			{
+				label: "Git",
+				href: "/api/gitea/public",
+				icon: GitBranch,
+				external: true,
+			},
 			{
 				label: "DNS",
 				href: `${SKYFORGE_API}/dns/sso?next=/dns/`,

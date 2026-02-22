@@ -60,7 +60,7 @@ const DOC_PAGES: DocPage[] = [
 			<div className="space-y-4 text-sm">
 				<p>
 					The current model is{" "}
-					<strong>per-user settings applied to deployments</strong>. Workspaces
+					<strong>per-user settings applied to deployments</strong>. User scopes
 					are primarily for sharing and feature gates.
 				</p>
 				<ul className="list-disc pl-5 space-y-2">

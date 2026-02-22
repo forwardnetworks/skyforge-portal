@@ -255,7 +255,7 @@ function GovernancePage() {
 				r.name,
 				r.resourceId,
 				r.resourceType,
-				r.workspaceName,
+				r.userScopeName,
 				r.owner,
 				r.provider,
 			]
@@ -445,8 +445,8 @@ function GovernancePage() {
 						gradient="green"
 					/>
 					<BentoStatCard
-						title="Workspaces tracked"
-						value={String(summaryData?.workspacesTracked ?? "—")}
+						title="User scopes tracked"
+						value={String(summaryData?.userScopesTracked ?? "—")}
 						icon={<Layers className="h-5 w-5" />}
 						gradient="purple"
 					/>
@@ -712,10 +712,10 @@ function GovernancePage() {
 												cell: (r) => r.resourceType,
 											},
 											{
-												id: "workspace",
-												header: "Workspace",
+												id: "userScope",
+												header: "User Scope",
 												width: 200,
-												cell: (r) => r.workspaceName,
+												cell: (r) => r.userScopeName,
 											},
 											{
 												id: "owner",
@@ -905,7 +905,7 @@ function GovernancePage() {
 											gradient="purple"
 										/>
 										<BentoStatCard
-											title="Workspace pods"
+											title="User-scope pods"
 											value={
 												clusterUsage.get("k8s.pods.ws.total")?.value ?? "—"
 											}
@@ -916,7 +916,7 @@ function GovernancePage() {
 											gradient="purple"
 										/>
 										<BentoStatCard
-											title="Workspace namespaces"
+											title="User-scope namespaces"
 											value={
 												clusterUsage.get("k8s.namespaces.ws")?.value ?? "—"
 											}

@@ -286,9 +286,9 @@ function StatusPage() {
 							{
 								id: "gitea",
 								name: "Git",
-								path: "/git/",
+								path: "/api/gitea/public",
 								icon: GitBranch,
-								enabled: features?.giteaEnabled ?? true,
+								enabled: features?.giteaEnabled ?? false,
 								external: true,
 							},
 							{
@@ -326,7 +326,7 @@ function StatusPage() {
 							{
 								id: "webhooks",
 								name: "Webhooks",
-								path: "/dashboard/webhooks",
+								path: "/webhooks",
 								icon: Workflow,
 								enabled: true,
 								external: false,

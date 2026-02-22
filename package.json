@@ -6,7 +6,7 @@
 	"packageManager": "pnpm@10.13.1",
 	"scripts": {
 		"dev": "vite",
-		"prebuild": "node scripts/generate-docs-index.mjs",
+		"prebuild": "node scripts/generate-docs-index.mjs && node scripts/clean-frontend-dist.mjs",
 		"build": "vite build && node scripts/sync-frontend-dist.mjs",
 		"preview": "vite preview",
 		"type-check": "tsc --noEmit",

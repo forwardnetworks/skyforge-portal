@@ -545,7 +545,7 @@ export function TopologyViewer({
 	const saveConfig = useMutation({
 		mutationFn: async (nodeId: string) => {
 			if (!userId || !deploymentId)
-				throw new Error("missing workspace/deployment");
+				throw new Error("missing user-scope/deployment");
 			return saveDeploymentNodeConfig(userId, deploymentId, nodeId);
 		},
 		onSuccess: (resp, nodeId) => {
@@ -569,7 +569,7 @@ export function TopologyViewer({
 	const linkAdmin = useMutation({
 		mutationFn: async (args: { edgeId: string; action: "up" | "down" }) => {
 			if (!userId || !deploymentId)
-				throw new Error("missing workspace/deployment");
+				throw new Error("missing user-scope/deployment");
 			return setDeploymentLinkAdmin(userId, deploymentId, args);
 		},
 		onSuccess: (resp) => {
@@ -597,7 +597,7 @@ export function TopologyViewer({
 			snaplen: number;
 		}) => {
 			if (!userId || !deploymentId)
-				throw new Error("missing workspace/deployment");
+				throw new Error("missing user-scope/deployment");
 			return captureDeploymentLinkPcap(userId, deploymentId, args);
 		},
 		onSuccess: (resp) => {
@@ -614,7 +614,7 @@ export function TopologyViewer({
 	const fetchInterfaces = useMutation({
 		mutationFn: async (nodeId: string) => {
 			if (!userId || !deploymentId)
-				throw new Error("missing workspace/deployment");
+				throw new Error("missing user-scope/deployment");
 			return getDeploymentNodeInterfaces(userId, deploymentId, nodeId);
 		},
 		onError: (e: any) =>
@@ -626,7 +626,7 @@ export function TopologyViewer({
 	const fetchRunningConfig = useMutation({
 		mutationFn: async (nodeId: string) => {
 			if (!userId || !deploymentId)
-				throw new Error("missing workspace/deployment");
+				throw new Error("missing user-scope/deployment");
 			return getDeploymentNodeRunningConfig(userId, deploymentId, nodeId);
 		},
 		onError: (e: any) =>
