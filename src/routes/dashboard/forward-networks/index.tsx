@@ -223,11 +223,7 @@ function ForwardNetworksPage() {
 						className="h-8 w-8"
 						disabled={!selectedWorkspaceId}
 						onClick={() => {
-							if (!selectedWorkspaceId) return;
-							navigate({
-								to: "/dashboard/workspaces/$workspaceId",
-								params: { workspaceId: selectedWorkspaceId },
-							});
+							void navigate({ to: "/dashboard/settings" });
 						}}
 					>
 						<Settings className="h-4 w-4" />

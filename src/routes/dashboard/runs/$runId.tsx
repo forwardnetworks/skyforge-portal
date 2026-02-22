@@ -85,23 +85,23 @@ function RunDetailPage() {
 								disabled={!run || !canCancel}
 								onClick={() => {
 									if (!run) return;
-									const ws = String(run.workspaceId ?? "");
-									if (!ws) {
+									const userId = String((run as any).userId ?? "");
+									if (!userId) {
 										toast.error("Cannot cancel run", {
-											description: "Missing workspace ID.",
+											description: "Missing user ID.",
 										});
 										return;
 									}
 									void (async () => {
 										try {
-											await cancelRun(runId, ws);
+											await cancelRun(runId, userId);
 											toast.success("Run canceled");
 											await queryClient.invalidateQueries({
 												queryKey: queryKeys.dashboardSnapshot(),
 											});
 											navigate({
 												to: "/dashboard/deployments",
-												search: { workspace: ws } as any,
+												search: { workspace: userId } as any,
 											});
 										} catch (e) {
 											toast.error("Cancel failed", {
@@ -174,7 +174,7 @@ function RunDetailPage() {
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<Meta label="Type" value={String(run?.tpl_alias ?? "")} />
 						<Meta label="Status" value={String(run?.status ?? "")} />
-						<Meta label="Workspace" value={String(run?.workspaceId ?? "")} />
+						<Meta label="User" value={String((run as any)?.userId ?? "")} />
 						<Meta label="Created" value={String(run?.created ?? "")} />
 						<Meta label="Started" value={String(run?.start ?? "")} />
 						<Meta label="Finished" value={String(run?.end ?? "")} />

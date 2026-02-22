@@ -269,7 +269,7 @@ function DeploymentsPage() {
 		const all = (snap.data?.deployments ?? []) as WorkspaceDeployment[];
 		return selectedWorkspaceId
 			? all.filter(
-					(d: WorkspaceDeployment) => d.workspaceId === selectedWorkspaceId,
+					(d: WorkspaceDeployment) => d.userId === selectedWorkspaceId,
 				)
 			: all;
 	}, [selectedWorkspaceId, snap.data?.deployments]);
@@ -326,7 +326,7 @@ function DeploymentsPage() {
 
 	const handleStart = async (d: WorkspaceDeployment) => {
 		try {
-			await startDeployment(d.workspaceId, d.id);
+			await startDeployment(d.userId, d.id);
 			toast.success("Deployment starting", {
 				description: `${d.name} is queued to start.`,
 			});
@@ -337,7 +337,7 @@ function DeploymentsPage() {
 
 	const handleStop = async (d: WorkspaceDeployment) => {
 		try {
-			await stopDeployment(d.workspaceId, d.id);
+			await stopDeployment(d.userId, d.id);
 			toast.success("Deployment stopping", {
 				description: `${d.name} is queued to stop.`,
 			});
@@ -457,7 +457,7 @@ function DeploymentsPage() {
 		const all = (snap.data?.runs ?? []) as JSONMap[];
 		if (!selectedWorkspaceId) return all;
 		return all.filter(
-			(r: JSONMap) => String(r.workspaceId ?? "") === selectedWorkspaceId,
+			(r: JSONMap) => String(r.userId ?? "") === selectedWorkspaceId,
 		);
 	}, [selectedWorkspaceId, snap.data?.runs]);
 
@@ -469,7 +469,7 @@ function DeploymentsPage() {
 		if (!destroyTarget) return;
 		try {
 			// "Destroy" in the UI means remove the deployment definition (and trigger provider cleanup).
-			await deleteDeployment(destroyTarget.workspaceId, destroyTarget.id, {
+			await deleteDeployment(destroyTarget.userId, destroyTarget.id, {
 				forwardDelete: destroyAlsoDeleteForward,
 			});
 			toast.success("Deployment deleted", {
@@ -555,19 +555,18 @@ function DeploymentsPage() {
 							<DropdownMenuItem
 								onClick={() =>
 									navigate({
-										to: "/dashboard/workspaces/$workspaceId",
-										params: { workspaceId: selectedWorkspaceId },
+										to: "/dashboard/settings",
 									})
 								}
 							>
 								<Users className="mr-2 h-4 w-4" />
-								Workspace access
+								My settings
 							</DropdownMenuItem>
 							<DropdownMenuItem
-								onClick={() => navigate({ to: "/dashboard/workspaces" })}
+								onClick={() => navigate({ to: "/dashboard/deployments" })}
 							>
 								<Inbox className="mr-2 h-4 w-4" />
-								All workspaces
+								All deployments
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem

@@ -509,7 +509,7 @@ const destroyMutation = useMutation({
 **Current State:**
 - `getWorkspaces()` API exists (read-only)
 - No `createWorkspace()`, `updateWorkspace()`, `deleteWorkspace()` APIs exposed in `skyforge-api.ts`
-- No `/dashboard/workspaces/new` or `/admin/workspaces` routes exist
+- No dedicated workspace management routes are expected in user-scoped UX
 
 **Fix Required:**
 
@@ -523,7 +523,7 @@ export type CreateWorkspaceRequest = {
 };
 
 export async function createWorkspace(body: CreateWorkspaceRequest): Promise<SkyforgeWorkspace> {
-  return apiFetch<SkyforgeWorkspace>("/api/workspaces", {
+  return apiFetch<SkyforgeWorkspace>("/api/users", {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -533,23 +533,22 @@ export async function updateWorkspace(
   workspaceId: string,
   body: Partial<CreateWorkspaceRequest>
 ): Promise<SkyforgeWorkspace> {
-  return apiFetch<SkyforgeWorkspace>(`/api/workspaces/${workspaceId}`, {
+  return apiFetch<SkyforgeWorkspace>(`/api/users/${workspaceId}`, {
     method: "PATCH",
     body: JSON.stringify(body),
   });
 }
 
 export async function deleteWorkspace(workspaceId: string): Promise<void> {
-  return apiFetch<void>(`/api/workspaces/${workspaceId}`, {
+  return apiFetch<void>(`/api/users/${workspaceId}`, {
     method: "DELETE",
   });
 }
 ```
 
 **B. Create workspace management routes:**
-- `/dashboard/workspaces` - List workspaces with create button
-- `/dashboard/workspaces/new` - Create workspace form
-- `/dashboard/workspaces/$workspaceId` - Edit workspace details
+- `/dashboard/deployments` - Primary user-scoped entry
+- `/dashboard/settings` - User configuration entry
 
 **C. Add workspace link to side navigation**
 

@@ -39,16 +39,16 @@ function DeploymentMapPage() {
 		);
 	}, [deploymentId, snap.data?.deployments]);
 
-	const workspaceId = String(deployment?.workspaceId ?? "");
+	const userId = String(deployment?.userId ?? "");
 	const deploymentType = String(deployment?.type ?? "");
 	const status =
 		deployment?.activeTaskStatus ?? deployment?.lastStatus ?? "unknown";
 
 	const topology = useQuery({
-		queryKey: queryKeys.deploymentTopology(workspaceId, deploymentId),
+		queryKey: queryKeys.deploymentTopology(userId, deploymentId),
 		queryFn: async () => {
 			if (!deployment) throw new Error("deployment not found");
-			return getDeploymentTopology(deployment.workspaceId, deployment.id);
+			return getDeploymentTopology(deployment.userId, deployment.id);
 		},
 		enabled:
 			!!deployment &&
@@ -115,7 +115,7 @@ function DeploymentMapPage() {
 				</div>
 				<div className="flex items-center gap-2">
 					<a
-						href={`/dashboard/labs/designer?workspaceId=${encodeURIComponent(workspaceId)}&importDeploymentId=${encodeURIComponent(deploymentId)}`}
+						href={`/dashboard/labs/designer?userId=${encodeURIComponent(userId)}&importDeploymentId=${encodeURIComponent(deploymentId)}`}
 						target="_blank"
 						rel="noreferrer noopener"
 						className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -140,7 +140,7 @@ function DeploymentMapPage() {
 				<div className="h-full">
 					<TopologyViewer
 						topology={topology.data}
-						workspaceId={deployment.workspaceId}
+						userId={deployment.userId}
 						deploymentId={deployment.id}
 						enableTerminal={["netlab-c9s", "clabernetes"].includes(
 							deployment.type,

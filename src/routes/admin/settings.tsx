@@ -191,11 +191,11 @@ function AdminSettingsPage() {
 			},
 			{ id: "action", header: "Action", cell: (r) => r.action, width: 260 },
 			{
-				id: "workspaceId",
+				id: "userId",
 				header: "Workspace",
 				cell: (r) => (
 					<span className="font-mono text-xs text-muted-foreground">
-						{r.workspaceId}
+						{r.userId}
 					</span>
 				),
 				width: 220,

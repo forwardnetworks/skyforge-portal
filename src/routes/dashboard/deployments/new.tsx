@@ -100,7 +100,7 @@ type DeploymentKind =
 type TemplateSource = "workspace" | "blueprints" | "external";
 
 const formSchema = z.object({
-	workspaceId: z.string().min(1, "Workspace is required"),
+	userId: z.string().min(1, "Workspace is required"),
 	name: z.string().min(1, "Deployment name is required").max(100),
 	kind: z.enum([
 		"netlab-c9s",
@@ -177,7 +177,7 @@ function CreateDeploymentPage() {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			workspaceId: workspace || "",
+			userId: workspace || "",
 			name: "",
 			kind: "netlab-c9s",
 			source: "workspace",
@@ -228,7 +228,7 @@ function CreateDeploymentPage() {
 		});
 	};
 
-	const watchWorkspaceId = watch("workspaceId");
+	const watchWorkspaceId = watch("userId");
 	const watchKind = watch("kind");
 	const watchSource = watch("source");
 	const watchTemplateRepoId = watch("templateRepoId");
@@ -240,12 +240,12 @@ function CreateDeploymentPage() {
 
 	const lastWorkspaceKey = "skyforge.lastWorkspaceId.deployments";
 
-	// Sync workspaceId when workspaces load if not already set or passed via URL
+	// Sync userId when workspaces load if not already set or passed via URL
 	useEffect(() => {
 		if (watchWorkspaceId || workspaces.length === 0) return;
 		const urlWs = String(workspace ?? "").trim();
 		if (urlWs && workspaces.some((w) => w.id === urlWs)) {
-			setValue("workspaceId", urlWs);
+			setValue("userId", urlWs);
 			return;
 		}
 		const stored =
@@ -253,10 +253,10 @@ function CreateDeploymentPage() {
 				? (window.localStorage.getItem(lastWorkspaceKey) ?? "")
 				: "";
 		if (stored && workspaces.some((w) => w.id === stored)) {
-			setValue("workspaceId", stored);
+			setValue("userId", stored);
 			return;
 		}
-		setValue("workspaceId", workspaces[0].id);
+		setValue("userId", workspaces[0].id);
 	}, [watchWorkspaceId, workspaces, setValue]);
 
 	// Persist last-selected workspace for Create Deployment.
@@ -469,7 +469,7 @@ function CreateDeploymentPage() {
 			watchTemplate,
 		],
 		queryFn: async () => {
-			if (!watchWorkspaceId) throw new Error("workspaceId is required");
+			if (!watchWorkspaceId) throw new Error("userId is required");
 			if (!watchTemplate) throw new Error("template is required");
 			const query: any = { source: effectiveSource };
 			if (effectiveSource === "external" && watchTemplateRepoId)
@@ -579,7 +579,7 @@ function CreateDeploymentPage() {
 				type: values.kind,
 				config: config as any,
 			};
-			return createWorkspaceDeployment(values.workspaceId, body);
+			return createWorkspaceDeployment(values.userId, body);
 		},
 		onSuccess: async (_, variables) => {
 			toast.success("Deployment created successfully", {
@@ -590,7 +590,7 @@ function CreateDeploymentPage() {
 			});
 			await navigate({
 				to: "/dashboard/deployments",
-				search: { workspace: variables.workspaceId },
+				search: { workspace: variables.userId },
 			});
 		},
 		onError: (error) => {
@@ -856,7 +856,7 @@ function CreateDeploymentPage() {
 							<div className="grid gap-6 md:grid-cols-2">
 								<FormField
 									control={form.control}
-									name="workspaceId"
+									name="userId"
 									render={({ field }) => (
 										<FormItem>
 											<FormLabel>Workspace</FormLabel>

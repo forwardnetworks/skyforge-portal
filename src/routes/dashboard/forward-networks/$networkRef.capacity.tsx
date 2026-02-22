@@ -315,12 +315,12 @@ function ForwardNetworkCapacityPage() {
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
 	const [planFilter, setPlanFilter] = useState("");
-	const workspaceId = String(workspace ?? "").trim();
+	const userId = String(workspace ?? "").trim();
 
 	const networksQ = useQuery({
-		queryKey: queryKeys.workspaceForwardNetworks(workspaceId),
-		queryFn: () => listWorkspaceForwardNetworks(workspaceId),
-		enabled: Boolean(workspaceId),
+		queryKey: queryKeys.workspaceForwardNetworks(userId),
+		queryFn: () => listWorkspaceForwardNetworks(userId),
+		enabled: Boolean(userId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -332,40 +332,40 @@ function ForwardNetworkCapacityPage() {
 	}, [networksQ.data?.networks, networkRef]);
 
 	const summary = useQuery({
-		queryKey: queryKeys.forwardNetworkCapacitySummary(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkCapacitySummary(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkCapacitySummary(userId, networkRef),
+		queryFn: () => getForwardNetworkCapacitySummary(userId, networkRef),
+		enabled: Boolean(userId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const inventory = useQuery<ForwardNetworkCapacityInventoryResponse>({
 		queryKey: queryKeys.forwardNetworkCapacityInventory(
-			workspaceId,
+			userId,
 			networkRef,
 		),
-		queryFn: () => getForwardNetworkCapacityInventory(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryFn: () => getForwardNetworkCapacityInventory(userId, networkRef),
+		enabled: Boolean(userId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const coverage = useQuery<ForwardNetworkCapacityCoverageResponse>({
-		queryKey: queryKeys.forwardNetworkCapacityCoverage(workspaceId, networkRef),
-		queryFn: () => getForwardNetworkCapacityCoverage(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+		queryKey: queryKeys.forwardNetworkCapacityCoverage(userId, networkRef),
+		queryFn: () => getForwardNetworkCapacityCoverage(userId, networkRef),
+		enabled: Boolean(userId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const snapshotDelta = useQuery<ForwardNetworkCapacitySnapshotDeltaResponse>({
 		queryKey: queryKeys.forwardNetworkCapacitySnapshotDelta(
-			workspaceId,
+			userId,
 			networkRef,
 		),
 		queryFn: () =>
-			getForwardNetworkCapacitySnapshotDelta(workspaceId, networkRef),
-		enabled: Boolean(workspaceId && networkRef),
+			getForwardNetworkCapacitySnapshotDelta(userId, networkRef),
+		enabled: Boolean(userId && networkRef),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -373,15 +373,15 @@ function ForwardNetworkCapacityPage() {
 	const upgradeCandidates =
 		useQuery<ForwardNetworkCapacityUpgradeCandidatesResponse>({
 			queryKey: queryKeys.forwardNetworkCapacityUpgradeCandidates(
-				workspaceId,
+				userId,
 				networkRef,
 				windowLabel,
 			),
 			queryFn: () =>
-				getForwardNetworkCapacityUpgradeCandidates(workspaceId, networkRef, {
+				getForwardNetworkCapacityUpgradeCandidates(userId, networkRef, {
 					window: windowLabel,
 				}),
-			enabled: Boolean(workspaceId && networkRef),
+			enabled: Boolean(userId && networkRef),
 			retry: false,
 			staleTime: 30_000,
 		});
@@ -411,8 +411,8 @@ function ForwardNetworkCapacityPage() {
 
 	const refresh = useMutation({
 		mutationFn: async () => {
-			if (!workspaceId) throw new Error("workspace not found");
-			return refreshForwardNetworkCapacityRollups(workspaceId, networkRef);
+			if (!userId) throw new Error("workspace not found");
+			return refreshForwardNetworkCapacityRollups(userId, networkRef);
 		},
 		onSuccess: async (resp) => {
 			toast.success("Refresh queued", {
@@ -420,42 +420,42 @@ function ForwardNetworkCapacityPage() {
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkCapacitySummary(
-					workspaceId,
+					userId,
 					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkCapacityInventory(
-					workspaceId,
+					userId,
 					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkCapacityCoverage(
-					workspaceId,
+					userId,
 					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: queryKeys.forwardNetworkCapacitySnapshotDelta(
-					workspaceId,
+					userId,
 					networkRef,
 				),
 			});
 			await qc.invalidateQueries({
 				queryKey: [
 					"forwardNetworkCapacityUpgradeCandidates",
-					workspaceId,
+					userId,
 					networkRef,
 				],
 			});
 			await qc.invalidateQueries({
 				queryKey:
-					queryKeys.workspaceForwardNetworkCapacityPortfolio(workspaceId),
+					queryKeys.workspaceForwardNetworkCapacityPortfolio(userId),
 			});
 			await qc.invalidateQueries({
 				// Prefix match for all growth queries for this forward network.
-				queryKey: ["forwardNetworkCapacityGrowth", workspaceId, networkRef],
+				queryKey: ["forwardNetworkCapacityGrowth", userId, networkRef],
 			});
 		},
 		onError: (e) =>
@@ -465,7 +465,7 @@ function ForwardNetworkCapacityPage() {
 	const loadUnhealthyDevices = useMutation({
 		mutationFn: async () => {
 			return getForwardNetworkCapacityUnhealthyDevices(
-				workspaceId,
+				userId,
 				networkRef,
 				{},
 			);
@@ -871,7 +871,7 @@ function ForwardNetworkCapacityPage() {
 	const ifaceHistory = useQuery({
 		queryKey: [
 			"capacityIfaceHistory",
-			workspaceId,
+			userId,
 			networkRef,
 			windowLabel,
 			ifaceMetric,
@@ -881,7 +881,7 @@ function ForwardNetworkCapacityPage() {
 			if (!selectedIface) return null;
 			const typ = metricToInterfaceType(ifaceMetric);
 			const resp = await postForwardNetworkCapacityInterfaceMetricsHistory(
-				workspaceId,
+				userId,
 				networkRef,
 				{
 					type: typ,
@@ -898,7 +898,7 @@ function ForwardNetworkCapacityPage() {
 			);
 			return resp.body as any;
 		},
-		enabled: Boolean(selectedIface && workspaceId && forwardNetworkId),
+		enabled: Boolean(selectedIface && userId && forwardNetworkId),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -906,7 +906,7 @@ function ForwardNetworkCapacityPage() {
 	const deviceHistory = useQuery({
 		queryKey: [
 			"capacityDeviceHistory",
-			workspaceId,
+			userId,
 			networkRef,
 			windowLabel,
 			deviceMetric,
@@ -916,7 +916,7 @@ function ForwardNetworkCapacityPage() {
 			if (!selectedDevice) return null;
 			const typ = metricToDeviceType(deviceMetric);
 			const resp = await postForwardNetworkCapacityDeviceMetricsHistory(
-				workspaceId,
+				userId,
 				networkRef,
 				{
 					type: typ,
@@ -927,7 +927,7 @@ function ForwardNetworkCapacityPage() {
 			);
 			return resp.body as any;
 		},
-		enabled: Boolean(selectedDevice && workspaceId && forwardNetworkId),
+		enabled: Boolean(selectedDevice && userId && forwardNetworkId),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -1283,7 +1283,7 @@ function ForwardNetworkCapacityPage() {
 
 	const ifaceGrowth = useQuery({
 		queryKey: queryKeys.forwardNetworkCapacityGrowth(
-			workspaceId,
+			userId,
 			networkRef,
 			windowLabel,
 			growthIfaceMetric,
@@ -1291,21 +1291,21 @@ function ForwardNetworkCapacityPage() {
 			"interface",
 		),
 		queryFn: () =>
-			getForwardNetworkCapacityGrowth(workspaceId, networkRef, {
+			getForwardNetworkCapacityGrowth(userId, networkRef, {
 				metric: growthIfaceMetric,
 				window: windowLabel,
 				objectType: "interface",
 				compareHours,
 				limit: 50,
 			}),
-		enabled: Boolean(workspaceId && networkRef && forwardNetworkId),
+		enabled: Boolean(userId && networkRef && forwardNetworkId),
 		retry: false,
 		staleTime: 30_000,
 	});
 
 	const deviceGrowth = useQuery({
 		queryKey: queryKeys.forwardNetworkCapacityGrowth(
-			workspaceId,
+			userId,
 			networkRef,
 			windowLabel,
 			growthDeviceMetric,
@@ -1313,14 +1313,14 @@ function ForwardNetworkCapacityPage() {
 			"device",
 		),
 		queryFn: () =>
-			getForwardNetworkCapacityGrowth(workspaceId, networkRef, {
+			getForwardNetworkCapacityGrowth(userId, networkRef, {
 				metric: growthDeviceMetric,
 				window: windowLabel,
 				objectType: "device",
 				compareHours,
 				limit: 50,
 			}),
-		enabled: Boolean(workspaceId && networkRef && forwardNetworkId),
+		enabled: Boolean(userId && networkRef && forwardNetworkId),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -1564,7 +1564,7 @@ function ForwardNetworkCapacityPage() {
 		windowLabel,
 	]);
 
-	if (!workspaceId) {
+	if (!userId) {
 		return (
 			<div className="space-y-6 p-6">
 				<div className="flex items-center gap-3">
@@ -1596,7 +1596,7 @@ function ForwardNetworkCapacityPage() {
 				<div className="flex items-center gap-3">
 					<Link
 						to="/dashboard/forward-networks"
-						search={{ workspace: workspaceId } as any}
+						search={{ workspace: userId } as any}
 						className={buttonVariants({
 							variant: "outline",
 							size: "icon",

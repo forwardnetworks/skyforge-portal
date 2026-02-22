@@ -64,7 +64,7 @@ function parseContainerlabYamlToTopology(yamlText: string): DeploymentTopology {
 
 function LabsMapPage() {
 	const search = Route.useSearch() as any;
-	const workspaceId = String(search?.workspaceId ?? "");
+	const userId = String(search?.userId ?? "");
 	const source = String(search?.source ?? "workspace");
 	const dir = String(search?.dir ?? "containerlab/designer");
 	const file = String(search?.file ?? "");
@@ -77,19 +77,19 @@ function LabsMapPage() {
 	});
 
 	const templateQ = useQuery({
-		queryKey: workspaceId
-			? ["containerlabTemplateMap", workspaceId, source, dir, file]
+		queryKey: userId
+			? ["containerlabTemplateMap", userId, source, dir, file]
 			: ["containerlabTemplateMap", "none"],
 		queryFn: async () => {
-			if (!workspaceId) throw new Error("workspaceId is required");
+			if (!userId) throw new Error("userId is required");
 			if (!file) throw new Error("file is required");
-			return getWorkspaceContainerlabTemplate(workspaceId, {
+			return getWorkspaceContainerlabTemplate(userId, {
 				source,
 				dir,
 				file,
 			});
 		},
-		enabled: Boolean(workspaceId) && Boolean(file),
+		enabled: Boolean(userId) && Boolean(file),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -103,7 +103,7 @@ function LabsMapPage() {
 		}
 	}, [templateQ.data?.yaml]);
 
-	if (!workspaceId || !file) {
+	if (!userId || !file) {
 		return (
 			<div className="h-screen w-screen p-6">
 				<div className="max-w-2xl space-y-4">
@@ -120,10 +120,10 @@ function LabsMapPage() {
 							<div className="space-y-1">
 								<Label>Workspace</Label>
 								<Input
-									value={workspaceId}
+									value={userId}
 									readOnly
 									placeholder={
-										workspacesQ.isLoading ? "Loading…" : "workspaceId missing"
+										workspacesQ.isLoading ? "Loading…" : "userId missing"
 									}
 								/>
 							</div>
@@ -134,7 +134,7 @@ function LabsMapPage() {
 							<div className="text-xs text-muted-foreground">
 								Example:{" "}
 								<span className="font-mono">
-									/dashboard/labs/map?workspaceId=&lt;id&gt;&amp;source=workspace&amp;dir=containerlab/designer&amp;file=lab.clab.yml
+									/dashboard/labs/map?userId=&lt;id&gt;&amp;source=workspace&amp;dir=containerlab/designer&amp;file=lab.clab.yml
 								</span>
 							</div>
 						</CardContent>
@@ -215,7 +215,7 @@ function LabsMapPage() {
 					<div className="h-full rounded-xl border overflow-hidden">
 						<TopologyViewer
 							topology={topology as any}
-							workspaceId={workspaceId}
+							userId={userId}
 							enableTerminal={false}
 							fullHeight
 						/>

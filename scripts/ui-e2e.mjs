@@ -27,7 +27,7 @@ const cookie = await seedSession();
 const cookieHeader = `${cookie.name}=${cookie.value}`;
 await assertSSE(cookieHeader);
 
-const workspaceId = await ensureWorkspace(cookieHeader);
+await ensureWorkspace(cookieHeader);
 const deploymentIds = await listDeploymentIds(cookieHeader);
 
 const browser = await chromium.launch({ headless: HEADLESS });
@@ -80,26 +80,6 @@ try {
 		"deployments-new",
 	);
 	await visit(page, "/dashboard/runs", { placeholder: /Filter runs/i }, "runs");
-	await visit(
-		page,
-		"/dashboard/workspaces",
-		{ role: "heading", name: /Workspaces/i },
-		"workspaces",
-	);
-	await visit(
-		page,
-		"/dashboard/workspaces/new",
-		/Create Workspace/i,
-		"workspaces-new",
-	);
-	if (workspaceId) {
-		await visit(
-			page,
-			`/dashboard/workspaces/${encodeURIComponent(workspaceId)}`,
-			{ role: "heading", name: /Workspace/i },
-			"workspace-detail",
-		);
-	}
 	await visit(
 		page,
 		"/dashboard/settings",
@@ -288,7 +268,7 @@ async function assertSSE(cookieHeader) {
 }
 
 async function ensureWorkspace(cookieHeader) {
-	const listResp = await fetch(`${API_URL}/api/workspaces`, {
+	const listResp = await fetch(`${API_URL}/api/users`, {
 		headers: { Cookie: cookieHeader },
 	});
 	if (!listResp.ok) {
@@ -303,7 +283,7 @@ async function ensureWorkspace(cookieHeader) {
 	}
 
 	const slug = `e2e-${Date.now()}`;
-	const createResp = await fetch(`${API_URL}/api/workspaces`, {
+	const createResp = await fetch(`${API_URL}/api/users`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",

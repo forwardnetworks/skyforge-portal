@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SKYFORGE_PROXY_ROOT } from "@/lib/skyforge-api";
 
 type Props = {
-	workspaceId: string;
+	userId: string;
 	deploymentId: string;
 	nodeId: string;
 	nodeKind?: string;
@@ -17,7 +17,7 @@ type Props = {
 type ServerMsg = { type: string; data?: string; stream?: string };
 
 export function TerminalView({
-	workspaceId,
+	userId,
 	deploymentId,
 	nodeId,
 	nodeKind,
@@ -37,16 +37,16 @@ export function TerminalView({
 	}, []);
 
 	const wsURL = useMemo(() => {
-		if (!workspaceId || !deploymentId || !nodeId) return "";
+		if (!userId || !deploymentId || !nodeId) return "";
 		const proto = window.location.protocol === "https:" ? "wss" : "ws";
-		const base = `${proto}://${window.location.host}${SKYFORGE_PROXY_ROOT}/api/workspaces/${encodeURIComponent(
-			workspaceId,
+		const base = `${proto}://${window.location.host}${SKYFORGE_PROXY_ROOT}/api/users/${encodeURIComponent(
+			userId,
 		)}/deployments/${encodeURIComponent(deploymentId)}/terminal/ws`;
 		const params = new URLSearchParams();
 		params.set("node", nodeId);
 		params.set("command", command);
 		return `${base}?${params.toString()}`;
-	}, [command, deploymentId, nodeId, workspaceId]);
+	}, [command, deploymentId, nodeId, userId]);
 
 	useEffect(() => {
 		if (!containerRef.current) return;

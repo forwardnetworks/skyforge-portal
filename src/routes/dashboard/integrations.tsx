@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { queryKeys } from "@/lib/query-keys";
 import {
-	getUserElasticConfig,
 	getUserServiceNowConfig,
 	listUserForwardCollectorConfigs,
 } from "@/lib/skyforge-api";
@@ -28,13 +27,6 @@ function IntegrationsPage() {
 		retry: false,
 		staleTime: 10_000,
 	});
-	const elasticQ = useQuery({
-		queryKey: queryKeys.userElasticConfig(),
-		queryFn: getUserElasticConfig,
-		retry: false,
-		staleTime: 10_000,
-	});
-
 	const collectorCount = collectorsQ.data?.collectors?.length ?? 0;
 	const hasCollector = collectorCount > 0;
 
@@ -94,33 +86,6 @@ function IntegrationsPage() {
 								>
 									Docs
 								</Link>
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card variant="glass">
-					<CardHeader>
-						<CardTitle>Elastic</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3 text-sm">
-						<div className="text-muted-foreground">
-							{elasticQ.isLoading
-								? "Loading…"
-								: !elasticQ.data?.enabled
-									? "Disabled"
-									: elasticQ.data?.configured
-										? `Configured (${elasticQ.data.url ?? "endpoint"})`
-										: "Not configured"}
-						</div>
-						<div className="flex flex-wrap gap-2">
-							<Button asChild size="sm">
-								<Link to="/dashboard/elastic">Open</Link>
-							</Button>
-							<Button asChild size="sm" variant="secondary">
-								<a href="/kibana/">
-									Kibana <ExternalLink className="ml-1 inline h-4 w-4" />
-								</a>
 							</Button>
 						</div>
 					</CardContent>
