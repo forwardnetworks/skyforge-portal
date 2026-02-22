@@ -182,17 +182,6 @@ function inferPaletteItemFromRepo(repo: string): PaletteItem {
 			role: "router",
 		});
 	}
-	if (lower.includes("vrnetlab/cisco_viosl2")) {
-		return mk({
-			label: "Switch · Cisco vIOS L2",
-			category: "Switches",
-			kind: "cisco_viosl2",
-			repo: clean,
-			vendor: "Cisco",
-			model: "vIOS L2",
-			role: "switch",
-		});
-	}
 	if (lower.includes("vrnetlab/vr-n9kv") || lower.includes("vrnetlab/nxos")) {
 		return mk({
 			label: "Switch · Cisco NX-OSv (N9Kv)",
