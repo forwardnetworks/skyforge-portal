@@ -16,7 +16,7 @@ import {
 	Server,
 	Settings,
 	ShieldCheck,
-	Sparkles,
+	Users,
 	Webhook,
 	Workflow,
 } from "lucide-react";
@@ -44,7 +44,7 @@ type NavItem = {
 
 type Features = {
 	giteaEnabled?: boolean;
-	objectStorageEnabled?: boolean;
+	minioEnabled?: boolean;
 	dexEnabled?: boolean;
 	coderEnabled?: boolean;
 	yaadeEnabled?: boolean;
@@ -53,12 +53,14 @@ type Features = {
 	netboxEnabled?: boolean;
 	nautobotEnabled?: boolean;
 	dnsEnabled?: boolean;
+	elasticEnabled?: boolean;
 };
 
 const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
 	{ label: "Runs", href: "/dashboard/runs", icon: Workflow },
+	{ label: "Workspaces", href: "/dashboard/workspaces", icon: Users },
 	{
 		label: "Designer",
 		href: "/dashboard/labs/designer",
@@ -78,6 +80,7 @@ const items: NavItem[] = [
 				icon: Network,
 			},
 			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
+			{ label: "Elastic", href: "/dashboard/elastic", icon: Database },
 			{ label: "Artifacts", href: "/dashboard/s3", icon: Server },
 			{ label: "Git", href: "/git/", icon: GitBranch, external: true },
 			{
@@ -96,6 +99,12 @@ const items: NavItem[] = [
 				external: true,
 				adminOnly: true,
 			},
+			{
+				label: "Elastic (Kibana)",
+				href: "/kibana/",
+				icon: Database,
+				external: true,
+			},
 		],
 	},
 	{
@@ -103,7 +112,6 @@ const items: NavItem[] = [
 		href: "",
 		icon: Database,
 		children: [
-			{ label: "AI", href: "/dashboard/ai", icon: Sparkles },
 			{
 				label: "Policy Reports",
 				href: "/dashboard/policy-reports",
@@ -189,12 +197,15 @@ export function SideNav(props: {
 										if (child.label === "Forward Networks")
 											return !!f.forwardEnabled;
 										if (child.label === "ServiceNow") return !!f.forwardEnabled;
-										if (child.label === "Artifacts")
-											return !!f.objectStorageEnabled;
+										if (child.label === "Elastic")
+											return !!f.forwardEnabled && !!f.elasticEnabled;
+										if (child.label === "Artifacts") return !!f.minioEnabled;
 										if (child.label === "Git") return !!f.giteaEnabled;
 										if (child.label === "DNS") return !!f.dnsEnabled;
 										if (child.label === "Coder") return !!f.coderEnabled;
 										if (child.label === "Coder Admin") return !!f.coderEnabled;
+										if (child.label === "Elastic (Kibana)")
+											return !!f.forwardEnabled && !!f.elasticEnabled;
 										if (child.adminOnly) return !!props.isAdmin;
 										return true;
 									}) ?? [];

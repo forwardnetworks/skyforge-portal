@@ -122,7 +122,6 @@ try {
 	await visit(page, "/dashboard/labs/designer", /Lab Designer/i, "designer");
 	await visit(page, "/dashboard/labs/map", /Lab map/i, "lab-map");
 	await visit(page, "/dashboard/docs", /Docs/i, "docs");
-	await visit(page, "/dashboard/ai", { role: "heading", name: /^AI$/i }, "ai");
 	await visit(
 		page,
 		"/dashboard/servicenow",

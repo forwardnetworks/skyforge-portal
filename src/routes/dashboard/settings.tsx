@@ -1,8 +1,11 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2, Save, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import * as z from "zod";
 import { Button } from "../../components/ui/button";
 import {
 	Card,
@@ -10,43 +13,59 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../components/ui/card";
+import {
+	Form,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../../components/ui/select";
 import { Textarea } from "../../components/ui/textarea";
 import { UserVariableGroups } from "../../components/user-variable-groups";
+import {
+	NETLAB_ENV_KEYS,
+	isNetlabMultilineKey,
+	netlabValuePresets,
+} from "../../lib/netlab-env";
 import { queryKeys } from "../../lib/query-keys";
 import {
-	deleteUserAWSSSOCredentials,
 	deleteUserAWSStaticCredentials,
 	deleteUserAzureCredentials,
 	deleteUserContainerlabServer,
 	deleteUserEveServer,
-	deleteUserForwardCredentialProfile,
 	deleteUserGCPCredentials,
 	deleteUserIBMCredentials,
 	deleteUserNetlabServer,
 	getAwsSsoConfig,
 	getAwsSsoStatus,
-	getUserAWSSSOCredentials,
 	getUserAWSStaticCredentials,
 	getUserAzureCredentials,
 	getUserGCPCredentials,
 	getUserIBMCredentials,
+	getUserServiceNowConfig,
+	getUserSettings,
 	listUserContainerlabServers,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
-	listUserForwardCredentialProfiles,
 	listUserNetlabServers,
 	logoutAwsSso,
 	pollAwsSso,
-	putUserAWSSSOCredentials,
 	putUserAWSStaticCredentials,
 	putUserAzureCredentials,
 	putUserGCPCredentials,
 	putUserIBMCredentials,
+	putUserSettings,
 	startAwsSso,
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
-	upsertUserForwardCredentialProfile,
 	upsertUserNetlabServer,
 } from "../../lib/skyforge-api";
 
@@ -54,7 +73,22 @@ export const Route = createFileRoute("/dashboard/settings")({
 	component: UserSettingsPage,
 });
 
-const DEFAULT_AWS_SSO_START_URL = "https://d-9067d98db1.awsapps.com/start/#";
+const formSchema = z.object({
+	defaultForwardCollectorConfigId: z.string().optional(),
+	defaultEnv: z
+		.array(z.object({ key: z.string().min(1), value: z.string() }))
+		.optional(),
+	externalTemplateRepos: z
+		.array(
+			z.object({
+				id: z.string().optional(),
+				name: z.string().optional(),
+				repo: z.string().min(1),
+				defaultBranch: z.string().optional(),
+			}),
+		)
+		.optional(),
+});
 
 function UserSettingsPage() {
 	const queryClient = useQueryClient();
@@ -64,15 +98,79 @@ function UserSettingsPage() {
 		queryFn: listUserForwardCollectorConfigs,
 		staleTime: 10_000,
 	});
-	const forwardProfilesKey = ["user", "forward", "credentialProfiles"] as const;
-	const forwardProfilesQ = useQuery({
-		queryKey: forwardProfilesKey,
-		queryFn: listUserForwardCredentialProfiles,
+
+	const settingsQ = useQuery({
+		queryKey: queryKeys.userSettings(),
+		queryFn: getUserSettings,
 		staleTime: 10_000,
-		retry: false,
 	});
 
 	const collectors = collectorsQ.data?.collectors ?? [];
+	const defaultCollectorId = useMemo(() => {
+		const explicit = settingsQ.data?.defaultForwardCollectorConfigId;
+		if (explicit) return explicit;
+		return (
+			collectors.find((c) => c.name === "default")?.id ??
+			collectors[0]?.id ??
+			""
+		);
+	}, [collectors, settingsQ.data?.defaultForwardCollectorConfigId]);
+
+	const form = useForm<z.infer<typeof formSchema>>({
+		resolver: zodResolver(formSchema),
+		values: {
+			defaultForwardCollectorConfigId: defaultCollectorId || undefined,
+			defaultEnv: settingsQ.data?.defaultEnv ?? [],
+			externalTemplateRepos: settingsQ.data?.externalTemplateRepos ?? [],
+		},
+	});
+
+	const envArray = useFieldArray({ control: form.control, name: "defaultEnv" });
+	const reposArray = useFieldArray({
+		control: form.control,
+		name: "externalTemplateRepos",
+	});
+
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof formSchema>) => {
+			const externalTemplateRepos = (values.externalTemplateRepos ?? []).map(
+				(r) => {
+					const repo = r.repo.trim();
+					const inferredName =
+						repo
+							.split("/")
+							.filter(Boolean)
+							.at(-1)
+							?.replace(/\.git$/, "") ?? "repo";
+					return {
+						id: r.id ?? globalThis.crypto?.randomUUID?.() ?? inferredName,
+						name: r.name?.trim() || inferredName,
+						repo,
+						defaultBranch: r.defaultBranch?.trim() || "main",
+					};
+				},
+			);
+			return putUserSettings({
+				defaultForwardCollectorConfigId: values.defaultForwardCollectorConfigId,
+				defaultEnv: values.defaultEnv ?? [],
+				externalTemplateRepos,
+			});
+		},
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userSettings(),
+			});
+			toast.success("Saved");
+		},
+		onError: (err: unknown) => {
+			toast.error(
+				err instanceof Error ? err.message : "Failed to save user settings",
+			);
+		},
+	});
+
+	const busy =
+		collectorsQ.isLoading || settingsQ.isLoading || mutation.isPending;
 
 	const awsStaticQ = useQuery({
 		queryKey: queryKeys.userAwsStaticCredentials(),
@@ -89,12 +187,6 @@ function UserSettingsPage() {
 	const awsSsoStatusQ = useQuery({
 		queryKey: queryKeys.awsSsoStatus(),
 		queryFn: getAwsSsoStatus,
-		staleTime: 10_000,
-		retry: false,
-	});
-	const userAwsSsoQ = useQuery({
-		queryKey: queryKeys.userAwsSsoCredentials(),
-		queryFn: getUserAWSSSOCredentials,
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -136,10 +228,15 @@ function UserSettingsPage() {
 		retry: false,
 	});
 
+	const serviceNowQ = useQuery({
+		queryKey: queryKeys.userServiceNowConfig(),
+		queryFn: getUserServiceNowConfig,
+		staleTime: 10_000,
+		retry: false,
+	});
+
 	const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
 	const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
-	const [awsSsoStartUrl, setAwsSsoStartUrl] = useState("");
-	const [awsSsoRegion, setAwsSsoRegion] = useState("");
 
 	const [azureTenantId, setAzureTenantId] = useState("");
 	const [azureClientId, setAzureClientId] = useState("");
@@ -150,10 +247,6 @@ function UserSettingsPage() {
 	const [gcpServiceAccountJson, setGcpServiceAccountJson] = useState("");
 
 	const [ibmApiKey, setIbmApiKey] = useState("");
-	const [forwardProfileHost, setForwardProfileHost] = useState("");
-	const [forwardProfileVerifyTLS, setForwardProfileVerifyTLS] = useState(true);
-	const [forwardProfileUsername, setForwardProfileUsername] = useState("");
-	const [forwardProfilePassword, setForwardProfilePassword] = useState("");
 	const [ibmRegion, setIbmRegion] = useState("");
 	const [ibmResourceGroupId, setIbmResourceGroupId] = useState("");
 
@@ -178,16 +271,6 @@ function UserSettingsPage() {
 			return new URL(value).hostname || value;
 		} catch {
 			return value;
-		}
-	};
-
-	const forwardHostLabel = (value: string) => {
-		const raw = value.trim() || "https://fwd.app";
-		const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-		try {
-			return new URL(withScheme).host || "fwd.app";
-		} catch {
-			return raw.replace(/^https?:\/\//i, "").split("/")[0] || "fwd.app";
 		}
 	};
 
@@ -234,79 +317,6 @@ function UserSettingsPage() {
 		intervalSeconds: number;
 	} | null>(null);
 	const [awsSsoPollStatus, setAwsSsoPollStatus] = useState<string>("");
-	const awsSsoConfigured = Boolean(
-		awsSsoStartUrl.trim() && awsSsoRegion.trim(),
-	);
-
-	useEffect(() => {
-		const userStart = (userAwsSsoQ.data?.startUrl ?? "").trim();
-		const userRegion = (userAwsSsoQ.data?.region ?? "").trim();
-		const defaultStart = (awsSsoConfigQ.data?.startUrl ?? "").trim();
-		const defaultRegion = (awsSsoConfigQ.data?.region ?? "").trim();
-		setAwsSsoStartUrl(userStart || defaultStart || DEFAULT_AWS_SSO_START_URL);
-		setAwsSsoRegion(userRegion || defaultRegion);
-	}, [
-		userAwsSsoQ.data?.startUrl,
-		userAwsSsoQ.data?.region,
-		awsSsoConfigQ.data?.startUrl,
-		awsSsoConfigQ.data?.region,
-	]);
-
-	const saveAwsSsoConfigM = useMutation({
-		mutationFn: async () => {
-			const ssoAccountId = (
-				userAwsSsoQ.data?.accountId ??
-				awsSsoConfigQ.data?.accountId ??
-				""
-			).trim();
-			const roleName = (
-				userAwsSsoQ.data?.roleName ??
-				awsSsoConfigQ.data?.roleName ??
-				""
-			).trim();
-			return putUserAWSSSOCredentials({
-				startUrl: awsSsoStartUrl.trim(),
-				region: awsSsoRegion.trim(),
-				accountId: ssoAccountId,
-				roleName,
-			});
-		},
-		onSuccess: async () => {
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.userAwsSsoCredentials(),
-			});
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.awsSsoConfig(),
-			});
-			toast.success("AWS SSO settings saved");
-		},
-		onError: (err: unknown) =>
-			toast.error("Failed to save AWS SSO settings", {
-				description: err instanceof Error ? err.message : String(err),
-			}),
-	});
-
-	const deleteAwsSsoConfigM = useMutation({
-		mutationFn: async () => deleteUserAWSSSOCredentials(),
-		onSuccess: async () => {
-			setAwsSsoStartUrl(
-				(awsSsoConfigQ.data?.startUrl ?? "").trim() ||
-					DEFAULT_AWS_SSO_START_URL,
-			);
-			setAwsSsoRegion((awsSsoConfigQ.data?.region ?? "").trim());
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.userAwsSsoCredentials(),
-			});
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.awsSsoConfig(),
-			});
-			toast.success("AWS SSO settings reset");
-		},
-		onError: (err: unknown) =>
-			toast.error("Failed to reset AWS SSO settings", {
-				description: err instanceof Error ? err.message : String(err),
-			}),
-	});
 
 	const startAwsSsoM = useMutation({
 		mutationFn: startAwsSso,
@@ -434,7 +444,7 @@ function UserSettingsPage() {
 	const saveGcpM = useMutation({
 		mutationFn: async () =>
 			putUserGCPCredentials({
-				projectIdOverride: gcpProjectId.trim() || undefined,
+				projectId: gcpProjectId.trim(),
 				serviceAccountJSON: gcpServiceAccountJson,
 			}),
 		onSuccess: async () => {
@@ -482,48 +492,6 @@ function UserSettingsPage() {
 		},
 		onError: (err: unknown) =>
 			toast.error("Failed to save IBM Cloud credentials", {
-				description: err instanceof Error ? err.message : String(err),
-			}),
-	});
-
-	const saveForwardProfileM = useMutation({
-		mutationFn: async () => {
-			const username = forwardProfileUsername.trim();
-			const password = forwardProfilePassword.trim();
-			const host = forwardProfileHost.trim();
-			if (!username) throw new Error("Username is required");
-			if (!password) throw new Error("Password is required");
-			return upsertUserForwardCredentialProfile({
-				baseUrl: host || "https://fwd.app",
-				skipTlsVerify: !forwardProfileVerifyTLS,
-				username,
-				password,
-			});
-		},
-		onSuccess: async () => {
-			setForwardProfilePassword("");
-			await queryClient.invalidateQueries({
-				queryKey: forwardProfilesKey,
-			});
-			toast.success("Forward credential set saved");
-		},
-		onError: (err: unknown) =>
-			toast.error("Failed to save Forward credential set", {
-				description: err instanceof Error ? err.message : String(err),
-			}),
-	});
-
-	const deleteForwardProfileM = useMutation({
-		mutationFn: async (name: string) =>
-			deleteUserForwardCredentialProfile(name),
-		onSuccess: async () => {
-			await queryClient.invalidateQueries({
-				queryKey: forwardProfilesKey,
-			});
-			toast.success("Forward credential set deleted");
-		},
-		onError: (err: unknown) =>
-			toast.error("Failed to delete Forward credential set", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
@@ -669,107 +637,346 @@ function UserSettingsPage() {
 			<div className="space-y-1">
 				<h1 className="text-2xl font-bold tracking-tight">My Settings</h1>
 				<p className="text-sm text-muted-foreground">
-					User-scoped credentials and integrations.
+					Defaults that pre-fill new deployments. These do not change existing
+					deployments.
 				</p>
 			</div>
-			<Card>
-				<CardHeader>
-					<CardTitle>Forward Credential Sets</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-6">
-					<div className="space-y-3 rounded border p-4">
-						<div className="text-xs text-muted-foreground">
-							These credentials are reused by collectors and other Forward
-							integrations.
-						</div>
-						<div className="text-xs font-mono text-muted-foreground">
-							Identifier:{" "}
-							{forwardProfileUsername.trim()
-								? `${forwardProfileUsername.trim()}@${forwardHostLabel(
-										forwardProfileHost,
-									)}`
-								: `<username>@${forwardHostLabel(forwardProfileHost)}`}
-						</div>
-						<div className="grid gap-3 md:grid-cols-2">
-							<div className="space-y-1">
-								<Input
-									value={forwardProfileHost}
-									onChange={(e) => setForwardProfileHost(e.target.value)}
-									placeholder="Host (optional, defaults to https://fwd.app)"
-								/>
-								<div className="text-xs text-muted-foreground">
-									For Skyforge Forward Cluster use:{" "}
-									<code>
-										http://fwd-appserver.forward.svc.cluster.local:8080
-									</code>
-								</div>
-							</div>
-							<Input
-								value={forwardProfileUsername}
-								onChange={(e) => setForwardProfileUsername(e.target.value)}
-								placeholder="Forward username"
-							/>
-							<Input
-								type="password"
-								value={forwardProfilePassword}
-								onChange={(e) => setForwardProfilePassword(e.target.value)}
-								placeholder="Forward password"
-							/>
-						</div>
-						<label className="flex items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								checked={forwardProfileVerifyTLS}
-								onChange={(e) => setForwardProfileVerifyTLS(e.target.checked)}
-							/>
-							Verify TLS certificate
-						</label>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => saveForwardProfileM.mutate()}
-							disabled={saveForwardProfileM.isPending}
-						>
-							Save credential set
-						</Button>
 
-						{forwardProfilesQ.isLoading ? (
-							<div className="text-sm text-muted-foreground">
-								Loading credential sets...
+			<Form {...form}>
+				<form
+					onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+					className="space-y-6"
+				>
+					<Card>
+						<CardHeader>
+							<CardTitle>Integrations</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="flex items-center justify-between gap-3">
+								<div className="min-w-0">
+									<div className="text-sm font-medium">Forward collector</div>
+									<div className="text-sm text-muted-foreground">
+										{collectors.length
+											? `${collectors.length} configured`
+											: "None configured"}
+									</div>
+								</div>
+								<Button asChild variant="outline">
+									<Link to="/dashboard/forward">Open</Link>
+								</Button>
 							</div>
-						) : null}
-						{forwardProfilesQ.isError ? (
-							<div className="text-sm text-destructive">
-								Failed to load credential sets.
+
+							<div className="flex items-center justify-between gap-3">
+								<div className="min-w-0">
+									<div className="text-sm font-medium">ServiceNow</div>
+									<div className="text-sm text-muted-foreground">
+										{serviceNowQ.data?.configured
+											? "Configured"
+											: "Not configured"}
+									</div>
+								</div>
+								<Button asChild variant="outline">
+									<Link to="/dashboard/servicenow">Open</Link>
+								</Button>
 							</div>
-						) : null}
-						<div className="space-y-2">
-							{(forwardProfilesQ.data?.profiles ?? []).map((p) => (
-								<div
-									key={p.id}
-									className="flex items-center justify-between gap-3 rounded border p-2"
-								>
-									<div className="min-w-0 text-sm">
-										<div className="font-medium truncate">{p.name}</div>
-										<div className="truncate text-muted-foreground">
-											{p.username} @ {p.baseUrl}
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Defaults</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-6">
+							<FormField
+								control={form.control}
+								name="defaultForwardCollectorConfigId"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Default Forward collector</FormLabel>
+										<Select
+											value={field.value ?? ""}
+											onValueChange={(v) => field.onChange(v)}
+											disabled={collectors.length === 0}
+										>
+											<SelectTrigger>
+												<SelectValue
+													placeholder={
+														collectors.length
+															? "Select collector"
+															: "No collectors"
+													}
+												/>
+											</SelectTrigger>
+											<SelectContent>
+												{collectors
+													.slice()
+													.sort((a, b) =>
+														a.name === "default"
+															? -1
+															: b.name === "default"
+																? 1
+																: 0,
+													)
+													.map((c) => (
+														<SelectItem key={c.id} value={c.id}>
+															{c.name}
+														</SelectItem>
+													))}
+											</SelectContent>
+										</Select>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<div className="space-y-3">
+								<div className="flex items-center justify-between">
+									<div>
+										<div className="text-sm font-medium">
+											Default environment variables
+										</div>
+										<div className="text-sm text-muted-foreground">
+											Used for Netlab/Clabernetes generator env overrides.
 										</div>
 									</div>
 									<Button
 										type="button"
-										size="sm"
-										variant="destructive"
-										onClick={() => deleteForwardProfileM.mutate(p.name)}
-										disabled={deleteForwardProfileM.isPending}
+										variant="outline"
+										onClick={() =>
+											envArray.append({ key: "NETLAB_DEVICE", value: "" })
+										}
 									>
-										Delete
+										Add variable
 									</Button>
 								</div>
-							))}
-						</div>
+
+								{envArray.fields.length === 0 ? (
+									<div className="rounded border p-4 text-sm text-muted-foreground">
+										No default variables.
+									</div>
+								) : (
+									<div className="space-y-3">
+										{envArray.fields.map((f, idx) => {
+											const keyPath = `defaultEnv.${idx}.key` as const;
+											const valuePath = `defaultEnv.${idx}.value` as const;
+											const key = form.watch(keyPath) || f.key;
+											const presets = netlabValuePresets(key);
+											const multiline = isNetlabMultilineKey(key);
+											return (
+												<div key={f.id} className="flex gap-2">
+													<FormField
+														control={form.control}
+														name={keyPath}
+														render={({ field }) => (
+															<FormItem className="w-1/2">
+																<FormLabel className="sr-only">Key</FormLabel>
+																<Select
+																	value={field.value}
+																	onValueChange={(v) => field.onChange(v)}
+																>
+																	<SelectTrigger>
+																		<SelectValue placeholder="Select key" />
+																	</SelectTrigger>
+																	<SelectContent>
+																		{NETLAB_ENV_KEYS.map((k) => (
+																			<SelectItem key={k.key} value={k.key}>
+																				{k.label}
+																			</SelectItem>
+																		))}
+																	</SelectContent>
+																</Select>
+																<FormMessage />
+															</FormItem>
+														)}
+													/>
+
+													<FormField
+														control={form.control}
+														name={valuePath}
+														render={({ field }) => (
+															<FormItem className="w-1/2">
+																<FormLabel className="sr-only">Value</FormLabel>
+																{presets ? (
+																	<Select
+																		value={field.value}
+																		onValueChange={(v) => field.onChange(v)}
+																	>
+																		<SelectTrigger>
+																			<SelectValue placeholder="Select value" />
+																		</SelectTrigger>
+																		<SelectContent>
+																			{presets.map((p) => (
+																				<SelectItem
+																					key={p.value}
+																					value={p.value}
+																				>
+																					{p.label}
+																				</SelectItem>
+																			))}
+																		</SelectContent>
+																	</Select>
+																) : (
+																	<Input
+																		{...field}
+																		placeholder={
+																			multiline ? "Enter value" : "Value"
+																		}
+																	/>
+																)}
+																<FormMessage />
+															</FormItem>
+														)}
+													/>
+
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														onClick={() => envArray.remove(idx)}
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</div>
+											);
+										})}
+									</div>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>External Template Repos</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="flex items-center justify-between gap-4">
+								<div className="text-sm text-muted-foreground">
+									IDs referenced when selecting template source = External.
+								</div>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() =>
+										reposArray.append({
+											name: "",
+											repo: "",
+											defaultBranch: "",
+										})
+									}
+								>
+									Add repo
+								</Button>
+							</div>
+
+							{reposArray.fields.length === 0 ? (
+								<div className="rounded border p-4 text-sm text-muted-foreground">
+									No external repos configured.
+								</div>
+							) : (
+								<div className="space-y-3">
+									{reposArray.fields.map((f, idx) => {
+										const idPath = `externalTemplateRepos.${idx}.id` as const;
+										const namePath =
+											`externalTemplateRepos.${idx}.name` as const;
+										const repoPath =
+											`externalTemplateRepos.${idx}.repo` as const;
+										const branchPath =
+											`externalTemplateRepos.${idx}.defaultBranch` as const;
+										const currentId = form.watch(idPath) || f.id || "";
+										return (
+											<div key={f.id} className="grid gap-2 rounded border p-3">
+												<div className="flex items-center justify-between gap-2">
+													<div className="text-xs text-muted-foreground">
+														ID:{" "}
+														<span className="font-mono">
+															{currentId || "(new)"}
+														</span>
+													</div>
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														onClick={() => reposArray.remove(idx)}
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</div>
+
+												<FormField
+													control={form.control}
+													name={idPath}
+													render={({ field }) => (
+														<FormItem className="hidden">
+															<FormLabel className="sr-only">ID</FormLabel>
+															<Input {...field} />
+														</FormItem>
+													)}
+												/>
+
+												<FormField
+													control={form.control}
+													name={namePath}
+													render={({ field }) => (
+														<FormItem>
+															<FormLabel>Name (optional)</FormLabel>
+															<Input {...field} placeholder="My repo" />
+															<FormMessage />
+														</FormItem>
+													)}
+												/>
+
+												<FormField
+													control={form.control}
+													name={repoPath}
+													render={({ field }) => (
+														<FormItem>
+															<FormLabel>Repo</FormLabel>
+															<Input
+																{...field}
+																placeholder="owner/repo or git URL"
+															/>
+															<FormMessage />
+														</FormItem>
+													)}
+												/>
+
+												<FormField
+													control={form.control}
+													name={branchPath}
+													render={({ field }) => (
+														<FormItem>
+															<FormLabel>Default branch (optional)</FormLabel>
+															<Input {...field} placeholder="main" />
+															<FormMessage />
+														</FormItem>
+													)}
+												/>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</CardContent>
+					</Card>
+
+					<div className="flex items-center justify-end gap-2">
+						<Button type="submit" disabled={busy || !form.formState.isDirty}>
+							{mutation.isPending ? (
+								<>
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									Saving…
+								</>
+							) : (
+								<>
+									<Save className="mr-2 h-4 w-4" />
+									Save
+								</>
+							)}
+						</Button>
 					</div>
-				</CardContent>
-			</Card>
+				</form>
+			</Form>
 
 			<UserVariableGroups allowEdit={true} />
 
@@ -822,23 +1029,13 @@ function UserSettingsPage() {
 							<div className="flex items-center justify-between">
 								<div className="text-sm font-medium">AWS (SSO)</div>
 								<div className="text-xs text-muted-foreground">
-									{awsSsoConfigured
+									{awsSsoConfigQ.data?.configured
 										? awsSsoStatusQ.data?.connected
 											? "Connected"
 											: "Not connected"
 										: "Not configured"}
 								</div>
 							</div>
-							<Input
-								placeholder="SSO start URL"
-								value={awsSsoStartUrl}
-								onChange={(e) => setAwsSsoStartUrl(e.target.value)}
-							/>
-							<Input
-								placeholder="Region"
-								value={awsSsoRegion}
-								onChange={(e) => setAwsSsoRegion(e.target.value)}
-							/>
 							{awsSsoStatusQ.data?.lastAuthenticatedAt ? (
 								<div className="text-xs text-muted-foreground">
 									Last authenticated:{" "}
@@ -878,25 +1075,9 @@ function UserSettingsPage() {
 							<div className="flex gap-2">
 								<Button
 									type="button"
-									variant="outline"
-									onClick={() => saveAwsSsoConfigM.mutate()}
-									disabled={saveAwsSsoConfigM.isPending}
-								>
-									Save
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => deleteAwsSsoConfigM.mutate()}
-									disabled={deleteAwsSsoConfigM.isPending}
-								>
-									Reset
-								</Button>
-								<Button
-									type="button"
 									onClick={() => startAwsSsoM.mutate()}
 									disabled={
-										!awsSsoConfigured ||
+										!awsSsoConfigQ.data?.configured ||
 										startAwsSsoM.isPending ||
 										!!awsSsoSession
 									}
