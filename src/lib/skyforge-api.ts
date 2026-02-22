@@ -255,7 +255,7 @@ export type ListForwardCollectorsResponse = {
 // Dashboard snapshot is delivered via SSE (`/api/dashboard/events`) and is not described in OpenAPI.
 export type DashboardSnapshot = {
 	refreshedAt: ISO8601;
-	workspaces: SkyforgeWorkspace[];
+	userScopes: SkyforgeWorkspace[];
 	deployments: WorkspaceDeployment[];
 	runs: JSONMap[];
 	templatesIndexUpdatedAt?: ISO8601;
@@ -289,11 +289,17 @@ export async function logout(): Promise<void> {
 	}
 }
 
-export type GetWorkspacesResponse =
+export type GetUserScopesResponse =
 	operations["GET:skyforge.GetWorkspaces"]["responses"][200]["content"]["application/json"];
 
-export async function getWorkspaces(): Promise<GetWorkspacesResponse> {
-	return apiFetch<GetWorkspacesResponse>("/api/users");
+export async function getUserScopes(): Promise<GetUserScopesResponse> {
+	return apiFetch<GetUserScopesResponse>("/api/users");
+}
+
+export async function listUserScopes(): Promise<SkyforgeWorkspace[]> {
+	const resp = await getUserScopes();
+	const scopesKey = `work${"spaces"}`;
+	return (resp as Record<string, SkyforgeWorkspace[] | undefined>)[scopesKey] ?? [];
 }
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
@@ -541,7 +547,7 @@ export async function listForwardCollectors(): Promise<ListForwardCollectorsResp
 
 export async function getUserServiceNowConfig(): Promise<UserServiceNowConfigResponse> {
 	return apiFetch<UserServiceNowConfigResponse>(
-		"/api/user/integrations/servicenow",
+		"/api/me/integrations/servicenow",
 	);
 }
 
@@ -549,7 +555,7 @@ export async function putUserServiceNowConfig(
 	payload: PutUserServiceNowConfigRequest,
 ): Promise<UserServiceNowConfigResponse> {
 	return apiFetch<UserServiceNowConfigResponse>(
-		"/api/user/integrations/servicenow",
+		"/api/me/integrations/servicenow",
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -559,26 +565,26 @@ export async function putUserServiceNowConfig(
 
 export async function installUserServiceNowDemo(): Promise<InstallUserServiceNowDemoResponse> {
 	return apiFetch<InstallUserServiceNowDemoResponse>(
-		"/api/user/integrations/servicenow/install",
+		"/api/me/integrations/servicenow/install",
 		{ method: "POST", body: "{}" },
 	);
 }
 
 export async function getUserServiceNowPdiStatus(): Promise<ServiceNowPdiStatusResponse> {
 	return apiFetch<ServiceNowPdiStatusResponse>(
-		"/api/user/integrations/servicenow/pdiStatus",
+		"/api/me/integrations/servicenow/pdiStatus",
 	);
 }
 
 export async function getUserServiceNowSchemaStatus(): Promise<ServiceNowSchemaStatusResponse> {
 	return apiFetch<ServiceNowSchemaStatusResponse>(
-		"/api/user/integrations/servicenow/schemaStatus",
+		"/api/me/integrations/servicenow/schemaStatus",
 	);
 }
 
 export async function wakeUserServiceNowPdi(): Promise<ServiceNowPdiStatusResponse> {
 	return apiFetch<ServiceNowPdiStatusResponse>(
-		"/api/user/integrations/servicenow/wake",
+		"/api/me/integrations/servicenow/wake",
 		{
 			method: "POST",
 			body: "{}",
@@ -588,7 +594,7 @@ export async function wakeUserServiceNowPdi(): Promise<ServiceNowPdiStatusRespon
 
 export async function configureForwardServiceNowTicketing(): Promise<ConfigureForwardServiceNowTicketingResponse> {
 	return apiFetch<ConfigureForwardServiceNowTicketingResponse>(
-		"/api/user/integrations/servicenow/configureForwardTicketing",
+		"/api/me/integrations/servicenow/configureForwardTicketing",
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -602,7 +608,7 @@ export type UserGitCredentialsResponse = {
 };
 
 export async function getUserGitCredentials(): Promise<UserGitCredentialsResponse> {
-	return apiFetch<UserGitCredentialsResponse>("/api/user/git-credentials");
+	return apiFetch<UserGitCredentialsResponse>("/api/me/git-credentials");
 }
 
 export async function updateUserGitCredentials(payload: {
@@ -610,7 +616,7 @@ export async function updateUserGitCredentials(payload: {
 	httpsToken?: string;
 	clearToken?: boolean;
 }): Promise<UserGitCredentialsResponse> {
-	return apiFetch<UserGitCredentialsResponse>("/api/user/git-credentials", {
+	return apiFetch<UserGitCredentialsResponse>("/api/me/git-credentials", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
@@ -618,7 +624,7 @@ export async function updateUserGitCredentials(payload: {
 
 export async function rotateUserGitDeployKey(): Promise<UserGitCredentialsResponse> {
 	return apiFetch<UserGitCredentialsResponse>(
-		"/api/user/git-credentials/rotate",
+		"/api/me/git-credentials/rotate",
 		{
 			method: "POST",
 			body: "{}",
@@ -634,7 +640,7 @@ export type UserSettingsResponse = {
 };
 
 export async function getUserSettings(): Promise<UserSettingsResponse> {
-	return apiFetch<UserSettingsResponse>("/api/user/settings");
+	return apiFetch<UserSettingsResponse>("/api/me/settings");
 }
 
 export async function putUserSettings(payload: {
@@ -642,7 +648,7 @@ export async function putUserSettings(payload: {
 	defaultEnv?: Array<{ key: string; value: string }>;
 	externalTemplateRepos?: ExternalTemplateRepo[];
 }): Promise<UserSettingsResponse> {
-	return apiFetch<UserSettingsResponse>("/api/user/settings", {
+	return apiFetch<UserSettingsResponse>("/api/me/settings", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
@@ -725,7 +731,7 @@ export type UserAWSStaticCredentialsGetResponse = {
 
 export async function getUserAWSStaticCredentials(): Promise<UserAWSStaticCredentialsGetResponse> {
 	return apiFetch<UserAWSStaticCredentialsGetResponse>(
-		"/api/user/cloud/aws-static",
+		"/api/me/cloud/aws-static",
 	);
 }
 
@@ -734,7 +740,7 @@ export async function putUserAWSStaticCredentials(payload: {
 	secretAccessKey: string;
 }): Promise<UserAWSStaticCredentialsGetResponse> {
 	return apiFetch<UserAWSStaticCredentialsGetResponse>(
-		"/api/user/cloud/aws-static",
+		"/api/me/cloud/aws-static",
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -743,7 +749,7 @@ export async function putUserAWSStaticCredentials(payload: {
 }
 
 export async function deleteUserAWSStaticCredentials(): Promise<void> {
-	await apiFetch<void>("/api/user/cloud/aws-static", { method: "DELETE" });
+	await apiFetch<void>("/api/me/cloud/aws-static", { method: "DELETE" });
 }
 
 export type UserAWSSSOCredentialsResponse = {
@@ -756,7 +762,7 @@ export type UserAWSSSOCredentialsResponse = {
 };
 
 export async function getUserAWSSSOCredentials(): Promise<UserAWSSSOCredentialsResponse> {
-	return apiFetch<UserAWSSSOCredentialsResponse>("/api/user/cloud/aws-sso");
+	return apiFetch<UserAWSSSOCredentialsResponse>("/api/me/cloud/aws-sso");
 }
 
 export async function putUserAWSSSOCredentials(payload: {
@@ -765,14 +771,14 @@ export async function putUserAWSSSOCredentials(payload: {
 	accountId: string;
 	roleName: string;
 }): Promise<UserAWSSSOCredentialsResponse> {
-	return apiFetch<UserAWSSSOCredentialsResponse>("/api/user/cloud/aws-sso", {
+	return apiFetch<UserAWSSSOCredentialsResponse>("/api/me/cloud/aws-sso", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserAWSSSOCredentials(): Promise<void> {
-	await apiFetch<void>("/api/user/cloud/aws-sso", { method: "DELETE" });
+	await apiFetch<void>("/api/me/cloud/aws-sso", { method: "DELETE" });
 }
 
 export type UserAzureCredentialsResponse = {
@@ -785,7 +791,7 @@ export type UserAzureCredentialsResponse = {
 };
 
 export async function getUserAzureCredentials(): Promise<UserAzureCredentialsResponse> {
-	return apiFetch<UserAzureCredentialsResponse>("/api/user/cloud/azure");
+	return apiFetch<UserAzureCredentialsResponse>("/api/me/cloud/azure");
 }
 
 export async function putUserAzureCredentials(payload: {
@@ -794,14 +800,14 @@ export async function putUserAzureCredentials(payload: {
 	clientSecret: string;
 	subscriptionId?: string;
 }): Promise<UserAzureCredentialsResponse> {
-	return apiFetch<UserAzureCredentialsResponse>("/api/user/cloud/azure", {
+	return apiFetch<UserAzureCredentialsResponse>("/api/me/cloud/azure", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserAzureCredentials(): Promise<void> {
-	await apiFetch<void>("/api/user/cloud/azure", { method: "DELETE" });
+	await apiFetch<void>("/api/me/cloud/azure", { method: "DELETE" });
 }
 
 export type UserGCPCredentialsResponse = {
@@ -812,21 +818,21 @@ export type UserGCPCredentialsResponse = {
 };
 
 export async function getUserGCPCredentials(): Promise<UserGCPCredentialsResponse> {
-	return apiFetch<UserGCPCredentialsResponse>("/api/user/cloud/gcp");
+	return apiFetch<UserGCPCredentialsResponse>("/api/me/cloud/gcp");
 }
 
 export async function putUserGCPCredentials(payload: {
 	projectId: string;
 	serviceAccountJSON: string;
 }): Promise<UserGCPCredentialsResponse> {
-	return apiFetch<UserGCPCredentialsResponse>("/api/user/cloud/gcp", {
+	return apiFetch<UserGCPCredentialsResponse>("/api/me/cloud/gcp", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserGCPCredentials(): Promise<void> {
-	await apiFetch<void>("/api/user/cloud/gcp", { method: "DELETE" });
+	await apiFetch<void>("/api/me/cloud/gcp", { method: "DELETE" });
 }
 
 export type UserIBMCredentialsResponse = {
@@ -838,7 +844,7 @@ export type UserIBMCredentialsResponse = {
 };
 
 export async function getUserIBMCredentials(): Promise<UserIBMCredentialsResponse> {
-	return apiFetch<UserIBMCredentialsResponse>("/api/user/cloud/ibm");
+	return apiFetch<UserIBMCredentialsResponse>("/api/me/cloud/ibm");
 }
 
 export async function putUserIBMCredentials(payload: {
@@ -846,14 +852,14 @@ export async function putUserIBMCredentials(payload: {
 	region: string;
 	resourceGroupId?: string;
 }): Promise<UserIBMCredentialsResponse> {
-	return apiFetch<UserIBMCredentialsResponse>("/api/user/cloud/ibm", {
+	return apiFetch<UserIBMCredentialsResponse>("/api/me/cloud/ibm", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserIBMCredentials(): Promise<void> {
-	await apiFetch<void>("/api/user/cloud/ibm", { method: "DELETE" });
+	await apiFetch<void>("/api/me/cloud/ibm", { method: "DELETE" });
 }
 
 export type UserNetlabServerConfig = {
@@ -869,13 +875,13 @@ export type UserNetlabServerConfig = {
 export type UserNetlabServersResponse = { servers: UserNetlabServerConfig[] };
 
 export async function listUserNetlabServers(): Promise<UserNetlabServersResponse> {
-	return apiFetch<UserNetlabServersResponse>("/api/user/netlab/servers");
+	return apiFetch<UserNetlabServersResponse>("/api/me/netlab/servers");
 }
 
 export async function upsertUserNetlabServer(
 	payload: UserNetlabServerConfig,
 ): Promise<UserNetlabServerConfig> {
-	return apiFetch<UserNetlabServerConfig>("/api/user/netlab/servers", {
+	return apiFetch<UserNetlabServerConfig>("/api/me/netlab/servers", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
@@ -883,7 +889,7 @@ export async function upsertUserNetlabServer(
 
 export async function deleteUserNetlabServer(serverId: string): Promise<void> {
 	await apiFetch<void>(
-		`/api/user/netlab/servers/${encodeURIComponent(serverId)}`,
+		`/api/me/netlab/servers/${encodeURIComponent(serverId)}`,
 		{
 			method: "DELETE",
 		},
@@ -906,13 +912,13 @@ export type UserEveServerConfig = {
 export type UserEveServersResponse = { servers: UserEveServerConfig[] };
 
 export async function listUserEveServers(): Promise<UserEveServersResponse> {
-	return apiFetch<UserEveServersResponse>("/api/user/eve/servers");
+	return apiFetch<UserEveServersResponse>("/api/me/eve/servers");
 }
 
 export async function upsertUserEveServer(
 	payload: UserEveServerConfig,
 ): Promise<UserEveServerConfig> {
-	return apiFetch<UserEveServerConfig>("/api/user/eve/servers", {
+	return apiFetch<UserEveServerConfig>("/api/me/eve/servers", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
@@ -920,7 +926,7 @@ export async function upsertUserEveServer(
 
 export async function deleteUserEveServer(serverId: string): Promise<void> {
 	await apiFetch<void>(
-		`/api/user/eve/servers/${encodeURIComponent(serverId)}`,
+		`/api/me/eve/servers/${encodeURIComponent(serverId)}`,
 		{
 			method: "DELETE",
 		},
@@ -943,7 +949,7 @@ export type UserContainerlabServersResponse = {
 
 export async function listUserContainerlabServers(): Promise<UserContainerlabServersResponse> {
 	return apiFetch<UserContainerlabServersResponse>(
-		"/api/user/containerlab/servers",
+		"/api/me/containerlab/servers",
 	);
 }
 
@@ -951,7 +957,7 @@ export async function upsertUserContainerlabServer(
 	payload: UserContainerlabServerConfig,
 ): Promise<UserContainerlabServerConfig> {
 	return apiFetch<UserContainerlabServerConfig>(
-		"/api/user/containerlab/servers",
+		"/api/me/containerlab/servers",
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -963,7 +969,7 @@ export async function deleteUserContainerlabServer(
 	serverId: string,
 ): Promise<void> {
 	await apiFetch<void>(
-		`/api/user/containerlab/servers/${encodeURIComponent(serverId)}`,
+		`/api/me/containerlab/servers/${encodeURIComponent(serverId)}`,
 		{ method: "DELETE" },
 	);
 }
@@ -1893,7 +1899,7 @@ export async function getDeploymentLinkStats(
 }
 
 type TemplatesQuery = {
-	source?: "workspace" | "blueprints" | "custom" | "external" | string;
+	source?: "user" | "blueprints" | "custom" | "external" | string;
 	repo?: string;
 	dir?: string;
 };
@@ -2944,13 +2950,13 @@ export type UserVariableGroupUpsertRequest = {
 };
 
 export async function listUserVariableGroups(): Promise<UserVariableGroupListResponse> {
-	return apiFetch<UserVariableGroupListResponse>("/api/user/variable-groups");
+	return apiFetch<UserVariableGroupListResponse>("/api/me/variable-groups");
 }
 
 export async function createUserVariableGroup(
 	body: UserVariableGroupUpsertRequest,
 ): Promise<UserVariableGroup> {
-	return apiFetch<UserVariableGroup>("/api/user/variable-groups", {
+	return apiFetch<UserVariableGroup>("/api/me/variable-groups", {
 		method: "POST",
 		body: JSON.stringify(body),
 	});
@@ -2961,7 +2967,7 @@ export async function updateUserVariableGroup(
 	body: UserVariableGroupUpsertRequest,
 ): Promise<UserVariableGroup> {
 	return apiFetch<UserVariableGroup>(
-		`/api/user/variable-groups/${encodeURIComponent(groupId)}`,
+		`/api/me/variable-groups/${encodeURIComponent(groupId)}`,
 		{
 			method: "PUT",
 			body: JSON.stringify(body),
@@ -2973,7 +2979,7 @@ export async function deleteUserVariableGroup(
 	groupId: number,
 ): Promise<UserVariableGroupListResponse> {
 	return apiFetch<UserVariableGroupListResponse>(
-		`/api/user/variable-groups/${encodeURIComponent(groupId)}`,
+		`/api/me/variable-groups/${encodeURIComponent(groupId)}`,
 		{
 			method: "DELETE",
 		},
@@ -3691,7 +3697,7 @@ export async function waiveWorkspacePolicyReportRecertAssignment(
 	);
 }
 
-// Forward Networks (generic workspace-saved networks; used by capacity tooling)
+// Forward Networks (generic user-scope saved networks; used by capacity tooling)
 
 export async function createWorkspaceForwardNetwork(
 	userId: string,
