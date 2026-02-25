@@ -140,7 +140,18 @@ function DeploymentsPage() {
 		queryFn: listUserScopes,
 		staleTime: 30_000,
 	});
-	const userScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
+	const allUserScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
+	const effectiveUsername = String(session.data?.username ?? "").trim();
+	const userScopes = useMemo(() => {
+		if (!effectiveUsername) return allUserScopes;
+		const mine = allUserScopes.filter((w) => {
+			if (String(w.createdBy ?? "").trim() === effectiveUsername) return true;
+			if ((w.owners ?? []).includes(effectiveUsername)) return true;
+			if (String(w.slug ?? "").trim() === effectiveUsername) return true;
+			return false;
+		});
+		return mine.length > 0 ? mine : allUserScopes;
+	}, [allUserScopes, effectiveUsername]);
 
 	const lastUserScopeKey = "skyforge.lastUserScopeId.deployments";
 

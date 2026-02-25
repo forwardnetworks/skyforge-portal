@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
+import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import {
 	Card,
@@ -58,26 +59,27 @@ import {
 	type DashboardSnapshot,
 	type ExternalTemplateRepo,
 	type SkyforgeUserScope,
-	type UserVariableGroup,
 	type UserScopeTemplatesResponse,
+	type UserVariableGroup,
 	convertUserScopeEveLab,
 	createUserScopeDeployment,
 	getDashboardSnapshot,
-	getUserSettings,
+	getSession,
 	getUserScopeContainerlabTemplate,
 	getUserScopeContainerlabTemplates,
 	getUserScopeEveNgTemplates,
 	getUserScopeNetlabTemplate,
 	getUserScopeNetlabTemplates,
 	getUserScopeTerraformTemplates,
+	getUserSettings,
 	importUserScopeEveLab,
-	listUserScopes,
 	listUserContainerlabServers,
 	listUserEveServers,
 	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
-	listUserVariableGroups,
 	listUserScopeEveLabs,
+	listUserScopes,
+	listUserVariableGroups,
 	validateUserScopeNetlabTemplate,
 } from "../../../lib/skyforge-api";
 
@@ -175,7 +177,24 @@ function CreateDeploymentPage() {
 		queryFn: listUserScopes,
 		staleTime: 30_000,
 	});
-	const userScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
+	const allUserScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
+	const sessionQ = useQuery({
+		queryKey: queryKeys.session(),
+		queryFn: getSession,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const effectiveUsername = String(sessionQ.data?.username ?? "").trim();
+	const userScopes = useMemo(() => {
+		if (!effectiveUsername) return allUserScopes;
+		const mine = allUserScopes.filter((w) => {
+			if (String(w.createdBy ?? "").trim() === effectiveUsername) return true;
+			if ((w.owners ?? []).includes(effectiveUsername)) return true;
+			if (String(w.slug ?? "").trim() === effectiveUsername) return true;
+			return false;
+		});
+		return mine.length > 0 ? mine : allUserScopes;
+	}, [allUserScopes, effectiveUsername]);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -307,12 +326,7 @@ function CreateDeploymentPage() {
 	});
 
 	const eveLabsQ = useQuery({
-		queryKey: queryKeys.userEveLabs(
-			watchUserScopeId,
-			importServer,
-			"",
-			true,
-		),
+		queryKey: queryKeys.userEveLabs(watchUserScopeId, importServer, "", true),
 		queryFn: () =>
 			listUserScopeEveLabs(watchUserScopeId, {
 				server: importServer,
@@ -372,9 +386,7 @@ function CreateDeploymentPage() {
 
 	const effectiveSource: TemplateSource = useMemo(() => {
 		if (watchKind === "netlab" || watchKind === "netlab-c9s")
-			return watchSource === USER_REPO_SOURCE
-				? USER_REPO_SOURCE
-				: "blueprints";
+			return watchSource === USER_REPO_SOURCE ? USER_REPO_SOURCE : "blueprints";
 		if (watchKind === "eve_ng") return "blueprints";
 		if (watchKind === "containerlab" || watchKind === "clabernetes")
 			return watchSource;
@@ -859,34 +871,24 @@ function CreateDeploymentPage() {
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 							<div className="grid gap-6 md:grid-cols-2">
-								<FormField
-									control={form.control}
-									name="userId"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>User Scope</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												defaultValue={field.value}
-												value={field.value}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Select user scope" />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{userScopes.map((w) => (
-														<SelectItem key={w.id} value={w.id}>
-															{w.name} ({w.slug})
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
+								<FormItem>
+									<FormLabel>User Scope</FormLabel>
+									<div className="flex h-10 items-center rounded-md border px-3">
+										{watchUserScopeId ? (
+											<Badge variant="outline">
+												{userScopes.find((w) => w.id === watchUserScopeId)
+													?.name || "Current user scope"}
+											</Badge>
+										) : (
+											<span className="text-sm text-muted-foreground">
+												No user scope
+											</span>
+										)}
+									</div>
+									<FormDescription>
+										Scope is derived from your current login/impersonation.
+									</FormDescription>
+								</FormItem>
 
 								<FormField
 									control={form.control}
