@@ -99,7 +99,7 @@ type DeploymentKind =
 	| "containerlab"
 	| "clabernetes"
 	| "terraform";
-type TemplateSource = "user" | "blueprints" | "external";
+type TemplateSource = "user" | "blueprints" | "external" | "custom";
 
 const USER_REPO_SOURCE = "user" as const;
 const toAPITemplateSource = (source: TemplateSource): string =>
@@ -116,7 +116,7 @@ const formSchema = z.object({
 		"terraform",
 		"eve_ng",
 	]),
-	source: z.enum([USER_REPO_SOURCE, "blueprints", "external"]),
+	source: z.enum([USER_REPO_SOURCE, "blueprints", "external", "custom"]),
 	templateRepoId: z.string().optional(),
 	template: z.string().min(1, "Template is required"),
 	netlabServer: z.string().optional(),
@@ -385,8 +385,11 @@ function CreateDeploymentPage() {
 	]);
 
 	const effectiveSource: TemplateSource = useMemo(() => {
-		if (watchKind === "netlab" || watchKind === "netlab-c9s")
-			return watchSource === USER_REPO_SOURCE ? USER_REPO_SOURCE : "blueprints";
+		if (watchKind === "netlab" || watchKind === "netlab-c9s") {
+			if (watchSource === USER_REPO_SOURCE) return USER_REPO_SOURCE;
+			if (watchSource === "custom") return "custom";
+			return "blueprints";
+		}
 		if (watchKind === "eve_ng") return "blueprints";
 		if (watchKind === "containerlab" || watchKind === "clabernetes")
 			return watchSource;
@@ -407,7 +410,10 @@ function CreateDeploymentPage() {
 			const query: { source?: string; repo?: string } = {
 				source: toAPITemplateSource(effectiveSource),
 			};
-			if (effectiveSource === "external" && watchTemplateRepoId)
+			if (
+				(effectiveSource === "external" || effectiveSource === "custom") &&
+				watchTemplateRepoId
+			)
 				query.repo = watchTemplateRepoId;
 
 			switch (watchKind) {
@@ -489,7 +495,10 @@ function CreateDeploymentPage() {
 			if (!watchUserScopeId) throw new Error("userId is required");
 			if (!watchTemplate) throw new Error("template is required");
 			const query: any = { source: toAPITemplateSource(effectiveSource) };
-			if (effectiveSource === "external" && watchTemplateRepoId)
+			if (
+				(effectiveSource === "external" || effectiveSource === "custom") &&
+				watchTemplateRepoId
+			)
 				query.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
 			if (watchKind === "containerlab" || watchKind === "clabernetes") {
@@ -525,6 +534,12 @@ function CreateDeploymentPage() {
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof formSchema>) => {
+			if (
+				effectiveSource === "custom" &&
+				!(values.templateRepoId || "").trim()
+			) {
+				throw new Error("One-shot repo URL is required");
+			}
 			const config: Record<string, unknown> = {
 				template: values.template,
 			};
@@ -557,28 +572,40 @@ function CreateDeploymentPage() {
 				if (!v) throw new Error("BYOS server is required");
 				config.netlabServer = v;
 				config.templateSource = toAPITemplateSource(effectiveSource);
-				if (effectiveSource === "external" && values.templateRepoId)
+				if (
+					(effectiveSource === "external" || effectiveSource === "custom") &&
+					values.templateRepoId
+				)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
 			if (values.kind === "netlab-c9s") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
-				if (effectiveSource === "external" && values.templateRepoId)
+				if (
+					(effectiveSource === "external" || effectiveSource === "custom") &&
+					values.templateRepoId
+				)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
 			if (values.kind === "clabernetes") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
-				if (effectiveSource === "external" && values.templateRepoId)
+				if (
+					(effectiveSource === "external" || effectiveSource === "custom") &&
+					values.templateRepoId
+				)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
 			if (values.kind === "terraform") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
-				if (effectiveSource === "external" && values.templateRepoId)
+				if (
+					(effectiveSource === "external" || effectiveSource === "custom") &&
+					values.templateRepoId
+				)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
@@ -724,7 +751,10 @@ function CreateDeploymentPage() {
 				template: watchTemplate,
 				environment: env,
 			};
-			if (effectiveSource === "external" && watchTemplateRepoId)
+			if (
+				(effectiveSource === "external" || effectiveSource === "custom") &&
+				watchTemplateRepoId
+			)
 				body.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
 			return validateUserScopeNetlabTemplate(watchUserScopeId, body);
@@ -1035,6 +1065,17 @@ function CreateDeploymentPage() {
 													>
 														External repo
 													</SelectItem>
+													<SelectItem
+														value="custom"
+														disabled={
+															watchKind !== "netlab" &&
+															watchKind !== "netlab-c9s" &&
+															watchKind !== "containerlab" &&
+															watchKind !== "clabernetes"
+														}
+													>
+														One-shot repo URL
+													</SelectItem>
 												</SelectContent>
 											</Select>
 											{!externalAllowed &&
@@ -1077,6 +1118,32 @@ function CreateDeploymentPage() {
 														))}
 													</SelectContent>
 												</Select>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								)}
+								{effectiveSource === "custom" && (
+									<FormField
+										control={form.control}
+										name="templateRepoId"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>One-shot repo URL</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="https://github.com/org/repo.git (or owner/repo)"
+														value={field.value ?? ""}
+														onChange={(e) => {
+															field.onChange(e.target.value);
+															form.setValue("template", "");
+														}}
+													/>
+												</FormControl>
+												<FormDescription>
+													Used once for this deployment flow. Not saved in My
+													Settings.
+												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)}
