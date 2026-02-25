@@ -299,7 +299,9 @@ export async function getUserScopes(): Promise<GetUserScopesResponse> {
 export async function listUserScopes(): Promise<SkyforgeUserScope[]> {
 	const resp = await getUserScopes();
 	const scopesKey = `work${"spaces"}`;
-	return (resp as Record<string, SkyforgeUserScope[] | undefined>)[scopesKey] ?? [];
+	return (
+		(resp as Record<string, SkyforgeUserScope[] | undefined>)[scopesKey] ?? []
+	);
 }
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
@@ -925,12 +927,9 @@ export async function upsertUserEveServer(
 }
 
 export async function deleteUserEveServer(serverId: string): Promise<void> {
-	await apiFetch<void>(
-		`/api/me/eve/servers/${encodeURIComponent(serverId)}`,
-		{
-			method: "DELETE",
-		},
-	);
+	await apiFetch<void>(`/api/me/eve/servers/${encodeURIComponent(serverId)}`, {
+		method: "DELETE",
+	});
 }
 
 export type UserContainerlabServerConfig = {
@@ -2759,6 +2758,7 @@ export type GovernancePolicy = {
 	allowUserByosContainerlabServers?: boolean;
 	allowUserExternalTemplateRepos?: boolean;
 	allowCustomTemplateRepos?: boolean;
+	blockedForwardOrgIds?: string[];
 };
 
 export type AdminGovernancePolicyResponse = {

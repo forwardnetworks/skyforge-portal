@@ -303,6 +303,7 @@ function GovernancePage() {
 		allowUserByosContainerlabServers: true,
 		allowUserExternalTemplateRepos: true,
 		allowCustomTemplateRepos: true,
+		blockedForwardOrgIds: [] as string[],
 	});
 	useEffect(() => {
 		if (!policy.data?.policy) return;
@@ -317,6 +318,7 @@ function GovernancePage() {
 				policy.data.policy.allowUserExternalTemplateRepos ?? true,
 			allowCustomTemplateRepos:
 				policy.data.policy.allowCustomTemplateRepos ?? true,
+			blockedForwardOrgIds: policy.data.policy.blockedForwardOrgIds ?? [],
 		});
 	}, [
 		policy.data?.policy?.maxDeploymentsPerUser,
@@ -325,6 +327,7 @@ function GovernancePage() {
 		policy.data?.policy?.allowUserByosContainerlabServers,
 		policy.data?.policy?.allowUserExternalTemplateRepos,
 		policy.data?.policy?.allowCustomTemplateRepos,
+		policy.data?.policy?.blockedForwardOrgIds,
 	]);
 
 	const savePolicy = useMutation({
@@ -339,6 +342,7 @@ function GovernancePage() {
 					allowUserExternalTemplateRepos:
 						!!policyDraft.allowUserExternalTemplateRepos,
 					allowCustomTemplateRepos: !!policyDraft.allowCustomTemplateRepos,
+					blockedForwardOrgIds: policyDraft.blockedForwardOrgIds,
 				},
 			}),
 		onSuccess: async () => {
@@ -530,6 +534,39 @@ function GovernancePage() {
 									/>
 									<p className="text-xs text-muted-foreground">
 										Applies when creating in-cluster Forward collectors.
+									</p>
+								</div>
+							</div>
+
+							<div className="rounded-md border p-3 space-y-3">
+								<div className="text-sm font-medium">
+									Forward collector guardrails
+								</div>
+								<div className="text-xs text-muted-foreground">
+									Block Forward org IDs from Skyforge collector setup.
+								</div>
+								<div className="space-y-2">
+									<div className="text-sm font-medium">
+										Blocked Forward org IDs
+									</div>
+									<Input
+										value={policyDraft.blockedForwardOrgIds.join(",")}
+										onChange={(e) => {
+											const ids = e.target.value
+												.split(",")
+												.map((v) => v.trim())
+												.filter((v) => v.length > 0);
+											setPolicyDraft((prev) => ({
+												...prev,
+												blockedForwardOrgIds: ids,
+											}));
+										}}
+										placeholder="1499,1744"
+									/>
+									<p className="text-xs text-muted-foreground">
+										Comma-separated. Matching org IDs will fail collector setup
+										with &quot;Skyforge collector not allowed on demo
+										orgs&quot;.
 									</p>
 								</div>
 							</div>
