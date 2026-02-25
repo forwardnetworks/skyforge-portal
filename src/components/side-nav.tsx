@@ -66,7 +66,7 @@ const items: NavItem[] = [
 		newTab: true,
 	},
 	{
-		label: "Forward Networks",
+		label: "Forward",
 		href: "",
 		icon: Network,
 		featureFlag: "forwardEnabled",
@@ -78,7 +78,7 @@ const items: NavItem[] = [
 			},
 			{
 				label: "Collector",
-				href: "/dashboard/forward",
+				href: "/dashboard/forward/collectors",
 				icon: Radio,
 			},
 			{

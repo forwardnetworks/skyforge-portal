@@ -29,6 +29,7 @@ import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
 import { Route as DashboardRunsIndexRouteImport } from './routes/dashboard/runs/index'
+import { Route as DashboardForwardIndexRouteImport } from './routes/dashboard/forward.index'
 import { Route as DashboardForwardNetworksIndexRouteImport } from './routes/dashboard/forward-networks/index'
 import { Route as DashboardDocsIndexRouteImport } from './routes/dashboard/docs/index'
 import { Route as DashboardDeploymentsIndexRouteImport } from './routes/dashboard/deployments/index'
@@ -36,6 +37,7 @@ import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/
 import { Route as DashboardLabsMapRouteImport } from './routes/dashboard/labs/map'
 import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/labs/designer'
 import { Route as DashboardForwardCredentialsRouteImport } from './routes/dashboard/forward.credentials'
+import { Route as DashboardForwardCollectorsRouteImport } from './routes/dashboard/forward.collectors'
 import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$slug'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
@@ -143,6 +145,11 @@ const DashboardRunsIndexRoute = DashboardRunsIndexRouteImport.update({
   path: '/dashboard/runs/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardForwardIndexRoute = DashboardForwardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardForwardRoute,
+} as any)
 const DashboardForwardNetworksIndexRoute =
   DashboardForwardNetworksIndexRouteImport.update({
     id: '/dashboard/forward-networks/',
@@ -179,6 +186,12 @@ const DashboardForwardCredentialsRoute =
   DashboardForwardCredentialsRouteImport.update({
     id: '/credentials',
     path: '/credentials',
+    getParentRoute: () => DashboardForwardRoute,
+  } as any)
+const DashboardForwardCollectorsRoute =
+  DashboardForwardCollectorsRouteImport.update({
+    id: '/collectors',
+    path: '/collectors',
     getParentRoute: () => DashboardForwardRoute,
   } as any)
 const DashboardDocsSlugRoute = DashboardDocsSlugRouteImport.update({
@@ -238,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
+  '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
@@ -245,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/forward-networks': typeof DashboardForwardNetworksIndexRoute
+  '/dashboard/forward/': typeof DashboardForwardIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
@@ -261,7 +276,6 @@ export interface FileRoutesByTo {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
@@ -273,6 +287,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
+  '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
@@ -280,6 +295,7 @@ export interface FileRoutesByTo {
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/forward-networks': typeof DashboardForwardNetworksIndexRoute
+  '/dashboard/forward': typeof DashboardForwardIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
@@ -309,6 +325,7 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
+  '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
@@ -316,6 +333,7 @@ export interface FileRoutesById {
   '/dashboard/deployments/': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
   '/dashboard/forward-networks/': typeof DashboardForwardNetworksIndexRoute
+  '/dashboard/forward/': typeof DashboardForwardIndexRoute
   '/dashboard/runs/': typeof DashboardRunsIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
@@ -346,6 +364,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
+    | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
@@ -353,6 +372,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments'
     | '/dashboard/docs'
     | '/dashboard/forward-networks'
+    | '/dashboard/forward/'
     | '/dashboard/runs'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
@@ -369,7 +389,6 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/governance'
     | '/admin/settings'
-    | '/dashboard/forward'
     | '/dashboard/integrations'
     | '/dashboard/policy-reports'
     | '/dashboard/s3'
@@ -381,6 +400,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
+    | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
@@ -388,6 +408,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments'
     | '/dashboard/docs'
     | '/dashboard/forward-networks'
+    | '/dashboard/forward'
     | '/dashboard/runs'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
@@ -416,6 +437,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
+    | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
@@ -423,6 +445,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/'
     | '/dashboard/docs/'
     | '/dashboard/forward-networks/'
+    | '/dashboard/forward/'
     | '/dashboard/runs/'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
@@ -607,6 +630,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRunsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/forward/': {
+      id: '/dashboard/forward/'
+      path: '/'
+      fullPath: '/dashboard/forward/'
+      preLoaderRoute: typeof DashboardForwardIndexRouteImport
+      parentRoute: typeof DashboardForwardRoute
+    }
     '/dashboard/forward-networks/': {
       id: '/dashboard/forward-networks/'
       path: '/dashboard/forward-networks'
@@ -656,6 +686,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardForwardCredentialsRouteImport
       parentRoute: typeof DashboardForwardRoute
     }
+    '/dashboard/forward/collectors': {
+      id: '/dashboard/forward/collectors'
+      path: '/collectors'
+      fullPath: '/dashboard/forward/collectors'
+      preLoaderRoute: typeof DashboardForwardCollectorsRouteImport
+      parentRoute: typeof DashboardForwardRoute
+    }
     '/dashboard/docs/$slug': {
       id: '/dashboard/docs/$slug'
       path: '/dashboard/docs/$slug'
@@ -702,11 +739,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardForwardRouteChildren {
+  DashboardForwardCollectorsRoute: typeof DashboardForwardCollectorsRoute
   DashboardForwardCredentialsRoute: typeof DashboardForwardCredentialsRoute
+  DashboardForwardIndexRoute: typeof DashboardForwardIndexRoute
 }
 
 const DashboardForwardRouteChildren: DashboardForwardRouteChildren = {
+  DashboardForwardCollectorsRoute: DashboardForwardCollectorsRoute,
   DashboardForwardCredentialsRoute: DashboardForwardCredentialsRoute,
+  DashboardForwardIndexRoute: DashboardForwardIndexRoute,
 }
 
 const DashboardForwardRouteWithChildren =

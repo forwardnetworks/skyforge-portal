@@ -8,7 +8,7 @@ function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 describe("side nav model", () => {
 	it("shows Forward section with expected entries when enabled", () => {
 		const items = buildSideNavItems(false, { forwardEnabled: true });
-		const forward = findGroup("Forward Networks", items);
+		const forward = findGroup("Forward", items);
 
 		expect(forward).toBeDefined();
 		expect(forward?.children?.map((c) => c.label)).toEqual(
@@ -26,12 +26,12 @@ describe("side nav model", () => {
 			(c) => c.label === "Collector",
 		);
 		expect(credentialItem?.href).toBe("/dashboard/forward/credentials");
-		expect(collectorItem?.href).toBe("/dashboard/forward");
+		expect(collectorItem?.href).toBe("/dashboard/forward/collectors");
 	});
 
 	it("hides Forward section when forward feature is disabled", () => {
 		const items = buildSideNavItems(false, { forwardEnabled: false });
-		const forward = findGroup("Forward Networks", items);
+		const forward = findGroup("Forward", items);
 
 		expect(forward).toBeUndefined();
 	});
