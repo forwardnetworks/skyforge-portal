@@ -4848,6 +4848,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "deploycore.Action": string;
+        "deploycore.Reason": string;
         "skyforge.AssignableUser": {
             display: string;
             email: string;
@@ -4999,8 +5001,8 @@ export interface components {
             labName: string;
         };
         "skyforge.DeploymentActionState": {
-            desired: string;
-            observed: string;
+            desired: components["schemas"]["skyforge.DeploymentPresenceState"];
+            observed: components["schemas"]["skyforge.DeploymentPresenceState"];
         };
         "skyforge.DeploymentInventoryNode": {
             id: string;
@@ -5039,6 +5041,7 @@ export interface components {
             /** Format: int64 */
             txPackets: number;
         };
+        "skyforge.DeploymentPresenceState": string;
         "skyforge.DeploymentUIEvent": {
             createdAt: string;
             createdBy: string;
@@ -10484,7 +10487,7 @@ export interface operations {
                         deployment: components["schemas"]["skyforge.UserScopeDeployment"];
                         idempotent: boolean;
                         noOp: boolean;
-                        reason: string;
+                        reason: components["schemas"]["deploycore.Reason"];
                         run: components["schemas"]["skyforge.JSONMap"];
                         state: components["schemas"]["skyforge.DeploymentActionState"];
                         userId: string;
@@ -10507,8 +10510,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    /** create, start, stop, destroy, export */
-                    action: string;
+                    action: components["schemas"]["deploycore.Action"];
                 };
             };
         };
@@ -10523,7 +10525,7 @@ export interface operations {
                         deployment: components["schemas"]["skyforge.UserScopeDeployment"];
                         idempotent: boolean;
                         noOp: boolean;
-                        reason: string;
+                        reason: components["schemas"]["deploycore.Reason"];
                         run: components["schemas"]["skyforge.JSONMap"];
                         state: components["schemas"]["skyforge.DeploymentActionState"];
                         userId: string;
