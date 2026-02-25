@@ -84,7 +84,7 @@ function ForwardCredentialsPage() {
 			return createUserForwardCollectorConfig({
 				name: displayName,
 				baseUrl,
-				skipTlsVerify,
+				skipTlsVerify: effectiveSkipTlsVerify,
 				username: username.trim(),
 				password,
 				setDefault: false,
@@ -137,7 +137,17 @@ function ForwardCredentialsPage() {
 							<Label>Target</Label>
 							<Select
 								value={target}
-								onValueChange={(v) => setTarget(v as ForwardCredentialTarget)}
+								onValueChange={(v) => {
+									const next = v as ForwardCredentialTarget;
+									setTarget(next);
+									if (next === "in_cluster_org") {
+										setSkipTlsVerify(true);
+										return;
+									}
+									if (next === "fwd_app") {
+										setSkipTlsVerify(false);
+									}
+								}}
 							>
 								<SelectTrigger>
 									<SelectValue />
@@ -174,10 +184,18 @@ function ForwardCredentialsPage() {
 
 					<div className="flex items-center gap-2">
 						<Checkbox
-							checked={skipTlsVerify}
+							checked={effectiveSkipTlsVerify}
 							onCheckedChange={(v) => setSkipTlsVerify(Boolean(v))}
+							disabled={tlsCheckboxDisabled}
 						/>
-						<Label className="text-sm">Disable TLS verification</Label>
+						<Label className="text-sm">
+							Disable TLS verification
+							{target === "in_cluster_org"
+								? " (required for in-cluster endpoint)"
+								: target === "fwd_app"
+									? " (always off for fwd.app)"
+									: ""}
+						</Label>
 					</div>
 
 					<div className="grid gap-4 md:grid-cols-2">
@@ -263,3 +281,10 @@ function ForwardCredentialsPage() {
 		</div>
 	);
 }
+const tlsCheckboxDisabled = target !== "custom_onprem";
+const effectiveSkipTlsVerify =
+	target === "in_cluster_org"
+		? true
+		: target === "fwd_app"
+			? false
+			: skipTlsVerify;
