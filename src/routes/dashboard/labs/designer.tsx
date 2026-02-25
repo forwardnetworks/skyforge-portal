@@ -55,10 +55,10 @@ import {
 	getDeploymentTopology,
 	getUserScopeContainerlabTemplate,
 	getUserScopeContainerlabTemplates,
-	listUserScopes,
 	listRegistryRepositories,
 	listRegistryTags,
 	listUserContainerlabServers,
+	listUserScopes,
 	saveContainerlabTopologyYAML,
 } from "@/lib/skyforge-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -446,9 +446,7 @@ function LabDesignerPage() {
 	const [importOpen, setImportOpen] = useState(false);
 	const [importSource, setImportSource] = useState<
 		typeof USER_REPO_SOURCE | "blueprints"
-	>(
-		"blueprints",
-	);
+	>("blueprints");
 	const [importDir, setImportDir] = useState("containerlab");
 	const [importFile, setImportFile] = useState("");
 	const [quickstartOpen, setQuickstartOpen] = useState(false);
@@ -908,8 +906,7 @@ function LabDesignerPage() {
 			}
 			const parsed = JSON.parse(raw) as any;
 			if (typeof parsed?.labName === "string") setLabName(parsed.labName);
-			if (typeof parsed?.userId === "string")
-				setUserScopeId(parsed.userId);
+			if (typeof parsed?.userId === "string") setUserScopeId(parsed.userId);
 			if (
 				parsed?.runtime === "clabernetes" ||
 				parsed?.runtime === "containerlab"
@@ -971,13 +968,7 @@ function LabDesignerPage() {
 
 	const templatePreviewQ = useQuery({
 		queryKey: userId
-			? [
-					"containerlabTemplate",
-					userId,
-					importSource,
-					importDir,
-					importFile,
-				]
+			? ["containerlabTemplate", userId, importSource, importDir, importFile]
 			: ["containerlabTemplate", "none"],
 		queryFn: async () => {
 			if (!userId) throw new Error("missing user scope");
@@ -1007,8 +998,7 @@ function LabDesignerPage() {
 				throw new Error("Repo path must be under containerlab/");
 			}
 
-			const canUseSaved =
-				useSavedConfig && lastSaved?.userId === userId;
+			const canUseSaved = useSavedConfig && lastSaved?.userId === userId;
 			const saved = canUseSaved
 				? lastSaved
 				: await saveContainerlabTopologyYAML(userId, {
@@ -1943,14 +1933,13 @@ function LabDesignerPage() {
 							</div>
 							<div className="space-y-1">
 								<Label>User Scope</Label>
-								<Select
-									value={userId}
-									onValueChange={(v) => setUserScopeId(v)}
-								>
+								<Select value={userId} onValueChange={(v) => setUserScopeId(v)}>
 									<SelectTrigger>
 										<SelectValue
 											placeholder={
-												userScopesQ.isLoading ? "Loading…" : "Select user scope…"
+												userScopesQ.isLoading
+													? "Loading…"
+													: "Select user scope…"
 											}
 										/>
 									</SelectTrigger>
@@ -1973,9 +1962,7 @@ function LabDesignerPage() {
 									<SelectTrigger>
 										<SelectValue
 											placeholder={
-												!userId
-													? "Select user scope first…"
-													: "Select runtime…"
+												!userId ? "Select user scope first…" : "Select runtime…"
 											}
 										/>
 									</SelectTrigger>

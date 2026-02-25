@@ -29,9 +29,9 @@ import {
 	createUserScopeForwardNetwork,
 	deleteUserScopeForwardNetwork,
 	getUserScopeForwardNetworkCapacityPortfolio,
-	listUserScopes,
 	listUserForwardCollectorConfigs,
 	listUserScopeForwardNetworks,
+	listUserScopes,
 } from "../../../lib/skyforge-api";
 
 const searchSchema = z.object({
@@ -404,9 +404,7 @@ function ForwardNetworksPage() {
 															<Link
 																to="/dashboard/forward-networks/$networkRef/capacity"
 																params={{ networkRef: String(it.networkRef) }}
-																search={
-																	{ userId: selectedUserScopeId } as any
-																}
+																search={{ userId: selectedUserScopeId } as any}
 															>
 																{String(it.name ?? it.networkRef)}
 															</Link>

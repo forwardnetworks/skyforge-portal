@@ -30,8 +30,8 @@ import {
 	createUserScopeArtifactFolder,
 	deleteUserScopeArtifactObject,
 	downloadUserScopeArtifact,
-	listUserScopes,
 	listUserScopeArtifacts,
+	listUserScopes,
 	putUserScopeArtifactObject,
 } from "../../lib/skyforge-api";
 

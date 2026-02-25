@@ -350,16 +350,10 @@ function DeploymentCapacityPage() {
 				description: `Run ${String(resp.run?.id ?? "")}`.trim(),
 			});
 			await qc.invalidateQueries({
-				queryKey: queryKeys.deploymentCapacitySummary(
-					userId,
-					deploymentId,
-				),
+				queryKey: queryKeys.deploymentCapacitySummary(userId, deploymentId),
 			});
 			await qc.invalidateQueries({
-				queryKey: queryKeys.deploymentCapacityInventory(
-					userId,
-					deploymentId,
-				),
+				queryKey: queryKeys.deploymentCapacityInventory(userId, deploymentId),
 			});
 			await qc.invalidateQueries({
 				// Prefix match for all growth queries for this deployment.
@@ -372,11 +366,7 @@ function DeploymentCapacityPage() {
 
 	const loadUnhealthyDevices = useMutation({
 		mutationFn: async () => {
-			return getDeploymentCapacityUnhealthyDevices(
-				userId,
-				deploymentId,
-				{},
-			);
+			return getDeploymentCapacityUnhealthyDevices(userId, deploymentId, {});
 		},
 		onSuccess: (resp) => setUnhealthyDevices(resp.body),
 		onError: (e) =>

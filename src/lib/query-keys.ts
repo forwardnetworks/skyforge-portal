@@ -37,10 +37,7 @@ export const queryKeys = {
 		["forwardNetworkCapacityInventory", userId, networkRef] as const,
 	forwardNetworkCapacityCoverage: (userId: string, networkRef: string) =>
 		["forwardNetworkCapacityCoverage", userId, networkRef] as const,
-	forwardNetworkCapacitySnapshotDelta: (
-		userId: string,
-		networkRef: string,
-	) =>
+	forwardNetworkCapacitySnapshotDelta: (userId: string, networkRef: string) =>
 		["forwardNetworkCapacitySnapshotDelta", userId, networkRef] as const,
 	forwardNetworkCapacityUpgradeCandidates: (
 		userId: string,
@@ -73,8 +70,7 @@ export const queryKeys = {
 			objectType,
 		] as const,
 	userScopes: () => ["userScopes"] as const,
-	userForwardConfig: (userId: string) =>
-		["userForwardConfig", userId] as const,
+	userForwardConfig: (userId: string) => ["userForwardConfig", userId] as const,
 	userForwardCollectors: (userId: string) =>
 		["userForwardCollectors", userId] as const,
 	forwardCollectors: () => ["forwardCollectors"] as const,
@@ -103,8 +99,7 @@ export const queryKeys = {
 	userServiceNowPdiStatus: () => ["userServiceNowPdiStatus"] as const,
 	userServiceNowSchemaStatus: () => ["userServiceNowSchemaStatus"] as const,
 	storageFiles: () => ["storageFiles"] as const,
-	userArtifacts: (userId: string) =>
-		["userArtifacts", userId] as const,
+	userArtifacts: (userId: string) => ["userArtifacts", userId] as const,
 	userEveServersByScope: (userId: string) =>
 		["userEveServersByScope", userId] as const,
 	userEveLabs: (
@@ -112,14 +107,7 @@ export const queryKeys = {
 		server: string,
 		path: string,
 		recursive: boolean,
-	) =>
-		[
-			"userEveLabs",
-			userId,
-			server,
-			path,
-			recursive ? "1" : "0",
-		] as const,
+	) => ["userEveLabs", userId, server, path, recursive ? "1" : "0"] as const,
 	userNetlabServersByScope: (userId: string) =>
 		["userNetlabServersByScope", userId] as const,
 	notifications: (includeRead?: boolean, limit?: string) =>
@@ -132,15 +120,7 @@ export const queryKeys = {
 		source: string,
 		repo?: string,
 		dir?: string,
-	) =>
-		[
-			"userTemplates",
-			userId,
-			kind,
-			source,
-			repo ?? "",
-			dir ?? "",
-		] as const,
+	) => ["userTemplates", userId, kind, source, repo ?? "", dir ?? ""] as const,
 	webhookEvents: (limit?: string) => ["webhookEvents", limit ?? ""] as const,
 	notificationSettings: () => ["notificationSettings"] as const,
 	governanceSummary: () => ["governanceSummary"] as const,
@@ -207,11 +187,8 @@ export const queryKeys = {
 		] as const,
 	policyReportsRun: (userId: string, runId: string) =>
 		["policyReportsRun", userId, runId] as const,
-	policyReportsRunFindings: (
-		userId: string,
-		runId: string,
-		checkId?: string,
-	) => ["policyReportsRunFindings", userId, runId, checkId ?? ""] as const,
+	policyReportsRunFindings: (userId: string, runId: string, checkId?: string) =>
+		["policyReportsRunFindings", userId, runId, checkId ?? ""] as const,
 	policyReportsFindings: (
 		userId: string,
 		forwardNetworkId?: string,
