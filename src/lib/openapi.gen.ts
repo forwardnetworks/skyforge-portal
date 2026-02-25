@@ -851,6 +851,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forward/collector-configs/{id}/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserForwardCollectorConfigUpdate checks remote registry digest and reports
+         *     whether a collector upgrade is available.
+         */
+        get: operations["GET:skyforge.GetUserForwardCollectorConfigUpdate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/collector-configs/{id}/upgrade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * UpgradeUserForwardCollectorConfig upgrades a collector deployment to the latest
+         *     digest for its current image tag.
+         */
+        post: operations["POST:skyforge.UpgradeUserForwardCollectorConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/forward/collectors": {
         parameters: {
             query?: never;
@@ -1289,6 +1329,60 @@ export interface paths {
          *     installed.
          */
         get: operations["GET:skyforge.GetUserServiceNowSchemaStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/integrations/servicenow/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * StartOrResumeUserServiceNowSetup runs the near-zero-touch ServiceNow setup
+         *     workflow.
+         */
+        post: operations["POST:skyforge.StartOrResumeUserServiceNowSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/integrations/servicenow/setup/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CancelUserServiceNowSetup marks an active setup run as canceled. */
+        post: operations["POST:skyforge.CancelUserServiceNowSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/integrations/servicenow/setup/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetUserServiceNowSetupStatus returns the latest setup run for the current user. */
+        get: operations["GET:skyforge.GetUserServiceNowSetupStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2645,6 +2739,24 @@ export interface paths {
          */
         get: operations["GET:skyforge.GetUserScopeDeploymentInventory"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/deployments/{deploymentID}/lease": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetUserScopeDeploymentLease returns executive lease metadata for a deployment. */
+        get: operations["GET:skyforge.GetUserScopeDeploymentLease"];
+        /** PutUserScopeDeploymentLease upserts executive lease metadata for a deployment. */
+        put: operations["PUT:skyforge.PutUserScopeDeploymentLease"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4168,6 +4280,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/cron/deployments/executive-leases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Executive lease sweeper
+         * @description Stops expired netlab-c9s executive labs.
+         */
+        post: operations["POST:skyforge.CronSweepExecutiveDeploymentLeases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/cron/governance/usage/cleanup": {
         parameters: {
             query?: never;
@@ -5670,6 +5802,12 @@ export interface components {
             expiresAt: string;
             lastAuthenticatedAt: string;
         };
+        "skyforge.serviceNowSetupStepResult": {
+            detail: string;
+            status: string;
+            step: string;
+            updatedAt: string;
+        };
         "skyforge.storageObjectSummary": {
             contentType: string;
             key: string;
@@ -7166,6 +7304,76 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetUserForwardCollectorConfigUpdate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        collectorNotFound: boolean;
+                        deploymentName: string;
+                        id: string;
+                        image: string;
+                        imageId: string;
+                        remoteDigest: string;
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        updateAvailable: boolean;
+                        updateStatus: string;
+                        updatedImage: string;
+                        upgraded: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.UpgradeUserForwardCollectorConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        collectorNotFound: boolean;
+                        deploymentName: string;
+                        id: string;
+                        image: string;
+                        imageId: string;
+                        remoteDigest: string;
+                        runtime: components["schemas"]["skyforge.collectorRuntimeStatus"];
+                        updateAvailable: boolean;
+                        updateStatus: string;
+                        updatedImage: string;
+                        upgraded: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.ListForwardCollectors": {
         parameters: {
             query?: never;
@@ -8023,12 +8231,8 @@ export interface operations {
                     "application/json": {
                         adminUsername: string;
                         configured: boolean;
-                        forwardCollectorConfigId: string;
-                        /** custom username (if using custom creds) */
-                        forwardUsername: string;
+                        forwardCredentialSetId: string;
                         hasAdminPassword: boolean;
-                        /** true if a custom password is stored */
-                        hasForwardPassword: boolean;
                         instanceUrl: string;
                         lastInstallError: string;
                         lastInstallFinishedAt: string;
@@ -8054,8 +8258,7 @@ export interface operations {
                     adminPassword: string;
                     adminUsername: string;
                     forwardCollectorConfigId: string;
-                    forwardPassword: string;
-                    forwardUsername: string;
+                    forwardCredentialSetId: string;
                     instanceUrl: string;
                 };
             };
@@ -8070,12 +8273,8 @@ export interface operations {
                     "application/json": {
                         adminUsername: string;
                         configured: boolean;
-                        forwardCollectorConfigId: string;
-                        /** custom username (if using custom creds) */
-                        forwardUsername: string;
+                        forwardCredentialSetId: string;
                         hasAdminPassword: boolean;
-                        /** true if a custom password is stored */
-                        hasForwardPassword: boolean;
                         instanceUrl: string;
                         lastInstallError: string;
                         lastInstallFinishedAt: string;
@@ -8185,6 +8384,101 @@ export interface operations {
                         missing: string[];
                         /** ok | missing | error */
                         status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.StartOrResumeUserServiceNowSetup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    resume: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        currentStep: string;
+                        finishedAt: string;
+                        lastError: string;
+                        remediation: string[];
+                        runId: string;
+                        startedAt: string;
+                        status: string;
+                        steps: components["schemas"]["skyforge.serviceNowSetupStepResult"][];
+                        ticketingCheckedAt: string;
+                        ticketingIntegrationSupported: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CancelUserServiceNowSetup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        canceled: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserServiceNowSetupStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        currentStep: string;
+                        finishedAt: string;
+                        lastError: string;
+                        remediation: string[];
+                        runId: string;
+                        startedAt: string;
+                        status: string;
+                        steps: components["schemas"]["skyforge.serviceNowSetupStepResult"][];
+                        ticketingCheckedAt: string;
+                        ticketingIntegrationSupported: boolean;
+                        updatedAt: string;
                     };
                 };
             };
@@ -11028,6 +11322,84 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetUserScopeDeploymentLease": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deploymentId: string;
+                        enabled: boolean;
+                        expiresAt: string;
+                        /** Format: int64 */
+                        hours: number;
+                        status: string;
+                        /** Format: int64 */
+                        stopTaskId: number;
+                        stoppedAt: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutUserScopeDeploymentLease": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    enabled: boolean;
+                    /** Format: int64 */
+                    hours: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deploymentId: string;
+                        enabled: boolean;
+                        expiresAt: string;
+                        /** Format: int64 */
+                        hours: number;
+                        status: string;
+                        /** Format: int64 */
+                        stopTaskId: number;
+                        stoppedAt: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.UpdateUserScopeDeploymentLinkAdmin": {
         parameters: {
             query?: never;
@@ -13835,6 +14207,25 @@ export interface operations {
         };
     };
     "POST:worker.CronCloudCredentialChecks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CronSweepExecutiveDeploymentLeases": {
         parameters: {
             query?: never;
             header?: never;

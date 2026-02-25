@@ -48,11 +48,6 @@ import {
 	TooltipTrigger,
 } from "../../../components/ui/tooltip";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
-import {
-	NETLAB_ENV_KEYS,
-	isNetlabMultilineKey,
-	netlabValuePresets,
-} from "../../../lib/netlab-env";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type CreateUserScopeDeploymentRequest,
@@ -142,7 +137,6 @@ function CreateDeploymentPage() {
 	const queryClient = useQueryClient();
 	const { userId } = Route.useSearch();
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
-	const [netlabHelpOpen, setNetlabHelpOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
 		useState<string>("all");
 	const [importOpen, setImportOpen] = useState(false);
@@ -1372,16 +1366,6 @@ function CreateDeploymentPage() {
 								<div className="flex items-center justify-between">
 									<FormLabel>Environment Variables</FormLabel>
 									<div className="flex items-center gap-2">
-										{(watchKind === "netlab-c9s" || watchKind === "netlab") && (
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												onClick={() => setNetlabHelpOpen(true)}
-											>
-												Supported NETLAB_ vars
-											</Button>
-										)}
 										<Button
 											type="button"
 											variant="outline"
@@ -1430,169 +1414,33 @@ function CreateDeploymentPage() {
 									<div className="space-y-2">
 										{fields.map((field, index) => (
 											<div key={field.id} className="flex gap-2 items-start">
-												{watchKind === "netlab-c9s" ||
-												watchKind === "netlab" ? (
-													<FormField
-														control={form.control}
-														name={`env.${index}.key`}
-														render={({ field }) => {
-															const currentKey = String(
-																field.value ?? "",
-															).trim();
-															const isKnown = NETLAB_ENV_KEYS.some(
-																(k) => k.key === currentKey,
-															);
-															const selectValue = isKnown
-																? currentKey
-																: "__custom__";
-															return (
-																<FormItem className="flex-1 space-y-2">
-																	<FormControl>
-																		<Select
-																			value={selectValue}
-																			onValueChange={(v) => {
-																				if (v === "__custom__") {
-																					field.onChange("");
-																				} else {
-																					field.onChange(v);
-																				}
-																			}}
-																		>
-																			<SelectTrigger>
-																				<SelectValue placeholder="Select env var…" />
-																			</SelectTrigger>
-																			<SelectContent>
-																				{NETLAB_ENV_KEYS.map((k) => (
-																					<SelectItem key={k.key} value={k.key}>
-																						{k.label}
-																					</SelectItem>
-																				))}
-																				<SelectItem value="__custom__">
-																					Custom…
-																				</SelectItem>
-																			</SelectContent>
-																		</Select>
-																	</FormControl>
-																	{selectValue === "__custom__" && (
-																		<FormControl>
-																			<Input
-																				{...field}
-																				placeholder="KEY"
-																				className="font-mono text-xs"
-																			/>
-																		</FormControl>
-																	)}
-																	<FormMessage />
-																</FormItem>
-															);
-														}}
-													/>
-												) : (
-													<FormField
-														control={form.control}
-														name={`env.${index}.key`}
-														render={({ field }) => (
-															<FormItem className="flex-1">
-																<FormControl>
-																	<Input
-																		{...field}
-																		placeholder="KEY"
-																		className="font-mono text-xs"
-																	/>
-																</FormControl>
-																<FormMessage />
-															</FormItem>
-														)}
-													/>
-												)}
+												<FormField
+													control={form.control}
+													name={`env.${index}.key`}
+													render={({ field }) => (
+														<FormItem className="flex-1">
+															<FormControl>
+																<Input
+																	{...field}
+																	placeholder="KEY"
+																	className="font-mono text-xs"
+																/>
+															</FormControl>
+															<FormMessage />
+														</FormItem>
+													)}
+												/>
 												<FormField
 													control={form.control}
 													name={`env.${index}.value`}
 													render={({ field }) => (
 														<FormItem className="flex-1">
 															<FormControl>
-																{(() => {
-																	const key = String(
-																		form.getValues(`env.${index}.key`) ?? "",
-																	).trim();
-																	if (isNetlabMultilineKey(key)) {
-																		return (
-																			<Textarea
-																				{...field}
-																				placeholder={
-																					"One `key=value` per line.\nExample:\naddressing.p2p.ipv4=198.18.0.0/16"
-																				}
-																				className="font-mono text-xs min-h-[120px]"
-																			/>
-																		);
-																	}
-																	const presets = netlabValuePresets(key);
-																	if (!presets)
-																		return (
-																			<Input
-																				{...field}
-																				placeholder="VALUE"
-																				className="font-mono text-xs"
-																			/>
-																		);
-
-																	const currentValue = String(
-																		field.value ?? "",
-																	).trim();
-																	const isPreset = presets.some(
-																		(p) => p.value === currentValue,
-																	);
-																	const selectValue = currentValue
-																		? isPreset
-																			? currentValue
-																			: "__custom__"
-																		: "none";
-
-																	return (
-																		<div className="space-y-2">
-																			<Select
-																				value={selectValue}
-																				onValueChange={(v) => {
-																					if (v === "none") field.onChange("");
-																					else if (v === "__custom__")
-																						field.onChange(
-																							currentValue && !isPreset
-																								? currentValue
-																								: "",
-																						);
-																					else field.onChange(v);
-																				}}
-																			>
-																				<SelectTrigger>
-																					<SelectValue placeholder="Select value…" />
-																				</SelectTrigger>
-																				<SelectContent>
-																					<SelectItem value="none">
-																						None
-																					</SelectItem>
-																					{presets.map((p) => (
-																						<SelectItem
-																							key={p.value}
-																							value={p.value}
-																						>
-																							{p.label}
-																						</SelectItem>
-																					))}
-																					<SelectItem value="__custom__">
-																						Custom…
-																					</SelectItem>
-																				</SelectContent>
-																			</Select>
-																			{selectValue === "__custom__" && (
-																				<Input
-																					{...field}
-																					placeholder="VALUE"
-																					className="font-mono text-xs"
-																				/>
-																			)}
-																		</div>
-																	);
-																})()}
+																<Input
+																	{...field}
+																	placeholder="VALUE"
+																	className="font-mono text-xs"
+																/>
 															</FormControl>
 															<FormMessage />
 														</FormItem>
@@ -1612,39 +1460,6 @@ function CreateDeploymentPage() {
 									</div>
 								)}
 							</div>
-							<Dialog open={netlabHelpOpen} onOpenChange={setNetlabHelpOpen}>
-								<DialogContent className="max-w-2xl">
-									<DialogHeader>
-										<DialogTitle>Supported Netlab overrides</DialogTitle>
-										<DialogDescription>
-											These variables are passed into the Netlab generator. Use{" "}
-											<span className="font-mono">NETLAB_*</span> for native
-											Netlab defaults, and{" "}
-											<span className="font-mono">
-												SKYFORGE_NETLAB_SET_OVERRIDES
-											</span>{" "}
-											for generator-only{" "}
-											<span className="font-mono">netlab --set</span> overrides.
-										</DialogDescription>
-									</DialogHeader>
-									<div className="space-y-2 text-sm">
-										{NETLAB_ENV_KEYS.map((k) => (
-											<div
-												key={k.key}
-												className="flex items-start justify-between gap-3 rounded-md border p-3"
-											>
-												<div className="min-w-0">
-													<div className="font-medium">{k.label}</div>
-													<div className="text-xs text-muted-foreground font-mono break-all">
-														{k.key}
-													</div>
-												</div>
-											</div>
-										))}
-									</div>
-								</DialogContent>
-							</Dialog>
-
 							{mutation.isError && (
 								<div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive border border-destructive/20">
 									{(mutation.error as Error)?.message || "Create failed."}

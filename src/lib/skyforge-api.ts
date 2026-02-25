@@ -2008,7 +2008,6 @@ export type ValidateUserScopeNetlabTemplateRequest = {
 	dir?: string;
 	template: string;
 	environment?: JSONMap;
-	setOverrides?: string[];
 };
 
 export async function validateUserScopeNetlabTemplate(

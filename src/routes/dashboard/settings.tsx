@@ -30,11 +30,6 @@ import {
 } from "../../components/ui/select";
 import { Textarea } from "../../components/ui/textarea";
 import { UserVariableGroups } from "../../components/user-variable-groups";
-import {
-	NETLAB_ENV_KEYS,
-	isNetlabMultilineKey,
-	netlabValuePresets,
-} from "../../lib/netlab-env";
 import { queryKeys } from "../../lib/query-keys";
 import {
 	deleteUserAWSStaticCredentials,
@@ -742,9 +737,7 @@ function UserSettingsPage() {
 									<Button
 										type="button"
 										variant="outline"
-										onClick={() =>
-											envArray.append({ key: "NETLAB_DEVICE", value: "" })
-										}
+										onClick={() => envArray.append({ key: "", value: "" })}
 									>
 										Add variable
 									</Button>
@@ -759,9 +752,6 @@ function UserSettingsPage() {
 										{envArray.fields.map((f, idx) => {
 											const keyPath = `defaultEnv.${idx}.key` as const;
 											const valuePath = `defaultEnv.${idx}.value` as const;
-											const key = form.watch(keyPath) || f.key;
-											const presets = netlabValuePresets(key);
-											const multiline = isNetlabMultilineKey(key);
 											return (
 												<div key={f.id} className="flex gap-2">
 													<FormField
@@ -770,21 +760,7 @@ function UserSettingsPage() {
 														render={({ field }) => (
 															<FormItem className="w-1/2">
 																<FormLabel className="sr-only">Key</FormLabel>
-																<Select
-																	value={field.value}
-																	onValueChange={(v) => field.onChange(v)}
-																>
-																	<SelectTrigger>
-																		<SelectValue placeholder="Select key" />
-																	</SelectTrigger>
-																	<SelectContent>
-																		{NETLAB_ENV_KEYS.map((k) => (
-																			<SelectItem key={k.key} value={k.key}>
-																				{k.label}
-																			</SelectItem>
-																		))}
-																	</SelectContent>
-																</Select>
+																<Input {...field} placeholder="KEY" />
 																<FormMessage />
 															</FormItem>
 														)}
@@ -796,33 +772,7 @@ function UserSettingsPage() {
 														render={({ field }) => (
 															<FormItem className="w-1/2">
 																<FormLabel className="sr-only">Value</FormLabel>
-																{presets ? (
-																	<Select
-																		value={field.value}
-																		onValueChange={(v) => field.onChange(v)}
-																	>
-																		<SelectTrigger>
-																			<SelectValue placeholder="Select value" />
-																		</SelectTrigger>
-																		<SelectContent>
-																			{presets.map((p) => (
-																				<SelectItem
-																					key={p.value}
-																					value={p.value}
-																				>
-																					{p.label}
-																				</SelectItem>
-																			))}
-																		</SelectContent>
-																	</Select>
-																) : (
-																	<Input
-																		{...field}
-																		placeholder={
-																			multiline ? "Enter value" : "Value"
-																		}
-																	/>
-																)}
+																<Input {...field} placeholder="VALUE" />
 																<FormMessage />
 															</FormItem>
 														)}
