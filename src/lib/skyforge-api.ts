@@ -19,8 +19,7 @@ export type JSONMap = Record<string, JSONValue>;
 
 export type ExternalTemplateRepo =
 	components["schemas"]["skyforge.ExternalTemplateRepo"];
-export type SkyforgeUserScope =
-	components["schemas"]["skyforge.SkyforgeUserScope"];
+export type SkyforgeUserScope = components["schemas"]["skyforge.UserScope"];
 export type NotificationRecord =
 	components["schemas"]["skyforge.NotificationRecord"];
 
@@ -298,13 +297,12 @@ export async function getUserScopes(): Promise<GetUserScopesResponse> {
 
 export async function listUserScopes(): Promise<SkyforgeUserScope[]> {
 	const resp = await getUserScopes();
-	const userScopes = (resp as Record<string, SkyforgeUserScope[] | undefined>)
-		.userScopes;
+	const payload = resp as unknown as {
+		userScopes?: SkyforgeUserScope[];
+	};
+	const userScopes = payload.userScopes;
 	if (Array.isArray(userScopes)) return userScopes;
-	const legacyWorkspaces = (
-		resp as Record<string, SkyforgeUserScope[] | undefined>
-	)[`work${"spaces"}`];
-	return Array.isArray(legacyWorkspaces) ? legacyWorkspaces : [];
+	return [];
 }
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
@@ -2795,41 +2793,16 @@ export async function updateGovernancePolicy(
 	);
 }
 
-export async function startDeployment(
+export async function runDeploymentAction(
 	userId: string,
 	deploymentId: string,
+	action: "create" | "start" | "stop" | "destroy" | "export",
 ): Promise<JSONMap> {
 	return apiFetch<JSONMap>(
-		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/start`,
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/action`,
 		{
 			method: "POST",
-			body: "{}",
-		},
-	);
-}
-
-export async function stopDeployment(
-	userId: string,
-	deploymentId: string,
-): Promise<JSONMap> {
-	return apiFetch<JSONMap>(
-		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/stop`,
-		{
-			method: "POST",
-			body: "{}",
-		},
-	);
-}
-
-export async function destroyDeployment(
-	userId: string,
-	deploymentId: string,
-): Promise<JSONMap> {
-	return apiFetch<JSONMap>(
-		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/destroy`,
-		{
-			method: "POST",
-			body: "{}",
+			body: JSON.stringify({ action }),
 		},
 	);
 }

@@ -34,9 +34,11 @@ import {
 	getAdminAudit,
 	getAdminEffectiveConfig,
 	getAdminImpersonateStatus,
+	getGovernancePolicy,
 	getSession,
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
+	updateGovernancePolicy,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/admin/settings")({
@@ -67,6 +69,41 @@ function AdminSettingsPage() {
 		enabled: isAdmin,
 		staleTime: 15_000,
 		retry: false,
+	});
+	const governancePolicyQ = useQuery({
+		queryKey: queryKeys.governancePolicy(),
+		queryFn: getGovernancePolicy,
+		enabled: isAdmin,
+		staleTime: 15_000,
+		retry: false,
+	});
+	const [blockedOrgIdsCsv, setBlockedOrgIdsCsv] = useState("");
+	const saveForwardBlacklist = useMutation({
+		mutationFn: async () => {
+			const currentPolicy = governancePolicyQ.data?.policy;
+			if (!currentPolicy) {
+				throw new Error("governance policy not loaded");
+			}
+			const ids = blockedOrgIdsCsv
+				.split(",")
+				.map((v) => v.trim())
+				.filter((v) => v.length > 0);
+			return updateGovernancePolicy({
+				policy: {
+					...currentPolicy,
+					blockedForwardOrgIds: ids,
+				},
+			});
+		},
+		onSuccess: async () => {
+			toast.success("Forward org blacklist saved");
+			await governancePolicyQ.refetch();
+		},
+		onError: (e) => {
+			toast.error("Failed to save Forward org blacklist", {
+				description: (e as Error).message,
+			});
+		},
 	});
 
 	const impersonateStatusQ = useQuery({
@@ -210,6 +247,13 @@ function AdminSettingsPage() {
 		],
 		[],
 	);
+	const blockedOrgIdsDisplay = useMemo(() => {
+		if (blockedOrgIdsCsv.trim()) {
+			return blockedOrgIdsCsv;
+		}
+		const ids = governancePolicyQ.data?.policy?.blockedForwardOrgIds ?? [];
+		return ids.join(",");
+	}, [blockedOrgIdsCsv, governancePolicyQ.data?.policy?.blockedForwardOrgIds]);
 
 	return (
 		<div className="space-y-6 p-6">
@@ -339,6 +383,38 @@ function AdminSettingsPage() {
 										Stop
 									</Button>
 								</div>
+							</CardContent>
+						</Card>
+
+						<Card>
+							<CardHeader>
+								<CardTitle>Forward org blacklist</CardTitle>
+								<CardDescription>
+									Block collector creation for specific Forward org IDs.
+									Credentials can still be saved; admin users are exempt.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<Input
+									placeholder="1499,1744"
+									value={blockedOrgIdsDisplay}
+									onChange={(e) => setBlockedOrgIdsCsv(e.target.value)}
+								/>
+								<div className="text-xs text-muted-foreground">
+									Comma-separated org IDs from Forward.
+								</div>
+								<Button
+									onClick={() => saveForwardBlacklist.mutate()}
+									disabled={
+										saveForwardBlacklist.isPending ||
+										governancePolicyQ.isLoading ||
+										!governancePolicyQ.data?.policy
+									}
+								>
+									{saveForwardBlacklist.isPending
+										? "Saving…"
+										: "Save blacklist"}
+								</Button>
 							</CardContent>
 						</Card>
 					</TabsContent>

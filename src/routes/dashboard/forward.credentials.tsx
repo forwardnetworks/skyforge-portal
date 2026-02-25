@@ -67,6 +67,13 @@ function ForwardCredentialsPage() {
 	const [skipTlsVerify, setSkipTlsVerify] = useState(false);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
+	const tlsCheckboxDisabled = target !== "custom_onprem";
+	const effectiveSkipTlsVerify =
+		target === "in_cluster_org"
+			? true
+			: target === "fwd_app"
+				? false
+				: skipTlsVerify;
 
 	const credentialSets = useMemo(
 		() => collectorsQ.data?.collectors ?? [],
@@ -281,10 +288,3 @@ function ForwardCredentialsPage() {
 		</div>
 	);
 }
-const tlsCheckboxDisabled = target !== "custom_onprem";
-const effectiveSkipTlsVerify =
-	target === "in_cluster_org"
-		? true
-		: target === "fwd_app"
-			? false
-			: skipTlsVerify;

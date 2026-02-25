@@ -70,9 +70,8 @@ import {
 	deleteDeployment,
 	getDeploymentTopology,
 	listUserForwardCollectorConfigs,
+	runDeploymentAction,
 	saveDeploymentNodeConfig,
-	startDeployment,
-	stopDeployment,
 	syncDeploymentForward,
 	updateDeploymentForwardConfig,
 } from "../../../lib/skyforge-api";
@@ -99,6 +98,7 @@ function DeploymentDetailPage() {
 	const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 	const [forwardEnabled, setForwardEnabled] = useState(false);
 	const [forwardCollector, setForwardCollector] = useState("");
+	const [actionPending, setActionPending] = useState(false);
 
 	const snap = useQuery<DashboardSnapshot | null>({
 		queryKey: queryKeys.dashboardSnapshot(),
@@ -137,31 +137,91 @@ function DeploymentDetailPage() {
 		enabled: Boolean(activeRunId),
 	});
 
+	const readActionMeta = (resp: JSONMap) => {
+		const reason = String(resp.reason ?? "").trim();
+		return {
+			noOp: Boolean(resp.noOp),
+			reason,
+		};
+	};
+
 	const handleStart = async () => {
+		if (actionPending) return;
+		setActionPending(true);
 		try {
 			if (!deployment) throw new Error("deployment not found");
-			await startDeployment(deployment.userId, deployment.id);
-			toast.success("Deployment starting", {
-				description: `${deployment.name} is queued to start.`,
+			const resp = await runDeploymentAction(
+				deployment.userId,
+				deployment.id,
+				"start",
+			);
+			const meta = readActionMeta(resp);
+			if (meta.noOp) {
+				const msg =
+					meta.reason === "in_flight_duplicate"
+						? "Action already in progress"
+						: meta.reason === "cooldown_suppressed"
+							? "Action suppressed briefly to prevent duplicate jobs"
+							: meta.reason === "already_present"
+								? "Deployment is already active"
+								: "No action required";
+				toast.message(msg, { description: deployment.name });
+			} else {
+				toast.success("Deployment starting", {
+					description: `${deployment.name} is queued to start.`,
+				});
+			}
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
 			toast.error("Failed to start", { description: (e as Error).message });
+		} finally {
+			setActionPending(false);
 		}
 	};
 
 	const handleStop = async () => {
+		if (actionPending) return;
+		setActionPending(true);
 		try {
 			if (!deployment) throw new Error("deployment not found");
-			await stopDeployment(deployment.userId, deployment.id);
-			toast.success("Deployment stopping", {
-				description: `${deployment.name} is queued to stop.`,
+			const resp = await runDeploymentAction(
+				deployment.userId,
+				deployment.id,
+				"stop",
+			);
+			const meta = readActionMeta(resp);
+			if (meta.noOp) {
+				const msg =
+					meta.reason === "in_flight_duplicate"
+						? "Action already in progress"
+						: meta.reason === "cooldown_suppressed"
+							? "Action suppressed briefly to prevent duplicate jobs"
+							: meta.reason === "already_absent"
+								? "Deployment is already stopped"
+								: meta.reason === "no_active_run"
+									? "No active run to stop"
+									: "No action required";
+				toast.message(msg, { description: deployment.name });
+			} else {
+				toast.success("Deployment stopping", {
+					description: `${deployment.name} is queued to stop.`,
+				});
+			}
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
 			toast.error("Failed to stop", { description: (e as Error).message });
+		} finally {
+			setActionPending(false);
 		}
 	};
 
 	const handleDestroy = async () => {
+		if (actionPending) return;
+		setActionPending(true);
 		try {
 			if (!deployment) throw new Error("deployment not found");
 			await deleteDeployment(deployment.userId, deployment.id);
@@ -175,12 +235,14 @@ function DeploymentDetailPage() {
 			});
 		} catch (e) {
 			toast.error("Failed to delete", { description: (e as Error).message });
+		} finally {
+			setActionPending(false);
 		}
 	};
 
 	const status =
 		deployment?.activeTaskStatus ?? deployment?.lastStatus ?? "unknown";
-	const isBusy = !!deployment?.activeTaskId;
+	const isBusy = !!deployment?.activeTaskId || actionPending;
 
 	const runsForDeployment = useMemo(() => {
 		if (!deployment) return [];
@@ -213,11 +275,7 @@ function DeploymentDetailPage() {
 	const saveConfig = useMutation({
 		mutationFn: async (nodeId: string) => {
 			if (!deployment) throw new Error("deployment not found");
-			return saveDeploymentNodeConfig(
-				deployment.userId,
-				deployment.id,
-				nodeId,
-			);
+			return saveDeploymentNodeConfig(deployment.userId, deployment.id, nodeId);
 		},
 		onSuccess: (resp, nodeId) => {
 			if (resp?.skipped) {

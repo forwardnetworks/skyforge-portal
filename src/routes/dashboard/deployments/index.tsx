@@ -70,12 +70,10 @@ import {
 	type UserScopeDeployment,
 	buildLoginUrl,
 	deleteDeployment,
-	destroyDeployment,
 	getDashboardSnapshot,
 	getSession,
 	listUserScopes,
-	startDeployment,
-	stopDeployment,
+	runDeploymentAction,
 } from "../../../lib/skyforge-api";
 import { cn } from "../../../lib/utils";
 
@@ -120,6 +118,9 @@ function DeploymentsPage() {
 	const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 	const [destroyAlsoDeleteForward, setDestroyAlsoDeleteForward] =
 		useState(false);
+	const [pendingActions, setPendingActions] = useState<Record<string, boolean>>(
+		{},
+	);
 
 	const session = useQuery({
 		queryKey: queryKeys.session(),
@@ -246,25 +247,83 @@ function DeploymentsPage() {
 		});
 	}, [allDeployments, searchQuery, statusFilter, typeFilter]);
 
+	const readActionMeta = (resp: JSONMap) => {
+		const reason = String(resp.reason ?? "").trim();
+		return {
+			noOp: Boolean(resp.noOp),
+			reason,
+		};
+	};
+
 	const handleStart = async (d: UserScopeDeployment) => {
+		if (pendingActions[d.id]) return;
+		setPendingActions((prev) => ({ ...prev, [d.id]: true }));
 		try {
-			await startDeployment(d.userId, d.id);
-			toast.success("Deployment starting", {
-				description: `${d.name} is queued to start.`,
+			const resp = await runDeploymentAction(d.userId, d.id, "start");
+			const meta = readActionMeta(resp);
+			if (meta.noOp) {
+				const msg =
+					meta.reason === "in_flight_duplicate"
+						? "Action already in progress"
+						: meta.reason === "cooldown_suppressed"
+							? "Action suppressed briefly to prevent duplicate jobs"
+							: meta.reason === "already_present"
+								? "Deployment is already active"
+								: "No action required";
+				toast.message(msg, { description: d.name });
+			} else {
+				toast.success("Deployment starting", {
+					description: `${d.name} is queued to start.`,
+				});
+			}
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
 			toast.error("Failed to start", { description: (e as Error).message });
+		} finally {
+			setPendingActions((prev) => {
+				const next = { ...prev };
+				delete next[d.id];
+				return next;
+			});
 		}
 	};
 
 	const handleStop = async (d: UserScopeDeployment) => {
+		if (pendingActions[d.id]) return;
+		setPendingActions((prev) => ({ ...prev, [d.id]: true }));
 		try {
-			await stopDeployment(d.userId, d.id);
-			toast.success("Deployment stopping", {
-				description: `${d.name} is queued to stop.`,
+			const resp = await runDeploymentAction(d.userId, d.id, "stop");
+			const meta = readActionMeta(resp);
+			if (meta.noOp) {
+				const msg =
+					meta.reason === "in_flight_duplicate"
+						? "Action already in progress"
+						: meta.reason === "cooldown_suppressed"
+							? "Action suppressed briefly to prevent duplicate jobs"
+							: meta.reason === "already_absent"
+								? "Deployment is already stopped"
+								: meta.reason === "no_active_run"
+									? "No active run to stop"
+									: "No action required";
+				toast.message(msg, { description: d.name });
+			} else {
+				toast.success("Deployment stopping", {
+					description: `${d.name} is queued to stop.`,
+				});
+			}
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
 			toast.error("Failed to stop", { description: (e as Error).message });
+		} finally {
+			setPendingActions((prev) => {
+				const next = { ...prev };
+				delete next[d.id];
+				return next;
+			});
 		}
 	};
 
@@ -318,7 +377,8 @@ function DeploymentsPage() {
 						"unknown"
 					).toLowerCase();
 					const isRunning = ["running", "active", "healthy"].includes(status);
-					const isBusy = Boolean(d.activeTaskId);
+					const isBusy =
+						Boolean(d.activeTaskId) || Boolean(pendingActions[d.id]);
 					return (
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
@@ -389,6 +449,8 @@ function DeploymentsPage() {
 
 	const handleDestroy = async () => {
 		if (!destroyTarget) return;
+		if (pendingActions[destroyTarget.id]) return;
+		setPendingActions((prev) => ({ ...prev, [destroyTarget.id]: true }));
 		try {
 			// "Destroy" in the UI means remove the deployment definition (and trigger provider cleanup).
 			await deleteDeployment(destroyTarget.userId, destroyTarget.id, {
@@ -405,6 +467,12 @@ function DeploymentsPage() {
 			setDestroyAlsoDeleteForward(false);
 		} catch (e) {
 			toast.error("Failed to delete", { description: (e as Error).message });
+		} finally {
+			setPendingActions((prev) => {
+				const next = { ...prev };
+				delete next[destroyTarget.id];
+				return next;
+			});
 		}
 	};
 
@@ -720,9 +788,14 @@ function DeploymentsPage() {
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDestroy}
+							disabled={Boolean(
+								destroyTarget && pendingActions[destroyTarget.id],
+							)}
 							className={buttonVariants({ variant: "destructive" })}
 						>
-							Delete
+							{destroyTarget && pendingActions[destroyTarget.id]
+								? "Deleting…"
+								: "Delete"}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

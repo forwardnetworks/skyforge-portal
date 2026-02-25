@@ -1686,18 +1686,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * SessionForwardAuth is a Skyforge SSO gate compatible endpoint used by Traefik
-         *     forwardAuth.
-         */
+        /** SessionForwardAuth is a Skyforge SSO gate endpoint used by Traefik forwardAuth. */
         get: operations["GET:skyforge.SessionForwardAuth"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         /**
-         * SessionForwardAuthHead is a Skyforge SSO gate compatible endpoint used by
-         *     Traefik forwardAuth (HEAD).
+         * SessionForwardAuthHead is a Skyforge SSO gate endpoint used by Traefik
+         *     forwardAuth (HEAD).
          */
         head: operations["HEAD:skyforge.SessionForwardAuthHead"];
         patch?: never;
@@ -2067,7 +2064,7 @@ export interface paths {
         put?: never;
         /**
          * PutUserScopeArtifactObject writes/overwrites a single artifact object.
-         * @description This is an object-store-native alternative to the legacy \`UploadUserScopeArtifact\` endpoint (which uses Encore's objects SDK and may require bucket subdomain DNS).
+         * @description This is an object-store-native alternative to the prior \`UploadUserScopeArtifact\` endpoint (which uses Encore's objects SDK and may require bucket subdomain DNS).
          */
         post: operations["POST:skyforge.PutUserScopeArtifactObject"];
         /** DeleteUserScopeArtifactObject deletes a single artifact object. */
@@ -2575,26 +2572,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/deployments/{deploymentID}/destroy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * DestroyUserScopeDeployment triggers a destructive run (destroy) for a
-         *     deployment.
-         */
-        post: operations["POST:skyforge.DestroyUserScopeDeployment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/users/{id}/deployments/{deploymentID}/forward": {
         parameters: {
             query?: never;
@@ -2912,43 +2889,6 @@ export interface paths {
          * @description For EOS/cEOS, this runs \`write memory\`.
          */
         post: operations["POST:skyforge.SaveUserScopeDeploymentNodeConfig"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/deployments/{deploymentID}/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** StartUserScopeDeployment starts a deployment run. */
-        post: operations["POST:skyforge.StartUserScopeDeployment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/deployments/{deploymentID}/stop": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * StopUserScopeDeployment attempts to stop the most recent task for this
-         *     deployment.
-         */
-        post: operations["POST:skyforge.StopUserScopeDeployment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4035,7 +3975,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** FrontendFavicon serves the SPA favicon (and compatibility icon paths). */
+        /** FrontendFavicon serves the SPA favicon (including alternate icon paths). */
         get: operations["GET:skyforge.FrontendFavicon"];
         put?: never;
         post?: never;
@@ -4174,91 +4114,6 @@ export interface paths {
          * @description This endpoint is intentionally unauthenticated (SSO) and guarded by an internal token header.
          */
         post: operations["POST:skyforge.IngestSyslog"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/bridge/cloud/checks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** CronCloudCredentialChecksBridge triggers cloud credential checks maintenance. */
-        post: operations["POST:worker.CronCloudCredentialChecksBridge"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/bridge/users/sync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** CronUserSyncBridge triggers user sync maintenance. */
-        post: operations["POST:worker.CronUserSyncBridge"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/bridge/worker/heartbeat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** CronWorkerHeartbeatBridge triggers the worker heartbeat task. */
-        post: operations["POST:worker.CronWorkerHeartbeatBridge"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/bridge/worker/tasks/reconcile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** CronReconcileQueuedTasksBridge triggers reconciliation for queued tasks. */
-        post: operations["POST:worker.CronReconcileQueuedTasksBridge"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/bridge/worker/tasks/reconcile-running": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** CronReconcileRunningTasksBridge triggers reconciliation for running tasks. */
-        post: operations["POST:worker.CronReconcileRunningTasksBridge"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5143,6 +4998,10 @@ export interface components {
             apiUrl: string;
             labName: string;
         };
+        "skyforge.DeploymentActionState": {
+            desired: string;
+            observed: string;
+        };
         "skyforge.DeploymentInventoryNode": {
             id: string;
             kind: string;
@@ -5292,6 +5151,12 @@ export interface components {
              */
             allowUserExternalTemplateRepos: boolean;
             /**
+             * BlockedForwardOrgIDs denies Forward collector credential setup for these Forward
+             *     org IDs.
+             * @description This is primarily used to protect shared/demo orgs from accidental Skyforge collector installs.
+             */
+            blockedForwardOrgIds: string[];
+            /**
              * MaxCollectorsPerUser caps the number of in-cluster Forward collectors a user can
              *     create.
              * Format: int64
@@ -5366,8 +5231,8 @@ export interface components {
             scopeType: string;
             unit: string;
             userId: string;
-            value: number;
             userScopeName: string;
+            value: number;
         };
         "skyforge.JSONMap": {
             [key: string]: Record<string, never>;
@@ -5510,62 +5375,6 @@ export interface components {
             id: string;
             parameters: components["schemas"]["skyforge.JSONMap"];
         };
-        /**
-         * SkyforgeUserScope is the user-facing user-scope object stored in Postgres and
-         *     returned by the API.
-         * @description NOTE: This type must live in the service package (not a type alias to an internal package) to satisfy Encore's API schema rules.
-         */
-        "skyforge.SkyforgeUserScope": {
-            allowCustomContainerlabServers: boolean;
-            /**
-             * EVE-NG deployments require an endpoint. This flag enables configuring a
-             *     per-user-scope EVE server.
-             */
-            allowCustomEveServers: boolean;
-            allowCustomNetlabServers: boolean;
-            allowExternalTemplateRepos: boolean;
-            /** Format: int64 */
-            ansibleRunTemplateId: number;
-            artifactsBucket: string;
-            awsAccountId: string;
-            awsAuthMethod: string;
-            awsRegion: string;
-            awsRoleName: string;
-            blueprint: string;
-            /** Format: int64 */
-            containerlabRunTemplateId: number;
-            /** Format: date-time */
-            createdAt: string;
-            createdBy: string;
-            defaultBranch: string;
-            description: string;
-            editorGroups: string[];
-            editors: string[];
-            /** Format: int64 */
-            eveNgRunTemplateId: number;
-            eveServer: string;
-            externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
-            giteaOwner: string;
-            giteaRepo: string;
-            id: string;
-            isPublic: boolean;
-            name: string;
-            /** Format: int64 */
-            netlabRunTemplateId: number;
-            netlabServer: string;
-            ownerGroups: string[];
-            owners: string[];
-            slug: string;
-            /** Format: int64 */
-            terraformApplyTemplateId: number;
-            /** Format: int64 */
-            terraformInitTemplateId: number;
-            /** Format: int64 */
-            terraformPlanTemplateId: number;
-            terraformStateKey: string;
-            viewerGroups: string[];
-            viewers: string[];
-        };
         "skyforge.SnmpTrapEvent": {
             /** Format: int64 */
             id: number;
@@ -5702,28 +5511,66 @@ export interface components {
             isAdmin: boolean;
             username: string;
         };
+        /**
+         * UserScope is the user-facing user-scope object stored in Postgres and returned
+         *     by the API.
+         * @description NOTE: This type must live in the service package (not a type alias to an internal package) to satisfy Encore's API schema rules.
+         */
+        "skyforge.UserScope": {
+            allowCustomContainerlabServers: boolean;
+            /**
+             * EVE-NG deployments require an endpoint. This flag enables configuring a
+             *     per-user-scope EVE server.
+             */
+            allowCustomEveServers: boolean;
+            allowCustomNetlabServers: boolean;
+            allowExternalTemplateRepos: boolean;
+            /** Format: int64 */
+            ansibleRunTemplateId: number;
+            artifactsBucket: string;
+            awsAccountId: string;
+            awsAuthMethod: string;
+            awsRegion: string;
+            awsRoleName: string;
+            blueprint: string;
+            /** Format: int64 */
+            containerlabRunTemplateId: number;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            defaultBranch: string;
+            description: string;
+            editorGroups: string[];
+            editors: string[];
+            /** Format: int64 */
+            eveNgRunTemplateId: number;
+            eveServer: string;
+            externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
+            giteaOwner: string;
+            giteaRepo: string;
+            id: string;
+            isPublic: boolean;
+            name: string;
+            /** Format: int64 */
+            netlabRunTemplateId: number;
+            netlabServer: string;
+            ownerGroups: string[];
+            owners: string[];
+            slug: string;
+            /** Format: int64 */
+            terraformApplyTemplateId: number;
+            /** Format: int64 */
+            terraformInitTemplateId: number;
+            /** Format: int64 */
+            terraformPlanTemplateId: number;
+            terraformStateKey: string;
+            viewerGroups: string[];
+            viewers: string[];
+        };
         "skyforge.UserScopeDeleteItem": {
             id: string;
             name: string;
             slug: string;
-        };
-        "skyforge.UserVariableGroup": {
-            /** Format: int64 */
-            id: number;
-            name: string;
-            variables: {
-                [key: string]: string;
-            };
-        };
-        "skyforge.WebhookEvent": {
-            body: string;
-            /** Format: int64 */
-            id: number;
-            method: string;
-            path: string;
-            /** Format: date-time */
-            receivedAt: string;
-            sourceIp: string;
         };
         "skyforge.UserScopeDeployment": {
             /** Format: int64 */
@@ -5769,6 +5616,24 @@ export interface components {
             variables: {
                 [key: string]: string;
             };
+        };
+        "skyforge.UserVariableGroup": {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            variables: {
+                [key: string]: string;
+            };
+        };
+        "skyforge.WebhookEvent": {
+            body: string;
+            /** Format: int64 */
+            id: number;
+            method: string;
+            path: string;
+            /** Format: date-time */
+            receivedAt: string;
+            sourceIp: string;
         };
         "skyforge.adminSSHProbeResult": {
             /** Format: int64 */
@@ -6440,6 +6305,10 @@ export interface operations {
                 content: {
                     "application/json": {
                         /** Format: int64 */
+                        diagOldestQueuedSec: number;
+                        /** Format: int64 */
+                        diagStaleHeartbeatSec: number;
+                        /** Format: int64 */
                         oldestQueuedAgeSec: number;
                         /** Format: int64 */
                         publishFailures10m: number;
@@ -6449,6 +6318,8 @@ export interface operations {
                         /** Format: int64 */
                         running: number;
                         status: string;
+                        /** Format: int64 */
+                        stuckQueuedCandidates: number;
                         workerEnabled: boolean;
                         /** Format: int64 */
                         workerHeartbeatAgeSec: number;
@@ -7008,7 +6879,7 @@ export interface operations {
                         refreshedAt: string;
                         runs: components["schemas"]["skyforge.JSONMap"][];
                         templatesIndexUpdatedAt: string;
-                        userScopes: components["schemas"]["skyforge.SkyforgeUserScope"][];
+                        userScopes: components["schemas"]["skyforge.UserScope"][];
                     };
                 };
             };
@@ -9484,7 +9355,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         user: string;
-                        userScopes: components["schemas"]["skyforge.SkyforgeUserScope"][];
+                        userScopes: components["schemas"]["skyforge.UserScope"][];
                     };
                 };
             };
@@ -10611,7 +10482,11 @@ export interface operations {
                 content: {
                     "application/json": {
                         deployment: components["schemas"]["skyforge.UserScopeDeployment"];
+                        idempotent: boolean;
+                        noOp: boolean;
+                        reason: string;
                         run: components["schemas"]["skyforge.JSONMap"];
+                        state: components["schemas"]["skyforge.DeploymentActionState"];
                         userId: string;
                     };
                 };
@@ -10646,7 +10521,11 @@ export interface operations {
                 content: {
                     "application/json": {
                         deployment: components["schemas"]["skyforge.UserScopeDeployment"];
+                        idempotent: boolean;
+                        noOp: boolean;
+                        reason: string;
                         run: components["schemas"]["skyforge.JSONMap"];
+                        state: components["schemas"]["skyforge.DeploymentActionState"];
                         userId: string;
                     };
                 };
@@ -11001,34 +10880,6 @@ export interface operations {
                         forwardNetworkId: string;
                         rollups: components["schemas"]["skyforge.CapacityRollupRow"][];
                         stale: boolean;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.DestroyUserScopeDeployment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                deploymentID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        run: components["schemas"]["skyforge.JSONMap"];
                         userId: string;
                     };
                 };
@@ -11583,69 +11434,6 @@ export interface operations {
                         skipped: boolean;
                         stderr: string;
                         stdout: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.StartUserScopeDeployment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                deploymentID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** used for terraform (apply/destroy) */
-                    action: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        run: components["schemas"]["skyforge.JSONMap"];
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.StopUserScopeDeployment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                deploymentID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        run: components["schemas"]["skyforge.JSONMap"];
-                        userId: string;
                     };
                 };
             };
@@ -13288,7 +13076,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        userScope: components["schemas"]["skyforge.SkyforgeUserScope"];
+                        userScope: components["schemas"]["skyforge.UserScope"];
                     };
                 };
             };
@@ -14006,111 +13794,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:worker.CronCloudCredentialChecksBridge": {
-        parameters: {
-            query?: never;
-            header: {
-                "x-skyforge-internal-token": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:worker.CronUserSyncBridge": {
-        parameters: {
-            query?: never;
-            header: {
-                "x-skyforge-internal-token": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:worker.CronWorkerHeartbeatBridge": {
-        parameters: {
-            query?: never;
-            header: {
-                "x-skyforge-internal-token": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:worker.CronReconcileQueuedTasksBridge": {
-        parameters: {
-            query?: never;
-            header: {
-                "x-skyforge-internal-token": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:worker.CronReconcileRunningTasksBridge": {
-        parameters: {
-            query?: never;
-            header: {
-                "x-skyforge-internal-token": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "POST:skyforge.CronCleanupCapacity": {
         parameters: {
             query?: never;
@@ -14665,7 +14348,7 @@ export interface operations {
                         /** Format: int64 */
                         up: number;
                         /** Format: int64 */
-                        "user scopesTotal": number;
+                        userScopesTotal: number;
                     };
                 };
             };
