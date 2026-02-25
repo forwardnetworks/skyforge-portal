@@ -60,6 +60,11 @@ const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
 	{
+		label: "Executive Deploy",
+		href: "/dashboard/deployments/executive",
+		icon: Workflow,
+	},
+	{
 		label: "Designer",
 		href: "/dashboard/labs/designer",
 		icon: Hammer,

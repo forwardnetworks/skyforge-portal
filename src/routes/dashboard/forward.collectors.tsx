@@ -26,8 +26,8 @@ import {
 	type UserForwardCollectorConfigSummary,
 	createUserForwardCollectorConfig,
 	deleteUserForwardCollectorConfig,
-	getUserForwardCollectorConfigUpdate,
 	getUserForwardCollectorConfigLogs,
+	getUserForwardCollectorConfigUpdate,
 	getUserGitCredentials,
 	listUserForwardCollectorConfigs,
 	restartUserForwardCollectorConfig,
@@ -165,7 +165,9 @@ function ForwardCollectorPage() {
 					: "All collectors are up to date",
 				{
 					description:
-						total > 0 ? `Checked ${total} collector(s)` : "No collectors configured",
+						total > 0
+							? `Checked ${total} collector(s)`
+							: "No collectors configured",
 				},
 			);
 			await queryClient.invalidateQueries({ queryKey: collectorsKey });
@@ -181,7 +183,9 @@ function ForwardCollectorPage() {
 		onSuccess: async (res) => {
 			if (res.upgraded) {
 				toast.success("Collector upgraded", {
-					description: res.updatedImage ? `Now using ${res.updatedImage}` : undefined,
+					description: res.updatedImage
+						? `Now using ${res.updatedImage}`
+						: undefined,
 				});
 			} else {
 				toast.success("Collector already up to date");
@@ -390,7 +394,9 @@ function ForwardCollectorPage() {
 							<Button
 								variant="outline"
 								size="sm"
-								disabled={checkUpdatesMutation.isPending || collectors.length === 0}
+								disabled={
+									checkUpdatesMutation.isPending || collectors.length === 0
+								}
 								onClick={() => checkUpdatesMutation.mutate()}
 							>
 								{checkUpdatesMutation.isPending ? "Checking…" : "Check updates"}
@@ -398,7 +404,9 @@ function ForwardCollectorPage() {
 							<Button
 								variant="outline"
 								size="sm"
-								disabled={upgradeAllMutation.isPending || collectors.length === 0}
+								disabled={
+									upgradeAllMutation.isPending || collectors.length === 0
+								}
 								onClick={() => upgradeAllMutation.mutate()}
 							>
 								{upgradeAllMutation.isPending ? "Upgrading…" : "Upgrade all"}
@@ -489,7 +497,9 @@ function ForwardCollectorPage() {
 											Restart
 										</Button>
 										<Button
-											variant={c.runtime?.updateAvailable ? "default" : "outline"}
+											variant={
+												c.runtime?.updateAvailable ? "default" : "outline"
+											}
 											size="sm"
 											onClick={() => upgradeMutation.mutate(c.id)}
 											disabled={upgradeMutation.isPending}

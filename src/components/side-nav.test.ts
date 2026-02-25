@@ -44,6 +44,7 @@ describe("side nav model", () => {
 			yaadeEnabled: true,
 		});
 		const labels = items.map((i) => i.label);
+		expect(labels).toContain("Executive Deploy");
 		expect(labels).not.toContain("Connect");
 		expect(labels).not.toContain("Tools");
 		expect(labels).not.toContain("Runs");

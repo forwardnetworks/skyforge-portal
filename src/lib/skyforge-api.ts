@@ -2883,6 +2883,45 @@ export async function runDeploymentAction(
 	);
 }
 
+export type DeploymentLeaseInfo = {
+	userId: string;
+	deploymentId: string;
+	enabled: boolean;
+	hours: number;
+	expiresAt?: ISO8601;
+	stoppedAt?: ISO8601;
+	stopTaskId?: number;
+	status: "disabled" | "active" | "expired" | "stopped" | string;
+};
+
+export type DeploymentLeaseUpdateRequest = {
+	enabled: boolean;
+	hours: number;
+};
+
+export async function getDeploymentLease(
+	userId: string,
+	deploymentId: string,
+): Promise<DeploymentLeaseInfo> {
+	return apiFetch<DeploymentLeaseInfo>(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/lease`,
+	);
+}
+
+export async function updateDeploymentLease(
+	userId: string,
+	deploymentId: string,
+	body: DeploymentLeaseUpdateRequest,
+): Promise<DeploymentLeaseInfo> {
+	return apiFetch<DeploymentLeaseInfo>(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/lease`,
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
 export async function deleteDeployment(
 	userId: string,
 	deploymentId: string,
