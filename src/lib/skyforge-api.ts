@@ -2379,6 +2379,20 @@ export type DeleteUserForwardCollectorConfigResponse = {
 	deleted: boolean;
 };
 
+export type UserForwardCollectorConfigUpdateResponse = {
+	id: string;
+	deploymentName?: string;
+	image?: string;
+	imageId?: string;
+	remoteDigest?: string;
+	updateStatus?: string;
+	updateAvailable: boolean;
+	upgraded?: boolean;
+	updatedImage?: string;
+	runtime?: CollectorRuntimeStatus;
+	collectorNotFound?: boolean;
+};
+
 export async function listUserForwardCollectorConfigs(): Promise<ListUserForwardCollectorConfigsResponse> {
 	return apiFetch<ListUserForwardCollectorConfigsResponse>(
 		"/api/forward/collector-configs",
@@ -2437,6 +2451,26 @@ export async function restartUserForwardCollectorConfig(
 ): Promise<CollectorRuntimeStatus> {
 	return apiFetch<CollectorRuntimeStatus>(
 		`/api/forward/collector-configs/${encodeURIComponent(id)}/restart`,
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
+export async function getUserForwardCollectorConfigUpdate(
+	id: string,
+): Promise<UserForwardCollectorConfigUpdateResponse> {
+	return apiFetch<UserForwardCollectorConfigUpdateResponse>(
+		`/api/forward/collector-configs/${encodeURIComponent(id)}/update`,
+	);
+}
+
+export async function upgradeUserForwardCollectorConfig(
+	id: string,
+): Promise<UserForwardCollectorConfigUpdateResponse> {
+	return apiFetch<UserForwardCollectorConfigUpdateResponse>(
+		`/api/forward/collector-configs/${encodeURIComponent(id)}/upgrade`,
 		{
 			method: "POST",
 			body: "{}",

@@ -26,10 +26,12 @@ import {
 	type UserForwardCollectorConfigSummary,
 	createUserForwardCollectorConfig,
 	deleteUserForwardCollectorConfig,
+	getUserForwardCollectorConfigUpdate,
 	getUserForwardCollectorConfigLogs,
 	getUserGitCredentials,
 	listUserForwardCollectorConfigs,
 	restartUserForwardCollectorConfig,
+	upgradeUserForwardCollectorConfig,
 } from "../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/forward/collectors")({
@@ -139,6 +141,89 @@ function ForwardCollectorPage() {
 		},
 		onError: (e) =>
 			toast.error("Failed to restart collector", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const checkUpdatesMutation = useMutation({
+		mutationFn: async () => {
+			const results = await Promise.allSettled(
+				collectors.map((c) => getUserForwardCollectorConfigUpdate(c.id)),
+			);
+			let available = 0;
+			for (const item of results) {
+				if (item.status === "fulfilled" && item.value.updateAvailable) {
+					available += 1;
+				}
+			}
+			return { available, total: collectors.length };
+		},
+		onSuccess: async ({ available, total }) => {
+			toast.success(
+				available > 0
+					? `${available} collector update(s) available`
+					: "All collectors are up to date",
+				{
+					description:
+						total > 0 ? `Checked ${total} collector(s)` : "No collectors configured",
+				},
+			);
+			await queryClient.invalidateQueries({ queryKey: collectorsKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to check collector updates", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const upgradeMutation = useMutation({
+		mutationFn: async (id: string) => upgradeUserForwardCollectorConfig(id),
+		onSuccess: async (res) => {
+			if (res.upgraded) {
+				toast.success("Collector upgraded", {
+					description: res.updatedImage ? `Now using ${res.updatedImage}` : undefined,
+				});
+			} else {
+				toast.success("Collector already up to date");
+			}
+			await queryClient.invalidateQueries({ queryKey: collectorsKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to upgrade collector", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const upgradeAllMutation = useMutation({
+		mutationFn: async () => {
+			const updates = await Promise.allSettled(
+				collectors.map((c) => upgradeUserForwardCollectorConfig(c.id)),
+			);
+			let upgraded = 0;
+			let failed = 0;
+			for (const result of updates) {
+				if (result.status === "fulfilled") {
+					if (result.value.upgraded) upgraded += 1;
+				} else {
+					failed += 1;
+				}
+			}
+			return { upgraded, failed, total: collectors.length };
+		},
+		onSuccess: async ({ upgraded, failed, total }) => {
+			if (failed > 0) {
+				toast.error("Collector upgrade completed with failures", {
+					description: `${upgraded} upgraded, ${failed} failed, ${total} checked`,
+				});
+			} else {
+				toast.success("Collector upgrades complete", {
+					description: `${upgraded} upgraded, ${total - upgraded} already current`,
+				});
+			}
+			await queryClient.invalidateQueries({ queryKey: collectorsKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to run collector upgrades", {
 				description: (e as Error).message,
 			}),
 	});
@@ -301,28 +386,46 @@ function ForwardCollectorPage() {
 				<CardHeader>
 					<div className="flex items-center justify-between gap-4">
 						<CardTitle>Configured collectors</CardTitle>
-						{collectors.length > 0 ? (
+						<div className="flex items-center gap-2">
 							<Button
-								variant="destructive"
+								variant="outline"
 								size="sm"
-								disabled={deleteAllMutation.isPending}
-								onClick={() => {
-									const ids = collectors
-										.map((c) => String(c.id))
-										.filter(Boolean);
-									if (ids.length === 0) return;
-									if (
-										!confirm(
-											`Delete ${ids.length} collector(s)? This removes in-cluster Deployments and saved credentials.`,
-										)
-									)
-										return;
-									deleteAllMutation.mutate(ids);
-								}}
+								disabled={checkUpdatesMutation.isPending || collectors.length === 0}
+								onClick={() => checkUpdatesMutation.mutate()}
 							>
-								{deleteAllMutation.isPending ? "Deleting…" : "Delete all"}
+								{checkUpdatesMutation.isPending ? "Checking…" : "Check updates"}
 							</Button>
-						) : null}
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={upgradeAllMutation.isPending || collectors.length === 0}
+								onClick={() => upgradeAllMutation.mutate()}
+							>
+								{upgradeAllMutation.isPending ? "Upgrading…" : "Upgrade all"}
+							</Button>
+							{collectors.length > 0 ? (
+								<Button
+									variant="destructive"
+									size="sm"
+									disabled={deleteAllMutation.isPending}
+									onClick={() => {
+										const ids = collectors
+											.map((c) => String(c.id))
+											.filter(Boolean);
+										if (ids.length === 0) return;
+										if (
+											!confirm(
+												`Delete ${ids.length} collector(s)? This removes in-cluster Deployments and saved credentials.`,
+											)
+										)
+											return;
+										deleteAllMutation.mutate(ids);
+									}}
+								>
+									{deleteAllMutation.isPending ? "Deleting…" : "Delete all"}
+								</Button>
+							) : null}
+						</div>
 					</div>
 					<CardDescription>
 						Each entry maps to one in-cluster Deployment and one Forward
@@ -384,6 +487,14 @@ function ForwardCollectorPage() {
 											disabled={restartMutation.isPending}
 										>
 											Restart
+										</Button>
+										<Button
+											variant={c.runtime?.updateAvailable ? "default" : "outline"}
+											size="sm"
+											onClick={() => upgradeMutation.mutate(c.id)}
+											disabled={upgradeMutation.isPending}
+										>
+											Upgrade
 										</Button>
 										<Button
 											variant="destructive"
