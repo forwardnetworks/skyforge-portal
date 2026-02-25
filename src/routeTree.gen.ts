@@ -35,6 +35,7 @@ import { Route as DashboardDeploymentsIndexRouteImport } from './routes/dashboar
 import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/$runId'
 import { Route as DashboardLabsMapRouteImport } from './routes/dashboard/labs/map'
 import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/labs/designer'
+import { Route as DashboardForwardCredentialsRouteImport } from './routes/dashboard/forward.credentials'
 import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$slug'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
@@ -174,6 +175,12 @@ const DashboardLabsDesignerRoute = DashboardLabsDesignerRouteImport.update({
   path: '/dashboard/labs/designer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardForwardCredentialsRoute =
+  DashboardForwardCredentialsRouteImport.update({
+    id: '/credentials',
+    path: '/credentials',
+    getParentRoute: () => DashboardForwardRoute,
+  } as any)
 const DashboardDocsSlugRoute = DashboardDocsSlugRouteImport.update({
   id: '/dashboard/docs/$slug',
   path: '/dashboard/docs/$slug',
@@ -219,7 +226,7 @@ export interface FileRoutesByFullPath {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/forward': typeof DashboardForwardRoute
+  '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
@@ -231,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
+  '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -253,7 +261,7 @@ export interface FileRoutesByTo {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/forward': typeof DashboardForwardRoute
+  '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
@@ -265,6 +273,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
+  '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -288,7 +297,7 @@ export interface FileRoutesById {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/forward': typeof DashboardForwardRoute
+  '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
@@ -300,6 +309,7 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
+  '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
+    | '/dashboard/forward/credentials'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
+    | '/dashboard/forward/credentials'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -404,6 +416,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/dashboard/deployments/new'
     | '/dashboard/docs/$slug'
+    | '/dashboard/forward/credentials'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -427,7 +440,7 @@ export interface RootRouteChildren {
   WebhooksRoute: typeof WebhooksRoute
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
-  DashboardForwardRoute: typeof DashboardForwardRoute
+  DashboardForwardRoute: typeof DashboardForwardRouteWithChildren
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
   DashboardPolicyReportsRoute: typeof DashboardPolicyReportsRoute
   DashboardS3Route: typeof DashboardS3Route
@@ -636,6 +649,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLabsDesignerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/forward/credentials': {
+      id: '/dashboard/forward/credentials'
+      path: '/credentials'
+      fullPath: '/dashboard/forward/credentials'
+      preLoaderRoute: typeof DashboardForwardCredentialsRouteImport
+      parentRoute: typeof DashboardForwardRoute
+    }
     '/dashboard/docs/$slug': {
       id: '/dashboard/docs/$slug'
       path: '/dashboard/docs/$slug'
@@ -681,6 +701,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardForwardRouteChildren {
+  DashboardForwardCredentialsRoute: typeof DashboardForwardCredentialsRoute
+}
+
+const DashboardForwardRouteChildren: DashboardForwardRouteChildren = {
+  DashboardForwardCredentialsRoute: DashboardForwardCredentialsRoute,
+}
+
+const DashboardForwardRouteWithChildren =
+  DashboardForwardRoute._addFileChildren(DashboardForwardRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DesignRoute: DesignRoute,
@@ -691,7 +722,7 @@ const rootRouteChildren: RootRouteChildren = {
   WebhooksRoute: WebhooksRoute,
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
-  DashboardForwardRoute: DashboardForwardRoute,
+  DashboardForwardRoute: DashboardForwardRouteWithChildren,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
   DashboardPolicyReportsRoute: DashboardPolicyReportsRoute,
   DashboardS3Route: DashboardS3Route,
