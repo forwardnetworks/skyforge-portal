@@ -96,6 +96,7 @@ export const queryKeys = {
 	userForwardCollectorConfigLogs: (id: string) =>
 		["userForwardCollectorConfigLogs", id] as const,
 	userServiceNowConfig: () => ["userServiceNowConfig"] as const,
+	userServiceNowSetupStatus: () => ["userServiceNowSetupStatus"] as const,
 	userServiceNowPdiStatus: () => ["userServiceNowPdiStatus"] as const,
 	userServiceNowSchemaStatus: () => ["userServiceNowSchemaStatus"] as const,
 	storageFiles: () => ["storageFiles"] as const,

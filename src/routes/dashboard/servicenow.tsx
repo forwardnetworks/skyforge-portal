@@ -10,7 +10,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../components/ui/card";
-import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import {
@@ -22,13 +21,16 @@ import {
 } from "../../components/ui/select";
 import { queryKeys } from "../../lib/query-keys";
 import {
+	cancelUserServiceNowSetup,
 	configureForwardServiceNowTicketing,
 	getUserServiceNowConfig,
 	getUserServiceNowPdiStatus,
 	getUserServiceNowSchemaStatus,
+	getUserServiceNowSetupStatus,
 	installUserServiceNowDemo,
 	listUserForwardCollectorConfigs,
 	putUserServiceNowConfig,
+	startUserServiceNowSetup,
 	wakeUserServiceNowPdi,
 } from "../../lib/skyforge-api";
 
@@ -39,6 +41,7 @@ export const Route = createFileRoute("/dashboard/servicenow")({
 function ServiceNowPage() {
 	const qc = useQueryClient();
 	const cfgKey = queryKeys.userServiceNowConfig();
+	const setupKey = queryKeys.userServiceNowSetupStatus();
 	const pdiKey = queryKeys.userServiceNowPdiStatus();
 	const schemaKey = queryKeys.userServiceNowSchemaStatus();
 	const collectorsKey = queryKeys.userForwardCollectorConfigs();
@@ -48,37 +51,15 @@ function ServiceNowPage() {
 		queryFn: getUserServiceNowConfig,
 		retry: false,
 	});
-
 	const cfg = cfgQ.data;
 
-	const [instanceUrl, setInstanceUrl] = useState("");
-	const [adminUsername, setAdminUsername] = useState("");
-	const [adminPassword, setAdminPassword] = useState("");
-	const [forwardCollectorConfigId, setForwardCollectorConfigId] = useState("");
-	const [forwardCredSource, setForwardCredSource] = useState<
-		"collector" | "custom"
-	>("collector");
-	const [forwardUsername, setForwardUsername] = useState(""); // custom
-	const [forwardPassword, setForwardPassword] = useState(""); // custom
-	const [configureForwardTicketingOnSave, setConfigureForwardTicketingOnSave] =
-		useState(true);
-
-	useEffect(() => {
-		if (!cfg) return;
-		setInstanceUrl(cfg.instanceUrl ?? "");
-		setAdminUsername(cfg.adminUsername ?? "");
-		setForwardCollectorConfigId(cfg.forwardCollectorConfigId ?? "");
-		// Prefer using an existing collector by default; fall back to custom only
-		// when the user previously configured custom creds.
-		setForwardCredSource(
-			cfg.forwardCollectorConfigId
-				? "collector"
-				: cfg.forwardUsername
-					? "custom"
-					: "collector",
-		);
-		setForwardUsername(cfg.forwardUsername ?? "");
-	}, [cfg]);
+	const setupQ = useQuery({
+		queryKey: setupKey,
+		queryFn: getUserServiceNowSetupStatus,
+		retry: false,
+		refetchInterval: (query) =>
+			query.state.data?.status === "running" ? 4_000 : 30_000,
+	});
 
 	const collectorsQ = useQuery({
 		queryKey: collectorsKey,
@@ -91,30 +72,30 @@ function ServiceNowPage() {
 		[collectorsQ.data],
 	);
 
+	const [instanceUrl, setInstanceUrl] = useState("");
+	const [adminUsername, setAdminUsername] = useState("");
+	const [adminPassword, setAdminPassword] = useState("");
+	const [forwardCredentialSetId, setForwardCredentialSetId] = useState("");
+
 	useEffect(() => {
-		// Prefer using an existing collector by default (recommended path).
-		if (forwardCredSource !== "collector") return;
-		if (forwardCollectorConfigId) return;
+		if (!cfg) return;
+		setInstanceUrl(cfg.instanceUrl ?? "");
+		setAdminUsername(cfg.adminUsername ?? "");
+		setForwardCredentialSetId(cfg.forwardCredentialSetId ?? "");
+	}, [cfg]);
+
+	useEffect(() => {
+		if (forwardCredentialSetId) return;
 		const preferred =
 			collectorOptions.find((c) => c.isDefault) ?? collectorOptions[0];
-		if (preferred?.id) setForwardCollectorConfigId(preferred.id);
-	}, [cfg, collectorOptions, forwardCollectorConfigId, forwardCredSource]);
+		if (preferred?.id) setForwardCredentialSetId(preferred.id);
+	}, [collectorOptions, forwardCredentialSetId]);
 
 	const pdiQ = useQuery({
 		queryKey: pdiKey,
 		queryFn: getUserServiceNowPdiStatus,
 		enabled: Boolean(cfg?.configured),
 		retry: false,
-		refetchOnWindowFocus: true,
-		staleTime: 0,
-		refetchInterval: (query) => {
-			if (document.visibilityState === "hidden") return false;
-			const st = query.state.data?.status ?? "";
-			if (st === "awake") return 120_000;
-			if (st === "sleeping" || st === "waking" || st === "unreachable")
-				return 30_000;
-			return 60_000;
-		},
 	});
 
 	const schemaQ = useQuery({
@@ -122,22 +103,66 @@ function ServiceNowPage() {
 		queryFn: getUserServiceNowSchemaStatus,
 		enabled: Boolean(cfg?.configured),
 		retry: false,
-		refetchOnWindowFocus: true,
-		staleTime: 0,
 	});
 
-	const schemaMissingTables = useMemo(() => {
-		const missing = schemaQ.data?.missing ?? [];
-		return missing.some((m) => m.startsWith("table:"));
-	}, [schemaQ.data?.missing]);
+	const saveMutation = useMutation({
+		mutationFn: async () => {
+			if (!instanceUrl.trim())
+				throw new Error("ServiceNow instance URL is required");
+			if (!adminUsername.trim())
+				throw new Error("ServiceNow admin username is required");
+			if (!forwardCredentialSetId.trim())
+				throw new Error("Forward credential set is required");
+			return putUserServiceNowConfig({
+				instanceUrl: instanceUrl.trim(),
+				adminUsername: adminUsername.trim(),
+				adminPassword,
+				forwardCredentialSetId: forwardCredentialSetId.trim(),
+				forwardCollectorConfigId: forwardCredentialSetId.trim(),
+			});
+		},
+		onSuccess: async () => {
+			toast.success("Saved ServiceNow settings");
+			setAdminPassword("");
+			await qc.invalidateQueries({ queryKey: cfgKey });
+			await qc.invalidateQueries({ queryKey: setupKey });
+			await qc.invalidateQueries({ queryKey: pdiKey });
+			await qc.invalidateQueries({ queryKey: schemaKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to save ServiceNow settings", {
+				description: (e as Error).message,
+			}),
+	});
 
-	const servicePortalURL = useMemo(() => {
-		const base = (instanceUrl || cfg?.instanceUrl || "")
-			.trim()
-			.replace(/\/+$/, "");
-		if (!base) return "";
-		return `${base}/sp?id=connectivity_ticket`;
-	}, [cfg?.instanceUrl, instanceUrl]);
+	const setupMutation = useMutation({
+		mutationFn: async (resume: boolean) => startUserServiceNowSetup({ resume }),
+		onSuccess: async (resp) => {
+			if (resp.status === "completed")
+				toast.success("ServiceNow setup completed");
+			else if (resp.status === "needs_manual_step")
+				toast.warning("ServiceNow setup needs manual remediation");
+			else if (resp.status === "running")
+				toast.success("ServiceNow setup started");
+			await qc.invalidateQueries({ queryKey: setupKey });
+			await qc.invalidateQueries({ queryKey: cfgKey });
+			await qc.invalidateQueries({ queryKey: schemaKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to run setup", { description: (e as Error).message }),
+	});
+
+	const cancelSetupMutation = useMutation({
+		mutationFn: async () => cancelUserServiceNowSetup(),
+		onSuccess: async (resp) => {
+			if (resp.canceled) toast.success("Setup canceled");
+			await qc.invalidateQueries({ queryKey: setupKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to cancel setup", {
+				description: (e as Error).message,
+			}),
+	});
 
 	const wakeMutation = useMutation({
 		mutationFn: async () => wakeUserServiceNowPdi(),
@@ -149,70 +174,24 @@ function ServiceNowPage() {
 			toast.error("Failed to wake PDI", { description: (e as Error).message }),
 	});
 
-	const saveMutation = useMutation({
-		mutationFn: async () => {
-			if (!instanceUrl.trim())
-				throw new Error("ServiceNow instance URL is required");
-			if (!adminUsername.trim())
-				throw new Error("ServiceNow admin username is required");
-			const isCollector = forwardCredSource === "collector";
-			if (isCollector) {
-				if (!forwardCollectorConfigId.trim())
-					throw new Error("Select a Forward collector (or choose Custom)");
-			} else {
-				if (!forwardUsername.trim())
-					throw new Error("Forward username is required");
-			}
-
-			return putUserServiceNowConfig({
-				instanceUrl: instanceUrl.trim(),
-				adminUsername: adminUsername.trim(),
-				adminPassword,
-				forwardCollectorConfigId: isCollector
-					? forwardCollectorConfigId.trim()
-					: "",
-				forwardUsername: isCollector ? "" : forwardUsername.trim(),
-				forwardPassword: isCollector ? "" : forwardPassword,
-			});
-		},
-		onSuccess: async () => {
-			toast.success("Saved ServiceNow settings");
-			setAdminPassword("");
-			setForwardPassword("");
-			await qc.invalidateQueries({ queryKey: cfgKey });
-			await qc.invalidateQueries({ queryKey: pdiKey });
-			await qc.invalidateQueries({ queryKey: schemaKey });
-			if (configureForwardTicketingOnSave) {
-				configureForwardTicketingMutation.mutate();
-			}
-		},
-		onError: (e) =>
-			toast.error("Failed to save ServiceNow settings", {
-				description: (e as Error).message,
-			}),
-	});
-
 	const installMutation = useMutation({
 		mutationFn: async () => installUserServiceNowDemo(),
 		onSuccess: async (resp) => {
-			if (resp.installed) toast.success("ServiceNow demo installed");
-			else
-				toast.error("ServiceNow install failed", { description: resp.message });
+			if (resp.installed) toast.success("Demo app installed");
+			else toast.error("Install failed", { description: resp.message });
 			await qc.invalidateQueries({ queryKey: cfgKey });
-			await qc.invalidateQueries({ queryKey: pdiKey });
 			await qc.invalidateQueries({ queryKey: schemaKey });
 		},
 		onError: (e) =>
-			toast.error("Failed to install ServiceNow demo", {
+			toast.error("Failed to install demo app", {
 				description: (e as Error).message,
 			}),
 	});
 
-	const configureForwardTicketingMutation = useMutation({
+	const configureMutation = useMutation({
 		mutationFn: async () => configureForwardServiceNowTicketing(),
-		onSuccess: async (resp) => {
-			if (resp.configured)
-				toast.success("Configured Forward ticketing integration");
+		onSuccess: (resp) => {
+			if (resp.configured) toast.success("Forward ticketing configured");
 			else
 				toast.error("Failed to configure Forward", {
 					description: resp.message,
@@ -224,234 +203,98 @@ function ServiceNowPage() {
 			}),
 	});
 
+	const setupStatus = setupQ.data?.status ?? "idle";
+	const canResume = setupStatus === "needs_manual_step";
+	const isRunning = setupStatus === "running";
+	const selectedCredential = collectorOptions.find(
+		(c) => c.id === forwardCredentialSetId,
+	);
+
 	return (
 		<div className="p-6 space-y-6">
 			<div>
 				<h1 className="text-2xl font-bold">ServiceNow</h1>
 				<p className="text-sm text-muted-foreground mt-1">
-					Install the Forward Connectivity Ticket demo into a ServiceNow PDI.
-					ServiceNow calls Forward SaaS directly; Skyforge only installs and
-					configures the app.
+					One-click near-zero-touch setup for the Forward connectivity demo app.
 				</p>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Quick links</CardTitle>
+					<CardTitle>Setup Workflow</CardTitle>
 					<CardDescription>
-						Create a ServiceNow PDI (manual step).
+						Primary path: save config, run setup, remediate only when required.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="space-y-2">
-					<a
-						className="text-sm underline"
-						href="https://developer.servicenow.com/dev.do#!/guides/now-platform/pdi-guide/obtaining-a-pdi"
-						target="_blank"
-						rel="noreferrer"
-					>
-						Create a Personal Developer Instance (PDI)
-					</a>
-					<a
-						className="text-sm underline"
-						href="/dashboard/docs/servicenow"
-						target="_blank"
-						rel="noreferrer"
-					>
-						Open Skyforge ServiceNow docs
-					</a>
-					<div className="text-xs text-muted-foreground">
-						Create and wake your PDI in the ServiceNow portal; then paste the
-						instance URL and admin creds below.
-					</div>
-					{servicePortalURL ? (
-						<a
-							className="text-sm underline"
-							href={servicePortalURL}
-							target="_blank"
-							rel="noreferrer"
-						>
-							Open the demo portal page (after install)
-						</a>
-					) : null}
-					{cfg?.configured && (instanceUrl || cfg?.instanceUrl) ? (
-						<a
-							className="text-sm underline"
-							href={`${(instanceUrl || cfg?.instanceUrl || "").replace(/\/+$/, "")}/sys_app_application_list.do?sysparm_query=title=Forward%20Connectivity%20Ticket`}
-							target="_blank"
-							rel="noreferrer"
-						>
-							Find the demo app menu in ServiceNow (after install)
-						</a>
-					) : null}
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>PDI status</CardTitle>
-					<CardDescription>
-						ServiceNow PDIs can sleep after inactivity. Skyforge can detect this
-						and attempt to wake the instance.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-3">
+				<CardContent className="space-y-4">
 					<div className="text-sm">
-						{cfg?.configured ? (
-							<>
-								Status:{" "}
-								<span className="font-medium">
-									{pdiQ.data?.status ??
-										(pdiQ.isFetching ? "checking…" : "unknown")}
-								</span>
-								{pdiQ.data?.httpStatus ? ` (HTTP ${pdiQ.data.httpStatus})` : ""}
-								{pdiQ.data?.detail ? ` — ${pdiQ.data.detail}` : ""}
-							</>
-						) : (
-							<span className="text-muted-foreground">
-								Save configuration first.
-							</span>
-						)}
+						Status: <span className="font-medium">{setupStatus}</span>
+						{setupQ.data?.currentStep
+							? ` · Step: ${setupQ.data.currentStep}`
+							: ""}
 					</div>
 					<div className="flex items-center gap-2">
 						<Button
-							variant="secondary"
-							onClick={() => void pdiQ.refetch()}
+							onClick={() => setupMutation.mutate(false)}
 							disabled={
-								!cfg?.configured || pdiQ.isFetching || wakeMutation.isPending
+								setupMutation.isPending || isRunning || saveMutation.isPending
 							}
 						>
-							Check now
+							Run setup
 						</Button>
 						<Button
 							variant="secondary"
-							onClick={() => wakeMutation.mutate()}
-							disabled={!cfg?.configured || wakeMutation.isPending}
+							onClick={() => setupMutation.mutate(true)}
+							disabled={setupMutation.isPending || !canResume}
 						>
-							Wake up
+							Resume setup
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => cancelSetupMutation.mutate()}
+							disabled={cancelSetupMutation.isPending || !isRunning}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => void setupQ.refetch()}
+							disabled={setupQ.isFetching}
+						>
+							Refresh
 						</Button>
 					</div>
-				</CardContent>
-			</Card>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>Schema status</CardTitle>
-					<CardDescription>
-						The demo requires two custom tables. Create the tables once in the
-						PDI; Skyforge can auto-create the required fields and choice lists
-						when you install the demo app.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-3">
-					<div className="text-sm">
-						{cfg?.configured ? (
-							<>
-								Status:{" "}
-								<span className="font-medium">
-									{schemaQ.data?.status ??
-										(schemaQ.isFetching ? "checking…" : "unknown")}
-								</span>
-								{schemaQ.data?.checkedAt
-									? ` (checked ${schemaQ.data.checkedAt})`
-									: ""}
-								{schemaQ.data?.detail ? ` — ${schemaQ.data.detail}` : ""}
-							</>
-						) : (
-							<span className="text-muted-foreground">
-								Save configuration first.
-							</span>
-						)}
-					</div>
-
-					{cfg?.configured && instanceUrl ? (
-						<div className="text-sm text-muted-foreground">
-							Portal page:{" "}
-							<a
-								className="underline"
-								href={`${instanceUrl.replace(/\/+$/, "")}/sp?id=connectivity_ticket`}
-								target="_blank"
-								rel="noreferrer"
-							>
-								/sp?id=connectivity_ticket
-							</a>
-						</div>
-					) : null}
-					{cfg?.configured && instanceUrl ? (
-						<div className="text-sm text-muted-foreground">
-							Find records:{" "}
-							<a
-								className="underline"
-								href={`${instanceUrl.replace(/\/+$/, "")}/sp_widget_list.do?sysparm_query=name=Connectivity%20Ticket%20Analyzer`}
-								target="_blank"
-								rel="noreferrer"
-							>
-								widget
-							</a>
-							{" · "}
-							<a
-								className="underline"
-								href={`${instanceUrl.replace(/\/+$/, "")}/sp_page_list.do?sysparm_query=id=connectivity_ticket`}
-								target="_blank"
-								rel="noreferrer"
-							>
-								page
-							</a>
-							{" · "}
-							<a
-								className="underline"
-								href={`${instanceUrl.replace(/\/+$/, "")}/sys_rest_message_list.do?sysparm_query=name=Forward%20API`}
-								target="_blank"
-								rel="noreferrer"
-							>
-								REST message
-							</a>
+					{setupQ.data?.steps?.length ? (
+						<div className="rounded-md border p-3 space-y-1 text-xs">
+							{setupQ.data.steps.map((step) => (
+								<div key={step.step} className="font-mono">
+									{step.step}: {step.status}
+									{step.detail ? ` — ${step.detail}` : ""}
+								</div>
+							))}
 						</div>
 					) : null}
 
-					{schemaQ.data?.status === "missing" &&
-					schemaQ.data.missing?.length ? (
+					{setupQ.data?.remediation?.length ? (
 						<div className="rounded-md border p-3 bg-muted/30">
-							<div className="text-xs text-muted-foreground mb-2">
-								Missing items:
-							</div>
-							{schemaMissingTables ? (
-								<div className="text-xs text-muted-foreground mb-2">
-									Create the missing <span className="font-medium">tables</span>{" "}
-									in ServiceNow first; then click{" "}
-									<span className="font-medium">Install demo app</span> to let
-									Skyforge auto-create the rest.
-								</div>
-							) : (
-								<div className="text-xs text-muted-foreground mb-2">
-									Click <span className="font-medium">Install demo app</span> to
-									let Skyforge auto-create these fields/choices.
-								</div>
-							)}
-							<ul className="text-xs font-mono space-y-1">
-								{schemaQ.data.missing.map((m) => (
-									<li key={m}>- {m}</li>
+							<div className="text-xs font-medium mb-1">Remediation</div>
+							<ul className="text-xs space-y-1 list-disc pl-4">
+								{setupQ.data.remediation.map((line) => (
+									<li key={line}>{line}</li>
 								))}
 							</ul>
 						</div>
 					) : null}
 
-					<div className="flex items-center gap-2">
-						<Button
-							variant="secondary"
-							onClick={() => void schemaQ.refetch()}
-							disabled={!cfg?.configured || schemaQ.isFetching}
-						>
-							Check schema
-						</Button>
-						<a
-							className="text-sm underline text-muted-foreground"
-							href="/dashboard/docs/servicenow"
-							target="_blank"
-							rel="noreferrer"
-						>
-							Docs
-						</a>
-					</div>
+					{typeof setupQ.data?.ticketingIntegrationSupported === "boolean" ? (
+						<div className="text-xs text-muted-foreground">
+							Forward ticketing API:{" "}
+							{setupQ.data.ticketingIntegrationSupported
+								? "supported"
+								: "unsupported"}
+						</div>
+					) : null}
 				</CardContent>
 			</Card>
 
@@ -459,12 +302,11 @@ function ServiceNowPage() {
 				<CardHeader>
 					<CardTitle>Configuration</CardTitle>
 					<CardDescription>
-						Skyforge uses ServiceNow admin creds to install/configure. Forward
-						creds are stored in ServiceNow as a Basic Auth credential for the
-						demo REST Message.
+						Uses shared Forward credential sets from{" "}
+						<code>/dashboard/forward/credentials</code>.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="space-y-6">
+				<CardContent className="space-y-4">
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<Label>ServiceNow instance URL</Label>
@@ -493,148 +335,110 @@ function ServiceNowPage() {
 								}
 							/>
 						</div>
-					</div>
-
-					<div className="space-y-2">
-						<Label>Forward credentials</Label>
-						<div className="text-xs text-muted-foreground">
-							Uses Forward SaaS (<code>https://fwd.app</code>).
+						<div className="space-y-2">
+							<Label>Forward credential set</Label>
+							<Select
+								value={forwardCredentialSetId || ""}
+								onValueChange={setForwardCredentialSetId}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Select saved credential set" />
+								</SelectTrigger>
+								<SelectContent>
+									{collectorOptions.map((c) => (
+										<SelectItem key={c.id} value={c.id}>
+											{c.name}
+											{c.isDefault ? " (default)" : ""}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</div>
-						<Select
-							value={
-								forwardCredSource === "custom"
-									? "custom"
-									: forwardCollectorConfigId || ""
-							}
-							onValueChange={(v) => {
-								if (v === "custom") {
-									setForwardCredSource("custom");
-									setForwardCollectorConfigId("");
-									return;
-								}
-								setForwardCredSource("collector");
-								setForwardCollectorConfigId(v);
-							}}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select a collector" />
-							</SelectTrigger>
-							<SelectContent>
-								{collectorOptions.map((c) => (
-									<SelectItem key={c.id} value={c.id}>
-										{c.name}
-										{c.isDefault ? " (default)" : ""}
-									</SelectItem>
-								))}
-								<SelectItem value="custom">Custom…</SelectItem>
-							</SelectContent>
-						</Select>
 					</div>
-
-					{forwardCredSource === "custom" ? (
-						<div className="grid gap-4 md:grid-cols-2">
-							<div className="space-y-2">
-								<Label>Forward username</Label>
-								<Input
-									value={forwardUsername}
-									onChange={(e) => setForwardUsername(e.target.value)}
-									placeholder="you@example.com"
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label>Forward password</Label>
-								<Input
-									type="password"
-									value={forwardPassword}
-									onChange={(e) => setForwardPassword(e.target.value)}
-									placeholder={
-										cfg?.hasForwardPassword
-											? "(leave blank to keep stored)"
-											: ""
-									}
-								/>
-							</div>
+					{selectedCredential?.baseUrl ? (
+						<div className="text-xs text-muted-foreground">
+							Selected host: <code>{selectedCredential.baseUrl}</code>
 						</div>
 					) : null}
-
-					<div className="space-y-2">
-						<Label>Forward integration</Label>
-						<div className="flex items-center gap-2">
-							<Checkbox
-								id="snow-configure-ticketing-on-save"
-								checked={configureForwardTicketingOnSave}
-								onCheckedChange={(v) =>
-									setConfigureForwardTicketingOnSave(Boolean(v))
-								}
-							/>
-							<Label
-								htmlFor="snow-configure-ticketing-on-save"
-								className="font-normal text-sm"
-							>
-								Configure Forward ticketing integration on save
-							</Label>
-						</div>
-						<div className="text-xs text-muted-foreground">
-							Configures Forward SaaS to auto-create and auto-update incidents
-							in this ServiceNow instance.
-						</div>
-					</div>
-
 					<div className="flex items-center gap-2">
 						<Button
 							onClick={() => saveMutation.mutate()}
-							disabled={saveMutation.isPending || installMutation.isPending}
+							disabled={saveMutation.isPending}
 						>
-							Save
+							Save settings
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => void cfgQ.refetch()}
+							disabled={cfgQ.isFetching}
+						>
+							Reload
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Advanced</CardTitle>
+					<CardDescription>
+						Manual controls for troubleshooting and verification.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="text-sm">
+						PDI status:{" "}
+						<span className="font-medium">
+							{pdiQ.data?.status ?? "unknown"}
+						</span>
+						{pdiQ.data?.detail ? ` — ${pdiQ.data.detail}` : ""}
+					</div>
+					<div className="text-sm">
+						Schema status:{" "}
+						<span className="font-medium">
+							{schemaQ.data?.status ?? "unknown"}
+						</span>
+						{schemaQ.data?.missing?.length
+							? ` (${schemaQ.data.missing.length} missing)`
+							: ""}
+					</div>
+					<div className="flex items-center gap-2 flex-wrap">
+						<Button
+							variant="secondary"
+							onClick={() => wakeMutation.mutate()}
+							disabled={wakeMutation.isPending || !cfg?.configured}
+						>
+							Wake PDI
 						</Button>
 						<Button
 							variant="secondary"
 							onClick={() => installMutation.mutate()}
-							disabled={
-								installMutation.isPending ||
-								saveMutation.isPending ||
-								!cfg?.configured ||
-								schemaMissingTables
-							}
+							disabled={installMutation.isPending || !cfg?.configured}
 						>
 							Install demo app
 						</Button>
-						{servicePortalURL ? (
-							<Button
-								variant="outline"
-								asChild
-								disabled={!cfg?.configured || schemaMissingTables}
-							>
-								<a href={servicePortalURL} target="_blank" rel="noreferrer">
-									Open in ServiceNow
-								</a>
-							</Button>
-						) : null}
 						<Button
 							variant="secondary"
-							onClick={() => configureForwardTicketingMutation.mutate()}
-							disabled={
-								configureForwardTicketingMutation.isPending ||
-								saveMutation.isPending ||
-								!cfg?.configured
-							}
+							onClick={() => configureMutation.mutate()}
+							disabled={configureMutation.isPending || !cfg?.configured}
 						>
-							Configure Forward (ticketing)
+							Configure Forward ticketing
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => void schemaQ.refetch()}
+							disabled={schemaQ.isFetching || !cfg?.configured}
+						>
+							Check schema
 						</Button>
 						<a
-							className="text-sm underline text-muted-foreground ml-2"
+							className="text-sm underline text-muted-foreground"
 							href="/dashboard/docs/servicenow"
 							target="_blank"
 							rel="noreferrer"
 						>
 							Docs
 						</a>
-						{cfg?.lastInstallStatus ? (
-							<div className="text-sm text-muted-foreground">
-								Status: {cfg.lastInstallStatus}
-								{cfg.lastInstallError ? ` (${cfg.lastInstallError})` : ""}
-							</div>
-						) : null}
 					</div>
 				</CardContent>
 			</Card>

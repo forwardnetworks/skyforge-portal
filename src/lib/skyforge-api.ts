@@ -28,9 +28,7 @@ export type UserServiceNowConfigResponse = {
 	instanceUrl?: string;
 	adminUsername?: string;
 	hasAdminPassword: boolean;
-	forwardCollectorConfigId?: string;
-	forwardUsername?: string;
-	hasForwardPassword: boolean;
+	forwardCredentialSetId?: string;
 	updatedAt?: ISO8601;
 	lastInstallStatus?: string;
 	lastInstallError?: string;
@@ -42,9 +40,8 @@ export type PutUserServiceNowConfigRequest = {
 	instanceUrl: string;
 	adminUsername: string;
 	adminPassword: string;
+	forwardCredentialSetId?: string;
 	forwardCollectorConfigId?: string;
-	forwardUsername?: string;
-	forwardPassword?: string;
 };
 
 export type InstallUserServiceNowDemoResponse = {
@@ -70,6 +67,27 @@ export type ServiceNowSchemaStatusResponse = {
 	missing?: string[];
 	detail?: string;
 	checkedAt?: ISO8601;
+};
+
+export type ServiceNowSetupStepResult = {
+	step: string;
+	status: string;
+	detail?: string;
+	updatedAt?: ISO8601;
+};
+
+export type ServiceNowSetupStatusResponse = {
+	runId?: string;
+	status: string;
+	currentStep?: string;
+	steps?: ServiceNowSetupStepResult[];
+	remediation?: string[];
+	lastError?: string;
+	ticketingIntegrationSupported?: boolean;
+	ticketingCheckedAt?: ISO8601;
+	startedAt?: ISO8601;
+	updatedAt?: ISO8601;
+	finishedAt?: ISO8601;
 };
 
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
@@ -598,6 +616,30 @@ export async function wakeUserServiceNowPdi(): Promise<ServiceNowPdiStatusRespon
 export async function configureForwardServiceNowTicketing(): Promise<ConfigureForwardServiceNowTicketingResponse> {
 	return apiFetch<ConfigureForwardServiceNowTicketingResponse>(
 		"/api/me/integrations/servicenow/configureForwardTicketing",
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function getUserServiceNowSetupStatus(): Promise<ServiceNowSetupStatusResponse> {
+	return apiFetch<ServiceNowSetupStatusResponse>(
+		"/api/me/integrations/servicenow/setup/status",
+	);
+}
+
+export async function startUserServiceNowSetup(payload?: {
+	resume?: boolean;
+}): Promise<ServiceNowSetupStatusResponse> {
+	return apiFetch<ServiceNowSetupStatusResponse>(
+		"/api/me/integrations/servicenow/setup",
+		{ method: "POST", body: JSON.stringify(payload ?? {}) },
+	);
+}
+
+export async function cancelUserServiceNowSetup(): Promise<{
+	canceled: boolean;
+}> {
+	return apiFetch<{ canceled: boolean }>(
+		"/api/me/integrations/servicenow/setup/cancel",
 		{ method: "POST", body: "{}" },
 	);
 }

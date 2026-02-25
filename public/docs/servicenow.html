@@ -119,8 +119,7 @@
           <li>
             Forward SaaS credentials (for <code>https://fwd.app</code>) via either:
             <ul>
-              <li>a Skyforge Forward collector (recommended), or</li>
-              <li>manual username/password.</li>
+              <li>a saved Skyforge Forward credential set.</li>
             </ul>
           </li>
         </ul>
@@ -132,9 +131,10 @@
           <li>Create a ServiceNow PDI.</li>
           <li>In Skyforge, open <strong>ServiceNow</strong> (left navigation).</li>
           <li>Enter the ServiceNow instance URL and admin creds.</li>
-          <li>Select a Forward credential source (collector recommended).</li>
+          <li>Select a saved Forward credential set.</li>
           <li>Click <strong>Save</strong>.</li>
-          <li>If your PDI is sleeping, use <strong>PDI status → Wake up</strong>.</li>
+          <li>Click <strong>Run setup</strong>.</li>
+          <li>If setup pauses, apply remediation shown in Skyforge and click <strong>Resume setup</strong>.</li>
           <li>
             Create the demo tables (manual step, in ServiceNow UI):
             <ul>
@@ -180,7 +180,7 @@
               <li><code>System Definition → Script Includes</code> (ForwardClient / TicketAnalysis)</li>
             </ul>
           </li>
-          <li>(Optional) Click <strong>Configure Forward (ticketing)</strong> to enable Forward’s built-in ServiceNow ticketing integration.</li>
+          <li>(Optional) Use <strong>Advanced</strong> actions for manual install or ticketing configuration.</li>
         </ol>
       </div>
 
@@ -188,7 +188,7 @@
         <h2>Notes</h2>
         <ul>
           <li>ServiceNow calls Forward SaaS directly. Skyforge only installs/configures ServiceNow artifacts.</li>
-          <li>Skyforge can create the required fields/choices once the tables exist, but does <strong>not</strong> create the tables themselves.</li>
+          <li>Skyforge attempts to create required schema and assets; if blocked by ServiceNow policy, it returns explicit remediation and supports resume.</li>
           <li>The installer overwrites demo artifact contents by name (scripts, widget, REST message, properties).</li>
         </ul>
       </div>
