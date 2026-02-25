@@ -66,7 +66,7 @@ const items: NavItem[] = [
 		newTab: true,
 	},
 	{
-		label: "Forward",
+		label: "Forward Networks",
 		href: "",
 		icon: Network,
 		featureFlag: "forwardEnabled",
@@ -76,7 +76,11 @@ const items: NavItem[] = [
 				href: "/dashboard/forward/credentials",
 				icon: Settings,
 			},
-			{ label: "Collector", href: "/dashboard/forward", icon: Radio },
+			{
+				label: "Collector",
+				href: "/dashboard/forward",
+				icon: Radio,
+			},
 			{
 				label: "Cluster",
 				href: FORWARD_CLUSTER_URL,
@@ -119,14 +123,6 @@ const items: NavItem[] = [
 		external: true,
 		featureFlag: "coderEnabled",
 	},
-	{
-		label: "Coder Admin",
-		href: "/coder/",
-		icon: Cloud,
-		external: true,
-		adminOnly: true,
-		featureFlag: "coderEnabled",
-	},
 	{ label: "Webhooks", href: "/webhooks", icon: Webhook },
 	{ label: "Syslog", href: "/syslog", icon: Inbox },
 	{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
@@ -158,6 +154,14 @@ const items: NavItem[] = [
 		icon: Settings,
 		children: [
 			{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
+			{
+				label: "Coder Admin",
+				href: "/coder/",
+				icon: Cloud,
+				external: true,
+				adminOnly: true,
+				featureFlag: "coderEnabled",
+			},
 			{
 				label: "Admin Settings",
 				href: "/admin/settings",

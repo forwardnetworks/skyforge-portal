@@ -8,7 +8,7 @@ function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 describe("side nav model", () => {
 	it("shows Forward section with expected entries when enabled", () => {
 		const items = buildSideNavItems(false, { forwardEnabled: true });
-		const forward = findGroup("Forward", items);
+		const forward = findGroup("Forward Networks", items);
 
 		expect(forward).toBeDefined();
 		expect(forward?.children?.map((c) => c.label)).toEqual(
@@ -22,12 +22,16 @@ describe("side nav model", () => {
 		const credentialItem = forward?.children?.find(
 			(c) => c.label === "Credentials",
 		);
+		const collectorItem = forward?.children?.find(
+			(c) => c.label === "Collector",
+		);
 		expect(credentialItem?.href).toBe("/dashboard/forward/credentials");
+		expect(collectorItem?.href).toBe("/dashboard/forward");
 	});
 
 	it("hides Forward section when forward feature is disabled", () => {
 		const items = buildSideNavItems(false, { forwardEnabled: false });
-		const forward = findGroup("Forward", items);
+		const forward = findGroup("Forward Networks", items);
 
 		expect(forward).toBeUndefined();
 	});
@@ -47,5 +51,14 @@ describe("side nav model", () => {
 		expect(labels).toContain("Integrations");
 		expect(labels).toContain("Git");
 		expect(labels).toContain("Webhooks");
+	});
+
+	it("moves Coder Admin under Settings", () => {
+		const items = buildSideNavItems(true, { coderEnabled: true });
+		const topLevelLabels = items.map((i) => i.label);
+		expect(topLevelLabels).not.toContain("Coder Admin");
+
+		const settings = findGroup("Settings", items);
+		expect(settings?.children?.map((c) => c.label)).toContain("Coder Admin");
 	});
 });
