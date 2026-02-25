@@ -14,6 +14,7 @@
 		"format": "biome format --write .",
 		"test": "vitest",
 		"e2e:ui": "node scripts/ui-e2e.mjs",
+		"e2e:ui:nos": "node scripts/ui-e2e-nos.mjs",
 		"gen:openapi": "openapi-typescript ../charts/skyforge/files/openapi.json -o src/lib/openapi.gen.ts"
 	},
 	"dependencies": {
