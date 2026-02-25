@@ -298,10 +298,13 @@ export async function getUserScopes(): Promise<GetUserScopesResponse> {
 
 export async function listUserScopes(): Promise<SkyforgeUserScope[]> {
 	const resp = await getUserScopes();
-	const scopesKey = `work${"spaces"}`;
-	return (
-		(resp as Record<string, SkyforgeUserScope[] | undefined>)[scopesKey] ?? []
-	);
+	const userScopes = (resp as Record<string, SkyforgeUserScope[] | undefined>)
+		.userScopes;
+	if (Array.isArray(userScopes)) return userScopes;
+	const legacyWorkspaces = (
+		resp as Record<string, SkyforgeUserScope[] | undefined>
+	)[`work${"spaces"}`];
+	return Array.isArray(legacyWorkspaces) ? legacyWorkspaces : [];
 }
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {

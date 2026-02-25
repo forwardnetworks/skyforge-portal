@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	Activity,
@@ -12,10 +12,8 @@ import {
 	Play,
 	Plus,
 	Search,
-	Settings,
 	StopCircle,
 	Trash2,
-	Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -45,13 +43,6 @@ import {
 	type DataTableColumn,
 } from "../../../components/ui/data-table";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "../../../components/ui/dialog";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -78,9 +69,7 @@ import {
 	type SkyforgeUserScope,
 	type UserScopeDeployment,
 	buildLoginUrl,
-	createUserScope,
 	deleteDeployment,
-	deleteUserScope,
 	destroyDeployment,
 	getDashboardSnapshot,
 	getSession,
@@ -146,12 +135,6 @@ function DeploymentsPage() {
 
 	// UI state
 	const [isFeedOpen, setIsFeedOpen] = useState(true);
-	const [createUserScopeOpen, setCreateUserScopeOpen] = useState(false);
-	const [createUserScopeName, setCreateUserScopeName] = useState("");
-	const [createUserScopeSlug, setCreateUserScopeSlug] = useState("");
-	const [deleteUserScopeOpen, setDeleteUserScopeOpen] = useState(false);
-	const [deleteUserScopeConfirm, setDeleteUserScopeConfirm] = useState("");
-
 	const userScopesQ = useQuery({
 		queryKey: queryKeys.userScopes(),
 		queryFn: listUserScopes,
@@ -163,10 +146,7 @@ function DeploymentsPage() {
 
 	// Use URL param if available, otherwise fallback to last-selected, then first user scope.
 	const selectedUserScopeId = useMemo(() => {
-		if (
-			userId &&
-			userScopes.some((w: SkyforgeUserScope) => w.id === userId)
-		)
+		if (userId && userScopes.some((w: SkyforgeUserScope) => w.id === userId))
 			return userId;
 		const stored =
 			typeof window !== "undefined"
@@ -191,85 +171,17 @@ function DeploymentsPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selectedUserScopeId]);
 
-	const selectedUserScope = useMemo(() => {
-		return (
+	const selectedUserScope = useMemo(
+		() =>
 			userScopes.find((w: SkyforgeUserScope) => w.id === selectedUserScopeId) ??
-			null
-		);
-	}, [userScopes, selectedUserScopeId]);
-
-	const createWs = useMutation({
-		mutationFn: async () => {
-			const name = String(createUserScopeName ?? "").trim();
-			if (!name) throw new Error("User scope name is required");
-			return createUserScope({
-				name,
-				slug: String(createUserScopeSlug ?? "").trim() || undefined,
-			} as any);
-		},
-		onSuccess: async (created) => {
-			toast.success("User scope created");
-			setCreateUserScopeOpen(false);
-			setCreateUserScopeName("");
-			setCreateUserScopeSlug("");
-			await queryClient.invalidateQueries({ queryKey: queryKeys.userScopes() });
-			if (created?.id) {
-				navigate({
-					search: { userId: created.id } as any,
-					replace: true,
-				});
-			}
-		},
-		onError: (e) =>
-			toast.error("Failed to create user scope", {
-				description: (e as Error).message,
-			}),
-	});
-
-	const delWs = useMutation({
-		mutationFn: async () => {
-			const confirm = String(deleteUserScopeConfirm ?? "").trim();
-			if (!confirm) {
-				throw new Error(
-					`Type the user-scope slug (“${selectedUserScope?.slug ?? ""}”) to confirm`,
-				);
-			}
-			return deleteUserScope(selectedUserScopeId, { confirm });
-		},
-		onSuccess: async () => {
-			toast.success("User scope deleted");
-			setDeleteUserScopeOpen(false);
-			setDeleteUserScopeConfirm("");
-			await queryClient.invalidateQueries({ queryKey: queryKeys.userScopes() });
-			navigate({ search: { userId: "" } as any, replace: true });
-		},
-		onError: (e) =>
-			toast.error("Failed to delete user scope", {
-				description: (e as Error).message,
-			}),
-	});
-
-	// Sync internal state selection to URL
-	const handleUserScopeChange = (newId: string) => {
-		if (newId === "__create__") {
-			setCreateUserScopeOpen(true);
-			return;
-		}
-		if (typeof window !== "undefined") {
-			window.localStorage.setItem(lastUserScopeKey, newId);
-		}
-		navigate({
-			search: { userId: newId } as any,
-			replace: true,
-		});
-	};
+			null,
+		[userScopes, selectedUserScopeId],
+	);
 
 	const allDeployments = useMemo(() => {
 		const all = (snap.data?.deployments ?? []) as UserScopeDeployment[];
 		return selectedUserScopeId
-			? all.filter(
-					(d: UserScopeDeployment) => d.userId === selectedUserScopeId,
-				)
+			? all.filter((d: UserScopeDeployment) => d.userId === selectedUserScopeId)
 			: all;
 	}, [selectedUserScopeId, snap.data?.deployments]);
 
@@ -514,165 +426,15 @@ function DeploymentsPage() {
 				</div>
 
 				<div className="flex items-center gap-3">
-					<div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
-						<Select
-							value={selectedUserScopeId}
-							onValueChange={handleUserScopeChange}
-							disabled={false}
-						>
-							<SelectTrigger className="w-[200px] h-8 bg-transparent border-0 focus:ring-0 shadow-none">
-								<SelectValue placeholder="Select user scope" />
-							</SelectTrigger>
-							<SelectContent>
-								{userScopes.map((w: SkyforgeUserScope) => (
-									<SelectItem key={w.id} value={w.id}>
-										{w.name} ({w.slug})
-									</SelectItem>
-								))}
-								<SelectItem value="__create__">
-									<span className="flex items-center gap-2">
-										<Plus className="h-4 w-4" />
-										Add user scope…
-									</span>
-								</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="outline"
-								size="icon"
-								className="h-8 w-8"
-								disabled={!selectedUserScopeId}
-							>
-								<Settings className="h-4 w-4" />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuLabel>User Scope</DropdownMenuLabel>
-							<DropdownMenuItem
-								onClick={() =>
-									navigate({
-										to: "/dashboard/settings",
-									})
-								}
-							>
-								<Users className="mr-2 h-4 w-4" />
-								My settings
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => navigate({ to: "/dashboard/deployments" })}
-							>
-								<Inbox className="mr-2 h-4 w-4" />
-								All deployments
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								className="text-destructive focus:text-destructive"
-								onClick={() => {
-									setDeleteUserScopeOpen(true);
-									setDeleteUserScopeConfirm("");
-								}}
-							>
-								<Trash2 className="mr-2 h-4 w-4" />
-								Delete user scope…
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
+					{selectedUserScope ? (
+						<Badge variant="outline">
+							{selectedUserScope.name} ({selectedUserScope.slug})
+						</Badge>
+					) : (
+						<Badge variant="secondary">No user scope</Badge>
+					)}
 				</div>
 			</div>
-
-			<Dialog open={createUserScopeOpen} onOpenChange={setCreateUserScopeOpen}>
-				<DialogContent className="max-w-lg">
-					<DialogHeader>
-						<DialogTitle>Create user scope</DialogTitle>
-						<DialogDescription>
-							Create a new user scope and its backing Git repo.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-3">
-						<div className="space-y-1.5">
-							<div className="text-sm font-medium">Name</div>
-							<Input
-								value={createUserScopeName}
-								onChange={(e) => setCreateUserScopeName(e.target.value)}
-								placeholder="Customer demo"
-							/>
-						</div>
-						<div className="space-y-1.5">
-							<div className="text-sm font-medium">Slug (optional)</div>
-							<Input
-								value={createUserScopeSlug}
-								onChange={(e) => setCreateUserScopeSlug(e.target.value)}
-								placeholder="customer-demo"
-								className="font-mono"
-							/>
-							<p className="text-xs text-muted-foreground">
-								Leave blank to auto-generate from name.
-							</p>
-						</div>
-						<div className="flex items-center justify-end gap-2 pt-2">
-							<Button
-								variant="outline"
-								onClick={() => setCreateUserScopeOpen(false)}
-								disabled={createWs.isPending}
-							>
-								Cancel
-							</Button>
-							<Button
-								onClick={() => createWs.mutate()}
-								disabled={createWs.isPending}
-							>
-								{createWs.isPending ? "Creating…" : "Create"}
-							</Button>
-						</div>
-					</div>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog open={deleteUserScopeOpen} onOpenChange={setDeleteUserScopeOpen}>
-				<DialogContent className="max-w-lg">
-					<DialogHeader>
-						<DialogTitle>Delete user scope</DialogTitle>
-						<DialogDescription>
-							This deletes the user scope and its backing resources (Git repo,
-							artifacts, and state). This cannot be undone.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-3">
-						<div className="text-sm">
-							Type{" "}
-							<span className="font-mono font-semibold">
-								{selectedUserScope?.slug ?? ""}
-							</span>{" "}
-							to confirm.
-						</div>
-						<Input
-							value={deleteUserScopeConfirm}
-							onChange={(e) => setDeleteUserScopeConfirm(e.target.value)}
-							placeholder={selectedUserScope?.slug ?? ""}
-							className="font-mono"
-						/>
-						<div className="flex items-center justify-end gap-2 pt-2">
-							<Button
-								variant="outline"
-								onClick={() => setDeleteUserScopeOpen(false)}
-								disabled={delWs.isPending}
-							>
-								Cancel
-							</Button>
-							<Button
-								variant="destructive"
-								onClick={() => delWs.mutate()}
-								disabled={delWs.isPending}
-							>
-								{delWs.isPending ? "Deleting…" : "Delete"}
-							</Button>
-						</div>
-					</div>
-				</DialogContent>
-			</Dialog>
 
 			{!snap.data && (
 				<Card className="border-dashed">
