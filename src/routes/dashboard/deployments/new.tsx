@@ -620,8 +620,13 @@ function CreateDeploymentPage() {
 			return createUserScopeDeployment(values.userId, body);
 		},
 		onSuccess: async (_, variables) => {
+			const kind = String(variables.kind ?? "").trim();
+			const description =
+				kind === "netlab"
+					? `${variables.name} create run is queued.`
+					: `${variables.name} is created. Use deployment actions to start provisioning.`;
 			toast.success("Deployment created successfully", {
-				description: `${variables.name} is now queued for provisioning.`,
+				description,
 			});
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),

@@ -4,26 +4,26 @@ import { queryKeys } from "./query-keys";
 import { SKYFORGE_API } from "./skyforge-api";
 import { subscribeSSE } from "./sse";
 
-export type TaskLogEntry = {
-	output: string;
+export type TaskLifecycleEntry = {
+	type: string;
 	time: string;
-	stream?: string;
+	payload?: Record<string, unknown>;
 };
 
-export type RunOutputEvent = {
+export type RunLifecycleEvent = {
 	cursor: number;
-	entries: TaskLogEntry[];
+	entries: TaskLifecycleEntry[];
 };
 
-export type RunLogState = {
+export type RunLifecycleState = {
 	cursor: number;
-	entries: TaskLogEntry[];
+	entries: TaskLifecycleEntry[];
 };
 
-export function useRunEvents(runId: string, enabled: boolean) {
+export function useRunLifecycleEvents(runId: string, enabled: boolean) {
 	const queryClient = useQueryClient();
 	const url = useMemo(
-		() => `${SKYFORGE_API}/runs/${encodeURIComponent(runId)}/events`,
+		() => `${SKYFORGE_API}/runs/${encodeURIComponent(runId)}/lifecycle`,
 		[runId],
 	);
 
@@ -31,14 +31,14 @@ export function useRunEvents(runId: string, enabled: boolean) {
 		if (!enabled) return;
 		if (!runId) return;
 
-		const onOutput = (ev: MessageEvent<string>) => {
+		const onLifecycle = (ev: MessageEvent<string>) => {
 			try {
-				const payload = JSON.parse(ev.data) as RunOutputEvent;
+				const payload = JSON.parse(ev.data) as RunLifecycleEvent;
 				if (!payload || !Array.isArray(payload.entries)) return;
 
 				queryClient.setQueryData(
-					queryKeys.runLogs(runId),
-					(prev?: RunLogState) => {
+					queryKeys.runLifecycle(runId),
+					(prev?: RunLifecycleState) => {
 						const prevEntries = prev?.entries ?? [];
 						const merged = prevEntries.concat(payload.entries);
 						return {
@@ -52,8 +52,7 @@ export function useRunEvents(runId: string, enabled: boolean) {
 			}
 		};
 
-		const sub = subscribeSSE(url, { output: onOutput });
-
+		const sub = subscribeSSE(url, { lifecycle: onLifecycle });
 		return () => {
 			sub.close();
 		};

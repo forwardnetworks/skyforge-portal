@@ -4,6 +4,7 @@ export const queryKeys = {
 	dashboardSnapshot: () => ["dashboardSnapshot"] as const,
 	statusSummary: () => ["statusSummary"] as const,
 	runLogs: (runId: string) => ["runLogs", runId] as const,
+	runLifecycle: (runId: string) => ["runLifecycle", runId] as const,
 	deploymentTopology: (userId: string, deploymentId: string) =>
 		["deploymentTopology", userId, deploymentId] as const,
 	deploymentUIEvents: (userId: string, deploymentId: string) =>

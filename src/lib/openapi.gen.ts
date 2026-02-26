@@ -3007,6 +3007,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/deployments/{deploymentID}/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * PreflightUserScopeDeploymentAction runs deployment preflight checks without
+         * @description queueing a run.
+         */
+        post: operations["POST:skyforge.PreflightUserScopeDeploymentAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}/deployments/{deploymentID}/terminal/ws": {
         parameters: {
             query?: never;
@@ -5801,6 +5821,10 @@ export interface components {
             connected: boolean;
             expiresAt: string;
             lastAuthenticatedAt: string;
+        };
+        "skyforge.deploymentPreflightSummary": {
+            capacity: components["schemas"]["skyforge.JSONMap"];
+            compatibility: components["schemas"]["skyforge.JSONMap"];
         };
         "skyforge.serviceNowSetupStepResult": {
             detail: string;
@@ -11814,6 +11838,46 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:skyforge.PreflightUserScopeDeploymentAction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    action: components["schemas"]["deploycore.Action"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        action: components["schemas"]["deploycore.Action"];
+                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
+                        idempotent: boolean;
+                        noOp: boolean;
+                        operationKey: string;
+                        preflight: components["schemas"]["skyforge.deploymentPreflightSummary"];
+                        reason: components["schemas"]["deploycore.Reason"];
+                        state: components["schemas"]["skyforge.DeploymentActionState"];
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.TerminalExecWS": {
         parameters: {
             query?: never;
@@ -12897,12 +12961,6 @@ export interface operations {
                     environment: components["schemas"]["skyforge.JSONMap"];
                     /** owner/repo or URL (custom only) */
                     repo: string;
-                    /**
-                     * SetOverrides are netlab CLI `--set` overrides (highest precedence) applied
-                     *     during validation.
-                     * @description They are only used by the in-cluster netlab generator (netlab-c9s), not BYOS netlab.
-                     */
-                    setOverrides: string[];
                     /** user|blueprints|external|custom */
                     source: string;
                     /** repo-relative file within Dir (may include subdirs) */

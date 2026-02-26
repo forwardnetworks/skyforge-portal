@@ -2882,6 +2882,30 @@ export async function runDeploymentAction(
 	);
 }
 
+export type DeploymentAction =
+	| "create"
+	| "start"
+	| "stop"
+	| "destroy"
+	| "export";
+
+export type PreflightDeploymentActionResponse =
+	operations["POST:skyforge.PreflightUserScopeDeploymentAction"]["responses"][200]["content"]["application/json"];
+
+export async function preflightDeploymentAction(
+	userId: string,
+	deploymentId: string,
+	action: "create" | "start" | "stop" | "destroy",
+): Promise<PreflightDeploymentActionResponse> {
+	return apiFetch<PreflightDeploymentActionResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/preflight`,
+		{
+			method: "POST",
+			body: JSON.stringify({ action }),
+		},
+	);
+}
+
 export type DeploymentLeaseInfo = {
 	userId: string;
 	deploymentId: string;

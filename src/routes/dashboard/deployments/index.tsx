@@ -62,10 +62,13 @@ import {
 import { Skeleton } from "../../../components/ui/skeleton";
 import { loginWithPopup } from "../../../lib/auth-popup";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
+import {
+	noOpMessageForDeploymentAction,
+	readDeploymentActionMeta,
+} from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
-	type JSONMap,
 	type SkyforgeUserScope,
 	type UserScopeDeployment,
 	buildLoginUrl,
@@ -73,6 +76,7 @@ import {
 	getDashboardSnapshot,
 	getSession,
 	listUserScopes,
+	preflightDeploymentAction,
 	runDeploymentAction,
 } from "../../../lib/skyforge-api";
 import { cn } from "../../../lib/utils";
@@ -247,30 +251,34 @@ function DeploymentsPage() {
 		});
 	}, [allDeployments, searchQuery, statusFilter, typeFilter]);
 
-	const readActionMeta = (resp: JSONMap) => {
-		const reason = String(resp.reason ?? "").trim();
-		return {
-			noOp: Boolean(resp.noOp),
-			reason,
-		};
-	};
-
 	const handleStart = async (d: UserScopeDeployment) => {
 		if (pendingActions[d.id]) return;
 		setPendingActions((prev) => ({ ...prev, [d.id]: true }));
 		try {
+			const preflight = await preflightDeploymentAction(
+				d.userId,
+				d.id,
+				"start",
+			);
+			const preflightMeta = readDeploymentActionMeta(preflight);
+			if (preflightMeta.noOp) {
+				toast.message(
+					noOpMessageForDeploymentAction("start", preflightMeta.reason),
+					{
+						description: d.name,
+					},
+				);
+				await queryClient.invalidateQueries({
+					queryKey: queryKeys.dashboardSnapshot(),
+				});
+				return;
+			}
 			const resp = await runDeploymentAction(d.userId, d.id, "start");
-			const meta = readActionMeta(resp);
+			const meta = readDeploymentActionMeta(resp);
 			if (meta.noOp) {
-				const msg =
-					meta.reason === "in_flight_duplicate"
-						? "Action already in progress"
-						: meta.reason === "cooldown_suppressed"
-							? "Action suppressed briefly to prevent duplicate jobs"
-							: meta.reason === "already_present"
-								? "Deployment is already active"
-								: "No action required";
-				toast.message(msg, { description: d.name });
+				toast.message(noOpMessageForDeploymentAction("start", meta.reason), {
+					description: d.name,
+				});
 			} else {
 				toast.success("Deployment starting", {
 					description: `${d.name} is queued to start.`,
@@ -280,7 +288,9 @@ function DeploymentsPage() {
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
-			toast.error("Failed to start", { description: (e as Error).message });
+			toast.error("Start preflight/action failed", {
+				description: (e as Error).message,
+			});
 		} finally {
 			setPendingActions((prev) => {
 				const next = { ...prev };
@@ -294,20 +304,26 @@ function DeploymentsPage() {
 		if (pendingActions[d.id]) return;
 		setPendingActions((prev) => ({ ...prev, [d.id]: true }));
 		try {
+			const preflight = await preflightDeploymentAction(d.userId, d.id, "stop");
+			const preflightMeta = readDeploymentActionMeta(preflight);
+			if (preflightMeta.noOp) {
+				toast.message(
+					noOpMessageForDeploymentAction("stop", preflightMeta.reason),
+					{
+						description: d.name,
+					},
+				);
+				await queryClient.invalidateQueries({
+					queryKey: queryKeys.dashboardSnapshot(),
+				});
+				return;
+			}
 			const resp = await runDeploymentAction(d.userId, d.id, "stop");
-			const meta = readActionMeta(resp);
+			const meta = readDeploymentActionMeta(resp);
 			if (meta.noOp) {
-				const msg =
-					meta.reason === "in_flight_duplicate"
-						? "Action already in progress"
-						: meta.reason === "cooldown_suppressed"
-							? "Action suppressed briefly to prevent duplicate jobs"
-							: meta.reason === "already_absent"
-								? "Deployment is already stopped"
-								: meta.reason === "no_active_run"
-									? "No active run to stop"
-									: "No action required";
-				toast.message(msg, { description: d.name });
+				toast.message(noOpMessageForDeploymentAction("stop", meta.reason), {
+					description: d.name,
+				});
 			} else {
 				toast.success("Deployment stopping", {
 					description: `${d.name} is queued to stop.`,
@@ -317,7 +333,9 @@ function DeploymentsPage() {
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
-			toast.error("Failed to stop", { description: (e as Error).message });
+			toast.error("Stop preflight/action failed", {
+				description: (e as Error).message,
+			});
 		} finally {
 			setPendingActions((prev) => {
 				const next = { ...prev };
@@ -436,10 +454,11 @@ function DeploymentsPage() {
 	}, [handleStart, handleStop, navigate]);
 
 	const runs = useMemo(() => {
-		const all = (snap.data?.runs ?? []) as JSONMap[];
+		const all = (snap.data?.runs ?? []) as Record<string, unknown>[];
 		if (!selectedUserScopeId) return all;
 		return all.filter(
-			(r: JSONMap) => String(r.userId ?? "") === selectedUserScopeId,
+			(r: Record<string, unknown>) =>
+				String(r.userId ?? "") === selectedUserScopeId,
 		);
 	}, [selectedUserScopeId, snap.data?.runs]);
 

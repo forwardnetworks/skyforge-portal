@@ -19,6 +19,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../../components/ui/select";
+import {
+	noOpMessageForDeploymentAction,
+	readDeploymentActionMeta,
+} from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	createUserForwardCollectorConfig,
@@ -27,6 +31,7 @@ import {
 	getUserScopeNetlabTemplates,
 	listUserForwardCollectorConfigs,
 	listUserScopes,
+	preflightDeploymentAction,
 	runDeploymentAction,
 	updateDeploymentLease,
 } from "../../../lib/skyforge-api";
@@ -55,6 +60,13 @@ const CURATED_EXEC_TEMPLATES = [
 const FORWARD_FWD_APP = "https://fwd.app";
 const FORWARD_IN_CLUSTER_ORG =
 	"http://fwd-appserver.forward.svc.cluster.local:8080";
+
+type ExecutiveDeployResult = {
+	deploymentId: string;
+	deploymentName: string;
+	noOp: boolean;
+	reason: string;
+};
 
 function normalizeBaseURL(target: ForwardTarget, customHost: string): string {
 	if (target === "fwd_app") return FORWARD_FWD_APP;
@@ -201,24 +213,57 @@ function ExecutiveDeployPage() {
 					template,
 					forwardEnabled: true,
 					forwardCollectorId: chosenCollector,
-				},
+				} as unknown as Record<string, never>,
 			});
 			const deploymentId = String(deployment.id || "").trim();
 			if (!deploymentId)
 				throw new Error("Deployment was created without an id");
+			const deploymentName = String(
+				deployment.name ?? (name.trim() || deploymentId),
+			);
 			await updateDeploymentLease(userId, deploymentId, {
 				enabled: true,
 				hours: Number.parseInt(leaseHours, 10) || 4,
 			});
-			await runDeploymentAction(userId, deploymentId, "create");
-			return deploymentId;
+			const preflight = await preflightDeploymentAction(
+				userId,
+				deploymentId,
+				"create",
+			);
+			const preflightMeta = readDeploymentActionMeta(preflight);
+			if (preflightMeta.noOp) {
+				return {
+					deploymentId,
+					deploymentName,
+					noOp: true,
+					reason: preflightMeta.reason,
+				} satisfies ExecutiveDeployResult;
+			}
+			const actionResp = await runDeploymentAction(
+				userId,
+				deploymentId,
+				"create",
+			);
+			const actionMeta = readDeploymentActionMeta(actionResp);
+			return {
+				deploymentId,
+				deploymentName,
+				noOp: actionMeta.noOp,
+				reason: actionMeta.reason,
+			} satisfies ExecutiveDeployResult;
 		},
-		onSuccess: async (deploymentId) => {
-			toast.success("Executive deployment queued");
+		onSuccess: async (result) => {
+			if (result.noOp) {
+				toast.message(noOpMessageForDeploymentAction("create", result.reason), {
+					description: result.deploymentName,
+				});
+			} else {
+				toast.success("Executive deployment queued");
+			}
 			await qc.invalidateQueries({ queryKey: queryKeys.dashboardSnapshot() });
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
-				params: { deploymentId },
+				params: { deploymentId: result.deploymentId },
 			});
 		},
 		onError: (err) =>
