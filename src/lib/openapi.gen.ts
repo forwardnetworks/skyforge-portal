@@ -680,6 +680,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/deployment-lifetime/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetDeploymentLifetimePolicy returns deployment lifetime policy used by the UI. */
+        get: operations["GET:skyforge.GetDeploymentLifetimePolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dns/bootstrap": {
         parameters: {
             query?: never;
@@ -1593,6 +1610,46 @@ export interface paths {
         get: operations["GET:skyforge.PublicConfig"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quick-deploy/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetQuickDeployCatalog returns the curated one-click quick deploy template
+         *     catalog.
+         */
+        get: operations["GET:skyforge.GetQuickDeployCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quick-deploy/deploy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RunQuickDeploy provisions a curated netlab-c9s deployment with managed
+         *     in-cluster Forward sync.
+         */
+        post: operations["POST:skyforge.RunQuickDeploy"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5826,6 +5883,12 @@ export interface components {
             capacity: components["schemas"]["skyforge.JSONMap"];
             compatibility: components["schemas"]["skyforge.JSONMap"];
         };
+        "skyforge.quickDeployTemplate": {
+            description: string;
+            id: string;
+            name: string;
+            template: string;
+        };
         "skyforge.serviceNowSetupStepResult": {
             detail: string;
             status: string;
@@ -7045,6 +7108,38 @@ export interface operations {
                         runs: components["schemas"]["skyforge.JSONMap"][];
                         templatesIndexUpdatedAt: string;
                         userScopes: components["schemas"]["skyforge.UserScope"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetDeploymentLifetimePolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allowNoExpiry: boolean;
+                        allowedHours: number[];
+                        /** Format: int64 */
+                        defaultHours: number;
+                        expiryActions: {
+                            [key: string]: string;
+                        };
+                        managedTypes: string[];
+                        /** Format: int64 */
+                        maxHoursNonAdmin: number;
                     };
                 };
             };
@@ -8907,6 +9002,68 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetQuickDeployCatalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        defaultLeaseHours: number;
+                        leaseOptions: number[];
+                        templates: components["schemas"]["skyforge.quickDeployTemplate"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RunQuickDeploy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    leaseHours: number;
+                    name: string;
+                    template: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deploymentId: string;
+                        deploymentName: string;
+                        noOp: boolean;
+                        reason: components["schemas"]["deploycore.Reason"];
+                        userId: string;
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };
