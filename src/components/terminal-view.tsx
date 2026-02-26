@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Terminal as XTerm } from "xterm";
 import "xterm/css/xterm.css";
 import { Button } from "@/components/ui/button";
-import { SKYFORGE_PROXY_ROOT } from "@/lib/skyforge-api";
+import { SKYFORGE_PROXY_ROOT } from "@/lib/api-client";
 
 type Props = {
 	userId: string;

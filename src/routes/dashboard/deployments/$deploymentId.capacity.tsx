@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { queryKeys } from "@/lib/query-keys";
 import {
 	type CapacityRollupRow,
 	type DashboardSnapshot,
@@ -35,7 +34,8 @@ import {
 	postDeploymentCapacityDeviceMetricsHistory,
 	postDeploymentCapacityInterfaceMetricsHistory,
 	refreshDeploymentCapacityRollups,
-} from "@/lib/skyforge-api";
+} from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw, TrendingUp } from "lucide-react";

@@ -29,12 +29,8 @@ import {
 	CardTitle,
 } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
+import { SKYFORGE_API, getStatusSummary, getUIConfig } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
-import {
-	SKYFORGE_API,
-	getStatusSummary,
-	getUIConfig,
-} from "../lib/skyforge-api";
 import { useStatusSummaryEvents } from "../lib/status-events";
 import { cn } from "../lib/utils";
 

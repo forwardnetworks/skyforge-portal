@@ -32,11 +32,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDownloadImage } from "@/hooks/use-download-image";
 import {
-	type DeploymentUIEventsState,
-	useDeploymentUIEvents,
-} from "@/lib/deployment-ui-events";
-import { queryKeys } from "@/lib/query-keys";
-import {
 	type DeploymentNodeInterfacesResponse,
 	type DeploymentNodeRunningConfigResponse,
 	type DeploymentTopology,
@@ -50,8 +45,13 @@ import {
 	getDeploymentNodeRunningConfig,
 	setDeploymentLinkAdmin,
 	setDeploymentLinkImpairment,
-} from "@/lib/skyforge-api";
-import { saveDeploymentNodeConfig } from "@/lib/skyforge-api";
+} from "@/lib/api-client";
+import { saveDeploymentNodeConfig } from "@/lib/api-client";
+import {
+	type DeploymentUIEventsState,
+	useDeploymentUIEvents,
+} from "@/lib/deployment-ui-events";
+import { queryKeys } from "@/lib/query-keys";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
 	Activity,

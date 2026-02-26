@@ -44,7 +44,6 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "../../components/ui/tabs";
-import { queryKeys } from "../../lib/query-keys";
 import {
 	getGovernancePolicy,
 	getGovernanceSummary,
@@ -54,7 +53,8 @@ import {
 	listGovernanceUsage,
 	syncGovernanceSources,
 	updateGovernancePolicy,
-} from "../../lib/skyforge-api";
+} from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 
 function formatSeconds(seconds: unknown): string {
 	const n = Number(seconds);

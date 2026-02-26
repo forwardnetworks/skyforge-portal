@@ -2810,9 +2810,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GetUserScopeDeploymentLease returns executive lease metadata for a deployment. */
+        /** GetUserScopeDeploymentLease returns lease metadata for a deployment. */
         get: operations["GET:skyforge.GetUserScopeDeploymentLease"];
-        /** PutUserScopeDeploymentLease upserts executive lease metadata for a deployment. */
+        /** PutUserScopeDeploymentLease upserts lease metadata for a deployment. */
         put: operations["PUT:skyforge.PutUserScopeDeploymentLease"];
         post?: never;
         delete?: never;
@@ -4357,7 +4357,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/internal/cron/deployments/executive-leases": {
+    "/internal/cron/deployments/leases": {
         parameters: {
             query?: never;
             header?: never;
@@ -4367,10 +4367,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Executive lease sweeper
-         * @description Stops expired netlab-c9s executive labs.
+         * Deployment lease sweeper
+         * @description Stops expired managed deployment leases.
          */
-        post: operations["POST:skyforge.CronSweepExecutiveDeploymentLeases"];
+        post: operations["POST:skyforge.CronSweepDeploymentLeases"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14440,7 +14440,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.CronSweepExecutiveDeploymentLeases": {
+    "POST:skyforge.CronSweepDeploymentLeases": {
         parameters: {
             query?: never;
             header?: never;

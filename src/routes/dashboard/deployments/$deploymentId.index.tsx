@@ -55,17 +55,6 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "../../../components/ui/tabs";
-import { useDashboardEvents } from "../../../lib/dashboard-events";
-import {
-	noOpMessageForDeploymentAction,
-	readDeploymentActionMeta,
-} from "../../../lib/deployment-actions";
-import { queryKeys } from "../../../lib/query-keys";
-import {
-	type RunLogState,
-	type TaskLogEntry,
-	useRunEvents,
-} from "../../../lib/run-events";
 import {
 	type DashboardSnapshot,
 	type UserForwardCollectorConfigSummary,
@@ -78,7 +67,18 @@ import {
 	saveDeploymentNodeConfig,
 	syncDeploymentForward,
 	updateDeploymentForwardConfig,
-} from "../../../lib/skyforge-api";
+} from "../../../lib/api-client";
+import { useDashboardEvents } from "../../../lib/dashboard-events";
+import {
+	noOpMessageForDeploymentAction,
+	readDeploymentActionMeta,
+} from "../../../lib/deployment-actions";
+import { queryKeys } from "../../../lib/query-keys";
+import {
+	type RunLogState,
+	type TaskLogEntry,
+	useRunEvents,
+} from "../../../lib/run-events";
 
 export const Route = createFileRoute("/dashboard/deployments/$deploymentId/")({
 	component: DeploymentDetailPage,

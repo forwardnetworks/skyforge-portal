@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { getDeploymentNodeDescribe } from "@/lib/skyforge-api";
+import { getDeploymentNodeDescribe } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { useMemo } from "react";

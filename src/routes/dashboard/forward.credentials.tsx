@@ -20,12 +20,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../components/ui/select";
-import { queryKeys } from "../../lib/query-keys";
 import {
 	createUserForwardCollectorConfig,
 	deleteUserForwardCollectorConfig,
 	listUserForwardCollectorConfigs,
-} from "../../lib/skyforge-api";
+} from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/forward/credentials")({
 	component: ForwardCredentialsPage,

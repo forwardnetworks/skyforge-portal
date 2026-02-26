@@ -30,7 +30,6 @@ import {
 } from "../../components/ui/select";
 import { Textarea } from "../../components/ui/textarea";
 import { UserVariableGroups } from "../../components/user-variable-groups";
-import { queryKeys } from "../../lib/query-keys";
 import {
 	deleteUserAWSStaticCredentials,
 	deleteUserAzureCredentials,
@@ -62,7 +61,8 @@ import {
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
 	upsertUserNetlabServer,
-} from "../../lib/skyforge-api";
+} from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/settings")({
 	component: UserSettingsPage,

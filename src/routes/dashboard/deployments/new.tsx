@@ -47,8 +47,6 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "../../../components/ui/tooltip";
-import { useDashboardEvents } from "../../../lib/dashboard-events";
-import { queryKeys } from "../../../lib/query-keys";
 import {
 	type CreateUserScopeDeploymentRequest,
 	type DashboardSnapshot,
@@ -76,7 +74,9 @@ import {
 	listUserScopes,
 	listUserVariableGroups,
 	validateUserScopeNetlabTemplate,
-} from "../../../lib/skyforge-api";
+} from "../../../lib/api-client";
+import { useDashboardEvents } from "../../../lib/dashboard-events";
+import { queryKeys } from "../../../lib/query-keys";
 
 const deploymentsSearchSchema = z.object({
 	userId: z.string().optional().catch(""),

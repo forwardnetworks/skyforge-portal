@@ -19,7 +19,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../components/ui/select";
-import { queryKeys } from "../../lib/query-keys";
 import {
 	cancelUserServiceNowSetup,
 	configureForwardServiceNowTicketing,
@@ -32,7 +31,8 @@ import {
 	putUserServiceNowConfig,
 	startUserServiceNowSetup,
 	wakeUserServiceNowPdi,
-} from "../../lib/skyforge-api";
+} from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/servicenow")({
 	component: ServiceNowPage,

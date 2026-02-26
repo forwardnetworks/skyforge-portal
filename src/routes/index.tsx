@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { getSession } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
-import { getSession } from "../lib/skyforge-api";
 
 export const Route = createFileRoute("/")({
 	component: LandingPage,

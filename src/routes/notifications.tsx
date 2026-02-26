@@ -34,18 +34,18 @@ import { Label } from "../components/ui/label";
 import { Skeleton } from "../components/ui/skeleton";
 import { Switch } from "../components/ui/switch";
 import {
-	type NotificationsSnapshot,
-	useNotificationsEvents,
-} from "../lib/notifications-events";
-import { queryKeys } from "../lib/query-keys";
-import {
 	deleteNotification,
 	getSession,
 	getUserNotifications,
 	markAllNotificationsAsRead,
 	markNotificationAsRead,
-} from "../lib/skyforge-api";
-import type { NotificationRecord } from "../lib/skyforge-api";
+} from "../lib/api-client";
+import type { NotificationRecord } from "../lib/api-client";
+import {
+	type NotificationsSnapshot,
+	useNotificationsEvents,
+} from "../lib/notifications-events";
+import { queryKeys } from "../lib/query-keys";
 
 export const Route = createFileRoute("/notifications")({
 	component: NotificationsPage,

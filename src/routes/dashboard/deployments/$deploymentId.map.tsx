@@ -7,13 +7,13 @@ import { Badge } from "../../../components/ui/badge";
 import { buttonVariants } from "../../../components/ui/button";
 import { EmptyState } from "../../../components/ui/empty-state";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { useDashboardEvents } from "../../../lib/dashboard-events";
-import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
 	type UserScopeDeployment,
 	getDeploymentTopology,
-} from "../../../lib/skyforge-api";
+} from "../../../lib/api-client";
+import { useDashboardEvents } from "../../../lib/dashboard-events";
+import { queryKeys } from "../../../lib/query-keys";
 
 export const Route = createFileRoute(
 	"/dashboard/deployments/$deploymentId/map",

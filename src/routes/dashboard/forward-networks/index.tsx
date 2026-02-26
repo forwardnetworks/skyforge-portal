@@ -22,7 +22,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../../components/ui/select";
-import { queryKeys } from "../../../lib/query-keys";
 import {
 	type PolicyReportForwardNetwork,
 	type SkyforgeUserScope,
@@ -32,7 +31,8 @@ import {
 	listUserForwardCollectorConfigs,
 	listUserScopeForwardNetworks,
 	listUserScopes,
-} from "../../../lib/skyforge-api";
+} from "../../../lib/api-client";
+import { queryKeys } from "../../../lib/query-keys";
 
 const searchSchema = z.object({
 	userId: z.string().optional().catch(""),

@@ -19,7 +19,7 @@ import {
 	Workflow,
 } from "lucide-react";
 import { useState } from "react";
-import { SKYFORGE_API } from "../lib/skyforge-api";
+import { SKYFORGE_API } from "../lib/api-client";
 import { cn } from "../lib/utils";
 import {
 	DropdownMenu,

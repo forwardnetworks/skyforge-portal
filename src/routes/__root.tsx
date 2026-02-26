@@ -44,19 +44,19 @@ import {
 } from "../components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
 import { Toaster } from "../components/ui/sonner";
-import { loginWithPopup } from "../lib/auth-popup";
-import {
-	type NotificationsSnapshot,
-	useNotificationsEvents,
-} from "../lib/notifications-events";
-import { queryKeys } from "../lib/query-keys";
 import {
 	buildLoginUrl,
 	getSession,
 	getUIConfig,
 	getUserNotifications,
 	logout,
-} from "../lib/skyforge-api";
+} from "../lib/api-client";
+import { loginWithPopup } from "../lib/auth-popup";
+import {
+	type NotificationsSnapshot,
+	useNotificationsEvents,
+} from "../lib/notifications-events";
+import { queryKeys } from "../lib/query-keys";
 import { cn } from "../lib/utils";
 
 export type RouterContext = {

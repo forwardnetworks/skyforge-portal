@@ -25,7 +25,6 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "../../components/ui/tabs";
-import { queryKeys } from "../../lib/query-keys";
 import {
 	type AdminAuditResponse,
 	adminImpersonateStart,
@@ -39,7 +38,8 @@ import {
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
 	updateGovernancePolicy,
-} from "../../lib/skyforge-api";
+} from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 
 export const Route = createFileRoute("/admin/settings")({
 	component: AdminSettingsPage,

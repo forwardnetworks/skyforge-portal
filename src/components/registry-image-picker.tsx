@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { listRegistryRepositories, listRegistryTags } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
-import { listRegistryRepositories, listRegistryTags } from "@/lib/skyforge-api";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";

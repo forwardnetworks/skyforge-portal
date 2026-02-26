@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import type { GetUserScopesResponse } from "./api-client";
+import { SKYFORGE_API } from "./api-client";
 import { queryKeys } from "./query-keys";
-import type { GetUserScopesResponse } from "./skyforge-api";
-import { SKYFORGE_API } from "./skyforge-api";
 import { subscribeSSE } from "./sse";
 
 export function useUserScopeEvents(enabled: boolean, all: boolean) {

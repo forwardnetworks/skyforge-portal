@@ -70,13 +70,6 @@ import {
 	SelectValue,
 } from "../../../components/ui/select";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { loginWithPopup } from "../../../lib/auth-popup";
-import { useDashboardEvents } from "../../../lib/dashboard-events";
-import {
-	noOpMessageForDeploymentAction,
-	readDeploymentActionMeta,
-} from "../../../lib/deployment-actions";
-import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
 	type DeploymentLifetimePolicyResponse,
@@ -91,7 +84,14 @@ import {
 	preflightDeploymentAction,
 	runDeploymentAction,
 	updateDeploymentLease,
-} from "../../../lib/skyforge-api";
+} from "../../../lib/api-client";
+import { loginWithPopup } from "../../../lib/auth-popup";
+import { useDashboardEvents } from "../../../lib/dashboard-events";
+import {
+	noOpMessageForDeploymentAction,
+	readDeploymentActionMeta,
+} from "../../../lib/deployment-actions";
+import { queryKeys } from "../../../lib/query-keys";
 import { cn } from "../../../lib/utils";
 
 // Search Schema
@@ -408,19 +408,19 @@ function DeploymentsPage() {
 		}
 		const cfg = d.config ?? {};
 		const enabled =
-			cfg.executiveLeaseEnabled === true ||
-			String(cfg.executiveLeaseEnabled ?? "")
+			cfg.leaseEnabled === true ||
+			String(cfg.leaseEnabled ?? "")
 				.trim()
 				.toLowerCase() === "true";
 		if (!enabled) {
 			return "No expiry";
 		}
-		const stoppedAt = String(cfg.executiveLeaseStoppedAt ?? "").trim();
+		const stoppedAt = String(cfg.leaseStoppedAt ?? "").trim();
 		if (stoppedAt !== "") {
 			return "Stopped";
 		}
-		const hours = parseLeaseHours(cfg.executiveLeaseHours);
-		const expiresAt = String(cfg.executiveLeaseExpiresAt ?? "").trim();
+		const hours = parseLeaseHours(cfg.leaseHours);
+		const expiresAt = String(cfg.leaseExpiresAt ?? "").trim();
 		if (expiresAt === "") {
 			return hours > 0 ? `${hours}h` : "Active";
 		}
@@ -440,11 +440,11 @@ function DeploymentsPage() {
 	const openLifetimeDialog = (d: UserScopeDeployment) => {
 		const cfg = d.config ?? {};
 		const enabled =
-			cfg.executiveLeaseEnabled === true ||
-			String(cfg.executiveLeaseEnabled ?? "")
+			cfg.leaseEnabled === true ||
+			String(cfg.leaseEnabled ?? "")
 				.trim()
 				.toLowerCase() === "true";
-		const existingHours = parseLeaseHours(cfg.executiveLeaseHours);
+		const existingHours = parseLeaseHours(cfg.leaseHours);
 		const defaultSelection = String(defaultLifetimeHours);
 		let nextSelection = defaultSelection;
 		if (!enabled && allowNoExpiry) {

@@ -21,7 +21,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../components/ui/select";
-import { queryKeys } from "../../lib/query-keys";
 import {
 	type UserForwardCollectorConfigSummary,
 	createUserForwardCollectorConfig,
@@ -32,7 +31,8 @@ import {
 	listUserForwardCollectorConfigs,
 	restartUserForwardCollectorConfig,
 	upgradeUserForwardCollectorConfig,
-} from "../../lib/skyforge-api";
+} from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/forward/collectors")({
 	component: ForwardCollectorPage,

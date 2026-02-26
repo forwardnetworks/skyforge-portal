@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import type { StatusSummaryResponse } from "./api-client";
 import { queryKeys } from "./query-keys";
-import type { StatusSummaryResponse } from "./skyforge-api";
 import { subscribeSSE } from "./sse";
 
 export function useStatusSummaryEvents(enabled: boolean) {

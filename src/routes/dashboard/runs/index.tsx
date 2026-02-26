@@ -10,13 +10,13 @@ import {
 	CardTitle,
 } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
-import { useDashboardEvents } from "../../../lib/dashboard-events";
-import { queryKeys } from "../../../lib/query-keys";
-import type { JSONMap } from "../../../lib/skyforge-api";
+import type { JSONMap } from "../../../lib/api-client";
 import {
 	type DashboardSnapshot,
 	getDashboardSnapshot,
-} from "../../../lib/skyforge-api";
+} from "../../../lib/api-client";
+import { useDashboardEvents } from "../../../lib/dashboard-events";
+import { queryKeys } from "../../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/runs/")({
 	component: RunsIndexPage,

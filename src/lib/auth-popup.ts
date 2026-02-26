@@ -1,4 +1,4 @@
-import type { SessionResponseEnvelope } from "./skyforge-api";
+import type { SessionResponseEnvelope } from "./api-client";
 import { SKYFORGE_PROXY_ROOT } from "./skyforge-config";
 
 type LoginPopupOptions = {

@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import type { ListSyslogEventsResponse } from "./api-client";
+import { SKYFORGE_API } from "./api-client";
 import { queryKeys } from "./query-keys";
-import type { ListSyslogEventsResponse } from "./skyforge-api";
-import { SKYFORGE_API } from "./skyforge-api";
 import { subscribeSSE } from "./sse";
 
 export function useSyslogEvents(enabled: boolean, limit: string) {

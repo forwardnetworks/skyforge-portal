@@ -4,11 +4,11 @@ import { ExternalLink, Workflow } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { queryKeys } from "@/lib/query-keys";
 import {
 	getUserServiceNowConfig,
 	listUserForwardCollectorConfigs,
-} from "@/lib/skyforge-api";
+} from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/integrations")({
 	component: IntegrationsPage,

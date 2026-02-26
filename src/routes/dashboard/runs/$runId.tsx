@@ -11,6 +11,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../../components/ui/card";
+import type { JSONMap } from "../../../lib/api-client";
+import {
+	type DashboardSnapshot,
+	buildLoginUrl,
+	cancelRun,
+	getDashboardSnapshot,
+} from "../../../lib/api-client";
 import { loginWithPopup } from "../../../lib/auth-popup";
 import { queryKeys } from "../../../lib/query-keys";
 import {
@@ -23,13 +30,6 @@ import {
 	type TaskLifecycleEntry,
 	useRunLifecycleEvents,
 } from "../../../lib/run-lifecycle-events";
-import type { JSONMap } from "../../../lib/skyforge-api";
-import {
-	type DashboardSnapshot,
-	buildLoginUrl,
-	cancelRun,
-	getDashboardSnapshot,
-} from "../../../lib/skyforge-api";
 
 export const Route = createFileRoute("/dashboard/runs/$runId")({
 	component: RunDetailPage,

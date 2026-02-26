@@ -25,7 +25,6 @@ import {
 	SelectValue,
 } from "../../components/ui/select";
 import { Skeleton } from "../../components/ui/skeleton";
-import { queryKeys } from "../../lib/query-keys";
 import {
 	createUserScopeArtifactFolder,
 	deleteUserScopeArtifactObject,
@@ -33,7 +32,8 @@ import {
 	listUserScopeArtifacts,
 	listUserScopes,
 	putUserScopeArtifactObject,
-} from "../../lib/skyforge-api";
+} from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/s3")({
 	component: S3Page,

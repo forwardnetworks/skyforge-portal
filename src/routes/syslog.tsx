@@ -11,11 +11,11 @@ import {
 import { DataTable, type DataTableColumn } from "../components/ui/data-table";
 import { EmptyState } from "../components/ui/empty-state";
 import { Skeleton } from "../components/ui/skeleton";
-import { queryKeys } from "../lib/query-keys";
 import {
 	type ListSyslogEventsResponse,
 	listSyslogEvents,
-} from "../lib/skyforge-api";
+} from "../lib/api-client";
+import { queryKeys } from "../lib/query-keys";
 import { useSyslogEvents } from "../lib/syslog-events";
 
 export const Route = createFileRoute("/syslog")({

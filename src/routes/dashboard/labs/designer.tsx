@@ -45,11 +45,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
-	type LabDesign,
-	designToContainerlabYaml,
-} from "@/lib/containerlab-yaml";
-import { queryKeys } from "@/lib/query-keys";
-import {
 	createClabernetesDeploymentFromTemplate,
 	createContainerlabDeploymentFromTemplate,
 	getDeploymentTopology,
@@ -60,7 +55,12 @@ import {
 	listUserContainerlabServers,
 	listUserScopes,
 	saveContainerlabTopologyYAML,
-} from "@/lib/skyforge-api";
+} from "@/lib/api-client";
+import {
+	type LabDesign,
+	designToContainerlabYaml,
+} from "@/lib/containerlab-yaml";
+import { queryKeys } from "@/lib/query-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactFlowInstance } from "@xyflow/react";
 import {

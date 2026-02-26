@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { queryKeys } from "../lib/query-keys";
 import {
 	type UserVariableGroup,
 	type UserVariableGroupListResponse,
@@ -11,7 +10,8 @@ import {
 	deleteUserVariableGroup,
 	listUserVariableGroups,
 	updateUserVariableGroup,
-} from "../lib/skyforge-api";
+} from "../lib/api-client";
+import { queryKeys } from "../lib/query-keys";
 import {
 	AlertDialog,
 	AlertDialogAction,

@@ -18,12 +18,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../../../components/ui/select";
-import { queryKeys } from "../../../lib/query-keys";
 import {
 	getDeploymentLifetimePolicy,
 	getQuickDeployCatalog,
 	runQuickDeploy,
-} from "../../../lib/skyforge-api";
+} from "../../../lib/api-client";
+import { queryKeys } from "../../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/deployments/quick")({
 	component: QuickDeployPage,
