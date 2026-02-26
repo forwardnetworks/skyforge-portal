@@ -39,6 +39,7 @@ import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/la
 import { Route as DashboardForwardCredentialsRouteImport } from './routes/dashboard/forward.credentials'
 import { Route as DashboardForwardCollectorsRouteImport } from './routes/dashboard/forward.collectors'
 import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$slug'
+import { Route as DashboardDeploymentsQuickRouteImport } from './routes/dashboard/deployments/quick'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
 import { Route as DashboardDeploymentsExecutiveRouteImport } from './routes/dashboard/deployments/executive'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
@@ -200,6 +201,12 @@ const DashboardDocsSlugRoute = DashboardDocsSlugRouteImport.update({
   path: '/dashboard/docs/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardDeploymentsQuickRoute =
+  DashboardDeploymentsQuickRouteImport.update({
+    id: '/dashboard/deployments/quick',
+    path: '/dashboard/deployments/quick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardDeploymentsNewRoute = DashboardDeploymentsNewRouteImport.update({
   id: '/dashboard/deployments/new',
   path: '/dashboard/deployments/new',
@@ -258,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsIndexRoute
   '/dashboard/deployments/executive': typeof DashboardDeploymentsExecutiveRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
+  '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
@@ -295,6 +303,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/dashboard/deployments/executive': typeof DashboardDeploymentsExecutiveRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
+  '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
@@ -334,6 +343,7 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/dashboard/deployments/executive': typeof DashboardDeploymentsExecutiveRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
+  '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
@@ -374,6 +384,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/dashboard/deployments/executive'
     | '/dashboard/deployments/new'
+    | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
@@ -411,6 +422,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/dashboard/deployments/executive'
     | '/dashboard/deployments/new'
+    | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
@@ -449,6 +461,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/dashboard/deployments/executive'
     | '/dashboard/deployments/new'
+    | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
@@ -488,6 +501,7 @@ export interface RootRouteChildren {
   DocsIndexRoute: typeof DocsIndexRoute
   DashboardDeploymentsExecutiveRoute: typeof DashboardDeploymentsExecutiveRoute
   DashboardDeploymentsNewRoute: typeof DashboardDeploymentsNewRoute
+  DashboardDeploymentsQuickRoute: typeof DashboardDeploymentsQuickRoute
   DashboardDocsSlugRoute: typeof DashboardDocsSlugRoute
   DashboardLabsDesignerRoute: typeof DashboardLabsDesignerRoute
   DashboardLabsMapRoute: typeof DashboardLabsMapRoute
@@ -714,6 +728,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDocsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/deployments/quick': {
+      id: '/dashboard/deployments/quick'
+      path: '/dashboard/deployments/quick'
+      fullPath: '/dashboard/deployments/quick'
+      preLoaderRoute: typeof DashboardDeploymentsQuickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/deployments/new': {
       id: '/dashboard/deployments/new'
       path: '/dashboard/deployments/new'
@@ -796,6 +817,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsIndexRoute: DocsIndexRoute,
   DashboardDeploymentsExecutiveRoute: DashboardDeploymentsExecutiveRoute,
   DashboardDeploymentsNewRoute: DashboardDeploymentsNewRoute,
+  DashboardDeploymentsQuickRoute: DashboardDeploymentsQuickRoute,
   DashboardDocsSlugRoute: DashboardDocsSlugRoute,
   DashboardLabsDesignerRoute: DashboardLabsDesignerRoute,
   DashboardLabsMapRoute: DashboardLabsMapRoute,

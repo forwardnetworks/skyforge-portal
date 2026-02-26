@@ -32,8 +32,10 @@ describe("side nav model", () => {
 	it("hides Forward section when forward feature is disabled", () => {
 		const items = buildSideNavItems(false, { forwardEnabled: false });
 		const forward = findGroup("Forward", items);
+		const labels = items.map((i) => i.label);
 
 		expect(forward).toBeUndefined();
+		expect(labels).not.toContain("Quick Deploy");
 	});
 
 	it("removes Connect/Tools groupings and legacy nav items", () => {
@@ -44,7 +46,7 @@ describe("side nav model", () => {
 			yaadeEnabled: true,
 		});
 		const labels = items.map((i) => i.label);
-		expect(labels).toContain("Executive Deploy");
+		expect(labels).toContain("Quick Deploy");
 		expect(labels).not.toContain("Connect");
 		expect(labels).not.toContain("Tools");
 		expect(labels).not.toContain("Runs");

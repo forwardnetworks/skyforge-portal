@@ -2882,6 +2882,46 @@ export async function runDeploymentAction(
 	);
 }
 
+export type QuickDeployTemplate = {
+	id: string;
+	name: string;
+	description: string;
+	template: string;
+};
+
+export type QuickDeployCatalogResponse = {
+	templates: QuickDeployTemplate[];
+	leaseOptions: number[];
+	defaultLeaseHours: number;
+};
+
+export type QuickDeployRunRequest = {
+	template: string;
+	leaseHours?: number;
+	name?: string;
+};
+
+export type QuickDeployRunResponse = {
+	userId: string;
+	deploymentId: string;
+	deploymentName: string;
+	noOp?: boolean;
+	reason?: string;
+};
+
+export async function getQuickDeployCatalog(): Promise<QuickDeployCatalogResponse> {
+	return apiFetch<QuickDeployCatalogResponse>("/api/quick-deploy/catalog");
+}
+
+export async function runQuickDeploy(
+	body: QuickDeployRunRequest,
+): Promise<QuickDeployRunResponse> {
+	return apiFetch<QuickDeployRunResponse>("/api/quick-deploy/deploy", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
 export type DeploymentAction =
 	| "create"
 	| "start"
@@ -2921,6 +2961,21 @@ export type DeploymentLeaseUpdateRequest = {
 	enabled: boolean;
 	hours: number;
 };
+
+export type DeploymentLifetimePolicyResponse = {
+	managedTypes: string[];
+	allowedHours: number[];
+	defaultHours: number;
+	maxHoursNonAdmin: number;
+	allowNoExpiry: boolean;
+	expiryActions: Record<string, string>;
+};
+
+export async function getDeploymentLifetimePolicy(): Promise<DeploymentLifetimePolicyResponse> {
+	return apiFetch<DeploymentLifetimePolicyResponse>(
+		"/api/deployment-lifetime/policy",
+	);
+}
 
 export async function getDeploymentLease(
 	userId: string,

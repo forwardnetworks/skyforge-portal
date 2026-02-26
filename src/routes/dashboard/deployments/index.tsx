@@ -1,10 +1,11 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	Activity,
 	Box,
 	ChevronLeft,
 	ChevronRight,
+	Clock3,
 	Filter,
 	Inbox,
 	Info,
@@ -43,6 +44,14 @@ import {
 	type DataTableColumn,
 } from "../../../components/ui/data-table";
 import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "../../../components/ui/dialog";
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -52,6 +61,7 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { EmptyState } from "../../../components/ui/empty-state";
 import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -69,15 +79,18 @@ import {
 import { queryKeys } from "../../../lib/query-keys";
 import {
 	type DashboardSnapshot,
+	type DeploymentLifetimePolicyResponse,
 	type SkyforgeUserScope,
 	type UserScopeDeployment,
 	buildLoginUrl,
 	deleteDeployment,
 	getDashboardSnapshot,
+	getDeploymentLifetimePolicy,
 	getSession,
 	listUserScopes,
 	preflightDeploymentAction,
 	runDeploymentAction,
+	updateDeploymentLease,
 } from "../../../lib/skyforge-api";
 import { cn } from "../../../lib/utils";
 
@@ -122,6 +135,10 @@ function DeploymentsPage() {
 	const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 	const [destroyAlsoDeleteForward, setDestroyAlsoDeleteForward] =
 		useState(false);
+	const [lifetimeTarget, setLifetimeTarget] =
+		useState<UserScopeDeployment | null>(null);
+	const [lifetimeDialogOpen, setLifetimeDialogOpen] = useState(false);
+	const [lifetimeSelection, setLifetimeSelection] = useState("24");
 	const [pendingActions, setPendingActions] = useState<Record<string, boolean>>(
 		{},
 	);
@@ -131,6 +148,12 @@ function DeploymentsPage() {
 		queryFn: getSession,
 		staleTime: 30_000,
 		retry: false,
+	});
+	const lifetimePolicyQ = useQuery<DeploymentLifetimePolicyResponse>({
+		queryKey: queryKeys.deploymentLifetimePolicy(),
+		queryFn: getDeploymentLifetimePolicy,
+		retry: false,
+		staleTime: 30_000,
 	});
 
 	// Filters state
@@ -345,6 +368,132 @@ function DeploymentsPage() {
 		}
 	};
 
+	const fallbackManagedTypes = ["netlab-c9s", "clabernetes", "terraform"];
+	const managedTypes = useMemo(
+		() =>
+			new Set(
+				(lifetimePolicyQ.data?.managedTypes ?? fallbackManagedTypes).map((v) =>
+					String(v).trim().toLowerCase(),
+				),
+			),
+		[lifetimePolicyQ.data?.managedTypes],
+	);
+	const lifetimeHoursOptions = useMemo(() => {
+		const raw = lifetimePolicyQ.data?.allowedHours ?? [4, 8, 24, 72];
+		const out = raw
+			.map((h) => Number.parseInt(String(h), 10))
+			.filter((h) => Number.isFinite(h) && h > 0);
+		return out.length > 0 ? out : [4, 8, 24, 72];
+	}, [lifetimePolicyQ.data?.allowedHours]);
+	const defaultLifetimeHours =
+		Number.parseInt(String(lifetimePolicyQ.data?.defaultHours ?? 24), 10) || 24;
+	const allowNoExpiry =
+		Boolean(session.data?.isAdmin) &&
+		Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? true);
+
+	const isManagedDeploymentType = (typ: string) =>
+		managedTypes.has(String(typ).trim().toLowerCase());
+
+	const parseLeaseHours = (value: unknown): number => {
+		if (typeof value === "number" && Number.isFinite(value)) {
+			return Math.max(0, Math.trunc(value));
+		}
+		const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+		return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+	};
+
+	const formatLifetimeCell = (d: UserScopeDeployment): string => {
+		if (!isManagedDeploymentType(d.type)) {
+			return "Not managed";
+		}
+		const cfg = d.config ?? {};
+		const enabled =
+			cfg.executiveLeaseEnabled === true ||
+			String(cfg.executiveLeaseEnabled ?? "")
+				.trim()
+				.toLowerCase() === "true";
+		if (!enabled) {
+			return "No expiry";
+		}
+		const stoppedAt = String(cfg.executiveLeaseStoppedAt ?? "").trim();
+		if (stoppedAt !== "") {
+			return "Stopped";
+		}
+		const hours = parseLeaseHours(cfg.executiveLeaseHours);
+		const expiresAt = String(cfg.executiveLeaseExpiresAt ?? "").trim();
+		if (expiresAt === "") {
+			return hours > 0 ? `${hours}h` : "Active";
+		}
+		const ts = new Date(expiresAt);
+		if (Number.isNaN(ts.getTime())) {
+			return hours > 0 ? `${hours}h` : "Active";
+		}
+		const remainingMs = ts.getTime() - Date.now();
+		if (remainingMs <= 0) {
+			return "Expired";
+		}
+		const remainingHours = Math.max(1, Math.ceil(remainingMs / 3_600_000));
+		const prefix = hours > 0 ? `${hours}h` : "Active";
+		return `${prefix} (${remainingHours}h left)`;
+	};
+
+	const openLifetimeDialog = (d: UserScopeDeployment) => {
+		const cfg = d.config ?? {};
+		const enabled =
+			cfg.executiveLeaseEnabled === true ||
+			String(cfg.executiveLeaseEnabled ?? "")
+				.trim()
+				.toLowerCase() === "true";
+		const existingHours = parseLeaseHours(cfg.executiveLeaseHours);
+		const defaultSelection = String(defaultLifetimeHours);
+		let nextSelection = defaultSelection;
+		if (!enabled && allowNoExpiry) {
+			nextSelection = "__none";
+		} else if (
+			existingHours > 0 &&
+			lifetimeHoursOptions.includes(existingHours)
+		) {
+			nextSelection = String(existingHours);
+		}
+		setLifetimeSelection(nextSelection);
+		setLifetimeTarget(d);
+		setLifetimeDialogOpen(true);
+	};
+
+	const saveLifetimeMutation = useMutation({
+		mutationFn: async () => {
+			if (!lifetimeTarget) {
+				throw new Error("No deployment selected");
+			}
+			let enabled = true;
+			let hours = Number.parseInt(lifetimeSelection, 10);
+			if (allowNoExpiry && lifetimeSelection === "__none") {
+				enabled = false;
+				hours = defaultLifetimeHours;
+			}
+			if (!Number.isFinite(hours) || hours <= 0) {
+				hours = defaultLifetimeHours;
+			}
+			return updateDeploymentLease(lifetimeTarget.userId, lifetimeTarget.id, {
+				enabled,
+				hours,
+			});
+		},
+		onSuccess: async () => {
+			toast.success("Deployment lifetime updated");
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.dashboardSnapshot(),
+			});
+			setLifetimeDialogOpen(false);
+			setLifetimeTarget(null);
+		},
+		onError: (e) => {
+			toast.error("Failed to update deployment lifetime", {
+				description: (e as Error).message,
+			});
+		},
+	});
+
 	const deploymentColumns = useMemo((): Array<
 		DataTableColumn<UserScopeDeployment>
 	> => {
@@ -384,6 +533,14 @@ function DeploymentsPage() {
 				),
 			},
 			{
+				id: "lifetime",
+				header: "Lifetime",
+				width: 210,
+				cell: (d) => (
+					<span className="text-muted-foreground">{formatLifetimeCell(d)}</span>
+				),
+			},
+			{
 				id: "actions",
 				header: "Actions",
 				width: 120,
@@ -397,6 +554,7 @@ function DeploymentsPage() {
 					const isRunning = ["running", "active", "healthy"].includes(status);
 					const isBusy =
 						Boolean(d.activeTaskId) || Boolean(pendingActions[d.id]);
+					const managedByLifetime = isManagedDeploymentType(d.type);
 					return (
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
@@ -419,6 +577,16 @@ function DeploymentsPage() {
 									Details
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
+								{managedByLifetime && (
+									<DropdownMenuItem
+										onClick={() => openLifetimeDialog(d)}
+										disabled={isBusy}
+									>
+										<Clock3 className="mr-2 h-4 w-4" />
+										Manage lifetime
+									</DropdownMenuItem>
+								)}
+								{managedByLifetime && <DropdownMenuSeparator />}
 								<DropdownMenuItem
 									onClick={() => handleStart(d)}
 									disabled={isBusy || isRunning}
@@ -451,7 +619,14 @@ function DeploymentsPage() {
 				},
 			},
 		];
-	}, [handleStart, handleStop, navigate]);
+	}, [
+		handleStart,
+		handleStop,
+		isManagedDeploymentType,
+		navigate,
+		openLifetimeDialog,
+		pendingActions,
+	]);
 
 	const runs = useMemo(() => {
 		const all = (snap.data?.runs ?? []) as Record<string, unknown>[];
@@ -778,6 +953,58 @@ function DeploymentsPage() {
 					</div>
 				</div>
 			</div>
+
+			<Dialog open={lifetimeDialogOpen} onOpenChange={setLifetimeDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Manage deployment lifetime</DialogTitle>
+						<DialogDescription>
+							Set automatic expiry for "{lifetimeTarget?.name}". Managed
+							deployments are stopped on expiry (Terraform uses destroy).
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-2">
+						<Label htmlFor="deployment-lifetime-select">Lifetime</Label>
+						<Select
+							value={lifetimeSelection}
+							onValueChange={setLifetimeSelection}
+							disabled={saveLifetimeMutation.isPending}
+						>
+							<SelectTrigger id="deployment-lifetime-select">
+								<SelectValue placeholder="Select a lifetime" />
+							</SelectTrigger>
+							<SelectContent>
+								{allowNoExpiry && (
+									<SelectItem value="__none">No expiry (admin only)</SelectItem>
+								)}
+								{lifetimeHoursOptions.map((hours) => (
+									<SelectItem key={String(hours)} value={String(hours)}>
+										{hours} hours
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => {
+								setLifetimeDialogOpen(false);
+								setLifetimeTarget(null);
+							}}
+							disabled={saveLifetimeMutation.isPending}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => saveLifetimeMutation.mutate()}
+							disabled={saveLifetimeMutation.isPending || !lifetimeTarget}
+						>
+							{saveLifetimeMutation.isPending ? "Saving…" : "Save lifetime"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			<AlertDialog open={destroyDialogOpen} onOpenChange={setDestroyDialogOpen}>
 				<AlertDialogContent>

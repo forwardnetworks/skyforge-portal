@@ -1,6 +1,7 @@
 export const queryKeys = {
 	session: () => ["session"] as const,
 	uiConfig: () => ["uiConfig"] as const,
+	deploymentLifetimePolicy: () => ["deploymentLifetimePolicy"] as const,
 	dashboardSnapshot: () => ["dashboardSnapshot"] as const,
 	statusSummary: () => ["statusSummary"] as const,
 	runLogs: (runId: string) => ["runLogs", runId] as const,
