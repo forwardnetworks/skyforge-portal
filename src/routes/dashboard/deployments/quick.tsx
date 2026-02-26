@@ -29,6 +29,12 @@ export const Route = createFileRoute("/dashboard/deployments/quick")({
 	component: QuickDeployPage,
 });
 
+function formatEstimate(vcpu: number, ramGiB: number): string {
+	const cpu = Number.isFinite(vcpu) ? vcpu.toFixed(1) : "0.0";
+	const ram = Number.isFinite(ramGiB) ? ramGiB.toFixed(1) : "0.0";
+	return `${cpu} vCPU • ${ram} GiB RAM`;
+}
+
 function QuickDeployPage() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -157,6 +163,21 @@ function QuickDeployPage() {
 							<CardDescription>{entry.description}</CardDescription>
 						</CardHeader>
 						<CardContent className="mt-auto space-y-3">
+							<div className="text-xs">
+								<div className="font-medium text-foreground">
+									{entry.estimate?.supported
+										? formatEstimate(
+												Number(entry.estimate.vcpu ?? 0),
+												Number(entry.estimate.ramGiB ?? 0),
+											)
+										: "Resource estimate unavailable"}
+								</div>
+								{entry.estimate?.reason ? (
+									<div className="text-muted-foreground">
+										{entry.estimate.reason}
+									</div>
+								) : null}
+							</div>
 							<p className="text-xs text-muted-foreground">{entry.template}</p>
 							<Button
 								className="w-full"

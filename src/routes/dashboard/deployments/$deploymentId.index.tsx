@@ -57,9 +57,11 @@ import {
 } from "../../../components/ui/tabs";
 import {
 	type DashboardSnapshot,
+	type ResourceEstimateSummary,
 	type UserForwardCollectorConfigSummary,
 	type UserScopeDeployment,
 	deleteDeployment,
+	getDeploymentResourceEstimate,
 	getDeploymentTopology,
 	listUserForwardCollectorConfigs,
 	preflightDeploymentAction,
@@ -91,6 +93,17 @@ export const Route = createFileRoute("/dashboard/deployments/$deploymentId/")({
 		return out;
 	},
 });
+
+function formatResourceEstimateSummary(
+	estimate?: ResourceEstimateSummary,
+): string {
+	if (!estimate || !estimate.supported) return "Resource estimate unavailable";
+	const cpu = Number.isFinite(estimate.vcpu) ? estimate.vcpu.toFixed(1) : "0.0";
+	const ram = Number.isFinite(estimate.ramGiB)
+		? estimate.ramGiB.toFixed(1)
+		: "0.0";
+	return `${cpu} vCPU • ${ram} GiB RAM`;
+}
 
 function DeploymentDetailPage() {
 	const { deploymentId } = Route.useParams();
@@ -292,6 +305,17 @@ function DeploymentDetailPage() {
 			["containerlab", "netlab-c9s", "clabernetes"].includes(deploymentType),
 		retry: false,
 		staleTime: 10_000,
+	});
+
+	const resourceEstimateQ = useQuery({
+		queryKey: ["deployment-resource-estimate", userId, deploymentId],
+		queryFn: async () => {
+			if (!deployment) throw new Error("deployment not found");
+			return getDeploymentResourceEstimate(deployment.userId, deployment.id);
+		},
+		enabled: Boolean(deployment),
+		retry: false,
+		staleTime: 30_000,
 	});
 
 	const saveConfig = useMutation({
@@ -581,6 +605,27 @@ function DeploymentDetailPage() {
 					</Button>
 				</div>
 			</div>
+
+			<Card>
+				<CardHeader className="pb-3">
+					<CardTitle>Deployment Resources</CardTitle>
+					<CardDescription>
+						Estimated footprint from the selected template.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="text-sm">
+					<div className="font-medium">
+						{resourceEstimateQ.isLoading
+							? "Estimating resources…"
+							: formatResourceEstimateSummary(resourceEstimateQ.data?.estimate)}
+					</div>
+					{resourceEstimateQ.data?.estimate?.reason ? (
+						<div className="text-xs text-muted-foreground mt-1">
+							{resourceEstimateQ.data.estimate.reason}
+						</div>
+					) : null}
+				</CardContent>
+			</Card>
 
 			<Tabs defaultValue="topology" className="space-y-6">
 				<TabsList>

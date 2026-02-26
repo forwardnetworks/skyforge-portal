@@ -1957,6 +1957,40 @@ export type UserScopeTemplatesResponse = {
 	updatedAt?: ISO8601;
 };
 
+export type ResourceEstimateSummary = {
+	supported: boolean;
+	vcpu: number;
+	ramGiB: number;
+	milliCpu: number;
+	memoryBytes: number;
+	nodeCount: number;
+	profiledNodeCount: number;
+	reason?: string;
+};
+
+export type UserScopeTemplateResourceEstimateRequest = {
+	kind: string;
+	source?: string;
+	repo?: string;
+	dir?: string;
+	template: string;
+};
+
+export type UserScopeTemplateResourceEstimateResponse = {
+	userId: string;
+	kind: string;
+	source?: string;
+	template?: string;
+	estimate?: ResourceEstimateSummary;
+};
+
+export type DeploymentResourceEstimateResponse = {
+	userId: string;
+	deploymentId: string;
+	type: string;
+	estimate?: ResourceEstimateSummary;
+};
+
 export async function getUserScopeNetlabTemplates(
 	userId: string,
 	query?: TemplatesQuery,
@@ -2017,6 +2051,28 @@ export async function validateUserScopeNetlabTemplate(
 	return apiFetch<UserScopeRunResponse>(
 		`/api/users/${encodeURIComponent(userId)}/netlab/validate`,
 		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function estimateUserScopeTemplateResources(
+	userId: string,
+	body: UserScopeTemplateResourceEstimateRequest,
+): Promise<UserScopeTemplateResourceEstimateResponse> {
+	return apiFetch<UserScopeTemplateResourceEstimateResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployment-templates/resource-estimate`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function getDeploymentResourceEstimate(
+	userId: string,
+	deploymentId: string,
+): Promise<DeploymentResourceEstimateResponse> {
+	return apiFetch<DeploymentResourceEstimateResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/resource-estimate`,
 	);
 }
 
@@ -2887,6 +2943,7 @@ export type QuickDeployTemplate = {
 	name: string;
 	description: string;
 	template: string;
+	estimate?: ResourceEstimateSummary;
 };
 
 export type QuickDeployCatalogResponse = {

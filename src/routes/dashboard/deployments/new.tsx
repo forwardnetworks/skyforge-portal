@@ -51,11 +51,13 @@ import {
 	type CreateUserScopeDeploymentRequest,
 	type DashboardSnapshot,
 	type ExternalTemplateRepo,
+	type ResourceEstimateSummary,
 	type SkyforgeUserScope,
 	type UserScopeTemplatesResponse,
 	type UserVariableGroup,
 	convertUserScopeEveLab,
 	createUserScopeDeployment,
+	estimateUserScopeTemplateResources,
 	getDashboardSnapshot,
 	getSession,
 	getUserScopeContainerlabTemplate,
@@ -130,6 +132,15 @@ function hostLabelFromURL(raw: string): string {
 	} catch {
 		return s.replace(/^https?:\/\//, "").split("/")[0] ?? s;
 	}
+}
+
+function formatResourceEstimate(estimate?: ResourceEstimateSummary): string {
+	if (!estimate || !estimate.supported) return "Resource estimate unavailable";
+	const cpu = Number.isFinite(estimate.vcpu) ? estimate.vcpu.toFixed(1) : "0.0";
+	const ram = Number.isFinite(estimate.ramGiB)
+		? estimate.ramGiB.toFixed(1)
+		: "0.0";
+	return `${cpu} vCPU • ${ram} GiB RAM`;
 }
 
 function CreateDeploymentPage() {
@@ -519,6 +530,49 @@ function CreateDeploymentPage() {
 		staleTime: 30_000,
 	});
 
+	const templateEstimateQ = useQuery({
+		queryKey: [
+			"userScopeTemplateEstimate",
+			watchUserScopeId,
+			watchKind,
+			effectiveSource,
+			watchTemplateRepoId,
+			templatesQ.data?.dir,
+			watchTemplate,
+		],
+		queryFn: async () => {
+			if (!watchUserScopeId) throw new Error("userId is required");
+			if (!watchTemplate) throw new Error("template is required");
+			const body: {
+				kind: string;
+				source: string;
+				repo?: string;
+				dir?: string;
+				template: string;
+			} = {
+				kind: watchKind,
+				source: toAPITemplateSource(effectiveSource),
+				template: watchTemplate,
+			};
+			if (
+				(effectiveSource === "external" || effectiveSource === "custom") &&
+				watchTemplateRepoId
+			) {
+				body.repo = watchTemplateRepoId;
+			}
+			if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
+			return estimateUserScopeTemplateResources(watchUserScopeId, body);
+		},
+		enabled:
+			Boolean(watchUserScopeId) &&
+			Boolean(watchTemplate) &&
+			["netlab", "netlab-c9s", "containerlab", "clabernetes"].includes(
+				watchKind,
+			),
+		retry: false,
+		staleTime: 30_000,
+	});
+
 	const externalRepos = (
 		(userSettingsQ.data?.externalTemplateRepos ?? []) as ExternalTemplateRepo[]
 	).filter(
@@ -842,6 +896,7 @@ function CreateDeploymentPage() {
 			: watchKind === "containerlab"
 				? byosContainerlabServerRefs
 				: [];
+	const selectedTemplateEstimate = templateEstimateQ.data?.estimate;
 
 	return (
 		<div className="space-y-6 p-6">
@@ -1344,6 +1399,22 @@ function CreateDeploymentPage() {
 													Failed to load templates.
 												</div>
 											)}
+											{watchTemplate ? (
+												<div className="rounded-md border p-3 text-xs space-y-1">
+													<div className="font-medium text-foreground">
+														{templateEstimateQ.isLoading
+															? "Estimating resources…"
+															: formatResourceEstimate(
+																	selectedTemplateEstimate,
+																)}
+													</div>
+													{selectedTemplateEstimate?.reason ? (
+														<div className="text-muted-foreground">
+															{selectedTemplateEstimate.reason}
+														</div>
+													) : null}
+												</div>
+											) : null}
 											<FormMessage />
 										</FormItem>
 									)}
