@@ -41,6 +41,29 @@ function DeploymentMapPage() {
 
 	const userId = String(deployment?.userId ?? "");
 	const deploymentType = String(deployment?.type ?? "");
+	const deploymentConfig =
+		deployment && typeof deployment.config === "object" && deployment.config
+			? (deployment.config as Record<string, unknown>)
+			: {};
+	const deploymentCompiler =
+		typeof deploymentConfig.compiler === "string"
+			? String(deploymentConfig.compiler).trim().toLowerCase()
+			: "";
+	const deploymentDriver =
+		typeof deploymentConfig.driver === "string"
+			? String(deploymentConfig.driver).trim().toLowerCase()
+			: "";
+	const isC9SDeployment = deploymentType === "c9s";
+	const hasTopologyView = isC9SDeployment || deploymentType === "byos";
+	const deploymentTypeLabel = isC9SDeployment
+		? deploymentCompiler
+			? `c9s/${deploymentCompiler}`
+			: "c9s"
+		: deploymentType === "byos"
+			? deploymentDriver
+				? `byos/${deploymentDriver}`
+				: "byos"
+			: deploymentType || "unknown";
 	const status =
 		deployment?.activeTaskStatus ?? deployment?.lastStatus ?? "unknown";
 
@@ -50,9 +73,7 @@ function DeploymentMapPage() {
 			if (!deployment) throw new Error("deployment not found");
 			return getDeploymentTopology(deployment.userId, deployment.id);
 		},
-		enabled:
-			!!deployment &&
-			["containerlab", "netlab-c9s", "clabernetes"].includes(deploymentType),
+		enabled: !!deployment && hasTopologyView,
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -105,7 +126,7 @@ function DeploymentMapPage() {
 								{status}
 							</Badge>
 							<Badge variant="outline" className="capitalize">
-								{deploymentType || "unknown"}
+								{deploymentTypeLabel}
 							</Badge>
 						</div>
 						<div className="text-xs text-muted-foreground font-mono truncate">
@@ -142,9 +163,7 @@ function DeploymentMapPage() {
 						topology={topology.data}
 						userId={deployment.userId}
 						deploymentId={deployment.id}
-						enableTerminal={["netlab-c9s", "clabernetes"].includes(
-							deployment.type,
-						)}
+						enableTerminal={isC9SDeployment}
 						fullHeight
 					/>
 				</div>

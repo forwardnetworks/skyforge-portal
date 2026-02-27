@@ -555,6 +555,346 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/byos/me/containerlab/servers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListUserContainerlabServers returns the current user's configured Containerlab
+         *     BYOL endpoints.
+         */
+        get: operations["GET:skyforge.ListUserContainerlabServers"];
+        /**
+         * UpsertUserContainerlabServer creates or updates a user-scoped Containerlab
+         *     endpoint.
+         */
+        put: operations["PUT:skyforge.UpsertUserContainerlabServer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/me/containerlab/servers/{serverID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DeleteUserContainerlabServer deletes a user-scoped Containerlab server. */
+        delete: operations["DELETE:skyforge.DeleteUserContainerlabServer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/me/eve/servers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListUserEveServers returns the current user's configured EVE-NG API endpoints. */
+        get: operations["GET:skyforge.ListUserEveServers"];
+        /** UpsertUserEveServer creates or updates a user-scoped EVE-NG server. */
+        put: operations["PUT:skyforge.UpsertUserEveServer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/me/eve/servers/{serverID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DeleteUserEveServer deletes a user-scoped EVE server. */
+        delete: operations["DELETE:skyforge.DeleteUserEveServer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/me/netlab/servers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListUserNetlabServers returns the current user's configured Netlab API
+         *     endpoints.
+         */
+        get: operations["GET:skyforge.ListUserNetlabServers"];
+        /** UpsertUserNetlabServer creates or updates a user-scoped Netlab API endpoint. */
+        put: operations["PUT:skyforge.UpsertUserNetlabServer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/me/netlab/servers/{serverID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DeleteUserNetlabServer deletes a user-scoped Netlab server. */
+        delete: operations["DELETE:skyforge.DeleteUserNetlabServer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/containerlab/topologies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * SaveContainerlabTopologyYAML writes a containerlab topology YAML into the user's
+         *     user-scope repo so it can be
+         * @description deployed later (e.g. by creating a deployment referencing the file).
+         */
+        post: operations["POST:skyforge.SaveContainerlabTopologyYAML"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/deployments-designer/containerlab/from-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CreateContainerlabDeploymentFromTemplate creates a containerlab (BYOS)
+         *     deployment pointing at an existing user-scope template YAML
+         * @description (no YAML commit step).
+         */
+        post: operations["POST:skyforge.CreateContainerlabDeploymentFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/deployments-designer/containerlab/from-yaml": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CreateContainerlabDeploymentFromYAML persists a containerlab topology YAML into
+         *     the user-scope repo,
+         * @description creates a "containerlab" deployment referencing that template, and (optionally) queues an initial deploy.
+         *
+         *     NOTE: containerlab is BYOS mode (requires a user-scope netlabServer selection).
+         */
+        post: operations["POST:skyforge.CreateContainerlabDeploymentFromYAML"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/deployments/{deploymentID}/netlab-graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserScopeDeploymentNetlabGraph returns a rendered netlab topology graph for a
+         *     deployment.
+         */
+        get: operations["GET:skyforge.GetUserScopeDeploymentNetlabGraph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/deployments/{deploymentID}/netlab/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * NetlabConnect executes `netlab connect` on the Netlab runner host and returns
+         *     its output.
+         * @description This is an alternative to local SSH ProxyJump when clients can't reach the lab network.
+         */
+        post: operations["POST:skyforge.NetlabConnect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/eve/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ConvertUserScopeEveLab exports an EVE-NG lab into a Containerlab template. */
+        post: operations["POST:skyforge.ConvertUserScopeEveLab"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/eve/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ImportUserScopeEveLab registers an existing EVE-NG lab as a deployment. */
+        post: operations["POST:skyforge.ImportUserScopeEveLab"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/eve/labs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListUserScopeEveLabs returns EVE-NG labs for import. */
+        get: operations["GET:skyforge.ListUserScopeEveLabs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/netlab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetUserScopeNetlab returns the user-scope netlab server selection. */
+        get: operations["GET:skyforge.GetUserScopeNetlab"];
+        /** UpdateUserScopeNetlab updates the user-scope netlab server selection. */
+        put: operations["PUT:skyforge.UpdateUserScopeNetlab"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/runs/containerlab-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RunUserScopeContainerlab triggers a Containerlab run for a user scope. */
+        post: operations["POST:skyforge.RunUserScopeContainerlab"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/runs/eve-ng-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RunUserScopeEveNg triggers an EVE-NG lab run for a user scope. */
+        post: operations["POST:skyforge.RunUserScopeEveNg"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/byos/users/{id}/runs/netlab-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RunUserScopeNetlab triggers a netlab run for a user scope. */
+        post: operations["POST:skyforge.RunUserScopeNetlab"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/aws/validate": {
         parameters: {
             query?: never;
@@ -1135,82 +1475,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/containerlab/servers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * ListUserContainerlabServers returns the current user's configured Containerlab
-         *     BYOL endpoints.
-         */
-        get: operations["GET:skyforge.ListUserContainerlabServers"];
-        /**
-         * UpsertUserContainerlabServer creates or updates a user-scoped Containerlab
-         *     endpoint.
-         */
-        put: operations["PUT:skyforge.UpsertUserContainerlabServer"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/containerlab/servers/{serverID}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** DeleteUserContainerlabServer deletes a user-scoped Containerlab server. */
-        delete: operations["DELETE:skyforge.DeleteUserContainerlabServer"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/eve/servers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ListUserEveServers returns the current user's configured EVE-NG API endpoints. */
-        get: operations["GET:skyforge.ListUserEveServers"];
-        /** UpsertUserEveServer creates or updates a user-scoped EVE-NG server. */
-        put: operations["PUT:skyforge.UpsertUserEveServer"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/eve/servers/{serverID}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** DeleteUserEveServer deletes a user-scoped EVE server. */
-        delete: operations["DELETE:skyforge.DeleteUserEveServer"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/me/git-credentials": {
         parameters: {
             query?: never;
@@ -1428,44 +1692,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/netlab/servers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * ListUserNetlabServers returns the current user's configured Netlab API
-         *     endpoints.
-         */
-        get: operations["GET:skyforge.ListUserNetlabServers"];
-        /** UpsertUserNetlabServer creates or updates a user-scoped Netlab API endpoint. */
-        put: operations["PUT:skyforge.UpsertUserNetlabServer"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/netlab/servers/{serverID}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** DeleteUserNetlabServer deletes a user-scoped Netlab server. */
-        delete: operations["DELETE:skyforge.DeleteUserNetlabServer"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/me/settings": {
         parameters: {
             query?: never;
@@ -1646,8 +1872,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * RunQuickDeploy provisions a curated netlab-c9s deployment with managed
-         *     in-cluster Forward sync.
+         * RunQuickDeploy provisions a curated c9s deployment with managed in-cluster
+         *     Forward sync.
          */
         post: operations["POST:skyforge.RunQuickDeploy"];
         delete?: never;
@@ -2357,7 +2583,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/containerlab/topologies": {
+    "/api/users/{id}/deployment-templates/resource-estimate": {
         parameters: {
             query?: never;
             header?: never;
@@ -2367,11 +2593,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * SaveContainerlabTopologyYAML writes a containerlab topology YAML into the user's
-         *     user-scope repo so it can be
-         * @description deployed later (e.g. by creating a deployment referencing the file).
+         * EstimateUserScopeTemplateResources calculates an estimated vCPU/RAM footprint
+         * @description from a selected deployment template before creation.
          */
-        post: operations["POST:skyforge.SaveContainerlabTopologyYAML"];
+        post: operations["POST:skyforge.EstimateUserScopeTemplateResources"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2434,50 +2659,6 @@ export interface paths {
          *     This is the first-class in-cluster mode (no netlab server required).
          */
         post: operations["POST:skyforge.CreateClabernetesDeploymentFromYAML"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/deployments-designer/containerlab/from-template": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * CreateContainerlabDeploymentFromTemplate creates a containerlab (BYOS)
-         *     deployment pointing at an existing user-scope template YAML
-         * @description (no YAML commit step).
-         */
-        post: operations["POST:skyforge.CreateContainerlabDeploymentFromTemplate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/deployments-designer/containerlab/from-yaml": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * CreateContainerlabDeploymentFromYAML persists a containerlab topology YAML into
-         *     the user-scope repo,
-         * @description creates a "containerlab" deployment referencing that template, and (optionally) queues an initial deploy.
-         *
-         *     NOTE: containerlab is BYOS mode (requires a user-scope netlabServer selection).
-         */
-        post: operations["POST:skyforge.CreateContainerlabDeploymentFromYAML"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2920,47 +3101,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/deployments/{deploymentID}/netlab-graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GetUserScopeDeploymentNetlabGraph returns a rendered netlab topology graph for a
-         *     deployment.
-         */
-        get: operations["GET:skyforge.GetUserScopeDeploymentNetlabGraph"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/deployments/{deploymentID}/netlab/connect": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * NetlabConnect executes `netlab connect` on the Netlab runner host and returns
-         *     its output.
-         * @description This is an alternative to local SSH ProxyJump when clients can't reach the lab network.
-         */
-        post: operations["POST:skyforge.NetlabConnect"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/users/{id}/deployments/{deploymentID}/nodes/{node}/describe": {
         parameters: {
             query?: never;
@@ -3084,6 +3224,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/deployments/{deploymentID}/resource-estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserScopeDeploymentResourceEstimate calculates the estimated vCPU/RAM
+         * @description footprint for an existing deployment using its selected template.
+         */
+        get: operations["GET:skyforge.GetUserScopeDeploymentResourceEstimate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}/deployments/{deploymentID}/terminal/ws": {
         parameters: {
             query?: never;
@@ -3154,57 +3314,6 @@ export interface paths {
         };
         /** DeploymentUIEventsStream streams deployment UI events as SSE. */
         get: operations["GET:skyforge.DeploymentUIEventsStream"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/eve/convert": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** ConvertUserScopeEveLab exports an EVE-NG lab into a Containerlab template. */
-        post: operations["POST:skyforge.ConvertUserScopeEveLab"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/eve/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** ImportUserScopeEveLab registers an existing EVE-NG lab as a deployment. */
-        post: operations["POST:skyforge.ImportUserScopeEveLab"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/eve/labs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ListUserScopeEveLabs returns EVE-NG labs for import. */
-        get: operations["GET:skyforge.ListUserScopeEveLabs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3491,24 +3600,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/netlab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GetUserScopeNetlab returns the user-scope netlab server selection. */
-        get: operations["GET:skyforge.GetUserScopeNetlab"];
-        /** UpdateUserScopeNetlab updates the user-scope netlab server selection. */
-        put: operations["PUT:skyforge.UpdateUserScopeNetlab"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/users/{id}/netlab/template": {
         parameters: {
             query?: never;
@@ -3579,57 +3670,6 @@ export interface paths {
         put?: never;
         /** RunUserScopeAnsible triggers an ansible run for a user scope. */
         post: operations["POST:skyforge.RunUserScopeAnsible"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/runs/containerlab-run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** RunUserScopeContainerlab triggers a Containerlab run for a user scope. */
-        post: operations["POST:skyforge.RunUserScopeContainerlab"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/runs/eve-ng-run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** RunUserScopeEveNg triggers an EVE-NG lab run for a user scope. */
-        post: operations["POST:skyforge.RunUserScopeEveNg"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/runs/netlab-run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** RunUserScopeNetlab triggers a netlab run for a user scope. */
-        post: operations["POST:skyforge.RunUserScopeNetlab"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5552,6 +5592,20 @@ export interface components {
             /** Format: int64 */
             resourceCount: number;
         };
+        "skyforge.ResourceEstimateSummary": {
+            /** Format: int64 */
+            memoryBytes: number;
+            /** Format: int64 */
+            milliCpu: number;
+            /** Format: int64 */
+            nodeCount: number;
+            /** Format: int64 */
+            profiledNodeCount: number;
+            ramGiB: number;
+            reason: string;
+            supported: boolean;
+            vcpu: number;
+        };
         "skyforge.SecureTrackCatalog": {
             checks: components["schemas"]["skyforge.SecureTrackCatalogCheck"][];
             version: string;
@@ -5885,6 +5939,7 @@ export interface components {
         };
         "skyforge.quickDeployTemplate": {
             description: string;
+            estimate: components["schemas"]["skyforge.ResourceEstimateSummary"];
             id: string;
             name: string;
             template: string;
@@ -6910,6 +6965,871 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListUserContainerlabServers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        servers: components["schemas"]["skyforge.UserContainerlabServerConfig"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.UpsertUserContainerlabServer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    apiInsecure: boolean;
+                    apiPassword: string;
+                    apiToken: string;
+                    apiUrl: string;
+                    apiUser: string;
+                    hasPassword: boolean;
+                    id: string;
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        apiInsecure: boolean;
+                        apiPassword: string;
+                        apiToken: string;
+                        apiUrl: string;
+                        apiUser: string;
+                        hasPassword: boolean;
+                        id: string;
+                        name: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteUserContainerlabServer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serverID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListUserEveServers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        servers: components["schemas"]["skyforge.UserEveServerConfig"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.UpsertUserEveServer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    apiPassword: string;
+                    apiUrl: string;
+                    apiUser: string;
+                    hasPassword: boolean;
+                    hasSshKey: boolean;
+                    id: string;
+                    name: string;
+                    skipTlsVerify: boolean;
+                    sshHost: string;
+                    sshKey: string;
+                    sshUser: string;
+                    webUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        apiPassword: string;
+                        apiUrl: string;
+                        apiUser: string;
+                        hasPassword: boolean;
+                        hasSshKey: boolean;
+                        id: string;
+                        name: string;
+                        skipTlsVerify: boolean;
+                        sshHost: string;
+                        sshKey: string;
+                        sshUser: string;
+                        webUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteUserEveServer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serverID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListUserNetlabServers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        servers: components["schemas"]["skyforge.UserNetlabServerConfig"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.UpsertUserNetlabServer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    apiInsecure: boolean;
+                    apiPassword: string;
+                    apiToken: string;
+                    apiUrl: string;
+                    apiUser: string;
+                    hasPassword: boolean;
+                    id: string;
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        apiInsecure: boolean;
+                        apiPassword: string;
+                        apiToken: string;
+                        apiUrl: string;
+                        apiUser: string;
+                        hasPassword: boolean;
+                        id: string;
+                        name: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteUserNetlabServer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serverID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.SaveContainerlabTopologyYAML": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Name drives the default filename. */
+                    name: string;
+                    /**
+                     * Template is the filename to write under TemplatesDir.
+                     * @description Default: "\<normalized-name>.clab.yml".
+                     */
+                    template: string;
+                    /**
+                     * TemplatesDir is where we store the YAML inside the user-scope repo.
+                     * @description Default: "containerlab/designer".
+                     *
+                     *     For this endpoint, TemplatesDir must be under "containerlab/".
+                     */
+                    templatesDir: string;
+                    /** TopologyYAML is the raw containerlab topology YAML. */
+                    topologyYAML: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        branch: string;
+                        filePath: string;
+                        template: string;
+                        templatesDir: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateContainerlabDeploymentFromTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * NetlabServer is a user netlab server ref (e.g. "user:<id>").
+                     * @description If omitted, we fall back to the user-scope default.
+                     */
+                    netlabServer: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
+                        note: string;
+                        run: components["schemas"]["skyforge.JSONMap"];
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateContainerlabDeploymentFromYAML": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * AutoDeploy queues an initial "create" action after creating the deployment.
+                     * @description Default: true.
+                     */
+                    autoDeploy: boolean;
+                    /**
+                     * Name becomes the Skyforge deployment name (and drives the containerlab lab
+                     *     name).
+                     */
+                    name: string;
+                    /**
+                     * NetlabServer is a user netlab server ref (e.g. "user:<id>").
+                     * @description If omitted, we fall back to the user-scope default.
+                     */
+                    netlabServer: string;
+                    /**
+                     * Template is the filename to write under TemplatesDir.
+                     * @description Default: "\<deployment-name>.clab.yml".
+                     */
+                    template: string;
+                    /**
+                     * TemplatesDir is where we store the YAML inside the user-scope repo.
+                     * @description Default: "containerlab/designer".
+                     */
+                    templatesDir: string;
+                    /** TopologyYAML is the raw containerlab topology YAML. */
+                    topologyYAML: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
+                        note: string;
+                        run: components["schemas"]["skyforge.JSONMap"];
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserScopeDeploymentNetlabGraph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        generatedAt: string;
+                        outputPath: string;
+                        svg: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.NetlabConnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    node: string;
+                    show: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        output: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ConvertUserScopeEveLab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    containerlabServer: string;
+                    createDeployment: boolean;
+                    labPath: string;
+                    outputDir: string;
+                    outputFile: string;
+                    server: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
+                        path: string;
+                        userId: string;
+                        warnings: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ImportUserScopeEveLab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentName: string;
+                    labPath: string;
+                    server: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        activeTaskId: number;
+                        activeTaskStatus: string;
+                        config: components["schemas"]["skyforge.JSONMap"];
+                        createdAt: string;
+                        createdBy: string;
+                        id: string;
+                        lastFinishedAt: string;
+                        lastStartedAt: string;
+                        lastStatus: string;
+                        /** Format: int64 */
+                        lastTaskId: number;
+                        /** Format: int64 */
+                        lastTaskUserScopeId: number;
+                        name: string;
+                        /** Format: int64 */
+                        queueDepth: number;
+                        type: string;
+                        updatedAt: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListUserScopeEveLabs": {
+        parameters: {
+            query?: {
+                server?: string;
+                path?: string;
+                recursive?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        folders: components["schemas"]["skyforge.EveFolderInfo"][];
+                        labs: components["schemas"]["skyforge.EveLabSummary"][];
+                        server: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserScopeNetlab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        netlabServer: string;
+                        netlabServers: string[];
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.UpdateUserScopeNetlab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    netlabServer: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allowCustomContainerlabServers: boolean;
+                        /**
+                         * EVE-NG deployments require an endpoint. This flag enables configuring a
+                         *     per-user-scope EVE server.
+                         */
+                        allowCustomEveServers: boolean;
+                        allowCustomNetlabServers: boolean;
+                        allowExternalTemplateRepos: boolean;
+                        /** Format: int64 */
+                        ansibleRunTemplateId: number;
+                        artifactsBucket: string;
+                        awsAccountId: string;
+                        awsAuthMethod: string;
+                        awsRegion: string;
+                        awsRoleName: string;
+                        blueprint: string;
+                        /** Format: int64 */
+                        containerlabRunTemplateId: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        createdBy: string;
+                        defaultBranch: string;
+                        description: string;
+                        editorGroups: string[];
+                        editors: string[];
+                        /** Format: int64 */
+                        eveNgRunTemplateId: number;
+                        eveServer: string;
+                        externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
+                        giteaOwner: string;
+                        giteaRepo: string;
+                        id: string;
+                        isPublic: boolean;
+                        name: string;
+                        /** Format: int64 */
+                        netlabRunTemplateId: number;
+                        netlabServer: string;
+                        ownerGroups: string[];
+                        owners: string[];
+                        slug: string;
+                        /** Format: int64 */
+                        terraformApplyTemplateId: number;
+                        /** Format: int64 */
+                        terraformInitTemplateId: number;
+                        /** Format: int64 */
+                        terraformPlanTemplateId: number;
+                        terraformStateKey: string;
+                        viewerGroups: string[];
+                        viewers: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RunUserScopeContainerlab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** deploy, destroy */
+                    action: string;
+                    /** deployment name for lab naming */
+                    deployment: string;
+                    deploymentId: string;
+                    environment: components["schemas"]["skyforge.JSONMap"];
+                    gitBranch: string;
+                    message: string;
+                    netlabServer: string;
+                    reconfigure: boolean;
+                    /** filename (e.g. lab.yml) */
+                    template: string;
+                    /** owner/repo or URL (custom only) */
+                    templateRepo: string;
+                    /** user (default), blueprints, or custom */
+                    templateSource: string;
+                    /** repo-relative directory (default: blueprints/containerlab) */
+                    templatesDir: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        task: components["schemas"]["skyforge.JSONMap"];
+                        user: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RunUserScopeEveNg": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** create, start, stop, destroy */
+                    action: string;
+                    /** deployment name for lab naming */
+                    deployment: string;
+                    deploymentId: string;
+                    eveServer: string;
+                    labPath: string;
+                    message: string;
+                    /** directory name under templates dir */
+                    template: string;
+                    /** owner/repo or URL (custom only) */
+                    templateRepo: string;
+                    /** user (default), blueprints, or custom */
+                    templateSource: string;
+                    /** repo-relative directory (default: blueprints/eve-ng) */
+                    templatesDir: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        task: components["schemas"]["skyforge.JSONMap"];
+                        user: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RunUserScopeNetlab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** up, create, restart, collect, status, down */
+                    action: string;
+                    clabCleanup: boolean;
+                    clabConfigDir: string;
+                    clabTarball: string;
+                    /** for down/restart, remove workdir when true */
+                    cleanup: boolean;
+                    deploymentId: string;
+                    environment: components["schemas"]["skyforge.JSONMap"];
+                    gitBranch: string;
+                    message: string;
+                    netlabDeployment: string;
+                    netlabMultilabId: string;
+                    netlabPassword: string;
+                    netlabServer: string;
+                    netlabUserScopeDir: string;
+                    /** filename (e.g. spine-leaf.yml) */
+                    template: string;
+                    /** owner/repo or URL (custom only) */
+                    templateRepo: string;
+                    /** user (default), blueprints, or custom */
+                    templateSource: string;
+                    /** repo-relative directory (default: blueprints/netlab) */
+                    templatesDir: string;
+                    /** remote workdir-relative (or absolute) topology file */
+                    topologyPath: string;
+                    /** remote URL (only if netlab supports it) */
+                    topologyUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        task: components["schemas"]["skyforge.JSONMap"];
+                        user: string;
+                        userId: string;
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };
@@ -8061,188 +8981,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.ListUserContainerlabServers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        servers: components["schemas"]["skyforge.UserContainerlabServerConfig"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.UpsertUserContainerlabServer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    apiInsecure: boolean;
-                    apiPassword: string;
-                    apiToken: string;
-                    apiUrl: string;
-                    apiUser: string;
-                    hasPassword: boolean;
-                    id: string;
-                    name: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        apiInsecure: boolean;
-                        apiPassword: string;
-                        apiToken: string;
-                        apiUrl: string;
-                        apiUser: string;
-                        hasPassword: boolean;
-                        id: string;
-                        name: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserContainerlabServer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                serverID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListUserEveServers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        servers: components["schemas"]["skyforge.UserEveServerConfig"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.UpsertUserEveServer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    apiPassword: string;
-                    apiUrl: string;
-                    apiUser: string;
-                    hasPassword: boolean;
-                    hasSshKey: boolean;
-                    id: string;
-                    name: string;
-                    skipTlsVerify: boolean;
-                    sshHost: string;
-                    sshKey: string;
-                    sshUser: string;
-                    webUrl: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        apiPassword: string;
-                        apiUrl: string;
-                        apiUser: string;
-                        hasPassword: boolean;
-                        hasSshKey: boolean;
-                        id: string;
-                        name: string;
-                        skipTlsVerify: boolean;
-                        sshHost: string;
-                        sshKey: string;
-                        sshUser: string;
-                        webUrl: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserEveServer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                serverID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "GET:skyforge.GetUserGitCredentials": {
         parameters: {
             query?: never;
@@ -8627,93 +9365,6 @@ export interface operations {
                         status: string;
                     };
                 };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListUserNetlabServers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        servers: components["schemas"]["skyforge.UserNetlabServerConfig"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.UpsertUserNetlabServer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    apiInsecure: boolean;
-                    apiPassword: string;
-                    apiToken: string;
-                    apiUrl: string;
-                    apiUser: string;
-                    hasPassword: boolean;
-                    id: string;
-                    name: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        apiInsecure: boolean;
-                        apiPassword: string;
-                        apiToken: string;
-                        apiUrl: string;
-                        apiUser: string;
-                        hasPassword: boolean;
-                        id: string;
-                        name: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserNetlabServer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                serverID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -10554,7 +11205,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.SaveContainerlabTopologyYAML": {
+    "POST:skyforge.EstimateUserScopeTemplateResources": {
         parameters: {
             query?: never;
             header?: never;
@@ -10566,22 +11217,12 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    /** Name drives the default filename. */
-                    name: string;
-                    /**
-                     * Template is the filename to write under TemplatesDir.
-                     * @description Default: "\<normalized-name>.clab.yml".
-                     */
+                    compiler: string;
+                    dir: string;
+                    kind: string;
+                    repo: string;
+                    source: string;
                     template: string;
-                    /**
-                     * TemplatesDir is where we store the YAML inside the user-scope repo.
-                     * @description Default: "containerlab/designer".
-                     *
-                     *     For this endpoint, TemplatesDir must be under "containerlab/".
-                     */
-                    templatesDir: string;
-                    /** TopologyYAML is the raw containerlab topology YAML. */
-                    topologyYAML: string;
                 };
             };
         };
@@ -10593,10 +11234,10 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        branch: string;
-                        filePath: string;
+                        estimate: components["schemas"]["skyforge.ResourceEstimateSummary"];
+                        kind: string;
+                        source: string;
                         template: string;
-                        templatesDir: string;
                         userId: string;
                     };
                 };
@@ -10753,104 +11394,6 @@ export interface operations {
                     autoDeploy: boolean;
                     /** Name becomes the Skyforge deployment name (and drives the clabernetes lab name). */
                     name: string;
-                    /**
-                     * Template is the filename to write under TemplatesDir.
-                     * @description Default: "\<deployment-name>.clab.yml".
-                     */
-                    template: string;
-                    /**
-                     * TemplatesDir is where we store the YAML inside the user-scope repo.
-                     * @description Default: "containerlab/designer".
-                     */
-                    templatesDir: string;
-                    /** TopologyYAML is the raw containerlab topology YAML. */
-                    topologyYAML: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        note: string;
-                        run: components["schemas"]["skyforge.JSONMap"];
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.CreateContainerlabDeploymentFromTemplate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /**
-                     * NetlabServer is a user netlab server ref (e.g. "user:<id>").
-                     * @description If omitted, we fall back to the user-scope default.
-                     */
-                    netlabServer: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        note: string;
-                        run: components["schemas"]["skyforge.JSONMap"];
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.CreateContainerlabDeploymentFromYAML": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /**
-                     * AutoDeploy queues an initial "create" action after creating the deployment.
-                     * @description Default: true.
-                     */
-                    autoDeploy: boolean;
-                    /**
-                     * Name becomes the Skyforge deployment name (and drives the containerlab lab
-                     *     name).
-                     */
-                    name: string;
-                    /**
-                     * NetlabServer is a user netlab server ref (e.g. "user:<id>").
-                     * @description If omitted, we fall back to the user-scope default.
-                     */
-                    netlabServer: string;
                     /**
                      * Template is the filename to write under TemplatesDir.
                      * @description Default: "\<deployment-name>.clab.yml".
@@ -11765,67 +12308,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetUserScopeDeploymentNetlabGraph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                deploymentID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        generatedAt: string;
-                        outputPath: string;
-                        svg: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.NetlabConnect": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                deploymentID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    node: string;
-                    show: string[];
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        output: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "GET:skyforge.GetUserScopeDeploymentNodeDescribe": {
         parameters: {
             query?: never;
@@ -12035,6 +12517,36 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetUserScopeDeploymentResourceEstimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
+                        deploymentId: string;
+                        estimate: components["schemas"]["skyforge.ResourceEstimateSummary"];
+                        type: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.TerminalExecWS": {
         parameters: {
             query?: never;
@@ -12136,129 +12648,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.ConvertUserScopeEveLab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    containerlabServer: string;
-                    createDeployment: boolean;
-                    labPath: string;
-                    outputDir: string;
-                    outputFile: string;
-                    server: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        path: string;
-                        userId: string;
-                        warnings: string[];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.ImportUserScopeEveLab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    deploymentName: string;
-                    labPath: string;
-                    server: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int64 */
-                        activeTaskId: number;
-                        activeTaskStatus: string;
-                        config: components["schemas"]["skyforge.JSONMap"];
-                        createdAt: string;
-                        createdBy: string;
-                        id: string;
-                        lastFinishedAt: string;
-                        lastStartedAt: string;
-                        lastStatus: string;
-                        /** Format: int64 */
-                        lastTaskId: number;
-                        /** Format: int64 */
-                        lastTaskUserScopeId: number;
-                        name: string;
-                        /** Format: int64 */
-                        queueDepth: number;
-                        type: string;
-                        updatedAt: string;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListUserScopeEveLabs": {
-        parameters: {
-            query?: {
-                server?: string;
-                path?: string;
-                recursive?: boolean;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        folders: components["schemas"]["skyforge.EveFolderInfo"][];
-                        labs: components["schemas"]["skyforge.EveLabSummary"][];
-                        server: string;
-                        userId: string;
-                    };
-                };
             };
             default: components["responses"]["APIError"];
         };
@@ -12917,112 +13306,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetUserScopeNetlab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        netlabServer: string;
-                        netlabServers: string[];
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.UpdateUserScopeNetlab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    netlabServer: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        allowCustomContainerlabServers: boolean;
-                        /**
-                         * EVE-NG deployments require an endpoint. This flag enables configuring a
-                         *     per-user-scope EVE server.
-                         */
-                        allowCustomEveServers: boolean;
-                        allowCustomNetlabServers: boolean;
-                        allowExternalTemplateRepos: boolean;
-                        /** Format: int64 */
-                        ansibleRunTemplateId: number;
-                        artifactsBucket: string;
-                        awsAccountId: string;
-                        awsAuthMethod: string;
-                        awsRegion: string;
-                        awsRoleName: string;
-                        blueprint: string;
-                        /** Format: int64 */
-                        containerlabRunTemplateId: number;
-                        /** Format: date-time */
-                        createdAt: string;
-                        createdBy: string;
-                        defaultBranch: string;
-                        description: string;
-                        editorGroups: string[];
-                        editors: string[];
-                        /** Format: int64 */
-                        eveNgRunTemplateId: number;
-                        eveServer: string;
-                        externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
-                        giteaOwner: string;
-                        giteaRepo: string;
-                        id: string;
-                        isPublic: boolean;
-                        name: string;
-                        /** Format: int64 */
-                        netlabRunTemplateId: number;
-                        netlabServer: string;
-                        ownerGroups: string[];
-                        owners: string[];
-                        slug: string;
-                        /** Format: int64 */
-                        terraformApplyTemplateId: number;
-                        /** Format: int64 */
-                        terraformInitTemplateId: number;
-                        /** Format: int64 */
-                        terraformPlanTemplateId: number;
-                        terraformStateKey: string;
-                        viewerGroups: string[];
-                        viewers: string[];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "GET:skyforge.GetUserScopeNetlabTemplate": {
         parameters: {
             query?: {
@@ -13152,162 +13435,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        task: components["schemas"]["skyforge.JSONMap"];
-                        user: string;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.RunUserScopeContainerlab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** deploy, destroy */
-                    action: string;
-                    /** deployment name for lab naming */
-                    deployment: string;
-                    environment: components["schemas"]["skyforge.JSONMap"];
-                    gitBranch: string;
-                    message: string;
-                    netlabServer: string;
-                    reconfigure: boolean;
-                    /** filename (e.g. lab.yml) */
-                    template: string;
-                    /** owner/repo or URL (custom only) */
-                    templateRepo: string;
-                    /** user (default), blueprints, or custom */
-                    templateSource: string;
-                    /** repo-relative directory (default: blueprints/containerlab) */
-                    templatesDir: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        task: components["schemas"]["skyforge.JSONMap"];
-                        user: string;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.RunUserScopeEveNg": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** create, start, stop, destroy */
-                    action: string;
-                    /** deployment name for lab naming */
-                    deployment: string;
-                    deploymentId: string;
-                    eveServer: string;
-                    labPath: string;
-                    message: string;
-                    /** directory name under templates dir */
-                    template: string;
-                    /** owner/repo or URL (custom only) */
-                    templateRepo: string;
-                    /** user (default), blueprints, or custom */
-                    templateSource: string;
-                    /** repo-relative directory (default: blueprints/eve-ng) */
-                    templatesDir: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        task: components["schemas"]["skyforge.JSONMap"];
-                        user: string;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.RunUserScopeNetlab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** up, create, restart, collect, status, down */
-                    action: string;
-                    clabCleanup: boolean;
-                    clabConfigDir: string;
-                    clabTarball: string;
-                    /** for down/restart, remove workdir when true */
-                    cleanup: boolean;
-                    environment: components["schemas"]["skyforge.JSONMap"];
-                    gitBranch: string;
-                    message: string;
-                    netlabDeployment: string;
-                    netlabMultilabId: string;
-                    netlabPassword: string;
-                    netlabServer: string;
-                    netlabUserScopeDir: string;
-                    /** filename (e.g. spine-leaf.yml) */
-                    template: string;
-                    /** owner/repo or URL (custom only) */
-                    templateRepo: string;
-                    /** user (default), blueprints, or custom */
-                    templateSource: string;
-                    /** repo-relative directory (default: blueprints/netlab) */
-                    templatesDir: string;
-                    /** remote workdir-relative (or absolute) topology file */
-                    topologyPath: string;
-                    /** remote URL (only if netlab supports it) */
-                    topologyUrl: string;
-                };
-            };
-        };
         responses: {
             /** @description Success response */
             200: {

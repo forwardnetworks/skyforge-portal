@@ -543,14 +543,22 @@ function CreateDeploymentPage() {
 		queryFn: async () => {
 			if (!watchUserScopeId) throw new Error("userId is required");
 			if (!watchTemplate) throw new Error("template is required");
+			const compiler =
+				watchKind === "netlab" || watchKind === "netlab-c9s"
+					? "netlab"
+					: watchKind === "containerlab" || watchKind === "clabernetes"
+						? "containerlab"
+						: undefined;
 			const body: {
 				kind: string;
+				compiler?: string;
 				source: string;
 				repo?: string;
 				dir?: string;
 				template: string;
 			} = {
-				kind: watchKind,
+				kind: compiler ? "c9s" : watchKind,
+				compiler,
 				source: toAPITemplateSource(effectiveSource),
 				template: watchTemplate,
 			};
@@ -615,10 +623,10 @@ function CreateDeploymentPage() {
 				}
 			}
 
-			if (values.kind === "netlab" || values.kind === "containerlab") {
-				const v = (values.netlabServer || "").trim();
-				if (!v) throw new Error("BYOS server is required");
-				config.netlabServer = v;
+				if (values.kind === "netlab" || values.kind === "containerlab") {
+					const v = (values.netlabServer || "").trim();
+					if (!v) throw new Error("BYOS server is required");
+					config.netlabServer = v;
 				config.templateSource = toAPITemplateSource(effectiveSource);
 				if (
 					(effectiveSource === "external" || effectiveSource === "custom") &&
@@ -628,20 +636,22 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "netlab-c9s") {
-				config.templateSource = toAPITemplateSource(effectiveSource);
-				if (
-					(effectiveSource === "external" || effectiveSource === "custom") &&
+				if (values.kind === "netlab-c9s") {
+					config.compiler = "netlab";
+					config.templateSource = toAPITemplateSource(effectiveSource);
+					if (
+						(effectiveSource === "external" || effectiveSource === "custom") &&
 					values.templateRepoId
 				)
 					config.templateRepo = values.templateRepoId;
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "clabernetes") {
-				config.templateSource = toAPITemplateSource(effectiveSource);
-				if (
-					(effectiveSource === "external" || effectiveSource === "custom") &&
+				if (values.kind === "clabernetes") {
+					config.compiler = "containerlab";
+					config.templateSource = toAPITemplateSource(effectiveSource);
+					if (
+						(effectiveSource === "external" || effectiveSource === "custom") &&
 					values.templateRepoId
 				)
 					config.templateRepo = values.templateRepoId;
@@ -658,19 +668,42 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "eve_ng") {
-				config.templateSource = "blueprints";
-				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
-				const eve = (values.eveServer || "").trim();
-				if (!eve) throw new Error("EVE-NG server is required");
-				config.eveServer = eve;
-			}
+				if (values.kind === "eve_ng") {
+					config.driver = "eve_ng";
+					config.templateSource = "blueprints";
+					if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
+					const eve = (values.eveServer || "").trim();
+					if (!eve) throw new Error("EVE-NG server is required");
+					config.eveServer = eve;
+				}
+				if (values.kind === "netlab") {
+					config.driver = "netlab";
+				}
+				if (values.kind === "containerlab") {
+					config.driver = "containerlab";
+				}
 
-			const body: CreateUserScopeDeploymentRequest = {
-				name: values.name,
-				type: values.kind,
-				config: config as any,
-			};
+				let deploymentType: string = values.kind;
+				switch (values.kind) {
+					case "netlab-c9s":
+					case "clabernetes":
+						deploymentType = "c9s";
+						break;
+					case "netlab":
+					case "containerlab":
+					case "eve_ng":
+						deploymentType = "byos";
+						break;
+					default:
+						deploymentType = values.kind;
+						break;
+				}
+
+				const body: CreateUserScopeDeploymentRequest = {
+					name: values.name,
+					type: deploymentType,
+					config: config as any,
+				};
 			return createUserScopeDeployment(values.userId, body);
 		},
 		onSuccess: async (_, variables) => {

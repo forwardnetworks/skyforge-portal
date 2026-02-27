@@ -134,6 +134,13 @@ function DeploymentDetailPage() {
 	const userId = String(deployment?.userId ?? "");
 
 	const deploymentType = String(deployment?.type ?? "");
+	const deploymentCompiler = String((deployment?.config as any)?.compiler ?? "")
+		.trim()
+		.toLowerCase();
+	const deploymentDriver = String((deployment?.config as any)?.driver ?? "")
+		.trim()
+		.toLowerCase();
+	const isC9SDeployment = deploymentType === "c9s";
 
 	useEffect(() => {
 		const enabled = Boolean((deployment?.config ?? {})["forwardEnabled"]);
@@ -302,7 +309,7 @@ function DeploymentDetailPage() {
 		},
 		enabled:
 			!!deployment &&
-			["containerlab", "netlab-c9s", "clabernetes"].includes(deploymentType),
+			["c9s", "byos"].includes(deploymentType),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -649,16 +656,25 @@ function DeploymentDetailPage() {
 							<div className="flex items-center justify-between">
 								<div>
 									<CardTitle>Network Topology</CardTitle>
-									<CardDescription>
-										{deployment.type === "containerlab"
-											? "Derived from containerlab after deploy (includes resolved mgmt IPs)."
-											: deployment.type === "netlab-c9s"
-												? "Derived from clabernetes after deploy (includes resolved mgmt IPs)."
-												: deployment.type === "clabernetes"
-													? "Derived from clabernetes after deploy (includes resolved mgmt IPs)."
-													: "Topology is provider-dependent; not yet implemented for this deployment type."}
-									</CardDescription>
-								</div>
+										<CardDescription>
+											{deployment.type === "c9s" &&
+											deploymentCompiler === "netlab"
+												? "Derived from netlab-c9s artifacts after deploy (includes resolved mgmt IPs)."
+												: deployment.type === "c9s" &&
+													  deploymentCompiler === "containerlab"
+													? "Derived from clabernetes artifacts after deploy (includes resolved mgmt IPs)."
+													: deployment.type === "byos" &&
+														  deploymentDriver === "containerlab"
+														? "Derived from containerlab BYOS artifacts after deploy."
+														: deployment.type === "byos" &&
+															  deploymentDriver === "netlab"
+															? "Derived from netlab BYOS artifacts after deploy."
+															: deployment.type === "byos" &&
+																  deploymentDriver === "eve_ng"
+																? "Derived from EVE-NG artifacts after deploy."
+																: "Topology is provider-dependent; not yet implemented for this deployment type."}
+										</CardDescription>
+									</div>
 								<div className="flex items-center gap-2">
 									<Button
 										variant="outline"
@@ -681,14 +697,12 @@ function DeploymentDetailPage() {
 							</div>
 						</CardHeader>
 						<CardContent>
-							<TopologyViewer
-								topology={topology.data}
-								userId={deployment.userId}
-								deploymentId={deployment.id}
-								enableTerminal={["netlab-c9s", "clabernetes"].includes(
-									deployment.type,
-								)}
-							/>
+								<TopologyViewer
+									topology={topology.data}
+									userId={deployment.userId}
+									deploymentId={deployment.id}
+									enableTerminal={isC9SDeployment}
+								/>
 						</CardContent>
 					</Card>
 
@@ -744,16 +758,12 @@ function DeploymentDetailPage() {
 													</div>
 												</div>
 												<div className="flex flex-wrap items-center gap-2">
-													<Button
-														size="sm"
-														variant="outline"
-														disabled={
-															!["netlab-c9s", "clabernetes"].includes(
-																deployment.type,
-															)
-														}
-														onClick={() =>
-															window.open(
+														<Button
+															size="sm"
+															variant="outline"
+															disabled={!isC9SDeployment}
+															onClick={() =>
+																window.open(
 																`${baseUrl}&action=terminal`,
 																"_blank",
 																"noopener,noreferrer",

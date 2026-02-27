@@ -96,14 +96,7 @@ export type UserScopeDeployment = {
 	id: string;
 	userId: string;
 	name: string;
-	type:
-		| "terraform"
-		| "netlab"
-		| "netlab-c9s"
-		| "eve_ng"
-		| "containerlab"
-		| "clabernetes"
-		| string;
+	type: "terraform" | "c9s" | "byos" | string;
 	config: JSONMap;
 	createdBy?: string;
 	createdAt?: ISO8601;
@@ -392,8 +385,9 @@ export type UserScopeNetlabServersResponse = {
 export async function listUserScopeNetlabServers(
 	userId: string,
 ): Promise<UserScopeNetlabServersResponse> {
+	void userId;
 	return apiFetch<UserScopeNetlabServersResponse>(
-		`/api/users/${encodeURIComponent(userId)}/netlab/servers`,
+		"/api/byos/me/netlab/servers",
 	);
 }
 
@@ -407,8 +401,9 @@ export async function upsertUserScopeNetlabServer(
 		apiToken?: string;
 	},
 ): Promise<UserScopeNetlabServerConfig> {
+	void userId;
 	return apiFetch<UserScopeNetlabServerConfig>(
-		`/api/users/${encodeURIComponent(userId)}/netlab/servers`,
+		"/api/byos/me/netlab/servers",
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -420,8 +415,9 @@ export async function deleteUserScopeNetlabServer(
 	userId: string,
 	serverId: string,
 ): Promise<void> {
+	void userId;
 	await apiFetch<void>(
-		`/api/users/${encodeURIComponent(userId)}/netlab/servers/${encodeURIComponent(serverId)}`,
+		`/api/byos/me/netlab/servers/${encodeURIComponent(serverId)}`,
 		{
 			method: "DELETE",
 		},
@@ -491,8 +487,9 @@ export type UserScopeEveConvertResponse = {
 export async function listUserScopeEveServers(
 	userId: string,
 ): Promise<UserScopeEveServersResponse> {
+	void userId;
 	return apiFetch<UserScopeEveServersResponse>(
-		`/api/users/${encodeURIComponent(userId)}/eve/servers`,
+		"/api/byos/me/eve/servers",
 	);
 }
 
@@ -506,7 +503,7 @@ export async function listUserScopeEveLabs(
 	if (params?.recursive) qs.set("recursive", "true");
 	const suffix = qs.toString();
 	return apiFetch<UserScopeEveLabsResponse>(
-		`/api/users/${encodeURIComponent(userId)}/eve/labs${suffix ? `?${suffix}` : ""}`,
+		`/api/byos/users/${encodeURIComponent(userId)}/eve/labs${suffix ? `?${suffix}` : ""}`,
 	);
 }
 
@@ -515,7 +512,7 @@ export async function importUserScopeEveLab(
 	payload: UserScopeEveImportRequest,
 ): Promise<UserScopeDeployment> {
 	return apiFetch<UserScopeDeployment>(
-		`/api/users/${encodeURIComponent(userId)}/eve/import`,
+		`/api/byos/users/${encodeURIComponent(userId)}/eve/import`,
 		{ method: "POST", body: JSON.stringify(payload) },
 	);
 }
@@ -525,7 +522,7 @@ export async function convertUserScopeEveLab(
 	payload: UserScopeEveConvertRequest,
 ): Promise<UserScopeEveConvertResponse> {
 	return apiFetch<UserScopeEveConvertResponse>(
-		`/api/users/${encodeURIComponent(userId)}/eve/convert`,
+		`/api/byos/users/${encodeURIComponent(userId)}/eve/convert`,
 		{ method: "POST", body: JSON.stringify(payload) },
 	);
 }
@@ -541,8 +538,9 @@ export async function upsertUserScopeEveServer(
 		apiPassword?: string;
 	},
 ): Promise<UserScopeEveServerConfig> {
+	void userId;
 	return apiFetch<UserScopeEveServerConfig>(
-		`/api/users/${encodeURIComponent(userId)}/eve/servers`,
+		"/api/byos/me/eve/servers",
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -554,8 +552,9 @@ export async function deleteUserScopeEveServer(
 	userId: string,
 	serverId: string,
 ): Promise<void> {
+	void userId;
 	await apiFetch<void>(
-		`/api/users/${encodeURIComponent(userId)}/eve/servers/${encodeURIComponent(serverId)}`,
+		`/api/byos/me/eve/servers/${encodeURIComponent(serverId)}`,
 		{
 			method: "DELETE",
 		},
@@ -920,13 +919,13 @@ export type UserNetlabServerConfig = {
 export type UserNetlabServersResponse = { servers: UserNetlabServerConfig[] };
 
 export async function listUserNetlabServers(): Promise<UserNetlabServersResponse> {
-	return apiFetch<UserNetlabServersResponse>("/api/me/netlab/servers");
+	return apiFetch<UserNetlabServersResponse>("/api/byos/me/netlab/servers");
 }
 
 export async function upsertUserNetlabServer(
 	payload: UserNetlabServerConfig,
 ): Promise<UserNetlabServerConfig> {
-	return apiFetch<UserNetlabServerConfig>("/api/me/netlab/servers", {
+	return apiFetch<UserNetlabServerConfig>("/api/byos/me/netlab/servers", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
@@ -934,7 +933,7 @@ export async function upsertUserNetlabServer(
 
 export async function deleteUserNetlabServer(serverId: string): Promise<void> {
 	await apiFetch<void>(
-		`/api/me/netlab/servers/${encodeURIComponent(serverId)}`,
+		`/api/byos/me/netlab/servers/${encodeURIComponent(serverId)}`,
 		{
 			method: "DELETE",
 		},
@@ -957,22 +956,25 @@ export type UserEveServerConfig = {
 export type UserEveServersResponse = { servers: UserEveServerConfig[] };
 
 export async function listUserEveServers(): Promise<UserEveServersResponse> {
-	return apiFetch<UserEveServersResponse>("/api/me/eve/servers");
+	return apiFetch<UserEveServersResponse>("/api/byos/me/eve/servers");
 }
 
 export async function upsertUserEveServer(
 	payload: UserEveServerConfig,
 ): Promise<UserEveServerConfig> {
-	return apiFetch<UserEveServerConfig>("/api/me/eve/servers", {
+	return apiFetch<UserEveServerConfig>("/api/byos/me/eve/servers", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserEveServer(serverId: string): Promise<void> {
-	await apiFetch<void>(`/api/me/eve/servers/${encodeURIComponent(serverId)}`, {
-		method: "DELETE",
-	});
+	await apiFetch<void>(
+		`/api/byos/me/eve/servers/${encodeURIComponent(serverId)}`,
+		{
+			method: "DELETE",
+		},
+	);
 }
 
 export type UserContainerlabServerConfig = {
@@ -991,7 +993,7 @@ export type UserContainerlabServersResponse = {
 
 export async function listUserContainerlabServers(): Promise<UserContainerlabServersResponse> {
 	return apiFetch<UserContainerlabServersResponse>(
-		"/api/me/containerlab/servers",
+		"/api/byos/me/containerlab/servers",
 	);
 }
 
@@ -999,7 +1001,7 @@ export async function upsertUserContainerlabServer(
 	payload: UserContainerlabServerConfig,
 ): Promise<UserContainerlabServerConfig> {
 	return apiFetch<UserContainerlabServerConfig>(
-		"/api/me/containerlab/servers",
+		"/api/byos/me/containerlab/servers",
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -1011,7 +1013,7 @@ export async function deleteUserContainerlabServer(
 	serverId: string,
 ): Promise<void> {
 	await apiFetch<void>(
-		`/api/me/containerlab/servers/${encodeURIComponent(serverId)}`,
+		`/api/byos/me/containerlab/servers/${encodeURIComponent(serverId)}`,
 		{ method: "DELETE" },
 	);
 }
@@ -1970,6 +1972,7 @@ export type ResourceEstimateSummary = {
 
 export type UserScopeTemplateResourceEstimateRequest = {
 	kind: string;
+	compiler?: string;
 	source?: string;
 	repo?: string;
 	dir?: string;
@@ -2180,7 +2183,7 @@ export async function createContainerlabDeploymentFromYAML(
 	body: CreateContainerlabDeploymentFromYAMLRequest,
 ): Promise<CreateContainerlabDeploymentFromYAMLResponse> {
 	return apiFetch<CreateContainerlabDeploymentFromYAMLResponse>(
-		`/api/users/${encodeURIComponent(userId)}/deployments-designer/containerlab/from-yaml`,
+		`/api/byos/users/${encodeURIComponent(userId)}/deployments-designer/containerlab/from-yaml`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2230,7 +2233,7 @@ export async function saveContainerlabTopologyYAML(
 	body: SaveContainerlabTopologyYAMLRequest,
 ): Promise<SaveContainerlabTopologyYAMLResponse> {
 	return apiFetch<SaveContainerlabTopologyYAMLResponse>(
-		`/api/users/${encodeURIComponent(userId)}/containerlab/topologies`,
+		`/api/byos/users/${encodeURIComponent(userId)}/containerlab/topologies`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -2270,7 +2273,7 @@ export async function createContainerlabDeploymentFromTemplate(
 	body: CreateContainerlabDeploymentFromTemplateRequest,
 ): Promise<CreateDeploymentFromTemplateResponse> {
 	return apiFetch<CreateDeploymentFromTemplateResponse>(
-		`/api/users/${encodeURIComponent(userId)}/deployments-designer/containerlab/from-template`,
+		`/api/byos/users/${encodeURIComponent(userId)}/deployments-designer/containerlab/from-template`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }

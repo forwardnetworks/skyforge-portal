@@ -261,11 +261,27 @@ function DeploymentsPage() {
 			}
 			// Type
 			if (typeFilter !== "all") {
-				if (typeFilter === "netlab" && !d.type.startsWith("netlab"))
+				const depType = String(d.type ?? "").trim().toLowerCase();
+				const compiler = String((d.config as any)?.compiler ?? "")
+					.trim()
+					.toLowerCase();
+				const driver = String((d.config as any)?.driver ?? "")
+					.trim()
+					.toLowerCase();
+				if (
+					typeFilter === "netlab" &&
+					!(
+						(depType === "c9s" && compiler === "netlab") ||
+						(depType === "byos" && driver === "netlab")
+					)
+				)
 					return false;
 				if (
 					typeFilter === "containerlab" &&
-					!["containerlab", "clabernetes"].includes(d.type)
+					!(
+						(depType === "c9s" && compiler === "containerlab") ||
+						(depType === "byos" && driver === "containerlab")
+					)
 				)
 					return false;
 				if (typeFilter === "terraform" && d.type !== "terraform") return false;
@@ -368,7 +384,7 @@ function DeploymentsPage() {
 		}
 	};
 
-	const fallbackManagedTypes = ["netlab-c9s", "clabernetes", "terraform"];
+	const fallbackManagedTypes = ["c9s", "byos", "terraform"];
 	const managedTypes = useMemo(
 		() =>
 			new Set(
@@ -518,7 +534,7 @@ function DeploymentsPage() {
 				width: 160,
 				cell: (d) => (
 					<span className="text-muted-foreground">
-						{formatDeploymentType(d.type)}
+						{formatDeploymentType(d)}
 					</span>
 				),
 			},
@@ -670,19 +686,25 @@ function DeploymentsPage() {
 		}
 	};
 
-	const formatDeploymentType = (typ: string) => {
-		switch (typ) {
-			case "netlab":
-				return "Netlab (BYOS)";
-			case "netlab-c9s":
-				return "Netlab";
-			case "containerlab":
-				return "Containerlab (BYOS)";
-			case "clabernetes":
-				return "Containerlab";
-			default:
-				return typ;
-		}
+	const formatDeploymentType = (d: UserScopeDeployment) => {
+		const typ = String(d.type ?? "").trim().toLowerCase();
+		const compiler = String((d.config as any)?.compiler ?? "")
+			.trim()
+			.toLowerCase();
+		const driver = String((d.config as any)?.driver ?? "")
+			.trim()
+			.toLowerCase();
+		if (typ === "c9s" && compiler === "netlab") return "Netlab (C9S)";
+		if (typ === "c9s" && compiler === "containerlab")
+			return "Containerlab (C9S)";
+		if (typ === "c9s") return "C9S";
+		if (typ === "byos" && driver === "netlab") return "Netlab (BYOS)";
+		if (typ === "byos" && driver === "containerlab")
+			return "Containerlab (BYOS)";
+		if (typ === "byos" && driver === "eve_ng") return "EVE-NG (BYOS)";
+		if (typ === "byos") return "BYOS";
+		if (typ === "terraform") return "Terraform";
+		return String(d.type ?? "");
 	};
 
 	const destroyHasForward = !!destroyTarget?.config?.forwardNetworkId;
