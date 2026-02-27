@@ -13,6 +13,12 @@ const ADMIN_TOKEN = (process.env.SKYFORGE_UI_E2E_ADMIN_TOKEN || "").trim();
 const USERNAME = (
 	process.env.SKYFORGE_UI_E2E_USERNAME || "craigjohnson"
 ).trim();
+const USER_SCOPE_ID = (
+	process.env.SKYFORGE_UI_E2E_USER_SCOPE_ID || ""
+).trim();
+const USER_SCOPE_SLUG = (
+	process.env.SKYFORGE_UI_E2E_USER_SCOPE_SLUG || ""
+).trim();
 const REQUIRE_INAPP = envBool("SKYFORGE_UI_E2E_REQUIRE_INAPP", true);
 const INAPP_FORWARD_URL = (
 	process.env.SKYFORGE_UI_E2E_INAPP_FORWARD_URL ||
@@ -251,9 +257,39 @@ async function seedSession() {
 async function ensureUserScope(cookieHeader) {
 	const body = await apiJSON("GET", "/api/users", cookieHeader);
 	const userScopes = Array.isArray(body?.userScopes) ? body.userScopes : [];
+
+	const pick = (scope) => ({
+		id: String(scope?.id || ""),
+		slug: String(scope?.slug || ""),
+	});
+
+	if (USER_SCOPE_ID) {
+		const byID = userScopes.find((s) => String(s?.id || "") === USER_SCOPE_ID);
+		if (byID) return pick(byID);
+		throw new Error(`requested user scope id not found: ${USER_SCOPE_ID}`);
+	}
+	if (USER_SCOPE_SLUG) {
+		const bySlug = userScopes.find(
+			(s) => String(s?.slug || "") === USER_SCOPE_SLUG,
+		);
+		if (bySlug) return pick(bySlug);
+		throw new Error(`requested user scope slug not found: ${USER_SCOPE_SLUG}`);
+	}
+
 	if (userScopes.length > 0) {
-		const first = userScopes[0];
-		return { id: String(first.id || ""), slug: String(first.slug || "") };
+		const usernameSlug = String(USERNAME || "")
+			.toLowerCase()
+			.replace(/[^a-z0-9-]+/g, "");
+		if (usernameSlug) {
+			const canonical = userScopes.find(
+				(s) => String(s?.slug || "") === `user-${usernameSlug}`,
+			);
+			if (canonical) return pick(canonical);
+		}
+		const firstNonSmoke = userScopes.find(
+			(s) => !String(s?.slug || "").startsWith("smoke-"),
+		);
+		if (firstNonSmoke) return pick(firstNonSmoke);
 	}
 	const create = await apiJSON("POST", "/api/users", cookieHeader, {
 		name: "E2E User Scope",
@@ -261,7 +297,7 @@ async function ensureUserScope(cookieHeader) {
 		description: "ui-nos e2e seed user scope",
 		isPublic: false,
 	});
-	return { id: String(create?.id || ""), slug: String(create?.slug || "") };
+	return pick(create);
 }
 
 async function resolveCollector(cookieHeader) {
