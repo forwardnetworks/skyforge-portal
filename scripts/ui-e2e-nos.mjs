@@ -367,7 +367,8 @@ async function createDeployment(
 ) {
 	const body = {
 		name,
-		type: "netlab-c9s",
+		family: "c9s",
+		engine: "netlab",
 		config: {
 			templateSource: "blueprints",
 			templatesDir: "netlab/_e2e/minimal",
