@@ -90,11 +90,11 @@ export const Route = createFileRoute("/dashboard/deployments/new")({
 });
 
 type DeploymentKind =
-	| "netlab-c9s"
+	| "c9s_netlab"
 	| "netlab"
 	| "eve_ng"
 	| "containerlab"
-	| "clabernetes"
+	| "c9s_containerlab"
 	| "terraform";
 type TemplateSource = "user" | "blueprints" | "external" | "custom";
 
@@ -106,10 +106,10 @@ const formSchema = z.object({
 	userId: z.string().min(1, "User scope is required"),
 	name: z.string().min(1, "Deployment name is required").max(100),
 	kind: z.enum([
-		"netlab-c9s",
+		"c9s_netlab",
 		"netlab",
 		"containerlab",
-		"clabernetes",
+		"c9s_containerlab",
 		"terraform",
 		"eve_ng",
 	]),
@@ -206,7 +206,7 @@ function CreateDeploymentPage() {
 		defaultValues: {
 			userId: userId || "",
 			name: "",
-			kind: "netlab-c9s",
+			kind: "c9s_netlab",
 			source: USER_REPO_SOURCE,
 			templateRepoId: "",
 			template: "",
@@ -351,7 +351,9 @@ function CreateDeploymentPage() {
 	const forwardCollectorsQ = useQuery({
 		queryKey: queryKeys.userForwardCollectorConfigs(),
 		queryFn: listUserForwardCollectorConfigs,
-		enabled: ["netlab-c9s", "clabernetes", "terraform"].includes(watchKind),
+		enabled: ["c9s_netlab", "c9s_containerlab", "terraform"].includes(
+			watchKind,
+		),
 		staleTime: 30_000,
 		retry: false,
 	});
@@ -365,7 +367,7 @@ function CreateDeploymentPage() {
 	}, [forwardCollectorsQ.data?.collectors]);
 
 	useEffect(() => {
-		if (!["netlab-c9s", "clabernetes", "terraform"].includes(watchKind)) {
+		if (!["c9s_netlab", "c9s_containerlab", "terraform"].includes(watchKind)) {
 			if ((watchForwardCollectorId ?? "none") !== "none")
 				setValue("forwardCollectorId", "none");
 			return;
@@ -390,13 +392,13 @@ function CreateDeploymentPage() {
 	]);
 
 	const effectiveSource: TemplateSource = useMemo(() => {
-		if (watchKind === "netlab" || watchKind === "netlab-c9s") {
+		if (watchKind === "netlab" || watchKind === "c9s_netlab") {
 			if (watchSource === USER_REPO_SOURCE) return USER_REPO_SOURCE;
 			if (watchSource === "custom") return "custom";
 			return "blueprints";
 		}
 		if (watchKind === "eve_ng") return "blueprints";
-		if (watchKind === "containerlab" || watchKind === "clabernetes")
+		if (watchKind === "containerlab" || watchKind === "c9s_containerlab")
 			return watchSource;
 		if (watchKind === "terraform") return watchSource;
 		return USER_REPO_SOURCE;
@@ -423,12 +425,12 @@ function CreateDeploymentPage() {
 
 			switch (watchKind) {
 				case "netlab":
-				case "netlab-c9s":
+				case "c9s_netlab":
 					return getUserScopeNetlabTemplates(watchUserScopeId, query);
 				case "eve_ng":
 					return getUserScopeEveNgTemplates(watchUserScopeId, query);
 				case "containerlab":
-				case "clabernetes":
+				case "c9s_containerlab":
 					return getUserScopeContainerlabTemplates(watchUserScopeId, query);
 				case "terraform":
 					return getUserScopeTerraformTemplates(watchUserScopeId, query);
@@ -506,7 +508,7 @@ function CreateDeploymentPage() {
 			)
 				query.repo = watchTemplateRepoId;
 			if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
-			if (watchKind === "containerlab" || watchKind === "clabernetes") {
+			if (watchKind === "containerlab" || watchKind === "c9s_containerlab") {
 				return getUserScopeContainerlabTemplate(watchUserScopeId, {
 					...query,
 					file: watchTemplate,
@@ -523,9 +525,9 @@ function CreateDeploymentPage() {
 			Boolean(watchUserScopeId) &&
 			Boolean(watchTemplate) &&
 			(watchKind === "netlab" ||
-				watchKind === "netlab-c9s" ||
+				watchKind === "c9s_netlab" ||
 				watchKind === "containerlab" ||
-				watchKind === "clabernetes"),
+				watchKind === "c9s_containerlab"),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -544,9 +546,9 @@ function CreateDeploymentPage() {
 			if (!watchUserScopeId) throw new Error("userId is required");
 			if (!watchTemplate) throw new Error("template is required");
 			const engine =
-				watchKind === "netlab" || watchKind === "netlab-c9s"
+				watchKind === "netlab" || watchKind === "c9s_netlab"
 					? "netlab"
-					: watchKind === "containerlab" || watchKind === "clabernetes"
+					: watchKind === "containerlab" || watchKind === "c9s_containerlab"
 						? "containerlab"
 						: undefined;
 			const body: {
@@ -574,7 +576,7 @@ function CreateDeploymentPage() {
 		enabled:
 			Boolean(watchUserScopeId) &&
 			Boolean(watchTemplate) &&
-			["netlab", "netlab-c9s", "containerlab", "clabernetes"].includes(
+			["netlab", "c9s_netlab", "containerlab", "c9s_containerlab"].includes(
 				watchKind,
 			),
 		retry: false,
@@ -615,7 +617,9 @@ function CreateDeploymentPage() {
 				}
 			}
 
-			if (["netlab-c9s", "clabernetes", "terraform"].includes(values.kind)) {
+			if (
+				["c9s_netlab", "c9s_containerlab", "terraform"].includes(values.kind)
+			) {
 				const cid = String(values.forwardCollectorId ?? "none").trim();
 				if (cid && cid !== "none") {
 					config.forwardEnabled = true;
@@ -636,7 +640,7 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "netlab-c9s") {
+			if (values.kind === "c9s_netlab") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
 				if (
 					(effectiveSource === "external" || effectiveSource === "custom") &&
@@ -646,7 +650,7 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "clabernetes") {
+			if (values.kind === "c9s_containerlab") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
 				if (
 					(effectiveSource === "external" || effectiveSource === "custom") &&
@@ -677,11 +681,11 @@ function CreateDeploymentPage() {
 			let family: CreateUserScopeDeploymentRequest["family"] = "terraform";
 			let engine: CreateUserScopeDeploymentRequest["engine"] = "terraform";
 			switch (values.kind) {
-				case "netlab-c9s":
+				case "c9s_netlab":
 					family = "c9s";
 					engine = "netlab";
 					break;
-				case "clabernetes":
+				case "c9s_containerlab":
 					family = "c9s";
 					engine = "containerlab";
 					break;
@@ -1032,7 +1036,7 @@ function CreateDeploymentPage() {
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													<SelectItem value="netlab-c9s">Netlab</SelectItem>
+													<SelectItem value="c9s_netlab">Netlab</SelectItem>
 													{byosNetlabEnabled && (
 														<SelectItem value="netlab">
 															Netlab (BYOS)
@@ -1046,7 +1050,7 @@ function CreateDeploymentPage() {
 															Containerlab (BYOS)
 														</SelectItem>
 													)}
-													<SelectItem value="clabernetes">
+													<SelectItem value="c9s_containerlab">
 														Containerlab
 													</SelectItem>
 													<SelectItem value="terraform">Terraform</SelectItem>
@@ -1057,7 +1061,7 @@ function CreateDeploymentPage() {
 									)}
 								/>
 
-								{["netlab-c9s", "clabernetes", "terraform"].includes(
+								{["c9s_netlab", "c9s_containerlab", "terraform"].includes(
 									watchKind,
 								) && (
 									<FormField
@@ -1152,7 +1156,7 @@ function CreateDeploymentPage() {
 														disabled={
 															!externalAllowed ||
 															(watchKind !== "containerlab" &&
-																watchKind !== "clabernetes" &&
+																watchKind !== "c9s_containerlab" &&
 																watchKind !== "terraform")
 														}
 													>
@@ -1162,9 +1166,9 @@ function CreateDeploymentPage() {
 														value="custom"
 														disabled={
 															watchKind !== "netlab" &&
-															watchKind !== "netlab-c9s" &&
+															watchKind !== "c9s_netlab" &&
 															watchKind !== "containerlab" &&
-															watchKind !== "clabernetes"
+															watchKind !== "c9s_containerlab"
 														}
 													>
 														One-shot repo URL
@@ -1173,7 +1177,7 @@ function CreateDeploymentPage() {
 											</Select>
 											{!externalAllowed &&
 												(watchKind === "containerlab" ||
-													watchKind === "clabernetes" ||
+													watchKind === "c9s_containerlab" ||
 													watchKind === "terraform") && (
 													<FormDescription>
 														No external repos configured in My Settings.
@@ -1334,9 +1338,9 @@ function CreateDeploymentPage() {
 											<div className="flex items-center justify-between gap-3">
 												<FormLabel>Template</FormLabel>
 												{(watchKind === "netlab" ||
-													watchKind === "netlab-c9s" ||
+													watchKind === "c9s_netlab" ||
 													watchKind === "containerlab" ||
-													watchKind === "clabernetes") && (
+													watchKind === "c9s_containerlab") && (
 													<div className="flex items-center gap-2">
 														<Button
 															type="button"
@@ -1348,7 +1352,7 @@ function CreateDeploymentPage() {
 															View
 														</Button>
 														{watchKind === "netlab" ||
-														watchKind === "netlab-c9s" ? (
+														watchKind === "c9s_netlab" ? (
 															<Button
 																type="button"
 																variant="outline"

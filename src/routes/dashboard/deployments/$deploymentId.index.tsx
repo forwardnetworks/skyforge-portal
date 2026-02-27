@@ -654,10 +654,10 @@ function DeploymentDetailPage() {
 									<CardDescription>
 										{deployment.family === "c9s" &&
 										deploymentEngine === "netlab"
-											? "Derived from netlab-c9s artifacts after deploy (includes resolved mgmt IPs)."
+											? "Derived from C9S/Netlab artifacts after deploy (includes resolved mgmt IPs)."
 											: deployment.family === "c9s" &&
 													deploymentEngine === "containerlab"
-												? "Derived from clabernetes artifacts after deploy (includes resolved mgmt IPs)."
+												? "Derived from C9S/Containerlab artifacts after deploy (includes resolved mgmt IPs)."
 												: deployment.family === "byos" &&
 														deploymentEngine === "containerlab"
 													? "Derived from containerlab BYOS artifacts after deploy."
