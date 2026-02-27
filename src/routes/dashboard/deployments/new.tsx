@@ -98,6 +98,26 @@ type DeploymentKind =
 	| "terraform";
 type TemplateSource = "user" | "blueprints" | "external" | "custom";
 
+function deploymentKindToSpec(kind: DeploymentKind): {
+	family: CreateUserScopeDeploymentRequest["family"];
+	engine: CreateUserScopeDeploymentRequest["engine"];
+} {
+	switch (kind) {
+		case "c9s_netlab":
+			return { family: "c9s", engine: "netlab" };
+		case "c9s_containerlab":
+			return { family: "c9s", engine: "containerlab" };
+		case "netlab":
+			return { family: "byos", engine: "netlab" };
+		case "containerlab":
+			return { family: "byos", engine: "containerlab" };
+		case "eve_ng":
+			return { family: "byos", engine: "eve_ng" };
+		default:
+			return { family: "terraform", engine: "terraform" };
+	}
+}
+
 const USER_REPO_SOURCE = "user" as const;
 const toAPITemplateSource = (source: TemplateSource): string =>
 	source === USER_REPO_SOURCE ? "user" : source;
@@ -264,6 +284,7 @@ function CreateDeploymentPage() {
 	const watchForwardCollectorId = watch("forwardCollectorId");
 	const watchEnv = watch("env");
 	const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
+	const watchSpec = useMemo(() => deploymentKindToSpec(watchKind), [watchKind]);
 
 	const lastUserScopeKey = "skyforge.lastUserScopeId.deployments";
 
@@ -545,12 +566,6 @@ function CreateDeploymentPage() {
 		queryFn: async () => {
 			if (!watchUserScopeId) throw new Error("userId is required");
 			if (!watchTemplate) throw new Error("template is required");
-			const engine =
-				watchKind === "netlab" || watchKind === "c9s_netlab"
-					? "netlab"
-					: watchKind === "containerlab" || watchKind === "c9s_containerlab"
-						? "containerlab"
-						: undefined;
 			const body: {
 				kind: string;
 				engine?: string;
@@ -559,8 +574,8 @@ function CreateDeploymentPage() {
 				dir?: string;
 				template: string;
 			} = {
-				kind: engine ? "c9s" : watchKind,
-				engine,
+				kind: watchSpec.family,
+				engine: watchSpec.engine,
 				source: toAPITemplateSource(effectiveSource),
 				template: watchTemplate,
 			};
@@ -576,9 +591,7 @@ function CreateDeploymentPage() {
 		enabled:
 			Boolean(watchUserScopeId) &&
 			Boolean(watchTemplate) &&
-			["netlab", "c9s_netlab", "containerlab", "c9s_containerlab"].includes(
-				watchKind,
-			),
+			watchSpec.family === "c9s",
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -678,34 +691,7 @@ function CreateDeploymentPage() {
 				config.eveServer = eve;
 			}
 
-			let family: CreateUserScopeDeploymentRequest["family"] = "terraform";
-			let engine: CreateUserScopeDeploymentRequest["engine"] = "terraform";
-			switch (values.kind) {
-				case "c9s_netlab":
-					family = "c9s";
-					engine = "netlab";
-					break;
-				case "c9s_containerlab":
-					family = "c9s";
-					engine = "containerlab";
-					break;
-				case "netlab":
-					family = "byos";
-					engine = "netlab";
-					break;
-				case "containerlab":
-					family = "byos";
-					engine = "containerlab";
-					break;
-				case "eve_ng":
-					family = "byos";
-					engine = "eve_ng";
-					break;
-				default:
-					family = "terraform";
-					engine = "terraform";
-					break;
-			}
+			const { family, engine } = deploymentKindToSpec(values.kind);
 			config.engine = engine;
 
 			const body: CreateUserScopeDeploymentRequest = {
