@@ -13,9 +13,7 @@ const ADMIN_TOKEN = (process.env.SKYFORGE_UI_E2E_ADMIN_TOKEN || "").trim();
 const USERNAME = (
 	process.env.SKYFORGE_UI_E2E_USERNAME || "craigjohnson"
 ).trim();
-const USER_SCOPE_ID = (
-	process.env.SKYFORGE_UI_E2E_USER_SCOPE_ID || ""
-).trim();
+const USER_SCOPE_ID = (process.env.SKYFORGE_UI_E2E_USER_SCOPE_ID || "").trim();
 const USER_SCOPE_SLUG = (
 	process.env.SKYFORGE_UI_E2E_USER_SCOPE_SLUG || ""
 ).trim();

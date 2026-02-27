@@ -96,7 +96,8 @@ export type UserScopeDeployment = {
 	id: string;
 	userId: string;
 	name: string;
-	type: "terraform" | "c9s" | "byos" | string;
+	family: "terraform" | "c9s" | "byos" | string;
+	engine: "terraform" | "netlab" | "containerlab" | "eve_ng" | string;
 	config: JSONMap;
 	createdBy?: string;
 	createdAt?: ISO8601;
@@ -402,13 +403,10 @@ export async function upsertUserScopeNetlabServer(
 	},
 ): Promise<UserScopeNetlabServerConfig> {
 	void userId;
-	return apiFetch<UserScopeNetlabServerConfig>(
-		"/api/byos/me/netlab/servers",
-		{
-			method: "PUT",
-			body: JSON.stringify(payload),
-		},
-	);
+	return apiFetch<UserScopeNetlabServerConfig>("/api/byos/me/netlab/servers", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
 }
 
 export async function deleteUserScopeNetlabServer(
@@ -488,9 +486,7 @@ export async function listUserScopeEveServers(
 	userId: string,
 ): Promise<UserScopeEveServersResponse> {
 	void userId;
-	return apiFetch<UserScopeEveServersResponse>(
-		"/api/byos/me/eve/servers",
-	);
+	return apiFetch<UserScopeEveServersResponse>("/api/byos/me/eve/servers");
 }
 
 export async function listUserScopeEveLabs(
@@ -539,13 +535,10 @@ export async function upsertUserScopeEveServer(
 	},
 ): Promise<UserScopeEveServerConfig> {
 	void userId;
-	return apiFetch<UserScopeEveServerConfig>(
-		"/api/byos/me/eve/servers",
-		{
-			method: "PUT",
-			body: JSON.stringify(payload),
-		},
-	);
+	return apiFetch<UserScopeEveServerConfig>("/api/byos/me/eve/servers", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
 }
 
 export async function deleteUserScopeEveServer(
@@ -1972,7 +1965,7 @@ export type ResourceEstimateSummary = {
 
 export type UserScopeTemplateResourceEstimateRequest = {
 	kind: string;
-	compiler?: string;
+	engine?: string;
 	source?: string;
 	repo?: string;
 	dir?: string;
@@ -1990,7 +1983,8 @@ export type UserScopeTemplateResourceEstimateResponse = {
 export type DeploymentResourceEstimateResponse = {
 	userId: string;
 	deploymentId: string;
-	type: string;
+	family: string;
+	engine: string;
 	estimate?: ResourceEstimateSummary;
 };
 
@@ -2146,11 +2140,13 @@ export async function getUserScopeEveNgTemplates(
 	);
 }
 
-export type CreateUserScopeDeploymentRequest = NonNullable<
-	operations["POST:skyforge.CreateUserScopeDeployment"]["requestBody"]
->["content"]["application/json"];
-export type CreateUserScopeDeploymentResponse =
-	operations["POST:skyforge.CreateUserScopeDeployment"]["responses"][200]["content"]["application/json"];
+export type CreateUserScopeDeploymentRequest = {
+	name: string;
+	family: "terraform" | "c9s" | "byos" | string;
+	engine: "terraform" | "netlab" | "containerlab" | "eve_ng" | string;
+	config?: JSONMap;
+};
+export type CreateUserScopeDeploymentResponse = UserScopeDeployment;
 
 export async function createUserScopeDeployment(
 	userId: string,
@@ -3023,7 +3019,7 @@ export type DeploymentLeaseUpdateRequest = {
 };
 
 export type DeploymentLifetimePolicyResponse = {
-	managedTypes: string[];
+	managedFamilies: string[];
 	allowedHours: number[];
 	defaultHours: number;
 	maxHoursNonAdmin: number;

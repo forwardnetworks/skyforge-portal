@@ -261,30 +261,30 @@ function DeploymentsPage() {
 			}
 			// Type
 			if (typeFilter !== "all") {
-				const depType = String(d.type ?? "").trim().toLowerCase();
-				const compiler = String((d.config as any)?.compiler ?? "")
+				const depType = String(d.family ?? "")
 					.trim()
 					.toLowerCase();
-				const driver = String((d.config as any)?.driver ?? "")
+				const engine = String(d.engine ?? "")
 					.trim()
 					.toLowerCase();
 				if (
 					typeFilter === "netlab" &&
 					!(
-						(depType === "c9s" && compiler === "netlab") ||
-						(depType === "byos" && driver === "netlab")
+						(depType === "c9s" && engine === "netlab") ||
+						(depType === "byos" && engine === "netlab")
 					)
 				)
 					return false;
 				if (
 					typeFilter === "containerlab" &&
 					!(
-						(depType === "c9s" && compiler === "containerlab") ||
-						(depType === "byos" && driver === "containerlab")
+						(depType === "c9s" && engine === "containerlab") ||
+						(depType === "byos" && engine === "containerlab")
 					)
 				)
 					return false;
-				if (typeFilter === "terraform" && d.type !== "terraform") return false;
+				if (typeFilter === "terraform" && d.family !== "terraform")
+					return false;
 			}
 			return true;
 		});
@@ -384,15 +384,15 @@ function DeploymentsPage() {
 		}
 	};
 
-	const fallbackManagedTypes = ["c9s", "byos", "terraform"];
-	const managedTypes = useMemo(
+	const fallbackManagedFamilies = ["c9s", "byos", "terraform"];
+	const managedFamilies = useMemo(
 		() =>
 			new Set(
-				(lifetimePolicyQ.data?.managedTypes ?? fallbackManagedTypes).map((v) =>
-					String(v).trim().toLowerCase(),
+				(lifetimePolicyQ.data?.managedFamilies ?? fallbackManagedFamilies).map(
+					(v) => String(v).trim().toLowerCase(),
 				),
 			),
-		[lifetimePolicyQ.data?.managedTypes],
+		[lifetimePolicyQ.data?.managedFamilies],
 	);
 	const lifetimeHoursOptions = useMemo(() => {
 		const raw = lifetimePolicyQ.data?.allowedHours ?? [4, 8, 24, 72];
@@ -408,7 +408,7 @@ function DeploymentsPage() {
 		Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? true);
 
 	const isManagedDeploymentType = (typ: string) =>
-		managedTypes.has(String(typ).trim().toLowerCase());
+		managedFamilies.has(String(typ).trim().toLowerCase());
 
 	const parseLeaseHours = (value: unknown): number => {
 		if (typeof value === "number" && Number.isFinite(value)) {
@@ -419,7 +419,7 @@ function DeploymentsPage() {
 	};
 
 	const formatLifetimeCell = (d: UserScopeDeployment): string => {
-		if (!isManagedDeploymentType(d.type)) {
+		if (!isManagedDeploymentType(d.family)) {
 			return "Not managed";
 		}
 		const cfg = d.config ?? {};
@@ -570,7 +570,7 @@ function DeploymentsPage() {
 					const isRunning = ["running", "active", "healthy"].includes(status);
 					const isBusy =
 						Boolean(d.activeTaskId) || Boolean(pendingActions[d.id]);
-					const managedByLifetime = isManagedDeploymentType(d.type);
+					const managedByLifetime = isManagedDeploymentType(d.family);
 					return (
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
@@ -687,24 +687,22 @@ function DeploymentsPage() {
 	};
 
 	const formatDeploymentType = (d: UserScopeDeployment) => {
-		const typ = String(d.type ?? "").trim().toLowerCase();
-		const compiler = String((d.config as any)?.compiler ?? "")
+		const typ = String(d.family ?? "")
 			.trim()
 			.toLowerCase();
-		const driver = String((d.config as any)?.driver ?? "")
+		const engine = String(d.engine ?? "")
 			.trim()
 			.toLowerCase();
-		if (typ === "c9s" && compiler === "netlab") return "Netlab (C9S)";
-		if (typ === "c9s" && compiler === "containerlab")
-			return "Containerlab (C9S)";
+		if (typ === "c9s" && engine === "netlab") return "Netlab (C9S)";
+		if (typ === "c9s" && engine === "containerlab") return "Containerlab (C9S)";
 		if (typ === "c9s") return "C9S";
-		if (typ === "byos" && driver === "netlab") return "Netlab (BYOS)";
-		if (typ === "byos" && driver === "containerlab")
+		if (typ === "byos" && engine === "netlab") return "Netlab (BYOS)";
+		if (typ === "byos" && engine === "containerlab")
 			return "Containerlab (BYOS)";
-		if (typ === "byos" && driver === "eve_ng") return "EVE-NG (BYOS)";
+		if (typ === "byos" && engine === "eve_ng") return "EVE-NG (BYOS)";
 		if (typ === "byos") return "BYOS";
 		if (typ === "terraform") return "Terraform";
-		return String(d.type ?? "");
+		return String(d.family ?? "");
 	};
 
 	const destroyHasForward = !!destroyTarget?.config?.forwardNetworkId;

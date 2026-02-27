@@ -133,11 +133,8 @@ function DeploymentDetailPage() {
 
 	const userId = String(deployment?.userId ?? "");
 
-	const deploymentType = String(deployment?.type ?? "");
-	const deploymentCompiler = String((deployment?.config as any)?.compiler ?? "")
-		.trim()
-		.toLowerCase();
-	const deploymentDriver = String((deployment?.config as any)?.driver ?? "")
+	const deploymentType = String(deployment?.family ?? "");
+	const deploymentEngine = String(deployment?.engine ?? "")
 		.trim()
 		.toLowerCase();
 	const isC9SDeployment = deploymentType === "c9s";
@@ -307,9 +304,7 @@ function DeploymentDetailPage() {
 			if (!deployment) throw new Error("deployment not found");
 			return getDeploymentTopology(deployment.userId, deployment.id);
 		},
-		enabled:
-			!!deployment &&
-			["c9s", "byos"].includes(deploymentType),
+		enabled: !!deployment && ["c9s", "byos"].includes(deploymentType),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -572,7 +567,7 @@ function DeploymentDetailPage() {
 								{deployment.id}
 							</span>
 							<span>•</span>
-							<span className="capitalize">{deployment.type}</span>
+							<span className="capitalize">{deployment.family}</span>
 						</p>
 					</div>
 				</div>
@@ -656,25 +651,25 @@ function DeploymentDetailPage() {
 							<div className="flex items-center justify-between">
 								<div>
 									<CardTitle>Network Topology</CardTitle>
-										<CardDescription>
-											{deployment.type === "c9s" &&
-											deploymentCompiler === "netlab"
-												? "Derived from netlab-c9s artifacts after deploy (includes resolved mgmt IPs)."
-												: deployment.type === "c9s" &&
-													  deploymentCompiler === "containerlab"
-													? "Derived from clabernetes artifacts after deploy (includes resolved mgmt IPs)."
-													: deployment.type === "byos" &&
-														  deploymentDriver === "containerlab"
-														? "Derived from containerlab BYOS artifacts after deploy."
-														: deployment.type === "byos" &&
-															  deploymentDriver === "netlab"
-															? "Derived from netlab BYOS artifacts after deploy."
-															: deployment.type === "byos" &&
-																  deploymentDriver === "eve_ng"
-																? "Derived from EVE-NG artifacts after deploy."
-																: "Topology is provider-dependent; not yet implemented for this deployment type."}
-										</CardDescription>
-									</div>
+									<CardDescription>
+										{deployment.family === "c9s" &&
+										deploymentEngine === "netlab"
+											? "Derived from netlab-c9s artifacts after deploy (includes resolved mgmt IPs)."
+											: deployment.family === "c9s" &&
+													deploymentEngine === "containerlab"
+												? "Derived from clabernetes artifacts after deploy (includes resolved mgmt IPs)."
+												: deployment.family === "byos" &&
+														deploymentEngine === "containerlab"
+													? "Derived from containerlab BYOS artifacts after deploy."
+													: deployment.family === "byos" &&
+															deploymentEngine === "netlab"
+														? "Derived from netlab BYOS artifacts after deploy."
+														: deployment.family === "byos" &&
+																deploymentEngine === "eve_ng"
+															? "Derived from EVE-NG artifacts after deploy."
+															: "Topology is provider-dependent; not yet implemented for this deployment type."}
+									</CardDescription>
+								</div>
 								<div className="flex items-center gap-2">
 									<Button
 										variant="outline"
@@ -697,12 +692,12 @@ function DeploymentDetailPage() {
 							</div>
 						</CardHeader>
 						<CardContent>
-								<TopologyViewer
-									topology={topology.data}
-									userId={deployment.userId}
-									deploymentId={deployment.id}
-									enableTerminal={isC9SDeployment}
-								/>
+							<TopologyViewer
+								topology={topology.data}
+								userId={deployment.userId}
+								deploymentId={deployment.id}
+								enableTerminal={isC9SDeployment}
+							/>
 						</CardContent>
 					</Card>
 
@@ -758,12 +753,12 @@ function DeploymentDetailPage() {
 													</div>
 												</div>
 												<div className="flex flex-wrap items-center gap-2">
-														<Button
-															size="sm"
-															variant="outline"
-															disabled={!isC9SDeployment}
-															onClick={() =>
-																window.open(
+													<Button
+														size="sm"
+														variant="outline"
+														disabled={!isC9SDeployment}
+														onClick={() =>
+															window.open(
 																`${baseUrl}&action=terminal`,
 																"_blank",
 																"noopener,noreferrer",

@@ -40,30 +40,19 @@ function DeploymentMapPage() {
 	}, [deploymentId, snap.data?.deployments]);
 
 	const userId = String(deployment?.userId ?? "");
-	const deploymentType = String(deployment?.type ?? "");
-	const deploymentConfig =
-		deployment && typeof deployment.config === "object" && deployment.config
-			? (deployment.config as Record<string, unknown>)
-			: {};
-	const deploymentCompiler =
-		typeof deploymentConfig.compiler === "string"
-			? String(deploymentConfig.compiler).trim().toLowerCase()
-			: "";
-	const deploymentDriver =
-		typeof deploymentConfig.driver === "string"
-			? String(deploymentConfig.driver).trim().toLowerCase()
-			: "";
-	const isC9SDeployment = deploymentType === "c9s";
-	const hasTopologyView = isC9SDeployment || deploymentType === "byos";
-	const deploymentTypeLabel = isC9SDeployment
-		? deploymentCompiler
-			? `c9s/${deploymentCompiler}`
-			: "c9s"
-		: deploymentType === "byos"
-			? deploymentDriver
-				? `byos/${deploymentDriver}`
-				: "byos"
-			: deploymentType || "unknown";
+	const deploymentFamily = String(deployment?.family ?? "")
+		.trim()
+		.toLowerCase();
+	const deploymentEngine = String(deployment?.engine ?? "")
+		.trim()
+		.toLowerCase();
+	const isC9SDeployment = deploymentFamily === "c9s";
+	const hasTopologyView =
+		deploymentFamily === "c9s" || deploymentFamily === "byos";
+	const deploymentTypeLabel =
+		deploymentFamily && deploymentEngine
+			? `${deploymentFamily}/${deploymentEngine}`
+			: deploymentFamily || "unknown";
 	const status =
 		deployment?.activeTaskStatus ?? deployment?.lastStatus ?? "unknown";
 

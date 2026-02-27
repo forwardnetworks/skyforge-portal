@@ -5845,6 +5845,8 @@ export interface components {
             config: components["schemas"]["skyforge.JSONMap"];
             createdAt: string;
             createdBy: string;
+            engine: string;
+            family: string;
             id: string;
             lastFinishedAt: string;
             lastStartedAt: string;
@@ -5856,7 +5858,6 @@ export interface components {
             name: string;
             /** Format: int64 */
             queueDepth: number;
-            type: string;
             updatedAt: string;
             userId: string;
         };
@@ -7518,6 +7519,8 @@ export interface operations {
                         config: components["schemas"]["skyforge.JSONMap"];
                         createdAt: string;
                         createdBy: string;
+                        engine: string;
+                        family: string;
                         id: string;
                         lastFinishedAt: string;
                         lastStartedAt: string;
@@ -7529,7 +7532,6 @@ export interface operations {
                         name: string;
                         /** Format: int64 */
                         queueDepth: number;
-                        type: string;
                         updatedAt: string;
                         userId: string;
                     };
@@ -8057,7 +8059,7 @@ export interface operations {
                         expiryActions: {
                             [key: string]: string;
                         };
-                        managedTypes: string[];
+                        managedFamilies: string[];
                         /** Format: int64 */
                         maxHoursNonAdmin: number;
                     };
@@ -11217,8 +11219,8 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    compiler: string;
                     dir: string;
+                    engine: string;
                     kind: string;
                     repo: string;
                     source: string;
@@ -11284,8 +11286,9 @@ export interface operations {
             content: {
                 "application/json": {
                     config: components["schemas"]["skyforge.JSONMap"];
+                    engine: string;
+                    family: string;
                     name: string;
-                    type: string;
                 };
             };
         };
@@ -11303,6 +11306,8 @@ export interface operations {
                         config: components["schemas"]["skyforge.JSONMap"];
                         createdAt: string;
                         createdBy: string;
+                        engine: string;
+                        family: string;
                         id: string;
                         lastFinishedAt: string;
                         lastStartedAt: string;
@@ -11314,7 +11319,6 @@ export interface operations {
                         name: string;
                         /** Format: int64 */
                         queueDepth: number;
-                        type: string;
                         updatedAt: string;
                         userId: string;
                     };
@@ -11459,6 +11463,8 @@ export interface operations {
                         config: components["schemas"]["skyforge.JSONMap"];
                         createdAt: string;
                         createdBy: string;
+                        engine: string;
+                        family: string;
                         id: string;
                         lastFinishedAt: string;
                         lastStartedAt: string;
@@ -11470,7 +11476,6 @@ export interface operations {
                         name: string;
                         /** Format: int64 */
                         queueDepth: number;
-                        type: string;
                         updatedAt: string;
                         userId: string;
                     };
@@ -12538,8 +12543,9 @@ export interface operations {
                     "application/json": {
                         deployment: components["schemas"]["skyforge.UserScopeDeployment"];
                         deploymentId: string;
+                        engine: string;
                         estimate: components["schemas"]["skyforge.ResourceEstimateSummary"];
-                        type: string;
+                        family: string;
                         userId: string;
                     };
                 };
