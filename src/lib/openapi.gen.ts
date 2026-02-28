@@ -59,67 +59,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/e2e/forward/deep-verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * AdminForwardDeepVerify runs Forward classic-device + SNMP credential
-         *     verification from inside
-         * @description the Skyforge cluster, so tests do not depend on local workstation routing/ingress behavior.
-         */
-        post: operations["POST:skyforge.AdminForwardDeepVerify"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/e2e/session": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** AdminE2ESession seeds a session cookie for CI/E2E flows without external SSO. */
-        post: operations["POST:skyforge.AdminE2ESession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/e2e/sshprobe": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * AdminSSHProbe runs an in-cluster TCP probe to validate SSH reachability of a
-         *     list of hosts.
-         * @description This is primarily used by \`cmd/e2echeck\` so E2E tests can run without local kubectl access.
-         *
-         *     NOTE: This does not authenticate to the target device; it only verifies TCP connect and an SSH-like banner prefix ("SSH-").
-         */
-        post: operations["POST:skyforge.AdminSSHProbe"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/governance/costs": {
         parameters: {
             query?: never;
@@ -5923,12 +5862,6 @@ export interface components {
             receivedAt: string;
             sourceIp: string;
         };
-        "skyforge.adminSSHProbeResult": {
-            /** Format: int64 */
-            attempts: number;
-            error: string;
-            ok: boolean;
-        };
         "skyforge.collectorRuntimeStatus": {
             deploymentName: string;
             image: string;
@@ -6122,122 +6055,6 @@ export interface operations {
                             useSsl: boolean;
                         };
                         publicUrl: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.AdminForwardDeepVerify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    baseURL: string;
-                    /** Format: int64 */
-                    expectedClassic: number;
-                    networkId: string;
-                    password: string;
-                    requiredSnmpNodes: string[];
-                    username: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        checkedNodes: string[];
-                        /** Format: int64 */
-                        classicCount: number;
-                        /** Format: int64 */
-                        devicesCount: number;
-                        networkId: string;
-                        ok: boolean;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.AdminE2ESession": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    displayName: string;
-                    email: string;
-                    groups: string[];
-                    username: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        cookie: string;
-                        user: components["schemas"]["skyforge.UserProfile"];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.AdminSSHProbe": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    container: string;
-                    hosts: string[];
-                    namespace: string;
-                    podName: string;
-                    /** Format: int64 */
-                    port: number;
-                    /** api|forward_collector */
-                    source: string;
-                    tcpOnly: boolean;
-                    /** Format: int64 */
-                    timeoutSeconds: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        ok: boolean;
-                        results: {
-                            [key: string]: components["schemas"]["skyforge.adminSSHProbeResult"];
-                        };
                     };
                 };
             };
