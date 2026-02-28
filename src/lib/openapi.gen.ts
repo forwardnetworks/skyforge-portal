@@ -59,6 +59,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/e2e/forward/deep-verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AdminForwardDeepVerify runs Forward classic-device + SNMP credential
+         *     verification from inside
+         * @description the Skyforge cluster, so tests do not depend on local workstation routing/ingress behavior.
+         */
+        post: operations["POST:skyforge.AdminForwardDeepVerify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/e2e/session": {
         parameters: {
             query?: never;
@@ -6107,6 +6128,47 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:skyforge.AdminForwardDeepVerify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    baseURL: string;
+                    /** Format: int64 */
+                    expectedClassic: number;
+                    networkId: string;
+                    password: string;
+                    requiredSnmpNodes: string[];
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        checkedNodes: string[];
+                        /** Format: int64 */
+                        classicCount: number;
+                        /** Format: int64 */
+                        devicesCount: number;
+                        networkId: string;
+                        ok: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.AdminE2ESession": {
         parameters: {
             query?: never;
@@ -6150,9 +6212,14 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    container: string;
                     hosts: string[];
+                    namespace: string;
+                    podName: string;
                     /** Format: int64 */
                     port: number;
+                    /** api|forward_collector */
+                    source: string;
                     tcpOnly: boolean;
                     /** Format: int64 */
                     timeoutSeconds: number;

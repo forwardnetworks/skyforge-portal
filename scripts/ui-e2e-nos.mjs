@@ -20,7 +20,7 @@ const USER_SCOPE_SLUG = (
 const REQUIRE_INAPP = envBool("SKYFORGE_UI_E2E_REQUIRE_INAPP", true);
 const INAPP_FORWARD_URL = (
 	process.env.SKYFORGE_UI_E2E_INAPP_FORWARD_URL ||
-	"http://fwd-appserver.forward.svc.cluster.local:8080"
+	"https://fwd-appserver.forward.svc.cluster.local"
 ).trim();
 const INAPP_FORWARD_USERNAME = (
 	process.env.SKYFORGE_UI_E2E_INAPP_FORWARD_USERNAME || ""
@@ -70,7 +70,7 @@ mkdirSync(SCREENSHOT_DIR, { recursive: true });
 const cookie = await seedSession();
 const cookieHeader = `${cookie.name}=${cookie.value}`;
 const userScope = await ensureUserScope(cookieHeader);
-const collector = await resolveCollector(cookieHeader);
+await ensureForwardCredentialProfile(cookieHeader);
 
 const browser = await chromium.launch({ headless: HEADLESS });
 const context = await browser.newContext({
@@ -105,7 +105,6 @@ try {
 				userScope.id,
 				name,
 				device,
-				collector?.id || "",
 			);
 			row.deploymentId = deployment.id;
 			log(`[${device}] deployment created id=${row.deploymentId}`);
@@ -131,25 +130,18 @@ try {
 			await waitForDeploymentReady(cookieHeader, deployment.id);
 			log(`[${device}] deployment ready`);
 
-			if (collector?.id) {
-				log(`[${device}] enable forward and trigger sync`);
-				await configureAndSyncForward(
-					cookieHeader,
-					userScope.id,
-					deployment.id,
-					String(collector.id),
-				);
-				log(`[${device}] wait for forward network id`);
-				row.forwardNetworkId = await waitForForwardNetworkID(
-					cookieHeader,
-					userScope.id,
-					deployment.id,
-					3 * 60_000,
-				);
-				log(
-					`[${device}] forward network id resolved: ${row.forwardNetworkId || "none"}`,
-				);
-			}
+			log(`[${device}] enable forward and trigger sync`);
+			await configureAndSyncForward(cookieHeader, userScope.id, deployment.id);
+			log(`[${device}] wait for forward network id`);
+			row.forwardNetworkId = await waitForForwardNetworkID(
+				cookieHeader,
+				userScope.id,
+				deployment.id,
+				3 * 60_000,
+			);
+			log(
+				`[${device}] forward network id resolved: ${row.forwardNetworkId || "none"}`,
+			);
 
 			log(`[${device}] open map page`);
 			await gotoAndShot(
@@ -298,7 +290,7 @@ async function ensureUserScope(cookieHeader) {
 	return pick(create);
 }
 
-async function resolveCollector(cookieHeader) {
+async function ensureForwardCredentialProfile(cookieHeader) {
 	const listCollectors = async () => {
 		const body = await apiJSON(
 			"GET",
@@ -309,34 +301,35 @@ async function resolveCollector(cookieHeader) {
 	};
 
 	let collectors = await listCollectors();
-	if (collectors.length === 0) return null;
 
 	const inAppHost = hostFromURL(INAPP_FORWARD_URL);
 	const inAppCollectors = collectors.filter((c) =>
 		isInAppCollector(c, inAppHost),
 	);
 
-	const preferredID = (process.env.SKYFORGE_UI_E2E_COLLECTOR_ID || "").trim();
+	const preferredID = (
+		process.env.SKYFORGE_UI_E2E_FORWARD_CREDENTIAL_PROFILE_ID || ""
+	).trim();
 	if (preferredID) {
 		const hit = collectors.find((c) => String(c?.id || "") === preferredID);
 		if (hit) {
 			if (REQUIRE_INAPP && !isInAppCollector(hit, inAppHost)) {
 				throw new Error(
-					`collector ${preferredID} is not in-app (${String(hit?.baseUrl || "")})`,
+					`forward credential profile ${preferredID} is not in-app (${String(hit?.baseUrl || "")})`,
 				);
 			}
-			return hit;
+			return;
 		}
 	}
 
 	if (inAppCollectors.length > 0) {
-		return inAppCollectors[0];
+		return;
 	}
 
 	if (REQUIRE_INAPP) {
 		if (INAPP_FORWARD_USERNAME && INAPP_FORWARD_PASSWORD) {
 			log(
-				`[collector] creating in-app collector profile for ${INAPP_FORWARD_URL}`,
+				`[forward] creating in-app credential profile for ${INAPP_FORWARD_URL}`,
 			);
 			await apiJSON("POST", "/api/forward/collector-configs", cookieHeader, {
 				name: `__profile__:${INAPP_FORWARD_USERNAME}@${inAppHost}`,
@@ -348,23 +341,21 @@ async function resolveCollector(cookieHeader) {
 			});
 			collectors = await listCollectors();
 			const retryInApp = collectors.find((c) => isInAppCollector(c, inAppHost));
-			if (retryInApp) return retryInApp;
+			if (retryInApp) return;
 		}
 		throw new Error(
-			`no in-app collector configured (host=${inAppHost}); refusing to use non in-app collectors`,
+			`no in-app forward credential profile configured (host=${inAppHost}); refusing to use non in-app credentials`,
 		);
 	}
 
-	return collectors[0];
+	if (collectors.length === 0) {
+		throw new Error(
+			"no forward credential profile configured; set SKYFORGE_UI_E2E_INAPP_FORWARD_USERNAME and SKYFORGE_UI_E2E_INAPP_FORWARD_PASSWORD or create one in UI settings",
+		);
+	}
 }
 
-async function createDeployment(
-	cookieHeader,
-	userId,
-	name,
-	device,
-	_collectorID,
-) {
+async function createDeployment(cookieHeader, userId, name, device) {
 	const body = {
 		name,
 		family: "c9s",
@@ -453,19 +444,13 @@ async function deleteDeployment(cookieHeader, userId, deploymentId) {
 	);
 }
 
-async function configureAndSyncForward(
-	cookieHeader,
-	userId,
-	deploymentId,
-	collectorConfigID,
-) {
+async function configureAndSyncForward(cookieHeader, userId, deploymentId) {
 	await apiJSON(
 		"PUT",
 		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/forward`,
 		cookieHeader,
 		{
 			enabled: true,
-			collectorConfigId: collectorConfigID,
 		},
 	);
 	await apiJSON(

@@ -41,7 +41,8 @@ export const Route = createFileRoute("/dashboard/forward/collectors")({
 type ForwardTarget = "cloud" | "onprem";
 
 function normalizeBaseURL(target: ForwardTarget, onPremHost: string): string {
-	if (target === "cloud") return "https://fwd.app";
+	if (target === "cloud")
+		return "https://fwd-appserver.forward.svc.cluster.local";
 	const raw = onPremHost.trim();
 	if (!raw) return "";
 	if (/^https?:\/\//i.test(raw)) return raw;
@@ -93,7 +94,7 @@ function ForwardCollectorPage() {
 	});
 
 	useEffect(() => {
-		if (target === "cloud") setSkipTlsVerify(false);
+		if (target === "cloud") setSkipTlsVerify(true);
 		else setSkipTlsVerify(true);
 	}, [target]);
 
@@ -116,7 +117,7 @@ function ForwardCollectorPage() {
 			return createUserForwardCollectorConfig({
 				name,
 				baseUrl,
-				skipTlsVerify: target === "onprem" ? skipTlsVerify : false,
+				skipTlsVerify: target === "onprem" ? skipTlsVerify : true,
 				username: username.trim(),
 				password,
 				setDefault,
@@ -322,7 +323,7 @@ function ForwardCollectorPage() {
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="cloud">fwd.app (cloud)</SelectItem>
+									<SelectItem value="cloud">in-cluster</SelectItem>
 									<SelectItem value="onprem">on-prem</SelectItem>
 								</SelectContent>
 							</Select>

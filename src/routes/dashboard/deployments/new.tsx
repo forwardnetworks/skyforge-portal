@@ -50,6 +50,7 @@ import {
 import {
 	type CreateUserScopeDeploymentRequest,
 	type DashboardSnapshot,
+	type DeploymentLifetimePolicyResponse,
 	type ExternalTemplateRepo,
 	type ResourceEstimateSummary,
 	type SkyforgeUserScope,
@@ -59,6 +60,7 @@ import {
 	createUserScopeDeployment,
 	estimateUserScopeTemplateResources,
 	getDashboardSnapshot,
+	getDeploymentLifetimePolicy,
 	getSession,
 	getUserScopeContainerlabTemplate,
 	getUserScopeContainerlabTemplates,
@@ -118,6 +120,9 @@ function deploymentKindToSpec(kind: DeploymentKind): {
 	}
 }
 
+const fallbackManagedFamilies = ["c9s", "byos", "terraform"];
+const fallbackAllowedHours = [4, 8, 24, 72];
+
 const USER_REPO_SOURCE = "user" as const;
 const toAPITemplateSource = (source: TemplateSource): string =>
 	source === USER_REPO_SOURCE ? "user" : source;
@@ -163,6 +168,11 @@ function formatResourceEstimate(estimate?: ResourceEstimateSummary): string {
 	return `${cpu} vCPU • ${ram} GiB RAM`;
 }
 
+function parsePositiveInt(value: unknown, fallback: number): number {
+	const parsed = Number.parseInt(String(value ?? ""), 10);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -206,6 +216,12 @@ function CreateDeploymentPage() {
 	const sessionQ = useQuery({
 		queryKey: queryKeys.session(),
 		queryFn: getSession,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const lifetimePolicyQ = useQuery<DeploymentLifetimePolicyResponse>({
+		queryKey: queryKeys.deploymentLifetimePolicy(),
+		queryFn: getDeploymentLifetimePolicy,
 		staleTime: 30_000,
 		retry: false,
 	});
@@ -285,6 +301,52 @@ function CreateDeploymentPage() {
 	const watchEnv = watch("env");
 	const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 	const watchSpec = useMemo(() => deploymentKindToSpec(watchKind), [watchKind]);
+	const managedFamilies = useMemo(
+		() =>
+			new Set(
+				(lifetimePolicyQ.data?.managedFamilies ?? fallbackManagedFamilies).map(
+					(v) => String(v).trim().toLowerCase(),
+				),
+			),
+		[lifetimePolicyQ.data?.managedFamilies],
+	);
+	const lifetimeAllowedHours = useMemo(() => {
+		const raw = lifetimePolicyQ.data?.allowedHours ?? fallbackAllowedHours;
+		const parsed = raw
+			.map((h) => Number.parseInt(String(h), 10))
+			.filter((h) => Number.isFinite(h) && h > 0);
+		return parsed.length > 0 ? parsed : fallbackAllowedHours;
+	}, [lifetimePolicyQ.data?.allowedHours]);
+	const lifetimeDefaultHours = parsePositiveInt(
+		lifetimePolicyQ.data?.defaultHours,
+		24,
+	);
+	const driverSummary =
+		watchSpec.family === "c9s"
+			? "In-cluster (c9s)"
+			: watchSpec.family === "byos"
+				? "BYOS (external server)"
+				: "Terraform managed";
+	const lifetimeManaged = managedFamilies.has(
+		String(watchSpec.family ?? "")
+			.trim()
+			.toLowerCase(),
+	);
+	const lifetimeSummary = useMemo(() => {
+		if (!lifetimeManaged) return "Not managed for this provider family.";
+		if (
+			Boolean(sessionQ.data?.isAdmin) &&
+			Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? true)
+		) {
+			return "Default: Never auto-stop (No expiry).";
+		}
+		return `Default: ${lifetimeDefaultHours}h auto-stop.`;
+	}, [
+		lifetimeManaged,
+		lifetimeDefaultHours,
+		lifetimePolicyQ.data?.allowNoExpiry,
+		sessionQ.data?.isAdmin,
+	]);
 
 	const lastUserScopeKey = "skyforge.lastUserScopeId.deployments";
 
@@ -1046,6 +1108,42 @@ function CreateDeploymentPage() {
 										</FormItem>
 									)}
 								/>
+								<FormItem className="rounded-md border p-3 md:col-span-2 space-y-2">
+									<FormLabel>Effective deployment mode</FormLabel>
+									<div className="grid gap-3 md:grid-cols-2 text-sm">
+										<div className="space-y-1">
+											<div className="text-xs text-muted-foreground">
+												Driver
+											</div>
+											<div className="font-medium">{driverSummary}</div>
+											<div className="text-xs text-muted-foreground">
+												Family: {watchSpec.family} • Engine: {watchSpec.engine}
+											</div>
+										</div>
+										<div className="space-y-1">
+											<div className="text-xs text-muted-foreground">
+												Lab lifetime
+											</div>
+											<div className="font-medium">{lifetimeSummary}</div>
+											{lifetimeManaged ? (
+												<div className="text-xs text-muted-foreground">
+													Allowed lifetimes:{" "}
+													{lifetimeAllowedHours.map((h) => `${h}h`).join(", ")}
+												</div>
+											) : (
+												<div className="text-xs text-muted-foreground">
+													Lifetime policy does not apply to this provider
+													family.
+												</div>
+											)}
+										</div>
+									</div>
+									<FormDescription>
+										Provider selection determines deployment driver. Lifetime is
+										auto-applied from policy and role; edit it later from
+										Deployments → Manage lifetime.
+									</FormDescription>
+								</FormItem>
 
 								{["c9s_netlab", "c9s_containerlab", "terraform"].includes(
 									watchKind,

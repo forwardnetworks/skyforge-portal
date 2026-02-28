@@ -31,17 +31,15 @@ export const Route = createFileRoute("/dashboard/forward/credentials")({
 	component: ForwardCredentialsPage,
 });
 
-type ForwardCredentialTarget = "fwd_app" | "in_cluster_org" | "custom_onprem";
+type ForwardCredentialTarget = "in_cluster_org" | "custom_onprem";
 
-const FORWARD_FWD_APP = "https://fwd.app";
 const FORWARD_IN_CLUSTER_ORG =
-	"http://fwd-appserver.forward.svc.cluster.local:8080";
+	"https://fwd-appserver.forward.svc.cluster.local";
 
 function normalizeBaseURL(
 	target: ForwardCredentialTarget,
 	customHost: string,
 ): string {
-	if (target === "fwd_app") return FORWARD_FWD_APP;
 	if (target === "in_cluster_org") return FORWARD_IN_CLUSTER_ORG;
 	const raw = customHost.trim();
 	if (!raw) return "";
@@ -62,18 +60,15 @@ function ForwardCredentialsPage() {
 		staleTime: 10_000,
 	});
 
-	const [target, setTarget] = useState<ForwardCredentialTarget>("fwd_app");
+	const [target, setTarget] =
+		useState<ForwardCredentialTarget>("in_cluster_org");
 	const [customHost, setCustomHost] = useState("");
 	const [skipTlsVerify, setSkipTlsVerify] = useState(false);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const tlsCheckboxDisabled = target !== "custom_onprem";
 	const effectiveSkipTlsVerify =
-		target === "in_cluster_org"
-			? true
-			: target === "fwd_app"
-				? false
-				: skipTlsVerify;
+		target === "in_cluster_org" ? true : skipTlsVerify;
 
 	const credentialSets = useMemo(
 		() => collectorsQ.data?.collectors ?? [],
@@ -151,18 +146,14 @@ function ForwardCredentialsPage() {
 										setSkipTlsVerify(true);
 										return;
 									}
-									if (next === "fwd_app") {
-										setSkipTlsVerify(false);
-									}
 								}}
 							>
 								<SelectTrigger>
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="fwd_app">fwd.app</SelectItem>
 									<SelectItem value="in_cluster_org">
-										in-cluster credential org
+										in-cluster forward
 									</SelectItem>
 									<SelectItem value="custom_onprem">custom on-prem</SelectItem>
 								</SelectContent>
@@ -199,9 +190,7 @@ function ForwardCredentialsPage() {
 							Disable TLS verification
 							{target === "in_cluster_org"
 								? " (required for in-cluster endpoint)"
-								: target === "fwd_app"
-									? " (always off for fwd.app)"
-									: ""}
+								: ""}
 						</Label>
 					</div>
 
