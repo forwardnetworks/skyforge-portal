@@ -6112,8 +6112,8 @@ export interface operations {
                             yaadeBaseUrl: string;
                         };
                         missing: string[];
-                        netlabGenerator: {
-                            generatorImage: string;
+                        netlab: {
+                            image: string;
                             mode: string;
                             pullPolicy: string;
                         };

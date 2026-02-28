@@ -226,13 +226,10 @@ function RunDetailPage() {
 							label="Catalog Device Count"
 							value={String(provenance.catalogDeviceCount)}
 						/>
+						<Meta label="Netlab Contract" value={provenance.contractVersion} />
 						<Meta
-							label="Generator Contract"
-							value={provenance.generatorContractVersion}
-						/>
-						<Meta
-							label="Generator Version"
-							value={provenance.generatorVersion}
+							label="Netlab Runtime Version"
+							value={provenance.runtimeVersion}
 						/>
 						<Meta
 							label="Resolved Nodes"
@@ -404,8 +401,8 @@ type RunProvenance = {
 	sourceOfTruth: string;
 	catalogSource: string;
 	catalogDeviceCount: number;
-	generatorContractVersion: string;
-	generatorVersion: string;
+	contractVersion: string;
+	runtimeVersion: string;
 	bundleSha256: string;
 	totalNodes: number;
 	resolvedNodes: number;
@@ -439,9 +436,9 @@ function buildRunProvenance(
 		lifecycleEntries,
 		"clabernetes.apply.summary",
 	);
-	const fallbackGeneratorContract = lifecyclePayloadByType(
+	const fallbackContract = lifecyclePayloadByType(
 		lifecycleEntries,
-		"netlab.generator.contract",
+		"netlab.contract",
 	);
 
 	const catalog =
@@ -450,8 +447,7 @@ function buildRunProvenance(
 		asRecord(run?.netlabNodeResolutionSummary) ?? fallbackNodeSummary ?? {};
 	const applySummary =
 		asRecord(run?.clabernetesApplySummary) ?? fallbackApplySummary ?? {};
-	const generatorContract =
-		asRecord(run?.netlabGeneratorContract) ?? fallbackGeneratorContract ?? {};
+	const contract = asRecord(run?.netlabContract) ?? fallbackContract ?? {};
 	const deployPolicy = asRecord(run?.clabernetesDeployPolicy) ?? {};
 
 	const sampleRaw = asArray(nodeSummary.sample);
@@ -472,11 +468,9 @@ function buildRunProvenance(
 		),
 		catalogSource: asString(catalog.source ?? "—"),
 		catalogDeviceCount: asInt(catalog.deviceCount),
-		generatorContractVersion: asString(
-			generatorContract.contractVersion ?? "—",
-		),
-		generatorVersion: asString(generatorContract.generatorVersion ?? "—"),
-		bundleSha256: asString(generatorContract.bundleSha256 ?? "—"),
+		contractVersion: asString(contract.contractVersion ?? "—"),
+		runtimeVersion: asString(contract.generatorVersion ?? "—"),
+		bundleSha256: asString(contract.bundleSha256 ?? "—"),
 		totalNodes: asInt(nodeSummary.totalNodes),
 		resolvedNodes: asInt(nodeSummary.resolvedNodes),
 		unresolvedNodes: asInt(nodeSummary.unresolvedNodes),
