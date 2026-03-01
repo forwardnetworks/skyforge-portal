@@ -272,7 +272,7 @@ function CreateDeploymentPage() {
 			userId: userId || "",
 			name: "",
 			kind: "c9s_netlab",
-			source: USER_REPO_SOURCE,
+			source: "blueprints",
 			templateRepoId: "",
 			template: "",
 			netlabServer: "",

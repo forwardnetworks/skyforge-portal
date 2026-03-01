@@ -105,7 +105,7 @@
       <div class="card">
         <h2>Where Skyforge reads templates from</h2>
         <ul>
-          <li>Repo: <code>skyforge/netlab-examples</code> (Gitea)</li>
+          <li>Repo: <code>skyforge/blueprints</code> (Gitea)</li>
           <li>Folders at repo root: <code>containerlab/</code>, <code>netlab/</code>, <code>terraform/</code></li>
           <li>Skyforge UI loads templates from those folders; if the repo is empty you’ll see “failed to load templates”.</li>
         </ul>
@@ -115,12 +115,12 @@
         <h2>Seed / update blueprints (admin workflow)</h2>
         <ol>
           <li>Log into Skyforge as the superuser and open Gitea (<code>/git/</code>).</li>
-          <li>Ensure the repo exists: <code>skyforge/netlab-examples</code> (public is recommended for easy browsing via Explore).</li>
+          <li>Ensure the repo exists: <code>skyforge/blueprints</code> (public is recommended for easy browsing via Explore).</li>
           <li>From your machine:</li>
         </ol>
         <pre><code># Clone using the Skyforge superuser (example host)
-git clone https://&lt;host&gt;/git/skyforge/netlab-examples.git
-cd netlab-examples
+git clone https://&lt;host&gt;/git/skyforge/blueprints.git
+cd blueprints
 
 # Copy templates into the correct directories
 mkdir -p containerlab netlab terraform
@@ -135,7 +135,7 @@ git push</code></pre>
         <h2>Troubleshooting</h2>
         <ul>
           <li><strong>“failed to load templates”</strong>: verify the repo exists and has the expected folder layout.</li>
-          <li><strong>Template not listed</strong>: ensure it’s committed to <code>skyforge/netlab-examples</code> and the file path is correct.</li>
+          <li><strong>Template not listed</strong>: ensure it’s committed to <code>skyforge/blueprints</code> and the file path is correct.</li>
         </ul>
       </div>
     </main>
