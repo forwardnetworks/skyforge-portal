@@ -134,6 +134,7 @@ export const queryKeys = {
 	governanceUsage: (limit?: string) =>
 		["governanceUsage", limit ?? ""] as const,
 	governancePolicy: () => ["governancePolicy"] as const,
+	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
 	adminConfig: () => ["adminConfig"] as const,
 	adminAudit: (limit?: string) => ["adminAudit", limit ?? ""] as const,
 	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,

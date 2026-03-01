@@ -282,6 +282,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/quick-deploy/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetAdminQuickDeployCatalog returns the editable quick deploy catalog (admin
+         *     only).
+         */
+        get: operations["GET:skyforge.GetAdminQuickDeployCatalog"];
+        /** UpdateAdminQuickDeployCatalog updates the quick deploy catalog (admin only). */
+        put: operations["PUT:skyforge.UpdateAdminQuickDeployCatalog"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/smoke-runs": {
         parameters: {
             query?: never;
@@ -6526,6 +6547,62 @@ export interface operations {
                 content: {
                     "application/json": {
                         nodes: components["schemas"]["skyforge.NodeMetricSnapshot"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminQuickDeployCatalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        retrievedAt: string;
+                        source: string;
+                        templates: components["schemas"]["skyforge.quickDeployTemplate"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.UpdateAdminQuickDeployCatalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    templates: components["schemas"]["skyforge.quickDeployTemplate"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status: string;
+                        templates: components["schemas"]["skyforge.quickDeployTemplate"][];
+                        updatedAt: string;
                     };
                 };
             };

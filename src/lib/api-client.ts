@@ -2922,6 +2922,40 @@ export async function updateGovernancePolicy(
 	);
 }
 
+export type AdminQuickDeployCatalogResponse = {
+	templates: QuickDeployTemplate[];
+	source: "default" | "custom" | string;
+	retrievedAt: string;
+};
+
+export type UpdateAdminQuickDeployCatalogRequest = {
+	templates: QuickDeployTemplate[];
+};
+
+export type UpdateAdminQuickDeployCatalogResponse = {
+	status: "ok";
+	templates: QuickDeployTemplate[];
+	updatedAt: string;
+};
+
+export async function getAdminQuickDeployCatalog(): Promise<AdminQuickDeployCatalogResponse> {
+	return apiFetch<AdminQuickDeployCatalogResponse>(
+		"/api/admin/quick-deploy/catalog",
+	);
+}
+
+export async function updateAdminQuickDeployCatalog(
+	body: UpdateAdminQuickDeployCatalogRequest,
+): Promise<UpdateAdminQuickDeployCatalogResponse> {
+	return apiFetch<UpdateAdminQuickDeployCatalogResponse>(
+		"/api/admin/quick-deploy/catalog",
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
 export async function runDeploymentAction(
 	userId: string,
 	deploymentId: string,

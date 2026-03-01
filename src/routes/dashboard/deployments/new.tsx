@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
-import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import {
 	Card,
@@ -99,6 +98,7 @@ type DeploymentKind =
 	| "c9s_containerlab"
 	| "terraform";
 type TemplateSource = "user" | "blueprints" | "external" | "custom";
+type DeploymentMode = "in_cluster" | "byos";
 
 function deploymentKindToSpec(kind: DeploymentKind): {
 	family: CreateUserScopeDeploymentRequest["family"];
@@ -117,6 +117,33 @@ function deploymentKindToSpec(kind: DeploymentKind): {
 			return { family: "byos", engine: "eve_ng" };
 		default:
 			return { family: "terraform", engine: "terraform" };
+	}
+}
+
+function deploymentModeFromKind(kind: DeploymentKind): DeploymentMode {
+	switch (kind) {
+		case "netlab":
+		case "containerlab":
+		case "eve_ng":
+			return "byos";
+		default:
+			return "in_cluster";
+	}
+}
+
+function applyDeploymentModeToKind(
+	kind: DeploymentKind,
+	mode: DeploymentMode,
+): DeploymentKind {
+	switch (kind) {
+		case "netlab":
+		case "c9s_netlab":
+			return mode === "byos" ? "netlab" : "c9s_netlab";
+		case "containerlab":
+		case "c9s_containerlab":
+			return mode === "byos" ? "containerlab" : "c9s_containerlab";
+		default:
+			return kind;
 	}
 }
 
@@ -144,6 +171,8 @@ const formSchema = z.object({
 	netlabServer: z.string().optional(),
 	eveServer: z.string().optional(),
 	forwardCollectorId: z.string().optional(),
+	deploymentMode: z.enum(["in_cluster", "byos"]).optional(),
+	labLifetime: z.string().optional(),
 	variableGroupId: z.string().optional(),
 	env: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
 });
@@ -249,6 +278,8 @@ function CreateDeploymentPage() {
 			netlabServer: "",
 			eveServer: "",
 			forwardCollectorId: "none",
+			deploymentMode: "in_cluster",
+			labLifetime: "never",
 			variableGroupId: "none",
 			env: [],
 		},
@@ -298,6 +329,8 @@ function CreateDeploymentPage() {
 	const watchTemplate = watch("template");
 	const watchName = watch("name");
 	const watchForwardCollectorId = watch("forwardCollectorId");
+	const watchDeploymentMode = watch("deploymentMode");
+	const watchLabLifetime = watch("labLifetime");
 	const watchEnv = watch("env");
 	const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 	const watchSpec = useMemo(() => deploymentKindToSpec(watchKind), [watchKind]);
@@ -321,32 +354,38 @@ function CreateDeploymentPage() {
 		lifetimePolicyQ.data?.defaultHours,
 		24,
 	);
+	const lifetimeManaged = managedFamilies.has(
+		String(watchSpec.family ?? "")
+			.trim()
+			.toLowerCase(),
+	);
+	const allowNoExpiry = Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? false);
+	const lifetimeCanEdit = Boolean(sessionQ.data?.isAdmin) && lifetimeManaged;
+	const expiryAction = String(
+		lifetimePolicyQ.data?.expiryActions?.[watchSpec.family] ?? "stop",
+	)
+		.trim()
+		.toLowerCase();
+	const lifetimeOptions = useMemo(() => {
+		if (!lifetimeManaged) return [] as Array<{ value: string; label: string }>;
+		const options = lifetimeAllowedHours.map((h) => ({
+			value: String(h),
+			label: `${h} hours`,
+		}));
+		if (allowNoExpiry) {
+			options.unshift({
+				value: "never",
+				label: "Never auto-stop",
+			});
+		}
+		return options;
+	}, [allowNoExpiry, lifetimeAllowedHours, lifetimeManaged]);
 	const driverSummary =
 		watchSpec.family === "c9s"
 			? "In-cluster (c9s)"
 			: watchSpec.family === "byos"
 				? "BYOS (external server)"
 				: "Terraform managed";
-	const lifetimeManaged = managedFamilies.has(
-		String(watchSpec.family ?? "")
-			.trim()
-			.toLowerCase(),
-	);
-	const lifetimeSummary = useMemo(() => {
-		if (!lifetimeManaged) return "Not managed for this provider family.";
-		if (
-			Boolean(sessionQ.data?.isAdmin) &&
-			Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? true)
-		) {
-			return "Default: Never auto-stop (No expiry).";
-		}
-		return `Default: ${lifetimeDefaultHours}h auto-stop.`;
-	}, [
-		lifetimeManaged,
-		lifetimeDefaultHours,
-		lifetimePolicyQ.data?.allowNoExpiry,
-		sessionQ.data?.isAdmin,
-	]);
 
 	const lastUserScopeKey = "skyforge.lastUserScopeId.deployments";
 
@@ -379,6 +418,50 @@ function CreateDeploymentPage() {
 			// ignore
 		}
 	}, [watchUserScopeId]);
+
+	useEffect(() => {
+		const derivedMode = deploymentModeFromKind(watchKind);
+		if (watchDeploymentMode !== derivedMode) {
+			setValue("deploymentMode", derivedMode, {
+				shouldDirty: false,
+				shouldTouch: false,
+				shouldValidate: false,
+			});
+		}
+	}, [setValue, watchDeploymentMode, watchKind]);
+
+	useEffect(() => {
+		if (!lifetimeManaged) {
+			if (watchLabLifetime !== "not_managed") {
+				setValue("labLifetime", "not_managed", {
+					shouldDirty: false,
+					shouldTouch: false,
+					shouldValidate: false,
+				});
+			}
+			return;
+		}
+		const defaultSelection = allowNoExpiry
+			? "never"
+			: String(lifetimeDefaultHours);
+		const isValidSelection = lifetimeOptions.some(
+			(o) => o.value === watchLabLifetime,
+		);
+		if (!isValidSelection) {
+			setValue("labLifetime", defaultSelection, {
+				shouldDirty: false,
+				shouldTouch: false,
+				shouldValidate: false,
+			});
+		}
+	}, [
+		allowNoExpiry,
+		lifetimeDefaultHours,
+		lifetimeManaged,
+		lifetimeOptions,
+		setValue,
+		watchLabLifetime,
+	]);
 
 	// Auto-generate name when template or kind changes
 	useEffect(() => {
@@ -653,7 +736,7 @@ function CreateDeploymentPage() {
 		enabled:
 			Boolean(watchUserScopeId) &&
 			Boolean(watchTemplate) &&
-			watchSpec.family === "c9s",
+			watchSpec.engine === "netlab",
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -667,6 +750,11 @@ function CreateDeploymentPage() {
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof formSchema>) => {
+			const normalizedKind = applyDeploymentModeToKind(
+				values.kind,
+				(values.deploymentMode as DeploymentMode | undefined) ??
+					deploymentModeFromKind(values.kind),
+			);
 			if (
 				effectiveSource === "custom" &&
 				!(values.templateRepoId || "").trim()
@@ -693,7 +781,7 @@ function CreateDeploymentPage() {
 			}
 
 			if (
-				["c9s_netlab", "c9s_containerlab", "terraform"].includes(values.kind)
+				["c9s_netlab", "c9s_containerlab", "terraform"].includes(normalizedKind)
 			) {
 				const cid = String(values.forwardCollectorId ?? "none").trim();
 				if (cid && cid !== "none") {
@@ -702,7 +790,7 @@ function CreateDeploymentPage() {
 				}
 			}
 
-			if (values.kind === "netlab" || values.kind === "containerlab") {
+			if (normalizedKind === "netlab" || normalizedKind === "containerlab") {
 				const v = (values.netlabServer || "").trim();
 				if (!v) throw new Error("BYOS server is required");
 				config.netlabServer = v;
@@ -715,7 +803,7 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "c9s_netlab") {
+			if (normalizedKind === "c9s_netlab") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
 				if (
 					(effectiveSource === "external" || effectiveSource === "custom") &&
@@ -725,7 +813,7 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "c9s_containerlab") {
+			if (normalizedKind === "c9s_containerlab") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
 				if (
 					(effectiveSource === "external" || effectiveSource === "custom") &&
@@ -735,7 +823,7 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "terraform") {
+			if (normalizedKind === "terraform") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
 				if (
 					(effectiveSource === "external" || effectiveSource === "custom") &&
@@ -745,7 +833,7 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (values.kind === "eve_ng") {
+			if (normalizedKind === "eve_ng") {
 				config.templateSource = "blueprints";
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 				const eve = (values.eveServer || "").trim();
@@ -753,8 +841,27 @@ function CreateDeploymentPage() {
 				config.eveServer = eve;
 			}
 
-			const { family, engine } = deploymentKindToSpec(values.kind);
+			const { family, engine } = deploymentKindToSpec(normalizedKind);
 			config.engine = engine;
+			if (
+				Boolean(sessionQ.data?.isAdmin) &&
+				managedFamilies.has(String(family).trim().toLowerCase())
+			) {
+				const selectedLifetime = String(values.labLifetime ?? "").trim();
+				if (selectedLifetime === "never") {
+					config.leaseEnabled = false;
+				} else {
+					const selectedHours = Number.parseInt(selectedLifetime, 10);
+					if (
+						Number.isFinite(selectedHours) &&
+						selectedHours > 0 &&
+						lifetimeAllowedHours.includes(selectedHours)
+					) {
+						config.leaseEnabled = true;
+						config.leaseHours = selectedHours;
+					}
+				}
+			}
 
 			const body: CreateUserScopeDeploymentRequest = {
 				name: values.name,
@@ -987,6 +1094,28 @@ function CreateDeploymentPage() {
 			: watchKind === "containerlab"
 				? byosContainerlabServerRefs
 				: [];
+	const deploymentModeOptions = useMemo(() => {
+		switch (watchKind) {
+			case "netlab":
+			case "c9s_netlab":
+			case "containerlab":
+			case "c9s_containerlab":
+				return [
+					{ value: "in_cluster", label: "In cluster" },
+					{ value: "byos", label: "BYOS" },
+				] as Array<{ value: DeploymentMode; label: string }>;
+			case "eve_ng":
+				return [{ value: "byos", label: "BYOS" }] as Array<{
+					value: DeploymentMode;
+					label: string;
+				}>;
+			default:
+				return [{ value: "in_cluster", label: "In cluster" }] as Array<{
+					value: DeploymentMode;
+					label: string;
+				}>;
+		}
+	}, [watchKind]);
 	const selectedTemplateEstimate = templateEstimateQ.data?.estimate;
 
 	return (
@@ -1046,25 +1175,6 @@ function CreateDeploymentPage() {
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 							<div className="grid gap-6 md:grid-cols-2">
-								<FormItem>
-										<FormLabel>User</FormLabel>
-									<div className="flex h-10 items-center rounded-md border px-3">
-										{watchUserScopeId ? (
-											<Badge variant="outline">
-												{userScopes.find((w) => w.id === watchUserScopeId)
-													?.name || "Current user"}
-											</Badge>
-										) : (
-											<span className="text-sm text-muted-foreground">
-													No user selected
-											</span>
-										)}
-									</div>
-									<FormDescription>
-										Scope is derived from your current login/impersonation.
-									</FormDescription>
-								</FormItem>
-
 								<FormField
 									control={form.control}
 									name="kind"
@@ -1076,7 +1186,7 @@ function CreateDeploymentPage() {
 													field.onChange(val);
 													form.setValue("template", "");
 												}}
-												defaultValue={field.value}
+												value={field.value}
 											>
 												<FormControl>
 													<SelectTrigger>
@@ -1108,42 +1218,105 @@ function CreateDeploymentPage() {
 										</FormItem>
 									)}
 								/>
-								<FormItem className="rounded-md border p-3 md:col-span-2 space-y-2">
-									<FormLabel>Effective deployment mode</FormLabel>
-									<div className="grid gap-3 md:grid-cols-2 text-sm">
-										<div className="space-y-1">
-											<div className="text-xs text-muted-foreground">
-												Driver
-											</div>
-											<div className="font-medium">{driverSummary}</div>
-											<div className="text-xs text-muted-foreground">
-												Family: {watchSpec.family} • Engine: {watchSpec.engine}
-											</div>
-										</div>
-										<div className="space-y-1">
-											<div className="text-xs text-muted-foreground">
-												Lab lifetime
-											</div>
-											<div className="font-medium">{lifetimeSummary}</div>
-											{lifetimeManaged ? (
-												<div className="text-xs text-muted-foreground">
-													Allowed lifetimes:{" "}
-													{lifetimeAllowedHours.map((h) => `${h}h`).join(", ")}
-												</div>
-											) : (
-												<div className="text-xs text-muted-foreground">
-													Lifetime policy does not apply to this provider
-													family.
-												</div>
-											)}
-										</div>
-									</div>
-									<FormDescription>
-										Provider selection determines deployment driver. Lifetime is
-										auto-applied from policy and role; edit it later from
-										Deployments → Manage lifetime.
-									</FormDescription>
-								</FormItem>
+								<FormField
+									control={form.control}
+									name="deploymentMode"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Deployment mode</FormLabel>
+											<Select
+												value={String(
+													field.value ?? deploymentModeFromKind(watchKind),
+												)}
+												onValueChange={(value) => {
+													const selectedMode = value as DeploymentMode;
+													field.onChange(selectedMode);
+													const adjustedKind = applyDeploymentModeToKind(
+														form.getValues("kind"),
+														selectedMode,
+													);
+													if (adjustedKind !== form.getValues("kind")) {
+														form.setValue("kind", adjustedKind, {
+															shouldDirty: true,
+															shouldTouch: true,
+															shouldValidate: true,
+														});
+														form.setValue("template", "", {
+															shouldDirty: true,
+															shouldTouch: true,
+															shouldValidate: true,
+														});
+													}
+												}}
+												disabled={deploymentModeOptions.length <= 1}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder="Select mode" />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{deploymentModeOptions.map((option) => (
+														<SelectItem key={option.value} value={option.value}>
+															{option.label}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormDescription>
+												{driverSummary}. Family: {watchSpec.family} • Engine:{" "}
+												{watchSpec.engine}.
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name="labLifetime"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Lab lifetime</FormLabel>
+											<Select
+												value={String(field.value ?? "")}
+												onValueChange={field.onChange}
+												disabled={!lifetimeManaged || !lifetimeCanEdit}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder="Select lifetime" />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{lifetimeManaged ? (
+														lifetimeOptions.map((option) => (
+															<SelectItem
+																key={option.value}
+																value={option.value}
+															>
+																{option.label}
+															</SelectItem>
+														))
+													) : (
+														<SelectItem value="not_managed">
+															Not managed for this provider
+														</SelectItem>
+													)}
+												</SelectContent>
+											</Select>
+											<FormDescription>
+												{lifetimeManaged
+													? `Expiry action: ${expiryAction}. ${
+															lifetimeCanEdit
+																? "Admin can override before create."
+																: `Applied by policy (${lifetimeDefaultHours}h).`
+														}`
+													: "Lifetime policy does not apply to this provider family."}
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 
 								{["c9s_netlab", "c9s_containerlab", "terraform"].includes(
 									watchKind,
@@ -1232,7 +1405,7 @@ function CreateDeploymentPage() {
 												</FormControl>
 												<SelectContent>
 													<SelectItem value={USER_REPO_SOURCE}>
-															User repo
+														User repo
 													</SelectItem>
 													<SelectItem value="blueprints">Blueprints</SelectItem>
 													<SelectItem
@@ -1494,7 +1667,10 @@ function CreateDeploymentPage() {
 												</div>
 											) : null}
 											<Select
-												onValueChange={field.onChange}
+												onValueChange={(value) => {
+													field.onChange(value);
+													void templateEstimateQ.refetch();
+												}}
 												defaultValue={field.value}
 												disabled={
 													templatesQ.isLoading || templates.length === 0

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Shield, UserCog, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Plus, Shield, Trash2, UserCog, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -27,16 +27,19 @@ import {
 } from "../../components/ui/tabs";
 import {
 	type AdminAuditResponse,
+	type QuickDeployTemplate,
 	adminImpersonateStart,
 	adminImpersonateStop,
 	adminPurgeUser,
 	getAdminAudit,
 	getAdminEffectiveConfig,
 	getAdminImpersonateStatus,
+	getAdminQuickDeployCatalog,
 	getGovernancePolicy,
 	getSession,
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
+	updateAdminQuickDeployCatalog,
 	updateGovernancePolicy,
 } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
@@ -77,7 +80,30 @@ function AdminSettingsPage() {
 		staleTime: 15_000,
 		retry: false,
 	});
+	const quickDeployCatalogQ = useQuery({
+		queryKey: queryKeys.adminQuickDeployCatalog(),
+		queryFn: getAdminQuickDeployCatalog,
+		enabled: isAdmin,
+		staleTime: 15_000,
+		retry: false,
+	});
 	const [blockedOrgIdsCsv, setBlockedOrgIdsCsv] = useState("");
+	const [quickDeployTemplates, setQuickDeployTemplates] = useState<
+		QuickDeployTemplate[]
+	>([]);
+	useEffect(() => {
+		if (!quickDeployCatalogQ.data?.templates) {
+			return;
+		}
+		setQuickDeployTemplates(
+			quickDeployCatalogQ.data.templates.map((item) => ({
+				id: item.id,
+				name: item.name,
+				description: item.description,
+				template: item.template,
+			})),
+		);
+	}, [quickDeployCatalogQ.data?.templates]);
 	const saveForwardBlacklist = useMutation({
 		mutationFn: async () => {
 			const currentPolicy = governancePolicyQ.data?.policy;
@@ -101,6 +127,21 @@ function AdminSettingsPage() {
 		},
 		onError: (e) => {
 			toast.error("Failed to save Forward org blacklist", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	const saveQuickDeployCatalog = useMutation({
+		mutationFn: async () =>
+			updateAdminQuickDeployCatalog({
+				templates: quickDeployTemplates,
+			}),
+		onSuccess: async () => {
+			toast.success("Quick deploy catalog saved");
+			await quickDeployCatalogQ.refetch();
+		},
+		onError: (e) => {
+			toast.error("Failed to save quick deploy catalog", {
 				description: (e as Error).message,
 			});
 		},
@@ -254,6 +295,27 @@ function AdminSettingsPage() {
 		const ids = governancePolicyQ.data?.policy?.blockedForwardOrgIds ?? [];
 		return ids.join(",");
 	}, [blockedOrgIdsCsv, governancePolicyQ.data?.policy?.blockedForwardOrgIds]);
+	const upsertQuickDeployTemplateField = (
+		index: number,
+		field: keyof QuickDeployTemplate,
+		value: string,
+	) => {
+		setQuickDeployTemplates((prev) =>
+			prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
+		);
+	};
+	const removeQuickDeployTemplate = (index: number) => {
+		setQuickDeployTemplates((prev) => prev.filter((_, i) => i !== index));
+	};
+	const addQuickDeployTemplate = () => {
+		setQuickDeployTemplates((prev) => [
+			...prev,
+			{ id: "", name: "", description: "", template: "" },
+		]);
+	};
+	const hasQuickDeployTemplateRows =
+		quickDeployTemplates.filter((item) => item.template.trim().length > 0)
+			.length > 0;
 
 	return (
 		<div className="space-y-6 p-6">
@@ -415,6 +477,111 @@ function AdminSettingsPage() {
 										? "Saving…"
 										: "Save blacklist"}
 								</Button>
+							</CardContent>
+						</Card>
+
+						<Card>
+							<CardHeader>
+								<CardTitle>Quick Deploy Catalog</CardTitle>
+								<CardDescription>
+									Curate the one-click Quick Deploy cards shown to users. Focus
+									these entries on stable, high-value demo topologies.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div className="text-xs text-muted-foreground">
+									Source: {quickDeployCatalogQ.data?.source ?? "default"}
+								</div>
+								<div className="space-y-3">
+									{quickDeployTemplates.map((item, index) => (
+										<div
+											key={`${item.id}-${item.template}-${index}`}
+											className="rounded-md border p-3"
+										>
+											<div className="grid gap-2 md:grid-cols-2">
+												<Input
+													placeholder="Card name"
+													value={item.name}
+													onChange={(e) =>
+														upsertQuickDeployTemplateField(
+															index,
+															"name",
+															e.target.value,
+														)
+													}
+												/>
+												<Input
+													placeholder="ID (optional)"
+													value={item.id ?? ""}
+													onChange={(e) =>
+														upsertQuickDeployTemplateField(
+															index,
+															"id",
+															e.target.value,
+														)
+													}
+												/>
+											</div>
+											<Input
+												className="mt-2"
+												placeholder="Template path (for example: evpn/quick-eos-11-vxlan-ebgp.yml)"
+												value={item.template}
+												onChange={(e) =>
+													upsertQuickDeployTemplateField(
+														index,
+														"template",
+														e.target.value,
+													)
+												}
+											/>
+											<Input
+												className="mt-2"
+												placeholder="Description"
+												value={item.description ?? ""}
+												onChange={(e) =>
+													upsertQuickDeployTemplateField(
+														index,
+														"description",
+														e.target.value,
+													)
+												}
+											/>
+											<div className="mt-2 flex justify-end">
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => removeQuickDeployTemplate(index)}
+													disabled={saveQuickDeployCatalog.isPending}
+												>
+													<Trash2 className="mr-2 h-4 w-4" />
+													Remove
+												</Button>
+											</div>
+										</div>
+									))}
+								</div>
+								<div className="flex flex-wrap items-center gap-2">
+									<Button
+										variant="outline"
+										onClick={addQuickDeployTemplate}
+										disabled={saveQuickDeployCatalog.isPending}
+									>
+										<Plus className="mr-2 h-4 w-4" />
+										Add entry
+									</Button>
+									<Button
+										onClick={() => saveQuickDeployCatalog.mutate()}
+										disabled={
+											saveQuickDeployCatalog.isPending ||
+											quickDeployCatalogQ.isLoading ||
+											!hasQuickDeployTemplateRows
+										}
+									>
+										{saveQuickDeployCatalog.isPending
+											? "Saving…"
+											: "Save catalog"}
+									</Button>
+								</div>
 							</CardContent>
 						</Card>
 					</TabsContent>
