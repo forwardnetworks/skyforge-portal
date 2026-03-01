@@ -282,6 +282,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/smoke-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListAdminSmokeRuns returns recent post-deploy smoke run history (admin only). */
+        get: operations["GET:skyforge.ListAdminSmokeRuns"];
+        put?: never;
+        /** CreateAdminSmokeRun records a post-deploy smoke run summary (admin only). */
+        post: operations["POST:skyforge.CreateAdminSmokeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/tasks/diag": {
         parameters: {
             query?: never;
@@ -5080,6 +5098,28 @@ export interface components {
     schemas: {
         "deploycore.Action": string;
         "deploycore.Reason": string;
+        "skyforge.AdminSmokeRunCheck": {
+            detail: string;
+            name: string;
+            path: string;
+            status: string;
+        };
+        "skyforge.AdminSmokeRunRecord": {
+            actorUsername: string;
+            baseUrl: string;
+            checks: components["schemas"]["skyforge.AdminSmokeRunCheck"][];
+            createdAt: string;
+            error: string;
+            /** Format: int64 */
+            id: number;
+            metadata: components["schemas"]["skyforge.JSONMap"];
+            namespace: string;
+            releaseName: string;
+            serverImage: string;
+            source: string;
+            status: string;
+            workerImage: string;
+        };
         "skyforge.AssignableUser": {
             display: string;
             email: string;
@@ -6486,6 +6526,75 @@ export interface operations {
                 content: {
                     "application/json": {
                         nodes: components["schemas"]["skyforge.NodeMetricSnapshot"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListAdminSmokeRuns": {
+        parameters: {
+            query?: {
+                limit?: number;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["skyforge.AdminSmokeRunRecord"][];
+                        /** Format: int64 */
+                        limit: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateAdminSmokeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    baseUrl: string;
+                    checks: components["schemas"]["skyforge.AdminSmokeRunCheck"][];
+                    error: string;
+                    metadata: components["schemas"]["skyforge.JSONMap"];
+                    namespace: string;
+                    releaseName: string;
+                    serverImage: string;
+                    source: string;
+                    status: string;
+                    workerImage: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        createdAt: string;
+                        /** Format: int64 */
+                        id: number;
+                        status: string;
                     };
                 };
             };
