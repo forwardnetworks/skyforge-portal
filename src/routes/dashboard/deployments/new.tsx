@@ -128,7 +128,7 @@ const toAPITemplateSource = (source: TemplateSource): string =>
 	source === USER_REPO_SOURCE ? "user" : source;
 
 const formSchema = z.object({
-	userId: z.string().min(1, "User scope is required"),
+	userId: z.string().min(1, "User is required"),
 	name: z.string().min(1, "Deployment name is required").max(100),
 	kind: z.enum([
 		"c9s_netlab",
@@ -369,7 +369,7 @@ function CreateDeploymentPage() {
 		setValue("userId", userScopes[0].id);
 	}, [watchUserScopeId, userScopes, setValue]);
 
-	// Persist last-selected user scope for Create Deployment.
+	// Persist last-selected user for Create Deployment.
 	useEffect(() => {
 		if (!watchUserScopeId) return;
 		if (typeof window === "undefined") return;
@@ -790,7 +790,7 @@ function CreateDeploymentPage() {
 
 	const importEveLab = useMutation({
 		mutationFn: async () => {
-			if (!watchUserScopeId) throw new Error("Select a user scope first.");
+			if (!watchUserScopeId) throw new Error("Select a user first.");
 			const server = importServer.trim();
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
@@ -823,7 +823,7 @@ function CreateDeploymentPage() {
 
 	const convertEveLab = useMutation({
 		mutationFn: async () => {
-			if (!watchUserScopeId) throw new Error("Select a user scope first.");
+			if (!watchUserScopeId) throw new Error("Select a user first.");
 			const server = importServer.trim();
 			if (!server) throw new Error("Select an EVE-NG server.");
 			const labPath = importLabPath.trim();
@@ -870,7 +870,7 @@ function CreateDeploymentPage() {
 
 	const validateNetlabTemplate = useMutation({
 		mutationFn: async () => {
-			if (!watchUserScopeId) throw new Error("Select a user scope first.");
+			if (!watchUserScopeId) throw new Error("Select a user first.");
 			if (!watchTemplate) throw new Error("Select a template first.");
 			const envFromList = new Map<string, string>();
 			for (const kv of form.getValues("env") || []) {
@@ -1047,16 +1047,16 @@ function CreateDeploymentPage() {
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 							<div className="grid gap-6 md:grid-cols-2">
 								<FormItem>
-									<FormLabel>User Scope</FormLabel>
+										<FormLabel>User</FormLabel>
 									<div className="flex h-10 items-center rounded-md border px-3">
 										{watchUserScopeId ? (
 											<Badge variant="outline">
 												{userScopes.find((w) => w.id === watchUserScopeId)
-													?.name || "Current user scope"}
+													?.name || "Current user"}
 											</Badge>
 										) : (
 											<span className="text-sm text-muted-foreground">
-												No user scope
+													No user selected
 											</span>
 										)}
 									</div>
@@ -1232,7 +1232,7 @@ function CreateDeploymentPage() {
 												</FormControl>
 												<SelectContent>
 													<SelectItem value={USER_REPO_SOURCE}>
-														User scope repo
+															User repo
 													</SelectItem>
 													<SelectItem value="blueprints">Blueprints</SelectItem>
 													<SelectItem

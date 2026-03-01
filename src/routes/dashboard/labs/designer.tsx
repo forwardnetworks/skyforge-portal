@@ -971,7 +971,7 @@ function LabDesignerPage() {
 			? ["containerlabTemplate", userId, importSource, importDir, importFile]
 			: ["containerlabTemplate", "none"],
 		queryFn: async () => {
-			if (!userId) throw new Error("missing user scope");
+				if (!userId) throw new Error("missing user");
 			if (!importFile) return null;
 			return getUserScopeContainerlabTemplate(userId, {
 				source: toAPISource(importSource),
@@ -986,7 +986,7 @@ function LabDesignerPage() {
 
 	const createDeployment = useMutation({
 		mutationFn: async () => {
-			if (!userId) throw new Error("Select a user scope");
+				if (!userId) throw new Error("Select a user");
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (!/^\s*topology\s*:/m.test(effectiveYaml)) {
 				throw new Error("YAML must contain a top-level 'topology:' section");
@@ -1063,7 +1063,7 @@ function LabDesignerPage() {
 
 	const saveConfig = useMutation({
 		mutationFn: async () => {
-			if (!userId) throw new Error("Select a user scope");
+				if (!userId) throw new Error("Select a user");
 			if (!effectiveYaml.trim()) throw new Error("YAML is empty");
 			if (!/^\s*topology\s*:/m.test(effectiveYaml)) {
 				throw new Error("YAML must contain a top-level 'topology:' section");
@@ -1099,7 +1099,7 @@ function LabDesignerPage() {
 
 	const importTemplate = useMutation({
 		mutationFn: async () => {
-			if (!userId) throw new Error("Select a user scope");
+				if (!userId) throw new Error("Select a user");
 			const file = importFile.trim();
 			if (!file) throw new Error("Select a template");
 			return getUserScopeContainerlabTemplate(userId, {
@@ -1183,7 +1183,7 @@ function LabDesignerPage() {
 
 	const openMapInNewTab = async () => {
 		if (!userId) {
-			toast.error("Select a user scope first");
+			toast.error("Select a user first");
 			return;
 		}
 		try {
@@ -1932,14 +1932,14 @@ function LabDesignerPage() {
 								/>
 							</div>
 							<div className="space-y-1">
-								<Label>User Scope</Label>
+								<Label>User</Label>
 								<Select value={userId} onValueChange={(v) => setUserScopeId(v)}>
 									<SelectTrigger>
 										<SelectValue
 											placeholder={
 												userScopesQ.isLoading
 													? "Loading…"
-													: "Select user scope…"
+													: "Select user…"
 											}
 										/>
 									</SelectTrigger>
@@ -1962,7 +1962,7 @@ function LabDesignerPage() {
 									<SelectTrigger>
 										<SelectValue
 											placeholder={
-												!userId ? "Select user scope first…" : "Select runtime…"
+												!userId ? "Select user first…" : "Select runtime…"
 											}
 										/>
 									</SelectTrigger>
@@ -2045,7 +2045,7 @@ function LabDesignerPage() {
 												runtime !== "containerlab"
 													? "Not required for clabernetes…"
 													: !userId
-														? "Select user scope first…"
+															? "Select user first…"
 														: containerlabServersQ.isLoading
 															? "Loading…"
 															: "Select server…"
@@ -2259,7 +2259,7 @@ function LabDesignerPage() {
 									<SelectContent>
 										<SelectItem value="blueprints">Blueprints</SelectItem>
 										<SelectItem value={USER_REPO_SOURCE}>
-											User scope repo
+											User repo
 										</SelectItem>
 									</SelectContent>
 								</Select>

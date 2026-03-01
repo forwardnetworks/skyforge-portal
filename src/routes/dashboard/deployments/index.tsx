@@ -183,7 +183,7 @@ function DeploymentsPage() {
 
 	const lastUserScopeKey = "skyforge.lastUserScopeId.deployments";
 
-	// Use URL param if available, otherwise fallback to last-selected, then first user scope.
+	// Use URL param if available, otherwise fallback to last-selected, then first user.
 	const selectedUserScopeId = useMemo(() => {
 		if (userId && userScopes.some((w: SkyforgeUserScope) => w.id === userId))
 			return userId;
@@ -709,7 +709,7 @@ function DeploymentsPage() {
 
 	return (
 		<div className="space-y-6 p-6">
-			{/* Top Header / User Scope Context */}
+			{/* Top Header / User Context */}
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-6">
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight">Deployments</h1>
@@ -724,7 +724,7 @@ function DeploymentsPage() {
 							{selectedUserScope.name} ({selectedUserScope.slug})
 						</Badge>
 					) : (
-						<Badge variant="secondary">No user scope</Badge>
+							<Badge variant="secondary">No user selected</Badge>
 					)}
 				</div>
 			</div>
@@ -828,7 +828,7 @@ function DeploymentsPage() {
 									description={
 										searchQuery || statusFilter !== "all"
 											? "Try adjusting your filters."
-											: "You haven't created any deployments in this user scope yet."
+												: "You haven't created any deployments for this user yet."
 									}
 									action={
 										!searchQuery && statusFilter === "all"

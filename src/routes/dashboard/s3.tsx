@@ -185,7 +185,7 @@ function S3Page() {
 	const toolbar = (
 		<div className="p-4 border-b flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 			<div className="flex items-center gap-3">
-				<div className="text-sm font-medium">User Scope</div>
+				<div className="text-sm font-medium">User</div>
 				<Select
 					value={selectedUserScopeId}
 					onValueChange={(id) => {
@@ -195,7 +195,7 @@ function S3Page() {
 					disabled={userScopeOptions.length === 0}
 				>
 					<SelectTrigger className="w-[280px]">
-						<SelectValue placeholder="Select user scope" />
+						<SelectValue placeholder="Select user" />
 					</SelectTrigger>
 					<SelectContent>
 						{userScopeOptions.map((w) => (
@@ -322,7 +322,7 @@ function S3Page() {
 									<EmptyState
 										icon={Inbox}
 										title="No objects found"
-										description="No artifacts found for this user scope."
+										description="No artifacts found for this user."
 									/>
 								</div>
 							) : (

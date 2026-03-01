@@ -73,8 +73,8 @@ function RunDetailPage() {
 	});
 
 	const provenance = useMemo(
-		() => buildRunProvenance(run, lifecycle.data?.entries ?? []),
-		[run, lifecycle.data?.entries],
+		() => buildRunProvenance(run),
+		[run],
 	);
 	const lifecycleEntries = lifecycle.data?.entries ?? [];
 	const lifecycleRecent = lifecycleEntries.slice(-20).reverse();
@@ -420,34 +420,11 @@ type RunProvenance = {
 	}>;
 };
 
-function buildRunProvenance(
-	run: JSONMap | undefined,
-	lifecycleEntries: TaskLifecycleEntry[],
-): RunProvenance {
-	const fallbackCatalog = lifecyclePayloadByType(
-		lifecycleEntries,
-		"netlab.catalog.provenance",
-	);
-	const fallbackNodeSummary = lifecyclePayloadByType(
-		lifecycleEntries,
-		"netlab.node_resolution.summary",
-	);
-	const fallbackApplySummary = lifecyclePayloadByType(
-		lifecycleEntries,
-		"clabernetes.apply.summary",
-	);
-	const fallbackContract = lifecyclePayloadByType(
-		lifecycleEntries,
-		"netlab.contract",
-	);
-
-	const catalog =
-		asRecord(run?.netlabCatalogProvenance) ?? fallbackCatalog ?? {};
-	const nodeSummary =
-		asRecord(run?.netlabNodeResolutionSummary) ?? fallbackNodeSummary ?? {};
-	const applySummary =
-		asRecord(run?.clabernetesApplySummary) ?? fallbackApplySummary ?? {};
-	const contract = asRecord(run?.netlabContract) ?? fallbackContract ?? {};
+function buildRunProvenance(run: JSONMap | undefined): RunProvenance {
+	const catalog = asRecord(run?.netlabCatalogProvenance) ?? {};
+	const nodeSummary = asRecord(run?.netlabNodeResolutionSummary) ?? {};
+	const applySummary = asRecord(run?.clabernetesApplySummary) ?? {};
+	const contract = asRecord(run?.netlabContract) ?? {};
 	const deployPolicy = asRecord(run?.clabernetesDeployPolicy) ?? {};
 
 	const sampleRaw = asArray(nodeSummary.sample);
@@ -486,18 +463,6 @@ function buildRunProvenance(
 		payloadSha256: asString(applySummary.payloadSha256 ?? "—"),
 		nodeResolutionSample: sample,
 	};
-}
-
-function lifecyclePayloadByType(
-	entries: TaskLifecycleEntry[],
-	eventType: string,
-): Record<string, unknown> | null {
-	for (let i = entries.length - 1; i >= 0; i -= 1) {
-		const entry = entries[i];
-		if (entry.type !== eventType) continue;
-		return asRecord(entry.payload) ?? null;
-	}
-	return null;
 }
 
 function summarizeClabernetesDeployFailures(

@@ -118,7 +118,6 @@ function ServiceNowPage() {
 				adminUsername: adminUsername.trim(),
 				adminPassword,
 				forwardCredentialSetId: forwardCredentialSetId.trim(),
-				forwardCollectorConfigId: forwardCredentialSetId.trim(),
 			});
 		},
 		onSuccess: async () => {

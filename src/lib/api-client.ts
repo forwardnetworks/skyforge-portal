@@ -41,7 +41,6 @@ export type PutUserServiceNowConfigRequest = {
 	adminUsername: string;
 	adminPassword: string;
 	forwardCredentialSetId?: string;
-	forwardCollectorConfigId?: string;
 };
 
 export type InstallUserServiceNowDemoResponse = {

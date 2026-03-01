@@ -9145,7 +9145,6 @@ export interface operations {
                 "application/json": {
                     adminPassword: string;
                     adminUsername: string;
-                    forwardCollectorConfigId: string;
                     forwardCredentialSetId: string;
                     instanceUrl: string;
                 };
