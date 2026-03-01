@@ -3061,6 +3061,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/deployments/{deploymentID}/netlab/artifacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserScopeDeploymentNetlabArtifacts lists typed netlab artifact index rows for
+         *     a deployment.
+         * @description This endpoint is backed by sf\_netlab\_artifact\_index (not task JSON metadata).
+         */
+        get: operations["GET:skyforge.GetUserScopeDeploymentNetlabArtifacts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}/deployments/{deploymentID}/nodes/{node}/describe": {
         parameters: {
             query?: never;
@@ -5820,6 +5841,21 @@ export interface components {
             queueDepth: number;
             updatedAt: string;
             userId: string;
+        };
+        "skyforge.UserScopeDeploymentNetlabArtifactIndexItem": {
+            artifactPath: string;
+            artifactPrefix: string;
+            contentType: string;
+            createdAt: string;
+            labName: string;
+            objectKey: string;
+            sha256: string;
+            /** Format: int64 */
+            sizeBytes: number;
+            /** Format: int64 */
+            taskId: number;
+            topologyName: string;
+            updatedAt: string;
         };
         "skyforge.UserScopeForwardCollector": {
             id: string;
@@ -12193,6 +12229,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserScopeDeploymentNetlabArtifacts": {
+        parameters: {
+            query?: {
+                limit?: number;
+                taskId?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        count: number;
+                        deploymentId: string;
+                        items: components["schemas"]["skyforge.UserScopeDeploymentNetlabArtifactIndexItem"][];
+                        userId: string;
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };
