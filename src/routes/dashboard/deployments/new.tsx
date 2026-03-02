@@ -76,9 +76,15 @@ import {
 	listUserScopeEveLabs,
 	listUserScopes,
 	listUserVariableGroups,
+	preflightDeploymentAction,
+	runDeploymentAction,
 	validateUserScopeNetlabTemplate,
 } from "../../../lib/api-client";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
+import {
+	noOpMessageForDeploymentAction,
+	readDeploymentActionMeta,
+} from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
 
 const deploymentsSearchSchema = z.object({
@@ -805,17 +811,17 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-				if (normalizedKind === "c9s_netlab") {
-					config.templateSource = toAPITemplateSource(effectiveSource);
-					if (
-						(effectiveSource === "external" || effectiveSource === "custom") &&
-						values.templateRepoId
-					)
-						config.templateRepo = values.templateRepoId;
-					if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
-					const debugFlags = String(values.netlabInitialDebug ?? "").trim();
-					if (debugFlags) config.netlabInitialDebug = debugFlags;
-				}
+			if (normalizedKind === "c9s_netlab") {
+				config.templateSource = toAPITemplateSource(effectiveSource);
+				if (
+					(effectiveSource === "external" || effectiveSource === "custom") &&
+					values.templateRepoId
+				)
+					config.templateRepo = values.templateRepoId;
+				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
+				const debugFlags = String(values.netlabInitialDebug ?? "").trim();
+				if (debugFlags) config.netlabInitialDebug = debugFlags;
+			}
 
 			if (normalizedKind === "c9s_containerlab") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
@@ -875,21 +881,60 @@ function CreateDeploymentPage() {
 			};
 			return createUserScopeDeployment(values.userId, body);
 		},
-		onSuccess: async (_, variables) => {
-			const kind = String(variables.kind ?? "").trim();
-			const description =
-				kind === "netlab"
-					? `${variables.name} create run is queued.`
-					: `${variables.name} is created. Use deployment actions to start provisioning.`;
-			toast.success("Deployment created successfully", {
-				description,
-			});
+		onSuccess: async (created, variables) => {
+			const deploymentId = String(created?.id ?? "").trim();
+			const scopeId = String(created?.userId ?? variables.userId ?? "").trim();
+			if (!deploymentId || !scopeId) {
+				throw new Error("Deployment created but ID is missing");
+			}
+
+			try {
+				const preflight = await preflightDeploymentAction(
+					scopeId,
+					deploymentId,
+					"create",
+				);
+				const preflightMeta = readDeploymentActionMeta(preflight);
+				if (preflightMeta.noOp) {
+					toast.message(
+						noOpMessageForDeploymentAction("create", preflightMeta.reason),
+						{
+							description: variables.name,
+						},
+					);
+				} else {
+					const runResp = await runDeploymentAction(
+						scopeId,
+						deploymentId,
+						"create",
+					);
+					const runMeta = readDeploymentActionMeta(runResp);
+					if (runMeta.noOp) {
+						toast.message(
+							noOpMessageForDeploymentAction("create", runMeta.reason),
+							{
+								description: variables.name,
+							},
+						);
+					} else {
+						toast.success("Deployment created and bring-up queued", {
+							description: variables.name,
+						});
+					}
+				}
+			} catch (error) {
+				toast.error("Deployment created, but bring-up was not queued", {
+					description: (error as Error).message,
+				});
+			}
+
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 			await navigate({
-				to: "/dashboard/deployments",
-				search: { userId: variables.userId },
+				to: "/dashboard/deployments/$deploymentId",
+				params: { deploymentId },
+				search: { tab: "logs" } as any,
 			});
 		},
 		onError: (error) => {
@@ -1745,9 +1790,9 @@ function CreateDeploymentPage() {
 								/>
 							</div>
 
-								<div className="rounded-md border p-4 space-y-4">
-									<div className="flex items-center justify-between">
-										<FormLabel>Environment Variables</FormLabel>
+							<div className="rounded-md border p-4 space-y-4">
+								<div className="flex items-center justify-between">
+									<FormLabel>Environment Variables</FormLabel>
 									<div className="flex items-center gap-2">
 										<Button
 											type="button"
@@ -1760,36 +1805,36 @@ function CreateDeploymentPage() {
 									</div>
 								</div>
 
-									<div className="grid gap-6 md:grid-cols-2">
-										{watchKind === "c9s_netlab" && (
-											<FormField
-												control={form.control}
-												name="netlabInitialDebug"
-												render={({ field }) => (
-													<FormItem>
-														<FormLabel className="text-xs text-muted-foreground">
-															Netlab debug flags
-														</FormLabel>
-														<FormControl>
-															<Input
-																{...field}
-																placeholder="Example: cli,external,template"
-																className="font-mono text-xs"
-															/>
-														</FormControl>
-														<FormDescription>
-															Optional, per-deployment runtime debug for{" "}
-															<code className="font-mono">netlab initial</code>.
-															Use comma-separated modules.
-														</FormDescription>
-														<FormMessage />
-													</FormItem>
-												)}
-											/>
-										)}
+								<div className="grid gap-6 md:grid-cols-2">
+									{watchKind === "c9s_netlab" && (
 										<FormField
 											control={form.control}
-											name="variableGroupId"
+											name="netlabInitialDebug"
+											render={({ field }) => (
+												<FormItem>
+													<FormLabel className="text-xs text-muted-foreground">
+														Netlab debug flags
+													</FormLabel>
+													<FormControl>
+														<Input
+															{...field}
+															placeholder="Example: cli,external,template"
+															className="font-mono text-xs"
+														/>
+													</FormControl>
+													<FormDescription>
+														Optional, per-deployment runtime debug for{" "}
+														<code className="font-mono">netlab initial</code>.
+														Use comma-separated modules.
+													</FormDescription>
+													<FormMessage />
+												</FormItem>
+											)}
+										/>
+									)}
+									<FormField
+										control={form.control}
+										name="variableGroupId"
 										render={({ field }) => (
 											<FormItem>
 												<FormLabel className="text-xs text-muted-foreground">

@@ -3980,7 +3980,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** SyncUserBlueprint syncs a user's blueprint catalog into the repo. */
+        /**
+         * SyncUserBlueprint keeps backward compatibility for explicit blueprint sync
+         *     calls.
+         * @description Blueprints are consumed directly from the shared catalog repo, so there is no per-user copy step anymore.
+         */
         post: operations["POST:skyforge.SyncUserBlueprint"];
         delete?: never;
         options?: never;
@@ -5881,9 +5885,11 @@ export interface components {
             slug: string;
         };
         "skyforge.UserScopeDeployment": {
+            actionReason: string;
             /** Format: int64 */
             activeTaskId: number;
             activeTaskStatus: string;
+            autoSyncOnBringUp: boolean;
             config: components["schemas"]["skyforge.JSONMap"];
             createdAt: string;
             createdBy: string;
@@ -5893,13 +5899,19 @@ export interface components {
             lastFinishedAt: string;
             lastStartedAt: string;
             lastStatus: string;
+            lastSyncAt: string;
+            lastSyncError: string;
+            lastSyncStatus: string;
             /** Format: int64 */
             lastTaskId: number;
             /** Format: int64 */
             lastTaskUserScopeId: number;
+            lifecycleState: string;
             name: string;
+            primaryAction: string;
             /** Format: int64 */
             queueDepth: number;
+            syncState: string;
             updatedAt: string;
             userId: string;
         };
@@ -7619,9 +7631,11 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        actionReason: string;
                         /** Format: int64 */
                         activeTaskId: number;
                         activeTaskStatus: string;
+                        autoSyncOnBringUp: boolean;
                         config: components["schemas"]["skyforge.JSONMap"];
                         createdAt: string;
                         createdBy: string;
@@ -7631,13 +7645,19 @@ export interface operations {
                         lastFinishedAt: string;
                         lastStartedAt: string;
                         lastStatus: string;
+                        lastSyncAt: string;
+                        lastSyncError: string;
+                        lastSyncStatus: string;
                         /** Format: int64 */
                         lastTaskId: number;
                         /** Format: int64 */
                         lastTaskUserScopeId: number;
+                        lifecycleState: string;
                         name: string;
+                        primaryAction: string;
                         /** Format: int64 */
                         queueDepth: number;
+                        syncState: string;
                         updatedAt: string;
                         userId: string;
                     };
@@ -7798,6 +7818,7 @@ export interface operations {
                 "application/json": {
                     /** deploy, destroy */
                     action: string;
+                    autoForwardSyncOnBringUp: boolean;
                     /** deployment name for lab naming */
                     deployment: string;
                     deploymentId: string;
@@ -7848,6 +7869,7 @@ export interface operations {
                 "application/json": {
                     /** create, start, stop, destroy */
                     action: string;
+                    autoForwardSyncOnBringUp: boolean;
                     /** deployment name for lab naming */
                     deployment: string;
                     deploymentId: string;
@@ -7896,6 +7918,7 @@ export interface operations {
                 "application/json": {
                     /** up, create, restart, collect, status, down */
                     action: string;
+                    autoForwardSyncOnBringUp: boolean;
                     clabCleanup: boolean;
                     clabConfigDir: string;
                     clabTarball: string;
@@ -11405,9 +11428,11 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        actionReason: string;
                         /** Format: int64 */
                         activeTaskId: number;
                         activeTaskStatus: string;
+                        autoSyncOnBringUp: boolean;
                         config: components["schemas"]["skyforge.JSONMap"];
                         createdAt: string;
                         createdBy: string;
@@ -11417,13 +11442,19 @@ export interface operations {
                         lastFinishedAt: string;
                         lastStartedAt: string;
                         lastStatus: string;
+                        lastSyncAt: string;
+                        lastSyncError: string;
+                        lastSyncStatus: string;
                         /** Format: int64 */
                         lastTaskId: number;
                         /** Format: int64 */
                         lastTaskUserScopeId: number;
+                        lifecycleState: string;
                         name: string;
+                        primaryAction: string;
                         /** Format: int64 */
                         queueDepth: number;
+                        syncState: string;
                         updatedAt: string;
                         userId: string;
                     };
@@ -11562,9 +11593,11 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        actionReason: string;
                         /** Format: int64 */
                         activeTaskId: number;
                         activeTaskStatus: string;
+                        autoSyncOnBringUp: boolean;
                         config: components["schemas"]["skyforge.JSONMap"];
                         createdAt: string;
                         createdBy: string;
@@ -11574,13 +11607,19 @@ export interface operations {
                         lastFinishedAt: string;
                         lastStartedAt: string;
                         lastStatus: string;
+                        lastSyncAt: string;
+                        lastSyncError: string;
+                        lastSyncStatus: string;
                         /** Format: int64 */
                         lastTaskId: number;
                         /** Format: int64 */
                         lastTaskUserScopeId: number;
+                        lifecycleState: string;
                         name: string;
+                        primaryAction: string;
                         /** Format: int64 */
                         queueDepth: number;
+                        syncState: string;
                         updatedAt: string;
                         userId: string;
                     };
@@ -12030,6 +12069,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    autoSyncOnBringUp: boolean;
                     collectorConfigId: string;
                     collectorUsername: string;
                     enabled: boolean;
@@ -12044,6 +12084,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        autoSyncOnBringUp: boolean;
                         collectorConfigId: string;
                         collectorUsername: string;
                         deploymentId: string;

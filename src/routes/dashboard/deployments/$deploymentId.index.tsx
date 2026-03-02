@@ -85,11 +85,13 @@ import {
 export const Route = createFileRoute("/dashboard/deployments/$deploymentId/")({
 	component: DeploymentDetailPage,
 	validateSearch: (search: Record<string, unknown>) => {
-		const out: { action?: string; node?: string } = {};
+		const out: { action?: string; node?: string; tab?: string } = {};
 		if (typeof search.action === "string" && search.action.trim())
 			out.action = search.action.trim();
 		if (typeof search.node === "string" && search.node.trim())
 			out.node = search.node.trim();
+		if (typeof search.tab === "string" && search.tab.trim())
+			out.tab = search.tab.trim();
 		return out;
 	},
 });
@@ -107,7 +109,7 @@ function formatResourceEstimateSummary(
 
 function DeploymentDetailPage() {
 	const { deploymentId } = Route.useParams();
-	const { action, node } = Route.useSearch();
+	const { action, node, tab } = Route.useSearch();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	useDashboardEvents(true);
@@ -115,7 +117,14 @@ function DeploymentDetailPage() {
 	const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 	const [forwardEnabled, setForwardEnabled] = useState(false);
 	const [forwardCollector, setForwardCollector] = useState("");
+	const [forwardAutoSyncOnBringUp, setForwardAutoSyncOnBringUp] =
+		useState(false);
 	const [actionPending, setActionPending] = useState(false);
+	const normalizedTab =
+		tab === "logs" || tab === "config" || tab === "topology" ? tab : "topology";
+	const [activeTab, setActiveTab] = useState<"topology" | "logs" | "config">(
+		normalizedTab,
+	);
 
 	const snap = useQuery<DashboardSnapshot | null>({
 		queryKey: queryKeys.dashboardSnapshot(),
@@ -144,9 +153,16 @@ function DeploymentDetailPage() {
 		const collector = String(
 			(deployment?.config ?? {})["forwardCollectorId"] ?? "",
 		).trim();
+		const autoSync =
+			Boolean(deployment?.autoSyncOnBringUp) ||
+			Boolean((deployment?.config ?? {})["forwardAutoSyncOnBringUp"]);
 		setForwardEnabled(enabled);
 		setForwardCollector(collector);
-	}, [deployment?.id, deployment?.config]);
+		setForwardAutoSyncOnBringUp(autoSync);
+	}, [deployment?.id, deployment?.config, deployment?.autoSyncOnBringUp]);
+	useEffect(() => {
+		setActiveTab(normalizedTab);
+	}, [normalizedTab]);
 
 	const activeRunId = String(deployment?.activeTaskId ?? "");
 	useRunEvents(activeRunId, Boolean(activeRunId));
@@ -279,8 +295,12 @@ function DeploymentDetailPage() {
 		}
 	};
 
-	const status =
-		deployment?.activeTaskStatus ?? deployment?.lastStatus ?? "unknown";
+	const status = deployment
+		? resolveDeploymentDisplayStatus(deployment)
+		: "unknown";
+	const primaryAction = deployment
+		? resolveDeploymentPrimaryAction(deployment)
+		: "none";
 	const isBusy = !!deployment?.activeTaskId || actionPending;
 
 	const runsForDeployment = useMemo(() => {
@@ -435,6 +455,7 @@ function DeploymentDetailPage() {
 		mutationFn: async (next: {
 			enabled: boolean;
 			collectorConfigId?: string;
+			autoSyncOnBringUp?: boolean;
 		}) => {
 			if (!deployment) throw new Error("deployment not found");
 			return updateDeploymentForwardConfig(
@@ -569,6 +590,11 @@ function DeploymentDetailPage() {
 							<span>•</span>
 							<span className="capitalize">{deployment.family}</span>
 						</p>
+						{deployment.actionReason ? (
+							<p className="text-xs text-muted-foreground mt-1">
+								{deployment.actionReason}
+							</p>
+						) : null}
 					</div>
 				</div>
 
@@ -584,18 +610,23 @@ function DeploymentDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={handleStart}
-						disabled={isBusy}
+						onClick={() => {
+							if (primaryAction === "shut_down") {
+								void handleStop();
+								return;
+							}
+							if (primaryAction === "bring_up") {
+								void handleStart();
+							}
+						}}
+						disabled={isBusy || primaryAction === "none"}
 					>
-						<Play className="mr-2 h-4 w-4" /> Start
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={handleStop}
-						disabled={isBusy}
-					>
-						<StopCircle className="mr-2 h-4 w-4" /> Stop
+						{primaryAction === "shut_down" ? (
+							<StopCircle className="mr-2 h-4 w-4" />
+						) : (
+							<Play className="mr-2 h-4 w-4" />
+						)}{" "}
+						{primaryAction === "shut_down" ? "Shut Down" : "Bring Up"}
 					</Button>
 					<Button
 						variant="destructive"
@@ -629,7 +660,11 @@ function DeploymentDetailPage() {
 				</CardContent>
 			</Card>
 
-			<Tabs defaultValue="topology" className="space-y-6">
+			<Tabs
+				value={activeTab}
+				onValueChange={(v) => setActiveTab(v as "topology" | "logs" | "config")}
+				className="space-y-6"
+			>
 				<TabsList>
 					<TabsTrigger value="topology" className="gap-2">
 						<Network className="h-4 w-4" /> Topology
@@ -941,6 +976,29 @@ function DeploymentDetailPage() {
 										updateForward.mutate({
 											enabled: checked,
 											collectorConfigId: nextCollector || undefined,
+											autoSyncOnBringUp: forwardAutoSyncOnBringUp,
+										});
+									}}
+								/>
+							</div>
+							<div className="flex items-center justify-between">
+								<div className="space-y-1">
+									<div className="text-sm font-medium">
+										Auto-sync after bring-up
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Queue Forward sync automatically after successful bring-up.
+									</div>
+								</div>
+								<Switch
+									checked={forwardAutoSyncOnBringUp}
+									disabled={!forwardEnabled || updateForward.isPending}
+									onCheckedChange={(checked) => {
+										setForwardAutoSyncOnBringUp(checked);
+										updateForward.mutate({
+											enabled: forwardEnabled,
+											collectorConfigId: forwardCollector || undefined,
+											autoSyncOnBringUp: checked,
 										});
 									}}
 								/>
@@ -957,6 +1015,7 @@ function DeploymentDetailPage() {
 												updateForward.mutate({
 													enabled: true,
 													collectorConfigId: val,
+													autoSyncOnBringUp: forwardAutoSyncOnBringUp,
 												});
 											}}
 											disabled={
@@ -1001,6 +1060,35 @@ function DeploymentDetailPage() {
 									</div>
 								</div>
 							) : null}
+							<div className="rounded-md border p-3 text-xs">
+								<div className="font-medium text-foreground">
+									Sync status:{" "}
+									<span className="capitalize">
+										{String(deployment.syncState ?? "idle").replaceAll(
+											"_",
+											" ",
+										)}
+									</span>
+								</div>
+								{deployment.lastSyncAt ? (
+									<div className="text-muted-foreground mt-1">
+										Last sync:{" "}
+										{new Date(deployment.lastSyncAt).toLocaleString()}
+										{deployment.lastSyncStatus
+											? ` (${deployment.lastSyncStatus})`
+											: ""}
+									</div>
+								) : (
+									<div className="text-muted-foreground mt-1">
+										No sync run recorded yet.
+									</div>
+								)}
+								{deployment.lastSyncError ? (
+									<div className="text-destructive mt-1">
+										{deployment.lastSyncError}
+									</div>
+								) : null}
+							</div>
 						</CardContent>
 					</Card>
 
@@ -1071,13 +1159,99 @@ function DeploymentDetailPage() {
 	);
 }
 
+function normalizeDeploymentLifecycleState(raw: unknown): string {
+	return String(raw ?? "")
+		.trim()
+		.toLowerCase();
+}
+
+function resolveDeploymentDisplayStatus(d: UserScopeDeployment): string {
+	const lifecycle = normalizeDeploymentLifecycleState(d.lifecycleState);
+	if (lifecycle) {
+		switch (lifecycle) {
+			case "draft":
+				return "draft";
+			case "queued_bring_up":
+			case "queued_shut_down":
+			case "queued_destroy":
+				return "queued";
+			case "bringing_up":
+				return "bringing up";
+			case "shutting_down":
+				return "shutting down";
+			case "active":
+				return "active";
+			case "stopped":
+				return "stopped";
+			case "destroying":
+				return "destroying";
+			case "failed":
+				return "failed";
+			default:
+				return "unknown";
+		}
+	}
+	const active = String(d.activeTaskStatus ?? "")
+		.trim()
+		.toLowerCase();
+	if (active) return active;
+	const last = String(d.lastStatus ?? "")
+		.trim()
+		.toLowerCase();
+	return last || "unknown";
+}
+
+function resolveDeploymentPrimaryAction(
+	d: UserScopeDeployment,
+): "bring_up" | "shut_down" | "none" {
+	const explicit = String(d.primaryAction ?? "")
+		.trim()
+		.toLowerCase();
+	if (
+		explicit === "bring_up" ||
+		explicit === "shut_down" ||
+		explicit === "none"
+	)
+		return explicit;
+
+	const lifecycle = normalizeDeploymentLifecycleState(d.lifecycleState);
+	switch (lifecycle) {
+		case "queued_bring_up":
+		case "bringing_up":
+		case "queued_shut_down":
+		case "shutting_down":
+		case "queued_destroy":
+		case "destroying":
+			return "none";
+		case "active":
+			return "shut_down";
+		default:
+			break;
+	}
+	const status = resolveDeploymentDisplayStatus(d).toLowerCase();
+	if (["running", "active", "healthy"].includes(status)) return "shut_down";
+	return "bring_up";
+}
+
 function StatusBadge({ status }: { status: string }) {
 	let variant: "default" | "secondary" | "destructive" | "outline" =
 		"secondary";
 	const s = status.toLowerCase();
-	if (["running", "active", "healthy", "succeeded", "success"].includes(s))
+	if (
+		[
+			"running",
+			"active",
+			"healthy",
+			"succeeded",
+			"success",
+			"queued",
+			"bringing up",
+			"shutting down",
+			"destroying",
+		].includes(s)
+	)
 		variant = "default";
-	if (["failed", "error", "stopped", "crashloopbackoff"].includes(s))
+	if (["failed", "error", "crashloopbackoff"].includes(s))
 		variant = "destructive";
 
 	return (

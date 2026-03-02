@@ -84,6 +84,7 @@ function QuickDeployPage() {
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId: result.deploymentId },
+				search: { tab: "logs" } as any,
 			});
 		},
 		onError: (err) =>

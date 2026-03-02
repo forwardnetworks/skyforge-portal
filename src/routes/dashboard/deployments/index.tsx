@@ -236,24 +236,49 @@ function DeploymentsPage() {
 			}
 			// Status
 			if (statusFilter !== "all") {
-				const status = resolveDeploymentDisplayStatus(d).toLowerCase();
-				if (
-					statusFilter === "running" &&
-					!["running", "active", "healthy"].includes(status)
-				)
-					return false;
-				if (
-					statusFilter === "stopped" &&
-					!["created", "stopped", "success", "succeeded", "ready"].includes(
-						status,
-					)
-				)
-					return false;
-				if (
-					statusFilter === "failed" &&
-					!["failed", "error", "crashloopbackoff"].includes(status)
-				)
-					return false;
+				const lifecycle = normalizeDeploymentLifecycleState(d.lifecycleState);
+				if (statusFilter === "running") {
+					if (lifecycle) {
+						if (
+							!["active", "queued_bring_up", "bringing_up"].includes(lifecycle)
+						)
+							return false;
+					} else if (!isDeploymentRunningState(d)) {
+						return false;
+					}
+				}
+				if (statusFilter === "stopped") {
+					if (lifecycle) {
+						if (
+							![
+								"draft",
+								"stopped",
+								"queued_shut_down",
+								"shutting_down",
+								"queued_destroy",
+								"destroying",
+							].includes(lifecycle)
+						)
+							return false;
+					} else {
+						const status = resolveDeploymentDisplayStatus(d).toLowerCase();
+						if (
+							!["created", "stopped", "success", "succeeded", "ready"].includes(
+								status,
+							)
+						)
+							return false;
+					}
+				}
+				if (statusFilter === "failed") {
+					if (lifecycle) {
+						if (lifecycle !== "failed") return false;
+					} else {
+						const status = resolveDeploymentDisplayStatus(d).toLowerCase();
+						if (!["failed", "error", "crashloopbackoff"].includes(status))
+							return false;
+					}
+				}
 			}
 			// Type
 			if (typeFilter !== "all") {
@@ -554,8 +579,9 @@ function DeploymentsPage() {
 				width: 120,
 				align: "right",
 				cell: (d) => {
-					const status = resolveDeploymentDisplayStatus(d).toLowerCase();
-					const isRunning = ["running", "active", "healthy"].includes(status);
+					const primaryAction = resolveDeploymentPrimaryAction(d);
+					const canBringUp = primaryAction === "bring_up";
+					const canShutDown = primaryAction === "shut_down";
 					const isBusy =
 						Boolean(d.activeTaskId) || Boolean(pendingActions[d.id]);
 					const managedByLifetime = isManagedDeploymentType(d.family);
@@ -592,18 +618,23 @@ function DeploymentsPage() {
 								)}
 								{managedByLifetime && <DropdownMenuSeparator />}
 								<DropdownMenuItem
-									onClick={() => handleStart(d)}
-									disabled={isBusy || isRunning}
+									onClick={() => {
+										if (canBringUp) {
+											void handleStart(d);
+											return;
+										}
+										if (canShutDown) {
+											void handleStop(d);
+										}
+									}}
+									disabled={isBusy || (!canBringUp && !canShutDown)}
 								>
-									<Play className="mr-2 h-4 w-4" />
-									Start
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() => handleStop(d)}
-									disabled={isBusy || !isRunning}
-								>
-									<StopCircle className="mr-2 h-4 w-4" />
-									Stop
+									{canShutDown ? (
+										<StopCircle className="mr-2 h-4 w-4" />
+									) : (
+										<Play className="mr-2 h-4 w-4" />
+									)}
+									{canShutDown ? "Shut down" : "Bring up"}
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
@@ -712,7 +743,7 @@ function DeploymentsPage() {
 							{selectedUserScope.name} ({selectedUserScope.slug})
 						</Badge>
 					) : (
-							<Badge variant="secondary">No user selected</Badge>
+						<Badge variant="secondary">No user selected</Badge>
 					)}
 				</div>
 			</div>
@@ -816,7 +847,7 @@ function DeploymentsPage() {
 									description={
 										searchQuery || statusFilter !== "all"
 											? "Try adjusting your filters."
-												: "You haven't created any deployments for this user yet."
+											: "You haven't created any deployments for this user yet."
 									}
 									action={
 										!searchQuery && statusFilter === "all"
@@ -1059,6 +1090,34 @@ function DeploymentsPage() {
 }
 
 function resolveDeploymentDisplayStatus(d: UserScopeDeployment): string {
+	const lifecycle = normalizeDeploymentLifecycleState(d.lifecycleState);
+	if (lifecycle) {
+		switch (lifecycle) {
+			case "draft":
+				return "draft";
+			case "queued_bring_up":
+				return "queued";
+			case "bringing_up":
+				return "bringing up";
+			case "active":
+				return "active";
+			case "queued_shut_down":
+				return "queued";
+			case "shutting_down":
+				return "shutting down";
+			case "stopped":
+				return "stopped";
+			case "queued_destroy":
+				return "queued";
+			case "destroying":
+				return "destroying";
+			case "failed":
+				return "failed";
+			default:
+				return "unknown";
+		}
+	}
+
 	const active = String(d.activeTaskStatus ?? "")
 		.trim()
 		.toLowerCase();
@@ -1068,20 +1127,55 @@ function resolveDeploymentDisplayStatus(d: UserScopeDeployment): string {
 		.trim()
 		.toLowerCase();
 	if (!last) return "unknown";
-	if (!["success", "succeeded"].includes(last)) return last;
+	return last;
+}
 
-	const cfg = d.config ?? {};
-	const lastAction = String(cfg["lastAction"] ?? "")
+function normalizeDeploymentLifecycleState(raw: unknown): string {
+	const s = String(raw ?? "")
 		.trim()
 		.toLowerCase();
+	return s;
+}
 
-	if (["stop", "destroy", "down", "delete"].includes(lastAction)) {
-		return "stopped";
+function resolveDeploymentPrimaryAction(
+	d: UserScopeDeployment,
+): "bring_up" | "shut_down" | "none" {
+	const explicit = String(d.primaryAction ?? "")
+		.trim()
+		.toLowerCase();
+	if (
+		explicit === "bring_up" ||
+		explicit === "shut_down" ||
+		explicit === "none"
+	)
+		return explicit;
+
+	const lifecycle = normalizeDeploymentLifecycleState(d.lifecycleState);
+	switch (lifecycle) {
+		case "queued_bring_up":
+		case "bringing_up":
+		case "queued_shut_down":
+		case "shutting_down":
+		case "queued_destroy":
+		case "destroying":
+			return "none";
+		case "active":
+			return "shut_down";
+		default:
+			break;
 	}
-	if (["create", "start", "up", "deploy", "apply"].includes(lastAction)) {
-		return "running";
+	const status = resolveDeploymentDisplayStatus(d).toLowerCase();
+	if (["running", "active", "healthy"].includes(status)) return "shut_down";
+	return "bring_up";
+}
+
+function isDeploymentRunningState(d: UserScopeDeployment): boolean {
+	const lifecycle = normalizeDeploymentLifecycleState(d.lifecycleState);
+	if (lifecycle) {
+		return ["active", "queued_bring_up", "bringing_up"].includes(lifecycle);
 	}
-	return d.family === "terraform" ? "ready" : "running";
+	const status = resolveDeploymentDisplayStatus(d).toLowerCase();
+	return ["running", "active", "healthy"].includes(status);
 }
 
 function StatusBadge({
@@ -1093,7 +1187,18 @@ function StatusBadge({
 	const s = status.toLowerCase();
 	const label = s === "crashloopbackoff" ? "crashloop" : status;
 
-	if (["running", "active", "healthy"].includes(s)) variant = "default";
+	if (
+		[
+			"running",
+			"active",
+			"healthy",
+			"queued",
+			"bringing up",
+			"shutting down",
+			"destroying",
+		].includes(s)
+	)
+		variant = "default";
 	if (["failed", "error", "crashloopbackoff"].includes(s))
 		variant = "destructive";
 

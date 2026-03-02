@@ -98,6 +98,14 @@ export type UserScopeDeployment = {
 	family: "terraform" | "c9s" | "byos" | string;
 	engine: "terraform" | "netlab" | "containerlab" | "eve_ng" | string;
 	config: JSONMap;
+	lifecycleState?: string;
+	primaryAction?: "bring_up" | "shut_down" | "none" | string;
+	actionReason?: string;
+	syncState?: "idle" | "syncing" | "synced" | "sync_failed" | string;
+	lastSyncAt?: ISO8601;
+	lastSyncStatus?: string;
+	lastSyncError?: string;
+	autoSyncOnBringUp?: boolean;
 	createdBy?: string;
 	createdAt?: ISO8601;
 	updatedAt?: ISO8601;
@@ -1014,6 +1022,7 @@ export type UpdateDeploymentForwardConfigRequest = {
 	enabled: boolean;
 	collectorConfigId?: string;
 	collectorUsername?: string;
+	autoSyncOnBringUp?: boolean;
 };
 
 export type UpdateDeploymentForwardConfigResponse = {
@@ -1022,6 +1031,7 @@ export type UpdateDeploymentForwardConfigResponse = {
 	enabled: boolean;
 	collectorConfigId?: string;
 	collectorUsername?: string;
+	autoSyncOnBringUp?: boolean;
 	forwardNetworkId?: string;
 	forwardSnapshotUrl?: string;
 };
