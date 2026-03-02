@@ -236,11 +236,7 @@ function DeploymentsPage() {
 			}
 			// Status
 			if (statusFilter !== "all") {
-				const status = (
-					d.activeTaskStatus ??
-					d.lastStatus ??
-					"unknown"
-				).toLowerCase();
+				const status = resolveDeploymentDisplayStatus(d).toLowerCase();
 				if (
 					statusFilter === "running" &&
 					!["running", "active", "healthy"].includes(status)
@@ -542,11 +538,7 @@ function DeploymentsPage() {
 				id: "status",
 				header: "Status",
 				width: 150,
-				cell: (d) => (
-					<StatusBadge
-						status={d.activeTaskStatus ?? d.lastStatus ?? "unknown"}
-					/>
-				),
+				cell: (d) => <StatusBadge status={resolveDeploymentDisplayStatus(d)} />,
 			},
 			{
 				id: "lifetime",
@@ -562,11 +554,7 @@ function DeploymentsPage() {
 				width: 120,
 				align: "right",
 				cell: (d) => {
-					const status = (
-						d.activeTaskStatus ??
-						d.lastStatus ??
-						"unknown"
-					).toLowerCase();
+					const status = resolveDeploymentDisplayStatus(d).toLowerCase();
 					const isRunning = ["running", "active", "healthy"].includes(status);
 					const isBusy =
 						Boolean(d.activeTaskId) || Boolean(pendingActions[d.id]);
@@ -1070,6 +1058,32 @@ function DeploymentsPage() {
 	);
 }
 
+function resolveDeploymentDisplayStatus(d: UserScopeDeployment): string {
+	const active = String(d.activeTaskStatus ?? "")
+		.trim()
+		.toLowerCase();
+	if (active) return active;
+
+	const last = String(d.lastStatus ?? "")
+		.trim()
+		.toLowerCase();
+	if (!last) return "unknown";
+	if (!["success", "succeeded"].includes(last)) return last;
+
+	const cfg = d.config ?? {};
+	const lastAction = String(cfg["lastAction"] ?? "")
+		.trim()
+		.toLowerCase();
+
+	if (["stop", "destroy", "down", "delete"].includes(lastAction)) {
+		return "stopped";
+	}
+	if (["create", "start", "up", "deploy", "apply"].includes(lastAction)) {
+		return "running";
+	}
+	return d.family === "terraform" ? "ready" : "running";
+}
+
 function StatusBadge({
 	status,
 	size = "default",
@@ -1077,12 +1091,7 @@ function StatusBadge({
 	let variant: "default" | "secondary" | "destructive" | "outline" =
 		"secondary";
 	const s = status.toLowerCase();
-	const label =
-		s === "success" || s === "succeeded"
-			? "ready"
-			: s === "crashloopbackoff"
-				? "crashloop"
-				: status;
+	const label = s === "crashloopbackoff" ? "crashloop" : status;
 
 	if (["running", "active", "healthy"].includes(s)) variant = "default";
 	if (["failed", "error", "crashloopbackoff"].includes(s))

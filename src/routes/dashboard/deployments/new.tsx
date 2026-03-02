@@ -173,6 +173,7 @@ const formSchema = z.object({
 	forwardCollectorId: z.string().optional(),
 	deploymentMode: z.enum(["in_cluster", "byos"]).optional(),
 	labLifetime: z.string().optional(),
+	netlabInitialDebug: z.string().optional(),
 	variableGroupId: z.string().optional(),
 	env: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
 });
@@ -280,6 +281,7 @@ function CreateDeploymentPage() {
 			forwardCollectorId: "none",
 			deploymentMode: "in_cluster",
 			labLifetime: "never",
+			netlabInitialDebug: "",
 			variableGroupId: "none",
 			env: [],
 		},
@@ -803,15 +805,17 @@ function CreateDeploymentPage() {
 				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
 			}
 
-			if (normalizedKind === "c9s_netlab") {
-				config.templateSource = toAPITemplateSource(effectiveSource);
-				if (
-					(effectiveSource === "external" || effectiveSource === "custom") &&
-					values.templateRepoId
-				)
-					config.templateRepo = values.templateRepoId;
-				if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
-			}
+				if (normalizedKind === "c9s_netlab") {
+					config.templateSource = toAPITemplateSource(effectiveSource);
+					if (
+						(effectiveSource === "external" || effectiveSource === "custom") &&
+						values.templateRepoId
+					)
+						config.templateRepo = values.templateRepoId;
+					if (templatesQ.data?.dir) config.templatesDir = templatesQ.data.dir;
+					const debugFlags = String(values.netlabInitialDebug ?? "").trim();
+					if (debugFlags) config.netlabInitialDebug = debugFlags;
+				}
 
 			if (normalizedKind === "c9s_containerlab") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
@@ -1741,9 +1745,9 @@ function CreateDeploymentPage() {
 								/>
 							</div>
 
-							<div className="rounded-md border p-4 space-y-4">
-								<div className="flex items-center justify-between">
-									<FormLabel>Environment Variables</FormLabel>
+								<div className="rounded-md border p-4 space-y-4">
+									<div className="flex items-center justify-between">
+										<FormLabel>Environment Variables</FormLabel>
 									<div className="flex items-center gap-2">
 										<Button
 											type="button"
@@ -1756,10 +1760,36 @@ function CreateDeploymentPage() {
 									</div>
 								</div>
 
-								<div className="grid gap-6 md:grid-cols-2">
-									<FormField
-										control={form.control}
-										name="variableGroupId"
+									<div className="grid gap-6 md:grid-cols-2">
+										{watchKind === "c9s_netlab" && (
+											<FormField
+												control={form.control}
+												name="netlabInitialDebug"
+												render={({ field }) => (
+													<FormItem>
+														<FormLabel className="text-xs text-muted-foreground">
+															Netlab debug flags
+														</FormLabel>
+														<FormControl>
+															<Input
+																{...field}
+																placeholder="Example: cli,external,template"
+																className="font-mono text-xs"
+															/>
+														</FormControl>
+														<FormDescription>
+															Optional, per-deployment runtime debug for{" "}
+															<code className="font-mono">netlab initial</code>.
+															Use comma-separated modules.
+														</FormDescription>
+														<FormMessage />
+													</FormItem>
+												)}
+											/>
+										)}
+										<FormField
+											control={form.control}
+											name="variableGroupId"
 										render={({ field }) => (
 											<FormItem>
 												<FormLabel className="text-xs text-muted-foreground">
