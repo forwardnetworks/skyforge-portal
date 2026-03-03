@@ -51,6 +51,13 @@ function stripProtocol(value: string): string {
 	return value.replace(/^https?:\/\//i, "");
 }
 
+function isInClusterCollectorBaseURL(value: string): boolean {
+	return (
+		stripProtocol(value).replace(/\/+$/, "").toLowerCase() ===
+		stripProtocol(FORWARD_IN_CLUSTER_ORG).toLowerCase()
+	);
+}
+
 function ForwardCredentialsPage() {
 	const queryClient = useQueryClient();
 	const collectorsKey = queryKeys.userForwardCollectorConfigs();
@@ -68,17 +75,32 @@ function ForwardCredentialsPage() {
 	const [password, setPassword] = useState("");
 	const tlsCheckboxDisabled = target !== "custom_onprem";
 	const effectiveSkipTlsVerify =
-		target === "in_cluster_org" ? true : skipTlsVerify;
+		target === "in_cluster_org" ? false : skipTlsVerify;
 
 	const credentialSets = useMemo(
 		() => collectorsQ.data?.collectors ?? [],
 		[collectorsQ.data?.collectors],
+	);
+	const hasInClusterCredential = useMemo(
+		() =>
+			credentialSets.some((c) =>
+				isInClusterCollectorBaseURL((c.baseUrl || "").trim()),
+			),
+		[credentialSets],
 	);
 
 	const createMutation = useMutation({
 		mutationFn: async () => {
 			const baseUrl = normalizeBaseURL(target, customHost);
 			if (!baseUrl) throw new Error("Host is required for custom on-prem");
+			if (
+				target === "in_cluster_org" &&
+				hasInClusterCredential
+			) {
+				throw new Error(
+					"An in-cluster Forward credential set already exists for this user",
+				);
+			}
 			if (!username.trim()) throw new Error("Username is required");
 			if (!password.trim()) throw new Error("Password is required");
 			const hostKey = stripProtocol(baseUrl).replace(/\/+$/, "");
@@ -142,10 +164,6 @@ function ForwardCredentialsPage() {
 								onValueChange={(v) => {
 									const next = v as ForwardCredentialTarget;
 									setTarget(next);
-									if (next === "in_cluster_org") {
-										setSkipTlsVerify(true);
-										return;
-									}
 								}}
 							>
 								<SelectTrigger>
@@ -178,7 +196,7 @@ function ForwardCredentialsPage() {
 								/>
 							</div>
 						)}
-					</div>
+						</div>
 
 					<div className="flex items-center gap-2">
 						<Checkbox
@@ -186,13 +204,14 @@ function ForwardCredentialsPage() {
 							onCheckedChange={(v) => setSkipTlsVerify(Boolean(v))}
 							disabled={tlsCheckboxDisabled}
 						/>
-						<Label className="text-sm">
-							Disable TLS verification
-							{target === "in_cluster_org"
-								? " (required for in-cluster endpoint)"
-								: ""}
-						</Label>
+						<Label className="text-sm">Disable TLS verification</Label>
 					</div>
+					{target === "in_cluster_org" && hasInClusterCredential ? (
+						<p className="text-xs text-muted-foreground">
+							An in-cluster credential set already exists. Delete it first to
+							create a new one.
+						</p>
+					) : null}
 
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
@@ -216,7 +235,10 @@ function ForwardCredentialsPage() {
 
 					<Button
 						onClick={() => createMutation.mutate()}
-						disabled={createMutation.isPending}
+						disabled={
+							createMutation.isPending ||
+							(target === "in_cluster_org" && hasInClusterCredential)
+						}
 					>
 						{createMutation.isPending ? "Saving…" : "Save credential set"}
 					</Button>
