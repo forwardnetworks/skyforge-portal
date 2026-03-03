@@ -134,6 +134,16 @@ export const queryKeys = {
 	governanceUsage: (limit?: string) =>
 		["governanceUsage", limit ?? ""] as const,
 	governancePolicy: () => ["governancePolicy"] as const,
+	observabilitySummary: () => ["observabilitySummary"] as const,
+	observabilitySeries: (metric: string, window?: string) =>
+		["observabilitySeries", metric, window ?? ""] as const,
+	observabilitySlowRequests: (window?: string, endpoint?: string, limit?: string) =>
+		[
+			"observabilitySlowRequests",
+			window ?? "",
+			endpoint ?? "",
+			limit ?? "",
+		] as const,
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
 	adminConfig: () => ["adminConfig"] as const,
 	adminAudit: (limit?: string) => ["adminAudit", limit ?? ""] as const,

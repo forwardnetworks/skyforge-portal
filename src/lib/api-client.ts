@@ -8,6 +8,8 @@ import {
 
 export type ISO8601 = string;
 
+const RESOURCE_ESTIMATE_TIMEOUT_MS = 8_000;
+
 export type JSONValue =
 	| null
 	| boolean
@@ -2064,8 +2066,9 @@ export async function estimateUserScopeTemplateResources(
 	userId: string,
 	body: UserScopeTemplateResourceEstimateRequest,
 ): Promise<UserScopeTemplateResourceEstimateResponse> {
-	return apiFetch<UserScopeTemplateResourceEstimateResponse>(
+	return apiFetchWithTimeout<UserScopeTemplateResourceEstimateResponse>(
 		`/api/users/${encodeURIComponent(userId)}/deployment-templates/resource-estimate`,
+		RESOURCE_ESTIMATE_TIMEOUT_MS,
 		{
 			method: "POST",
 			body: JSON.stringify(body),
@@ -2077,9 +2080,40 @@ export async function getDeploymentResourceEstimate(
 	userId: string,
 	deploymentId: string,
 ): Promise<DeploymentResourceEstimateResponse> {
-	return apiFetch<DeploymentResourceEstimateResponse>(
+	return apiFetchWithTimeout<DeploymentResourceEstimateResponse>(
 		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/resource-estimate`,
+		RESOURCE_ESTIMATE_TIMEOUT_MS,
 	);
+}
+
+function isAbortLikeError(err: unknown): boolean {
+	if (!err) return false;
+	const name = String((err as { name?: string }).name ?? "");
+	return name === "AbortError";
+}
+
+async function apiFetchWithTimeout<T>(
+	path: string,
+	timeoutMs: number,
+	init?: RequestInit,
+): Promise<T> {
+	const controller = new AbortController();
+	const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		return await apiFetch<T>(path, {
+			...(init ?? {}),
+			signal: controller.signal,
+		});
+	} catch (err) {
+		if (isAbortLikeError(err)) {
+			throw new Error(
+				`resource estimate timed out after ${Math.round(timeoutMs / 1000)}s`,
+			);
+		}
+		throw err;
+	} finally {
+		globalThis.clearTimeout(timer);
+	}
 }
 
 export async function getUserScopeContainerlabTemplates(
@@ -2739,9 +2773,102 @@ export async function updateNotificationSettings(
 }
 
 export type GovernanceSummaryResponse =
-	operations["GET:skyforge.GetGovernanceSummary"]["responses"][200]["content"]["application/json"];
+	operations["GET:skyforge.GetGovernanceSummary"]["responses"][200]["content"]["application/json"] & {
+		performanceAdvisories?: ObservabilityAdvisory[];
+	};
 export async function getGovernanceSummary(): Promise<GovernanceSummaryResponse> {
 	return apiFetch<GovernanceSummaryResponse>("/api/admin/governance/summary");
+}
+
+export type ObservabilityEndpointSummary = {
+	endpointKey: string;
+	count: number;
+	errorCount: number;
+	p50Ms: number;
+	p95Ms: number;
+	p99Ms: number;
+	topCause?: string;
+};
+
+export type ObservabilityAdvisory = {
+	level: "ok" | "warn" | "crit" | string;
+	metric: string;
+	value: number;
+	threshold: number;
+	message: string;
+};
+
+export type ObservabilitySummaryResponse = {
+	generatedAt: ISO8601;
+	endpoints: ObservabilityEndpointSummary[];
+	queueQueued: number;
+	queueRunning: number;
+	queueOldestSec: number;
+	workerHeartbeatSec: number;
+	nodeCpuActiveP95: number;
+	nodeMemUsedP95: number;
+	advisories?: ObservabilityAdvisory[];
+};
+
+export type ObservabilitySeriesPoint = {
+	timestamp: ISO8601;
+	value: number;
+};
+
+export type ObservabilitySeriesResponse = {
+	metric: string;
+	window: string;
+	points: ObservabilitySeriesPoint[];
+};
+
+export type ObservabilitySlowRequest = {
+	collectedAt: ISO8601;
+	endpointKey: string;
+	statusCode: number;
+	totalMs: number;
+	phaseDbMs: number;
+	phaseEnrichMs: number;
+	queueOldestSec: number;
+	workerHeartbeatSec: number;
+	causeCode: string;
+};
+
+export type ObservabilitySlowRequestsResponse = {
+	window: string;
+	requests: ObservabilitySlowRequest[];
+};
+
+export async function getObservabilitySummary(): Promise<ObservabilitySummaryResponse> {
+	return apiFetch<ObservabilitySummaryResponse>("/api/admin/observability/summary");
+}
+
+export async function getObservabilitySeries(params: {
+	metric: string;
+	window?: string;
+}): Promise<ObservabilitySeriesResponse> {
+	const qs = new URLSearchParams();
+	qs.set("metric", params.metric);
+	if (params.window) qs.set("window", params.window);
+	return apiFetch<ObservabilitySeriesResponse>(
+		`/api/admin/observability/series?${qs.toString()}`,
+	);
+}
+
+export async function getObservabilitySlowRequests(params?: {
+	window?: string;
+	endpoint?: string;
+	limit?: number;
+}): Promise<ObservabilitySlowRequestsResponse> {
+	const qs = new URLSearchParams();
+	if (params?.window) qs.set("window", params.window);
+	if (params?.endpoint) qs.set("endpoint", params.endpoint);
+	if (typeof params?.limit === "number" && params.limit > 0) {
+		qs.set("limit", String(params.limit));
+	}
+	const suffix = qs.toString();
+	return apiFetch<ObservabilitySlowRequestsResponse>(
+		`/api/admin/observability/slow-requests${suffix ? `?${suffix}` : ""}`,
+	);
 }
 
 export type GovernanceResourcesResponse =

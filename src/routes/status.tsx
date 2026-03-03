@@ -29,7 +29,13 @@ import {
 	CardTitle,
 } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
-import { SKYFORGE_API, getStatusSummary, getUIConfig } from "../lib/api-client";
+import {
+	SKYFORGE_API,
+	getObservabilitySummary,
+	getSession,
+	getStatusSummary,
+	getUIConfig,
+} from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import { useStatusSummaryEvents } from "../lib/status-events";
 import { cn } from "../lib/utils";
@@ -52,6 +58,21 @@ function StatusPage() {
 		queryFn: getUIConfig,
 		staleTime: Number.POSITIVE_INFINITY,
 	});
+
+	const session = useQuery({
+		queryKey: queryKeys.session(),
+		queryFn: getSession,
+		staleTime: 30_000,
+		retry: false,
+	});
+
+	const observability = useQuery({
+		queryKey: queryKeys.observabilitySummary(),
+		queryFn: getObservabilitySummary,
+		staleTime: 30_000,
+		retry: false,
+		enabled: !!session.data?.isAdmin,
+	});
 	const features = uiConfig.data?.features;
 
 	const statusData = summary.data;
@@ -59,6 +80,7 @@ function StatusPage() {
 	const downChecks = checks.filter(
 		(c) => c.status !== "up" && c.status !== "ok",
 	);
+	const nodeCpuP95 = observability.data?.nodeCpuActiveP95;
 
 	return (
 		<div className="space-y-8 p-6">
@@ -147,6 +169,52 @@ function StatusPage() {
 
 			{/* Info Cards */}
 			<div className="grid gap-4 md:grid-cols-3">
+				{session.data?.isAdmin && (
+					<Card variant="glass">
+						<CardHeader>
+							<CardTitle className="text-base flex items-center gap-2">
+								<Activity className="w-4 h-4 text-amber-500" />
+								Performance Signals
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="text-sm text-muted-foreground space-y-2">
+							{observability.isLoading ? (
+								<div className="space-y-2">
+									<Skeleton className="h-4 w-28" />
+									<Skeleton className="h-4 w-28" />
+									<Skeleton className="h-4 w-28" />
+								</div>
+							) : (
+								<>
+									<p>
+										Deployments p95:{" "}
+										{observability.data?.endpoints?.find(
+											(e) => e.endpointKey === "/api/users/:id/deployments",
+										)?.p95Ms ?? "—"}
+										ms
+									</p>
+									<p>
+										Queue oldest:{" "}
+										{observability.data?.queueOldestSec
+											? `${observability.data.queueOldestSec}s`
+											: "—"}
+									</p>
+									<p>
+										Node CPU p95:{" "}
+										{typeof nodeCpuP95 === "number" &&
+										Number.isFinite(nodeCpuP95)
+											? `${nodeCpuP95.toFixed(1)}%`
+											: "—"}
+									</p>
+									<p className="text-xs">
+										Use Admin → Governance for advisory details and thresholds.
+									</p>
+								</>
+							)}
+						</CardContent>
+					</Card>
+				)}
+
 				{uiConfig.data?.externalUrl && (
 					<Card variant="glass" className="border-green-500/20 bg-green-500/5">
 						<CardHeader>

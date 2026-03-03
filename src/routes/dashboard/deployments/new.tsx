@@ -211,6 +211,15 @@ function parsePositiveInt(value: unknown, fallback: number): number {
 	return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function resourceEstimateFallbackReason(err: unknown): string {
+	const msg = String((err as Error)?.message ?? "").trim();
+	if (!msg) return "Resource estimate unavailable";
+	if (msg.toLowerCase().includes("timed out")) {
+		return "Resource estimate timed out; deployment can still be created";
+	}
+	return "Resource estimate unavailable";
+}
+
 function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -741,7 +750,26 @@ function CreateDeploymentPage() {
 				body.repo = watchTemplateRepoId;
 			}
 			if (templatesQ.data?.dir) body.dir = templatesQ.data.dir;
-			return estimateUserScopeTemplateResources(watchUserScopeId, body);
+			try {
+				return await estimateUserScopeTemplateResources(watchUserScopeId, body);
+			} catch (err) {
+				return {
+					userId: watchUserScopeId,
+					kind: body.kind,
+					source: body.source,
+					template: body.template,
+					estimate: {
+						supported: false,
+						reason: resourceEstimateFallbackReason(err),
+						vcpu: 0,
+						ramGiB: 0,
+						milliCpu: 0,
+						memoryBytes: 0,
+						nodeCount: 0,
+						profiledNodeCount: 0,
+					},
+				};
+			}
 		},
 		enabled:
 			Boolean(watchUserScopeId) &&
@@ -749,6 +777,8 @@ function CreateDeploymentPage() {
 			watchSpec.engine === "netlab",
 		retry: false,
 		staleTime: 30_000,
+		refetchOnWindowFocus: false,
+		placeholderData: (prev) => prev,
 	});
 
 	const externalRepos = (
@@ -1155,6 +1185,10 @@ function CreateDeploymentPage() {
 		}
 	}, [watchKind]);
 	const selectedTemplateEstimate = templateEstimateQ.data?.estimate;
+	const templateEstimatePending =
+		templateEstimateQ.isPending &&
+		!selectedTemplateEstimate &&
+		!templateEstimateQ.error;
 
 	return (
 		<div className="space-y-6 p-6">
@@ -1707,7 +1741,6 @@ function CreateDeploymentPage() {
 											<Select
 												onValueChange={(value) => {
 													field.onChange(value);
-													void templateEstimateQ.refetch();
 												}}
 												defaultValue={field.value}
 												disabled={
@@ -1743,7 +1776,7 @@ function CreateDeploymentPage() {
 											{watchTemplate ? (
 												<div className="rounded-md border p-3 text-xs space-y-1">
 													<div className="font-medium text-foreground">
-														{templateEstimateQ.isLoading
+														{templateEstimatePending
 															? "Estimating resources…"
 															: formatResourceEstimate(
 																	selectedTemplateEstimate,

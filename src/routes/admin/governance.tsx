@@ -359,6 +359,7 @@ function GovernancePage() {
 	});
 
 	const summaryData = summary.data;
+	const performanceAdvisories = summaryData?.performanceAdvisories ?? [];
 
 	const handleSearch = (value: string) => {
 		navigate({
@@ -466,6 +467,51 @@ function GovernancePage() {
 					/>
 				</BentoGrid>
 			)}
+
+			<Card variant={performanceAdvisories.length > 0 ? "warning" : "glass"}>
+				<CardHeader>
+					<CardTitle>Performance Advisories</CardTitle>
+					<CardDescription>
+						Derived from native observability telemetry (latency, queue health,
+						node pressure).
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					{performanceAdvisories.length === 0 ? (
+						<div className="text-sm text-muted-foreground">
+							No advisories. Current signals are within configured thresholds.
+						</div>
+					) : (
+						<div className="space-y-2">
+							{performanceAdvisories.map((a) => (
+								<div
+									key={`${a.metric}:${a.level}`}
+									className="flex items-start justify-between gap-4 rounded-md border p-3"
+								>
+									<div className="space-y-1">
+										<div className="text-sm font-medium">{a.message}</div>
+										<div className="text-xs text-muted-foreground">
+											metric: {a.metric} | value: {a.value} | threshold:{" "}
+											{a.threshold}
+										</div>
+									</div>
+									<Badge
+										variant={
+											a.level === "crit"
+												? "destructive"
+												: a.level === "warn"
+													? "secondary"
+													: "outline"
+										}
+									>
+										{String(a.level).toUpperCase()}
+									</Badge>
+								</div>
+							))}
+						</div>
+					)}
+				</CardContent>
+			</Card>
 
 			{/* Tabbed Data Views */}
 			<Tabs value={tab} onValueChange={handleTabChange} className="space-y-6">

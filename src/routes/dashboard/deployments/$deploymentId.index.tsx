@@ -57,6 +57,7 @@ import {
 } from "../../../components/ui/tabs";
 import {
 	type DashboardSnapshot,
+	type DeploymentResourceEstimateResponse,
 	type ResourceEstimateSummary,
 	type UserForwardCollectorConfigSummary,
 	type UserScopeDeployment,
@@ -104,6 +105,15 @@ function formatResourceEstimateSummary(
 		? estimate.ramGiB.toFixed(1)
 		: "0.0";
 	return `${cpu} vCPU • ${ram} GiB RAM`;
+}
+
+function resourceEstimateReasonFromError(err: unknown): string {
+	const msg = String((err as Error)?.message ?? "").trim();
+	if (!msg) return "Resource estimate unavailable";
+	if (msg.toLowerCase().includes("timed out")) {
+		return "Resource estimate timed out";
+	}
+	return "Resource estimate unavailable";
 }
 
 function DeploymentDetailPage() {
@@ -303,16 +313,45 @@ function DeploymentDetailPage() {
 		staleTime: 10_000,
 	});
 
-	const resourceEstimateQ = useQuery({
+	const resourceEstimateQ = useQuery<DeploymentResourceEstimateResponse>({
 		queryKey: ["deployment-resource-estimate", userId, deploymentId],
 		queryFn: async () => {
 			if (!deployment) throw new Error("deployment not found");
-			return getDeploymentResourceEstimate(deployment.userId, deployment.id);
+			try {
+				return await getDeploymentResourceEstimate(
+					deployment.userId,
+					deployment.id,
+				);
+			} catch (err) {
+				return {
+					userId: deployment.userId,
+					deploymentId: deployment.id,
+					family: String(deployment.family ?? ""),
+					engine: String(deployment.engine ?? ""),
+					estimate: {
+						supported: false,
+						reason: resourceEstimateReasonFromError(err),
+						vcpu: 0,
+						ramGiB: 0,
+						milliCpu: 0,
+						memoryBytes: 0,
+						nodeCount: 0,
+						profiledNodeCount: 0,
+					},
+				};
+			}
 		},
 		enabled: Boolean(deployment),
 		retry: false,
 		staleTime: 30_000,
+		refetchOnWindowFocus: false,
+		placeholderData: (prev) => prev,
 	});
+	const resourceEstimate =
+		(resourceEstimateQ.data as DeploymentResourceEstimateResponse | undefined)
+			?.estimate;
+	const resourceEstimatePending =
+		resourceEstimateQ.isPending && !resourceEstimate && !resourceEstimateQ.error;
 
 	const saveConfig = useMutation({
 		mutationFn: async (nodeId: string) => {
@@ -622,13 +661,13 @@ function DeploymentDetailPage() {
 				</CardHeader>
 				<CardContent className="text-sm">
 					<div className="font-medium">
-						{resourceEstimateQ.isLoading
+						{resourceEstimatePending
 							? "Estimating resources…"
-							: formatResourceEstimateSummary(resourceEstimateQ.data?.estimate)}
+							: formatResourceEstimateSummary(resourceEstimate)}
 					</div>
-					{resourceEstimateQ.data?.estimate?.reason ? (
+					{resourceEstimate?.reason ? (
 						<div className="text-xs text-muted-foreground mt-1">
-							{resourceEstimateQ.data.estimate.reason}
+							{resourceEstimate.reason}
 						</div>
 					) : null}
 				</CardContent>
