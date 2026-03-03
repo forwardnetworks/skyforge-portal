@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../components/ui/button";
 import {
@@ -47,9 +47,33 @@ function formatEstimate(estimate?: ResourceEstimateSummary): string {
 	return `${cpu} vCPU • ${ram} GiB RAM`;
 }
 
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getDeploymentForwardNetworkId(
+	userId: string,
+	deploymentId: string,
+): Promise<string> {
+	const resp = await fetch(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/info`,
+		{
+			method: "GET",
+			credentials: "include",
+			headers: { Accept: "application/json" },
+		},
+	);
+	if (!resp.ok) {
+		throw new Error(`deployment info failed (${resp.status})`);
+	}
+	const data = (await resp.json()) as { forwardNetworkId?: string };
+	return String(data.forwardNetworkId ?? "").trim();
+}
+
 function QuickDeployPage() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
+	const pendingForwardTabRef = useRef<Window | null>(null);
 	const catalogQ = useQuery({
 		queryKey: ["quick-deploy", "catalog"],
 		queryFn: getQuickDeployCatalog,
@@ -81,6 +105,8 @@ function QuickDeployPage() {
 				leaseHours: Number.parseInt(leaseHours, 10) || 4,
 			}),
 		onSuccess: async (result) => {
+			const pendingForwardTab = pendingForwardTabRef.current;
+			pendingForwardTabRef.current = null;
 			if (result.noOp) {
 				toast.message("Deployment already in desired state", {
 					description: result.deploymentName,
@@ -93,6 +119,35 @@ function QuickDeployPage() {
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
+
+			if (pendingForwardTab && !pendingForwardTab.closed) {
+				const deadline = Date.now() + 120_000;
+				let forwardNetworkId = "";
+				while (Date.now() < deadline) {
+					try {
+						forwardNetworkId = await getDeploymentForwardNetworkId(
+							result.userId,
+							result.deploymentId,
+						);
+						if (forwardNetworkId) break;
+					} catch {
+						// Keep polling; deployment info can briefly be unavailable during bring-up.
+					}
+					await sleep(2000);
+				}
+
+				const forwardUrl = forwardNetworkId
+					? `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`
+					: FORWARD_IN_APP_URL;
+				pendingForwardTab.location.href = forwardUrl;
+
+				if (!forwardNetworkId) {
+					toast.message("Forward network link is still warming up", {
+						description: "Opened the in-app Forward home page instead.",
+					});
+				}
+			}
+
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId: result.deploymentId },
@@ -126,8 +181,8 @@ function QuickDeployPage() {
 				<h1 className="text-2xl font-bold tracking-tight">Quick Deploy</h1>
 				<p className="text-sm text-muted-foreground">
 					One-click curated labs using the in-app Forward cluster and managed
-					credentials. Deploy opens the in-app Forward page in a new tab while
-					Skyforge starts the lab.
+					credentials. Deploy opens a new Forward tab and redirects it to the
+					created network when the network ID becomes available.
 				</p>
 			</div>
 
@@ -191,13 +246,10 @@ function QuickDeployPage() {
 							<Button
 								className="w-full"
 								onClick={() => {
-									if (typeof window !== "undefined") {
-										window.open(
-											FORWARD_IN_APP_URL,
-											"_blank",
-											"noopener,noreferrer",
-										);
-									}
+									pendingForwardTabRef.current =
+										typeof window !== "undefined"
+											? window.open("about:blank", "_blank")
+											: null;
 									deployMutation.mutate(entry.template);
 								}}
 								disabled={catalogQ.isLoading || deployMutation.isPending}
