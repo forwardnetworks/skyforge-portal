@@ -26,6 +26,8 @@ import {
 } from "../../../lib/api-client";
 import { queryKeys } from "../../../lib/query-keys";
 
+const FORWARD_IN_APP_URL = "https://skyforge-fwd.local.forwardnetworks.com";
+
 export const Route = createFileRoute("/dashboard/deployments/quick")({
 	component: QuickDeployPage,
 });
@@ -124,7 +126,8 @@ function QuickDeployPage() {
 				<h1 className="text-2xl font-bold tracking-tight">Quick Deploy</h1>
 				<p className="text-sm text-muted-foreground">
 					One-click curated labs using the in-app Forward cluster and managed
-					credentials.
+					credentials. Deploy opens the in-app Forward page in a new tab while
+					Skyforge starts the lab.
 				</p>
 			</div>
 
@@ -187,7 +190,16 @@ function QuickDeployPage() {
 							<p className="text-xs text-muted-foreground">{entry.template}</p>
 							<Button
 								className="w-full"
-								onClick={() => deployMutation.mutate(entry.template)}
+								onClick={() => {
+									if (typeof window !== "undefined") {
+										window.open(
+											FORWARD_IN_APP_URL,
+											"_blank",
+											"noopener,noreferrer",
+										);
+									}
+									deployMutation.mutate(entry.template);
+								}}
 								disabled={catalogQ.isLoading || deployMutation.isPending}
 							>
 								{deployMutation.isPending ? "Deploying..." : "Deploy"}

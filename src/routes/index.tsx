@@ -22,7 +22,7 @@ function LandingPage() {
 		if (session.isLoading) return;
 
 		if (session.data?.authenticated) {
-			void navigate({ to: "/dashboard/deployments", replace: true });
+			void navigate({ to: "/dashboard/deployments/quick", replace: true });
 		} else {
 			void navigate({ to: "/status", replace: true });
 		}
