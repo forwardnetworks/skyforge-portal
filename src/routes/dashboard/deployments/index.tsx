@@ -81,15 +81,14 @@ import {
 	getDeploymentLifetimePolicy,
 	getSession,
 	listUserScopes,
-	preflightDeploymentAction,
-	runDeploymentAction,
 	updateDeploymentLease,
 } from "../../../lib/api-client";
 import { loginWithPopup } from "../../../lib/auth-popup";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
 import {
+	deploymentActionQueueDescription,
 	noOpMessageForDeploymentAction,
-	readDeploymentActionMeta,
+	runDeploymentActionWithRetry,
 } from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
 import { cn } from "../../../lib/utils";
@@ -315,40 +314,24 @@ function DeploymentsPage() {
 		if (pendingActions[d.id]) return;
 		setPendingActions((prev) => ({ ...prev, [d.id]: true }));
 		try {
-			const preflight = await preflightDeploymentAction(
-				d.userId,
-				d.id,
-				"start",
-			);
-			const preflightMeta = readDeploymentActionMeta(preflight);
-			if (preflightMeta.noOp) {
+			const action = await runDeploymentActionWithRetry(d.userId, d.id, "start");
+			if (!action.queued) {
 				toast.message(
-					noOpMessageForDeploymentAction("start", preflightMeta.reason),
+					noOpMessageForDeploymentAction("start", action.meta.reason),
 					{
 						description: d.name,
 					},
 				);
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.dashboardSnapshot(),
-				});
-				return;
-			}
-			const resp = await runDeploymentAction(d.userId, d.id, "start");
-			const meta = readDeploymentActionMeta(resp);
-			if (meta.noOp) {
-				toast.message(noOpMessageForDeploymentAction("start", meta.reason), {
-					description: d.name,
-				});
 			} else {
 				toast.success("Deployment starting", {
-					description: `${d.name} is queued to start.`,
+					description: deploymentActionQueueDescription(action.queue, d.name),
 				});
 			}
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
-			toast.error("Start preflight/action failed", {
+			toast.error("Start action failed", {
 				description: (e as Error).message,
 			});
 		} finally {
@@ -364,36 +347,24 @@ function DeploymentsPage() {
 		if (pendingActions[d.id]) return;
 		setPendingActions((prev) => ({ ...prev, [d.id]: true }));
 		try {
-			const preflight = await preflightDeploymentAction(d.userId, d.id, "stop");
-			const preflightMeta = readDeploymentActionMeta(preflight);
-			if (preflightMeta.noOp) {
+			const action = await runDeploymentActionWithRetry(d.userId, d.id, "stop");
+			if (!action.queued) {
 				toast.message(
-					noOpMessageForDeploymentAction("stop", preflightMeta.reason),
+					noOpMessageForDeploymentAction("stop", action.meta.reason),
 					{
 						description: d.name,
 					},
 				);
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.dashboardSnapshot(),
-				});
-				return;
-			}
-			const resp = await runDeploymentAction(d.userId, d.id, "stop");
-			const meta = readDeploymentActionMeta(resp);
-			if (meta.noOp) {
-				toast.message(noOpMessageForDeploymentAction("stop", meta.reason), {
-					description: d.name,
-				});
 			} else {
 				toast.success("Deployment stopping", {
-					description: `${d.name} is queued to stop.`,
+					description: deploymentActionQueueDescription(action.queue, d.name),
 				});
 			}
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
-			toast.error("Stop preflight/action failed", {
+			toast.error("Stop action failed", {
 				description: (e as Error).message,
 			});
 		} finally {
@@ -610,7 +581,7 @@ function DeploymentsPage() {
 								{managedByLifetime && (
 									<DropdownMenuItem
 										onClick={() => openLifetimeDialog(d)}
-										disabled={isBusy}
+										disabled={isBusy || canShutDown}
 									>
 										<Clock3 className="mr-2 h-4 w-4" />
 										Manage lifetime
@@ -643,7 +614,7 @@ function DeploymentsPage() {
 										setDestroyDialogOpen(true);
 									}}
 									className="text-destructive focus:text-destructive"
-									disabled={isBusy}
+									disabled={Boolean(pendingActions[d.id])}
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
 									Delete
@@ -681,7 +652,7 @@ function DeploymentsPage() {
 		if (pendingActions[destroyTarget.id]) return;
 		setPendingActions((prev) => ({ ...prev, [destroyTarget.id]: true }));
 		try {
-			// "Destroy" in the UI means remove the deployment definition (and trigger provider cleanup).
+			// Delete is force-delete: remove deployment definition regardless of runtime state.
 			await deleteDeployment(destroyTarget.userId, destroyTarget.id, {
 				forwardDelete: destroyAlsoDeleteForward,
 			});
@@ -695,7 +666,8 @@ function DeploymentsPage() {
 			setDestroyTarget(null);
 			setDestroyAlsoDeleteForward(false);
 		} catch (e) {
-			toast.error("Failed to delete", { description: (e as Error).message });
+			const msg = (e as Error).message;
+			toast.error("Failed to delete", { description: msg });
 		} finally {
 			setPendingActions((prev) => {
 				const next = { ...prev };
@@ -1050,8 +1022,9 @@ function DeploymentsPage() {
 					<AlertDialogHeader>
 						<AlertDialogTitle>Delete deployment?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will remove "{destroyTarget?.name}" from Skyforge and trigger
-							provider cleanup. This action cannot be undone.
+							This will force-delete "{destroyTarget?.name}" from Skyforge
+							regardless of current runtime state. This action cannot be
+							undone.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					{destroyHasForward && (

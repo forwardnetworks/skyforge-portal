@@ -76,14 +76,13 @@ import {
 	listUserScopeEveLabs,
 	listUserScopes,
 	listUserVariableGroups,
-	preflightDeploymentAction,
-	runDeploymentAction,
 	validateUserScopeNetlabTemplate,
 } from "../../../lib/api-client";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
 import {
+	deploymentActionQueueDescription,
 	noOpMessageForDeploymentAction,
-	readDeploymentActionMeta,
+	runDeploymentActionWithRetry,
 } from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
 
@@ -197,6 +196,9 @@ function hostLabelFromURL(raw: string): string {
 
 function formatResourceEstimate(estimate?: ResourceEstimateSummary): string {
 	if (!estimate || !estimate.supported) return "Resource estimate unavailable";
+	if ((estimate.vcpu ?? 0) <= 0 && (estimate.ramGiB ?? 0) <= 0) {
+		return "Resource estimate unavailable";
+	}
 	const cpu = Number.isFinite(estimate.vcpu) ? estimate.vcpu.toFixed(1) : "0.0";
 	const ram = Number.isFinite(estimate.ramGiB)
 		? estimate.ramGiB.toFixed(1)
@@ -889,38 +891,25 @@ function CreateDeploymentPage() {
 			}
 
 			try {
-				const preflight = await preflightDeploymentAction(
+				const action = await runDeploymentActionWithRetry(
 					scopeId,
 					deploymentId,
 					"create",
 				);
-				const preflightMeta = readDeploymentActionMeta(preflight);
-				if (preflightMeta.noOp) {
+				if (action.queued) {
+					toast.success("Deployment created and bring-up queued", {
+						description: deploymentActionQueueDescription(
+							action.queue,
+							variables.name,
+						),
+					});
+				} else {
 					toast.message(
-						noOpMessageForDeploymentAction("create", preflightMeta.reason),
+						noOpMessageForDeploymentAction("create", action.meta.reason),
 						{
 							description: variables.name,
 						},
 					);
-				} else {
-					const runResp = await runDeploymentAction(
-						scopeId,
-						deploymentId,
-						"create",
-					);
-					const runMeta = readDeploymentActionMeta(runResp);
-					if (runMeta.noOp) {
-						toast.message(
-							noOpMessageForDeploymentAction("create", runMeta.reason),
-							{
-								description: variables.name,
-							},
-						);
-					} else {
-						toast.success("Deployment created and bring-up queued", {
-							description: variables.name,
-						});
-					}
 				}
 			} catch (error) {
 				toast.error("Deployment created, but bring-up was not queued", {

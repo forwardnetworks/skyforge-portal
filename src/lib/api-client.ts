@@ -2934,6 +2934,10 @@ export async function updateGovernancePolicy(
 
 export type AdminQuickDeployCatalogResponse = {
 	templates: QuickDeployTemplate[];
+	repo?: string;
+	branch?: string;
+	dir?: string;
+	options?: string[];
 	source: "default" | "custom" | string;
 	retrievedAt: string;
 };
@@ -2963,6 +2967,20 @@ export async function updateAdminQuickDeployCatalog(
 			method: "PUT",
 			body: JSON.stringify(body),
 		},
+	);
+}
+
+export type AdminQuickDeployTemplateOptionsResponse = {
+	repo: string;
+	branch: string;
+	dir: string;
+	templates: string[];
+	retrievedAt: string;
+};
+
+export async function getAdminQuickDeployTemplateOptions(): Promise<AdminQuickDeployTemplateOptionsResponse> {
+	return apiFetch<AdminQuickDeployTemplateOptionsResponse>(
+		"/api/admin/quick-deploy/template-options",
 	);
 }
 

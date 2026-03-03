@@ -21,6 +21,7 @@ import {
 import {
 	getDeploymentLifetimePolicy,
 	getQuickDeployCatalog,
+	type ResourceEstimateSummary,
 	runQuickDeploy,
 } from "../../../lib/api-client";
 import { queryKeys } from "../../../lib/query-keys";
@@ -29,9 +30,18 @@ export const Route = createFileRoute("/dashboard/deployments/quick")({
 	component: QuickDeployPage,
 });
 
-function formatEstimate(vcpu: number, ramGiB: number): string {
-	const cpu = Number.isFinite(vcpu) ? vcpu.toFixed(1) : "0.0";
-	const ram = Number.isFinite(ramGiB) ? ramGiB.toFixed(1) : "0.0";
+function formatEstimate(estimate?: ResourceEstimateSummary): string {
+	if (!estimate || !estimate.supported) return "Resource estimate unavailable";
+	const vcpu = Number(estimate.vcpu ?? 0);
+	const ramGiB = Number(estimate.ramGiB ?? 0);
+	if (!Number.isFinite(vcpu) || !Number.isFinite(ramGiB)) {
+		return "Resource estimate unavailable";
+	}
+	if (vcpu <= 0 && ramGiB <= 0) {
+		return "Resource estimate unavailable";
+	}
+	const cpu = vcpu.toFixed(1);
+	const ram = ramGiB.toFixed(1);
 	return `${cpu} vCPU • ${ram} GiB RAM`;
 }
 
@@ -166,12 +176,7 @@ function QuickDeployPage() {
 						<CardContent className="mt-auto space-y-3">
 							<div className="text-xs">
 								<div className="font-medium text-foreground">
-									{entry.estimate?.supported
-										? formatEstimate(
-												Number(entry.estimate.vcpu ?? 0),
-												Number(entry.estimate.ramGiB ?? 0),
-											)
-										: "Resource estimate unavailable"}
+									{formatEstimate(entry.estimate)}
 								</div>
 								{entry.estimate?.reason ? (
 									<div className="text-muted-foreground">

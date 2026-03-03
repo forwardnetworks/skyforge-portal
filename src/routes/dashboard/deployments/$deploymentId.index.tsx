@@ -64,16 +64,15 @@ import {
 	getDeploymentResourceEstimate,
 	getDeploymentTopology,
 	listUserForwardCollectorConfigs,
-	preflightDeploymentAction,
-	runDeploymentAction,
 	saveDeploymentNodeConfig,
 	syncDeploymentForward,
 	updateDeploymentForwardConfig,
 } from "../../../lib/api-client";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
 import {
+	deploymentActionQueueDescription,
 	noOpMessageForDeploymentAction,
-	readDeploymentActionMeta,
+	runDeploymentActionWithRetry,
 } from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
 import {
@@ -179,44 +178,31 @@ function DeploymentDetailPage() {
 		setActionPending(true);
 		try {
 			if (!deployment) throw new Error("deployment not found");
-			const preflight = await preflightDeploymentAction(
+			const action = await runDeploymentActionWithRetry(
 				deployment.userId,
 				deployment.id,
 				"start",
 			);
-			const preflightMeta = readDeploymentActionMeta(preflight);
-			if (preflightMeta.noOp) {
+			if (!action.queued) {
 				toast.message(
-					noOpMessageForDeploymentAction("start", preflightMeta.reason),
+					noOpMessageForDeploymentAction("start", action.meta.reason),
 					{
 						description: deployment.name,
 					},
 				);
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.dashboardSnapshot(),
-				});
-				return;
-			}
-			const resp = await runDeploymentAction(
-				deployment.userId,
-				deployment.id,
-				"start",
-			);
-			const meta = readDeploymentActionMeta(resp);
-			if (meta.noOp) {
-				toast.message(noOpMessageForDeploymentAction("start", meta.reason), {
-					description: deployment.name,
-				});
 			} else {
 				toast.success("Deployment starting", {
-					description: `${deployment.name} is queued to start.`,
+					description: deploymentActionQueueDescription(
+						action.queue,
+						deployment.name,
+					),
 				});
 			}
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
-			toast.error("Start preflight/action failed", {
+			toast.error("Start action failed", {
 				description: (e as Error).message,
 			});
 		} finally {
@@ -229,44 +215,31 @@ function DeploymentDetailPage() {
 		setActionPending(true);
 		try {
 			if (!deployment) throw new Error("deployment not found");
-			const preflight = await preflightDeploymentAction(
+			const action = await runDeploymentActionWithRetry(
 				deployment.userId,
 				deployment.id,
 				"stop",
 			);
-			const preflightMeta = readDeploymentActionMeta(preflight);
-			if (preflightMeta.noOp) {
+			if (!action.queued) {
 				toast.message(
-					noOpMessageForDeploymentAction("stop", preflightMeta.reason),
+					noOpMessageForDeploymentAction("stop", action.meta.reason),
 					{
 						description: deployment.name,
 					},
 				);
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.dashboardSnapshot(),
-				});
-				return;
-			}
-			const resp = await runDeploymentAction(
-				deployment.userId,
-				deployment.id,
-				"stop",
-			);
-			const meta = readDeploymentActionMeta(resp);
-			if (meta.noOp) {
-				toast.message(noOpMessageForDeploymentAction("stop", meta.reason), {
-					description: deployment.name,
-				});
 			} else {
 				toast.success("Deployment stopping", {
-					description: `${deployment.name} is queued to stop.`,
+					description: deploymentActionQueueDescription(
+						action.queue,
+						deployment.name,
+					),
 				});
 			}
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 		} catch (e) {
-			toast.error("Stop preflight/action failed", {
+			toast.error("Stop action failed", {
 				description: (e as Error).message,
 			});
 		} finally {
@@ -289,7 +262,8 @@ function DeploymentDetailPage() {
 				search: { userId: deployment.userId },
 			});
 		} catch (e) {
-			toast.error("Failed to delete", { description: (e as Error).message });
+			const msg = (e as Error).message;
+			toast.error("Failed to delete", { description: msg });
 		} finally {
 			setActionPending(false);
 		}
@@ -632,7 +606,7 @@ function DeploymentDetailPage() {
 						variant="destructive"
 						size="sm"
 						onClick={() => setDestroyDialogOpen(true)}
-						disabled={isBusy}
+						disabled={actionPending}
 					>
 						<Trash2 className="mr-2 h-4 w-4" /> Delete
 					</Button>
@@ -1140,8 +1114,9 @@ function DeploymentDetailPage() {
 					<AlertDialogHeader>
 						<AlertDialogTitle>Delete deployment?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will remove <strong>{deployment.name}</strong> from Skyforge
-							and trigger provider cleanup. This action cannot be undone.
+							This will force-delete <strong>{deployment.name}</strong> from
+							Skyforge regardless of current runtime state. This action cannot
+							be undone.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

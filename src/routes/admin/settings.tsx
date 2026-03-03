@@ -26,6 +26,13 @@ import {
 	TabsTrigger,
 } from "../../components/ui/tabs";
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../../components/ui/select";
+import {
 	type AdminAuditResponse,
 	type QuickDeployTemplate,
 	adminImpersonateStart,
@@ -35,8 +42,11 @@ import {
 	getAdminEffectiveConfig,
 	getAdminImpersonateStatus,
 	getAdminQuickDeployCatalog,
+	getAdminQuickDeployTemplateOptions,
 	getGovernancePolicy,
 	getSession,
+	getUserScopeNetlabTemplates,
+	listUserScopes,
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
 	updateAdminQuickDeployCatalog,
@@ -48,6 +58,27 @@ export const Route = createFileRoute("/admin/settings")({
 	component: AdminSettingsPage,
 });
 
+function quickDeployTemplateIdFromPath(path: string): string {
+	return path
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+}
+
+function quickDeployTemplateNameFromPath(path: string): string {
+	const normalized = path
+		.trim()
+		.replace(/\/topology\.ya?ml$/i, "")
+		.split("/")
+		.filter((part) => part.length > 0);
+	if (normalized.length === 0) {
+		return "Template";
+	}
+	const last = normalized.slice(-2).join(" / ");
+	return last.replace(/[-_]/g, " ");
+}
+
 function AdminSettingsPage() {
 	const sessionQ = useQuery({
 		queryKey: queryKeys.session(),
@@ -56,6 +87,27 @@ function AdminSettingsPage() {
 		retry: false,
 	});
 	const isAdmin = !!sessionQ.data?.isAdmin;
+	const effectiveUsername = String(sessionQ.data?.username ?? "").trim();
+
+	const userScopesQ = useQuery({
+		queryKey: queryKeys.userScopes(),
+		queryFn: listUserScopes,
+		enabled: isAdmin,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const allUserScopes = userScopesQ.data ?? [];
+	const adminScopeID = useMemo(() => {
+		if (allUserScopes.length === 0) return "";
+		if (!effectiveUsername) return allUserScopes[0]?.id ?? "";
+		const mine = allUserScopes.filter((scope) => {
+			if (String(scope.createdBy ?? "").trim() === effectiveUsername) return true;
+			if ((scope.owners ?? []).includes(effectiveUsername)) return true;
+			if (String(scope.slug ?? "").trim() === effectiveUsername) return true;
+			return false;
+		});
+		return (mine[0]?.id ?? allUserScopes[0]?.id ?? "").trim();
+	}, [allUserScopes, effectiveUsername]);
 
 	const [auditLimit, setAuditLimit] = useState("200");
 	const auditQ = useQuery({
@@ -87,10 +139,35 @@ function AdminSettingsPage() {
 		staleTime: 15_000,
 		retry: false,
 	});
+	const quickDeployTemplateOptionsQ = useQuery({
+		queryKey: ["adminQuickDeployTemplateOptions"],
+		queryFn: getAdminQuickDeployTemplateOptions,
+		enabled: isAdmin,
+		staleTime: 15_000,
+		retry: false,
+	});
+	const blueprintNetlabTemplatesQ = useQuery({
+		queryKey: queryKeys.userTemplates(
+			adminScopeID || "none",
+			"netlab",
+			"blueprints",
+			"",
+			"netlab",
+		),
+		queryFn: () =>
+			getUserScopeNetlabTemplates(adminScopeID, {
+				source: "blueprints",
+				dir: "netlab",
+			}),
+		enabled: isAdmin && adminScopeID.length > 0,
+		staleTime: 15_000,
+		retry: false,
+	});
 	const [blockedOrgIdsCsv, setBlockedOrgIdsCsv] = useState("");
 	const [quickDeployTemplates, setQuickDeployTemplates] = useState<
 		QuickDeployTemplate[]
 	>([]);
+	const [selectedQuickDeployOption, setSelectedQuickDeployOption] = useState("");
 	useEffect(() => {
 		if (!quickDeployCatalogQ.data?.templates) {
 			return;
@@ -313,6 +390,40 @@ function AdminSettingsPage() {
 			{ id: "", name: "", description: "", template: "" },
 		]);
 	};
+	const availableQuickDeployTemplates = useMemo(() => {
+		const fromAdminOptions = quickDeployTemplateOptionsQ.data?.templates ?? [];
+		const fromScopeCatalog = blueprintNetlabTemplatesQ.data?.templates ?? [];
+		const merged = new Set<string>();
+		for (const item of [...fromAdminOptions, ...fromScopeCatalog]) {
+			const path = String(item ?? "").trim();
+			if (!path) continue;
+			merged.add(path);
+		}
+		return Array.from(merged).sort((a, b) => a.localeCompare(b));
+	}, [quickDeployTemplateOptionsQ.data?.templates, blueprintNetlabTemplatesQ.data?.templates]);
+	const addQuickDeployTemplateFromOption = () => {
+		const template = selectedQuickDeployOption.trim();
+		if (!template) return;
+		const exists = quickDeployTemplates.some(
+			(item) => item.template.trim().toLowerCase() === template.toLowerCase(),
+		);
+		if (exists) {
+			toast.message("Template already in catalog", { description: template });
+			return;
+		}
+		const name = quickDeployTemplateNameFromPath(template);
+		const id = quickDeployTemplateIdFromPath(template);
+		setQuickDeployTemplates((prev) => [
+			...prev,
+			{
+				id,
+				name,
+				description: `Blueprint topology: ${template}`,
+				template,
+			},
+		]);
+		setSelectedQuickDeployOption("");
+	};
 	const hasQuickDeployTemplateRows =
 		quickDeployTemplates.filter((item) => item.template.trim().length > 0)
 			.length > 0;
@@ -492,6 +603,56 @@ function AdminSettingsPage() {
 								<div className="text-xs text-muted-foreground">
 									Source: {quickDeployCatalogQ.data?.source ?? "default"}
 								</div>
+								<div className="text-xs text-muted-foreground">
+									Blueprint repo:{" "}
+									{quickDeployTemplateOptionsQ.data?.repo ??
+										quickDeployCatalogQ.data?.repo ??
+										"skyforge/blueprints"}{" "}
+									@{" "}
+									{quickDeployTemplateOptionsQ.data?.branch ??
+										quickDeployCatalogQ.data?.branch ??
+										"main"}{" "}
+									(dir:{" "}
+									{quickDeployTemplateOptionsQ.data?.dir ??
+										quickDeployCatalogQ.data?.dir ??
+										"netlab"}
+									)
+								</div>
+								<div className="grid gap-2 md:grid-cols-[1fr_auto]">
+									<Select
+										value={selectedQuickDeployOption}
+										onValueChange={setSelectedQuickDeployOption}
+									>
+										<SelectTrigger>
+											<SelectValue placeholder="Pick a blueprint template from index…" />
+										</SelectTrigger>
+										<SelectContent>
+											{availableQuickDeployTemplates.map((path) => (
+												<SelectItem key={path} value={path}>
+													{path}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<Button
+										variant="outline"
+										onClick={addQuickDeployTemplateFromOption}
+										disabled={
+											saveQuickDeployCatalog.isPending ||
+											!selectedQuickDeployOption.trim()
+										}
+									>
+										<Plus className="mr-2 h-4 w-4" />
+										Add from index
+									</Button>
+								</div>
+								{blueprintNetlabTemplatesQ.isError ||
+								quickDeployTemplateOptionsQ.isError ? (
+									<div className="text-xs text-amber-600">
+										Template index lookup failed. You can still edit manually,
+										but save will validate paths server-side.
+									</div>
+								) : null}
 								<div className="space-y-3">
 									{quickDeployTemplates.map((item, index) => (
 										<div
@@ -524,7 +685,8 @@ function AdminSettingsPage() {
 											</div>
 											<Input
 												className="mt-2"
-												placeholder="Template path (for example: evpn/quick-eos-11-vxlan-ebgp.yml)"
+												list="quick-deploy-template-options"
+												placeholder="Template path (for example: EVPN/ebgp/topology.yml)"
 												value={item.template}
 												onChange={(e) =>
 													upsertQuickDeployTemplateField(
@@ -560,6 +722,11 @@ function AdminSettingsPage() {
 										</div>
 									))}
 								</div>
+								<datalist id="quick-deploy-template-options">
+									{availableQuickDeployTemplates.map((path) => (
+										<option key={path} value={path} />
+									))}
+								</datalist>
 								<div className="flex flex-wrap items-center gap-2">
 									<Button
 										variant="outline"
