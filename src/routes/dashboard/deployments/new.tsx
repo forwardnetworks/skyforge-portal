@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Download, Info, Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -164,6 +164,8 @@ const NETLAB_DEVICE_ENV_KEY = "NETLAB_DEVICE";
 const CUSTOM_ENV_KEY_VALUE = "__custom_env_key__";
 const CUSTOM_ENV_VALUE = "__custom_env_value__";
 const FORWARD_IN_APP_URL = "https://skyforge-fwd.local.forwardnetworks.com";
+const FORWARD_NETWORK_POLL_INTERVAL_MS = 2_000;
+const FORWARD_NETWORK_POLL_TIMEOUT_MS = 600_000;
 const supportedEnvKeys = [
 	{
 		key: NETLAB_DEVICE_ENV_KEY,
@@ -256,11 +258,27 @@ async function getDeploymentForwardNetworkId(
 	return String(data.forwardNetworkId ?? "").trim();
 }
 
+async function waitForForwardNetworkId(
+	userId: string,
+	deploymentId: string,
+): Promise<string> {
+	const deadline = Date.now() + FORWARD_NETWORK_POLL_TIMEOUT_MS;
+	while (Date.now() < deadline) {
+		try {
+			const networkId = await getDeploymentForwardNetworkId(userId, deploymentId);
+			if (networkId) return networkId;
+		} catch {
+			// Keep polling while deployment + sync are in progress.
+		}
+		await sleep(FORWARD_NETWORK_POLL_INTERVAL_MS);
+	}
+	return "";
+}
+
 function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { userId } = Route.useSearch();
-	const pendingForwardTabRef = useRef<Window | null>(null);
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
 		useState<string>("all");
@@ -980,13 +998,17 @@ function CreateDeploymentPage() {
 			return createUserScopeDeployment(values.userId, body);
 		},
 		onSuccess: async (created, variables) => {
-			const pendingForwardTab = pendingForwardTabRef.current;
-			pendingForwardTabRef.current = null;
 			const deploymentId = String(created?.id ?? "").trim();
 			const scopeId = String(created?.userId ?? variables.userId ?? "").trim();
 			if (!deploymentId || !scopeId) {
 				throw new Error("Deployment created but ID is missing");
 			}
+			const forwardCollectorId = String(
+				variables.forwardCollectorId ?? "none",
+			).trim();
+			const shouldOpenForward = Boolean(
+				forwardCollectorId && forwardCollectorId !== "none",
+			);
 
 			try {
 				const action = await runDeploymentActionWithRetry(
@@ -1019,44 +1041,37 @@ function CreateDeploymentPage() {
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
 
-			if (pendingForwardTab && !pendingForwardTab.closed) {
-				const deadline = Date.now() + 120_000;
-				let forwardNetworkId = "";
-				while (Date.now() < deadline) {
-					try {
-						forwardNetworkId = await getDeploymentForwardNetworkId(
-							scopeId,
-							deploymentId,
-						);
-						if (forwardNetworkId) break;
-					} catch {
-						// Keep polling while deploy + sync is in progress.
-					}
-					await sleep(2000);
-				}
-				const forwardUrl = forwardNetworkId
-					? `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`
-					: FORWARD_IN_APP_URL;
-				pendingForwardTab.location.href = forwardUrl;
-				if (!forwardNetworkId) {
-					toast.message("Forward network link is still warming up", {
-						description: "Opened the in-app Forward home page instead.",
-					});
-				}
-			}
-
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId },
 				search: { tab: "logs" } as any,
 			});
+
+			if (shouldOpenForward && typeof window !== "undefined") {
+				void (async () => {
+					const forwardNetworkId = await waitForForwardNetworkId(
+						scopeId,
+						deploymentId,
+					);
+					if (!forwardNetworkId) {
+						toast.error("Forward sync did not publish a network ID", {
+							description:
+								"Forward network ID was not resolved within the wait window.",
+						});
+						return;
+					}
+					const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
+					const openedTab = window.open(forwardUrl, "_blank");
+					if (!openedTab) {
+						toast.message("Forward window blocked", {
+							description:
+								"Allow popups for this site to open the synced Forward network tab automatically.",
+						});
+					}
+				})();
+			}
 		},
 		onError: (error) => {
-			const pendingForwardTab = pendingForwardTabRef.current;
-			pendingForwardTabRef.current = null;
-			if (pendingForwardTab && !pendingForwardTab.closed) {
-				pendingForwardTab.close();
-			}
 			toast.error("Failed to create deployment", {
 				description: (error as Error).message,
 			});
@@ -1197,18 +1212,6 @@ function CreateDeploymentPage() {
 	});
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
-		const forwardEnabled = String(values.forwardCollectorId ?? "").trim() !== "";
-		const openedTab =
-			forwardEnabled && typeof window !== "undefined"
-				? window.open(FORWARD_IN_APP_URL, "_blank")
-				: null;
-		pendingForwardTabRef.current = openedTab;
-		if (forwardEnabled && typeof window !== "undefined" && !openedTab) {
-			toast.message("Forward window blocked", {
-				description:
-					"Allow popups for this site to open the Forward network tab automatically.",
-			});
-		}
 		mutation.mutate(values);
 	}
 
