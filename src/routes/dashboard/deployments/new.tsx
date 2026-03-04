@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Download, Info, Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -239,10 +239,21 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function getDeploymentForwardNetworkId(
+type DeploymentForwardInfoResponse = {
+	forwardNetworkId?: string;
+	forwardSnapshotUrl?: string;
+	deployment?: {
+		syncState?: string;
+		lastSyncAt?: string;
+		lastSyncStatus?: string;
+		lastSyncError?: string;
+	};
+};
+
+async function getDeploymentForwardInfo(
 	userId: string,
 	deploymentId: string,
-): Promise<string> {
+): Promise<DeploymentForwardInfoResponse> {
 	const resp = await fetch(
 		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/info`,
 		{
@@ -254,32 +265,47 @@ async function getDeploymentForwardNetworkId(
 	if (!resp.ok) {
 		throw new Error(`deployment info failed (${resp.status})`);
 	}
-	const data = (await resp.json()) as { forwardNetworkId?: string };
-	return String(data.forwardNetworkId ?? "").trim();
+	return (await resp.json()) as DeploymentForwardInfoResponse;
 }
 
-async function waitForForwardNetworkId(
+async function waitForForwardSyncAndNetwork(
 	userId: string,
 	deploymentId: string,
 ): Promise<string> {
 	const deadline = Date.now() + FORWARD_NETWORK_POLL_TIMEOUT_MS;
 	while (Date.now() < deadline) {
 		try {
-			const networkId = await getDeploymentForwardNetworkId(userId, deploymentId);
-			if (networkId) return networkId;
+			const info = await getDeploymentForwardInfo(userId, deploymentId);
+			const networkId = String(info.forwardNetworkId ?? "").trim();
+			const snapshotURL = String(info.forwardSnapshotUrl ?? "").trim();
+			const syncState = String(
+				info.deployment?.syncState ?? "",
+			).trim().toLowerCase();
+			const lastSyncAt = String(info.deployment?.lastSyncAt ?? "").trim();
+			const syncError = String(info.deployment?.lastSyncError ?? "").trim();
+
+			if (syncState === "sync_failed") {
+				throw new Error(syncError || "Forward sync failed");
+			}
+			if (
+				networkId &&
+				lastSyncAt &&
+				(syncState === "synced" || snapshotURL)
+			) {
+				return networkId;
+			}
 		} catch {
 			// Keep polling while deployment + sync are in progress.
 		}
 		await sleep(FORWARD_NETWORK_POLL_INTERVAL_MS);
 	}
-	return "";
+	throw new Error("Forward sync did not complete within the wait window.");
 }
 
 function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { userId } = Route.useSearch();
-	const pendingForwardTabRef = useRef<Window | null>(null);
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
 		useState<string>("all");
@@ -1004,8 +1030,6 @@ function CreateDeploymentPage() {
 			if (!deploymentId || !scopeId) {
 				throw new Error("Deployment created but ID is missing");
 			}
-			const pendingForwardTab = pendingForwardTabRef.current;
-			pendingForwardTabRef.current = null;
 			const forwardCollectorId = String(
 				variables.forwardCollectorId ?? "none",
 			).trim();
@@ -1047,46 +1071,34 @@ function CreateDeploymentPage() {
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId },
-				search: { tab: "logs" } as any,
+				search: { tab: "topology" } as any,
 			});
 
 			if (shouldOpenForward && typeof window !== "undefined") {
 				void (async () => {
-					const forwardNetworkId = await waitForForwardNetworkId(
-						scopeId,
-						deploymentId,
-					);
-					if (!forwardNetworkId) {
-						if (pendingForwardTab && !pendingForwardTab.closed) {
-							pendingForwardTab.close();
+					try {
+						const forwardNetworkId = await waitForForwardSyncAndNetwork(
+							scopeId,
+							deploymentId,
+						);
+						const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
+						const openedTab = window.open(forwardUrl, "_blank");
+						if (!openedTab) {
+							toast.message("Forward window blocked", {
+								description:
+									"Allow popups for this site to open the synced Forward network tab automatically.",
+							});
 						}
-						toast.error("Forward sync did not publish a network ID", {
+					} catch (error) {
+						toast.error("Forward sync did not complete", {
 							description:
-								"Forward network ID was not resolved within the wait window.",
-						});
-						return;
-					}
-					const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
-					if (pendingForwardTab && !pendingForwardTab.closed) {
-						pendingForwardTab.location.href = forwardUrl;
-						return;
-					}
-					const openedTab = window.open(forwardUrl, "_blank");
-					if (!openedTab) {
-						toast.message("Forward window blocked", {
-							description:
-								"Allow popups for this site to open the synced Forward network tab automatically.",
+								error instanceof Error ? error.message : String(error),
 						});
 					}
 				})();
 			}
 		},
 		onError: (error) => {
-			const pendingForwardTab = pendingForwardTabRef.current;
-			pendingForwardTabRef.current = null;
-			if (pendingForwardTab && !pendingForwardTab.closed) {
-				pendingForwardTab.close();
-			}
 			toast.error("Failed to create deployment", {
 				description: (error as Error).message,
 			});
@@ -1227,21 +1239,6 @@ function CreateDeploymentPage() {
 	});
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
-		const forwardCollectorId = String(values.forwardCollectorId ?? "none").trim();
-		const shouldOpenForward = Boolean(
-			forwardCollectorId && forwardCollectorId !== "none",
-		);
-		const openedTab =
-			shouldOpenForward && typeof window !== "undefined"
-				? window.open("about:blank", "_blank")
-				: null;
-		pendingForwardTabRef.current = openedTab;
-		if (shouldOpenForward && typeof window !== "undefined" && !openedTab) {
-			toast.message("Forward window blocked", {
-				description:
-					"Allow popups for this site to open the synced Forward network tab automatically.",
-			});
-		}
 		mutation.mutate(values);
 	}
 

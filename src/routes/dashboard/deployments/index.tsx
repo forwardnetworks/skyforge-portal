@@ -6,6 +6,7 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Clock3,
+	ExternalLink,
 	Filter,
 	Inbox,
 	Info,
@@ -111,6 +112,8 @@ export const Route = createFileRoute("/dashboard/deployments/")({
 	},
 	component: DeploymentsPage,
 });
+
+const FORWARD_IN_APP_URL = "https://skyforge-fwd.local.forwardnetworks.com";
 
 function DeploymentsPage() {
 	useDashboardEvents(true);
@@ -553,6 +556,7 @@ function DeploymentsPage() {
 					const primaryAction = resolveDeploymentPrimaryAction(d);
 					const canBringUp = primaryAction === "bring_up";
 					const canShutDown = primaryAction === "shut_down";
+					const forwardNetworkID = deploymentForwardNetworkID(d);
 					const isBusy =
 						Boolean(d.activeTaskId) || Boolean(pendingActions[d.id]);
 					const managedByLifetime = isManagedDeploymentType(d.family);
@@ -576,6 +580,13 @@ function DeploymentsPage() {
 								>
 									<Info className="mr-2 h-4 w-4" />
 									Details
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onClick={() => openDeploymentInForward(d)}
+									disabled={!forwardNetworkID}
+								>
+									<ExternalLink className="mr-2 h-4 w-4" />
+									Open in Forward
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								{managedByLifetime && (
@@ -694,6 +705,27 @@ function DeploymentsPage() {
 		if (typ === "byos") return "BYOS";
 		if (typ === "terraform") return "Terraform";
 		return String(d.family ?? "");
+	};
+
+	const deploymentForwardNetworkID = (d: UserScopeDeployment): string => {
+		const cfg = (d.config ?? {}) as Record<string, unknown>;
+		return String(cfg.forwardNetworkId ?? "").trim();
+	};
+
+	const openDeploymentInForward = (d: UserScopeDeployment): void => {
+		const forwardNetworkID = deploymentForwardNetworkID(d);
+		if (!forwardNetworkID) {
+			toast.message("Forward network is not available yet");
+			return;
+		}
+		const forwardURL = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkID)}`;
+		const openedTab = window.open(forwardURL, "_blank", "noopener,noreferrer");
+		if (!openedTab) {
+			toast.message("Forward window blocked", {
+				description:
+					"Allow popups for this site to open the synced Forward network tab automatically.",
+			});
+		}
 	};
 
 	const destroyHasForward = !!destroyTarget?.config?.forwardNetworkId;

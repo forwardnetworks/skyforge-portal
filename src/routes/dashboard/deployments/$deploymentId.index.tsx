@@ -96,6 +96,8 @@ export const Route = createFileRoute("/dashboard/deployments/$deploymentId/")({
 	},
 });
 
+const FORWARD_IN_APP_URL = "https://skyforge-fwd.local.forwardnetworks.com";
+
 function formatResourceEstimateSummary(
 	estimate?: ResourceEstimateSummary,
 ): string {
@@ -171,7 +173,7 @@ function DeploymentDetailPage() {
 	}, [deployment?.id, deployment?.config, deployment?.autoSyncOnBringUp]);
 	useEffect(() => {
 		setActiveTab(normalizedTab);
-	}, [normalizedTab]);
+	}, [normalizedTab, deploymentId]);
 
 	const activeRunId = String(deployment?.activeTaskId ?? "");
 	useRunEvents(activeRunId, Boolean(activeRunId));
@@ -286,6 +288,9 @@ function DeploymentDetailPage() {
 		? resolveDeploymentPrimaryAction(deployment)
 		: "none";
 	const isBusy = !!deployment?.activeTaskId || actionPending;
+	const forwardNetworkID = String(
+		(deployment?.config ?? {})["forwardNetworkId"] ?? "",
+	).trim();
 
 	const runsForDeployment = useMemo(() => {
 		if (!deployment) return [];
@@ -620,6 +625,34 @@ function DeploymentDetailPage() {
 					>
 						<TrendingUp className="mr-2 h-4 w-4" /> Capacity
 					</Link>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={!forwardNetworkID}
+						title={
+							forwardNetworkID
+								? "Open this deployment network in Forward"
+								: "Forward network is not available yet"
+						}
+						onClick={() => {
+							if (!forwardNetworkID) return;
+							const forwardURL = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkID)}`;
+							const openedTab = window.open(
+								forwardURL,
+								"_blank",
+								"noopener,noreferrer",
+							);
+							if (!openedTab) {
+								toast.message("Forward window blocked", {
+									description:
+										"Allow popups for this site to open the synced Forward network tab automatically.",
+								});
+							}
+						}}
+					>
+						<ExternalLink className="mr-2 h-4 w-4" />
+						Open in Forward
+					</Button>
 					<Button
 						variant="outline"
 						size="sm"

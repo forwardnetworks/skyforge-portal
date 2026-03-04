@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../components/ui/button";
 import {
@@ -65,10 +65,21 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function getDeploymentForwardNetworkId(
+type DeploymentForwardInfoResponse = {
+	forwardNetworkId?: string;
+	forwardSnapshotUrl?: string;
+	deployment?: {
+		syncState?: string;
+		lastSyncAt?: string;
+		lastSyncStatus?: string;
+		lastSyncError?: string;
+	};
+};
+
+async function getDeploymentForwardInfo(
 	userId: string,
 	deploymentId: string,
-): Promise<string> {
+): Promise<DeploymentForwardInfoResponse> {
 	const resp = await fetch(
 		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/info`,
 		{
@@ -80,31 +91,46 @@ async function getDeploymentForwardNetworkId(
 	if (!resp.ok) {
 		throw new Error(`deployment info failed (${resp.status})`);
 	}
-	const data = (await resp.json()) as { forwardNetworkId?: string };
-	return String(data.forwardNetworkId ?? "").trim();
+	return (await resp.json()) as DeploymentForwardInfoResponse;
 }
 
-async function waitForForwardNetworkId(
+async function waitForForwardSyncAndNetwork(
 	userId: string,
 	deploymentId: string,
 ): Promise<string> {
 	const deadline = Date.now() + FORWARD_NETWORK_POLL_TIMEOUT_MS;
 	while (Date.now() < deadline) {
 		try {
-			const networkId = await getDeploymentForwardNetworkId(userId, deploymentId);
-			if (networkId) return networkId;
+			const info = await getDeploymentForwardInfo(userId, deploymentId);
+			const networkId = String(info.forwardNetworkId ?? "").trim();
+			const snapshotURL = String(info.forwardSnapshotUrl ?? "").trim();
+			const syncState = String(
+				info.deployment?.syncState ?? "",
+			).trim().toLowerCase();
+			const lastSyncAt = String(info.deployment?.lastSyncAt ?? "").trim();
+			const syncError = String(info.deployment?.lastSyncError ?? "").trim();
+
+			if (syncState === "sync_failed") {
+				throw new Error(syncError || "Forward sync failed");
+			}
+			if (
+				networkId &&
+				lastSyncAt &&
+				(syncState === "synced" || snapshotURL)
+			) {
+				return networkId;
+			}
 		} catch {
-			// Keep polling; deployment info can be briefly unavailable during bring-up.
+			// Keep polling while deployment + sync are in progress.
 		}
 		await sleep(FORWARD_NETWORK_POLL_INTERVAL_MS);
 	}
-	return "";
+	throw new Error("Forward sync did not complete within the wait window.");
 }
 
 function QuickDeployPage() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
-	const pendingForwardTabRef = useRef<Window | null>(null);
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const [previewTemplate, setPreviewTemplate] = useState("");
 	const catalogQ = useQuery({
@@ -150,8 +176,6 @@ function QuickDeployPage() {
 				leaseHours: Number.parseInt(leaseHours, 10) || 4,
 			}),
 		onSuccess: async (result) => {
-			const pendingForwardTab = pendingForwardTabRef.current;
-			pendingForwardTabRef.current = null;
 			if (result.noOp) {
 				toast.message("Deployment already in desired state", {
 					description: result.deploymentName,
@@ -168,46 +192,34 @@ function QuickDeployPage() {
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId: result.deploymentId },
-				search: { tab: "logs" } as any,
+				search: { tab: "topology" } as any,
 			});
 
 			if (typeof window !== "undefined") {
 				void (async () => {
-					const forwardNetworkId = await waitForForwardNetworkId(
-						result.userId,
-						result.deploymentId,
-					);
-					if (!forwardNetworkId) {
-						if (pendingForwardTab && !pendingForwardTab.closed) {
-							pendingForwardTab.close();
+					try {
+						const forwardNetworkId = await waitForForwardSyncAndNetwork(
+							result.userId,
+							result.deploymentId,
+						);
+						const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
+						const openedTab = window.open(forwardUrl, "_blank");
+						if (!openedTab) {
+							toast.message("Forward window blocked", {
+								description:
+									"Allow popups for this site to open the synced Forward network tab automatically.",
+							});
 						}
-						toast.error("Forward sync did not publish a network ID", {
+					} catch (error) {
+						toast.error("Forward sync did not complete", {
 							description:
-								"Forward network ID was not resolved within the wait window.",
-						});
-						return;
-					}
-					const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
-					if (pendingForwardTab && !pendingForwardTab.closed) {
-						pendingForwardTab.location.href = forwardUrl;
-						return;
-					}
-					const openedTab = window.open(forwardUrl, "_blank");
-					if (!openedTab) {
-						toast.message("Forward window blocked", {
-							description:
-								"Allow popups for this site to open the synced Forward network tab automatically.",
+								error instanceof Error ? error.message : String(error),
 						});
 					}
 				})();
 			}
 		},
 		onError: (err) => {
-			const pendingForwardTab = pendingForwardTabRef.current;
-			pendingForwardTabRef.current = null;
-			if (pendingForwardTab && !pendingForwardTab.closed) {
-				pendingForwardTab.close();
-			}
 			toast.error("Quick deploy failed", {
 				description: err instanceof Error ? err.message : String(err),
 			});
@@ -270,7 +282,7 @@ function QuickDeployPage() {
 				<p className="text-sm text-muted-foreground">
 					One-click curated labs using the in-app Forward cluster and managed
 					credentials. Deploy opens the deployment logs first, then opens
-					Forward to the synced network once the network ID is available.
+					Forward only after post-deploy sync completes.
 				</p>
 			</div>
 
@@ -353,20 +365,7 @@ function QuickDeployPage() {
 								</Button>
 								<Button
 									className="flex-1"
-									onClick={() => {
-										const openedTab =
-											typeof window !== "undefined"
-												? window.open("about:blank", "_blank")
-												: null;
-										pendingForwardTabRef.current = openedTab;
-										if (typeof window !== "undefined" && !openedTab) {
-											toast.message("Forward window blocked", {
-												description:
-													"Allow popups for this site to open the synced Forward network tab automatically.",
-											});
-										}
-										deployMutation.mutate(entry.template);
-									}}
+									onClick={() => deployMutation.mutate(entry.template)}
 									disabled={catalogQ.isLoading || deployMutation.isPending}
 								>
 									{deployMutation.isPending ? "Deploying..." : "Deploy"}
