@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../components/ui/button";
 import {
@@ -104,6 +104,7 @@ async function waitForForwardNetworkId(
 function QuickDeployPage() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
+	const pendingForwardTabRef = useRef<Window | null>(null);
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const [previewTemplate, setPreviewTemplate] = useState("");
 	const catalogQ = useQuery({
@@ -149,6 +150,8 @@ function QuickDeployPage() {
 				leaseHours: Number.parseInt(leaseHours, 10) || 4,
 			}),
 		onSuccess: async (result) => {
+			const pendingForwardTab = pendingForwardTabRef.current;
+			pendingForwardTabRef.current = null;
 			if (result.noOp) {
 				toast.message("Deployment already in desired state", {
 					description: result.deploymentName,
@@ -175,6 +178,9 @@ function QuickDeployPage() {
 						result.deploymentId,
 					);
 					if (!forwardNetworkId) {
+						if (pendingForwardTab && !pendingForwardTab.closed) {
+							pendingForwardTab.close();
+						}
 						toast.error("Forward sync did not publish a network ID", {
 							description:
 								"Forward network ID was not resolved within the wait window.",
@@ -182,6 +188,10 @@ function QuickDeployPage() {
 						return;
 					}
 					const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
+					if (pendingForwardTab && !pendingForwardTab.closed) {
+						pendingForwardTab.location.href = forwardUrl;
+						return;
+					}
 					const openedTab = window.open(forwardUrl, "_blank");
 					if (!openedTab) {
 						toast.message("Forward window blocked", {
@@ -192,10 +202,16 @@ function QuickDeployPage() {
 				})();
 			}
 		},
-		onError: (err) =>
+		onError: (err) => {
+			const pendingForwardTab = pendingForwardTabRef.current;
+			pendingForwardTabRef.current = null;
+			if (pendingForwardTab && !pendingForwardTab.closed) {
+				pendingForwardTab.close();
+			}
 			toast.error("Quick deploy failed", {
 				description: err instanceof Error ? err.message : String(err),
-			}),
+			});
+		},
 	});
 
 	const templates = catalogQ.data?.templates ?? [];
@@ -337,7 +353,20 @@ function QuickDeployPage() {
 								</Button>
 								<Button
 									className="flex-1"
-									onClick={() => deployMutation.mutate(entry.template)}
+									onClick={() => {
+										const openedTab =
+											typeof window !== "undefined"
+												? window.open("about:blank", "_blank")
+												: null;
+										pendingForwardTabRef.current = openedTab;
+										if (typeof window !== "undefined" && !openedTab) {
+											toast.message("Forward window blocked", {
+												description:
+													"Allow popups for this site to open the synced Forward network tab automatically.",
+											});
+										}
+										deployMutation.mutate(entry.template);
+									}}
 									disabled={catalogQ.isLoading || deployMutation.isPending}
 								>
 									{deployMutation.isPending ? "Deploying..." : "Deploy"}

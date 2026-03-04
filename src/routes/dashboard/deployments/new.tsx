@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Download, Info, Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -279,6 +279,7 @@ function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { userId } = Route.useSearch();
+	const pendingForwardTabRef = useRef<Window | null>(null);
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
 		useState<string>("all");
@@ -1003,6 +1004,8 @@ function CreateDeploymentPage() {
 			if (!deploymentId || !scopeId) {
 				throw new Error("Deployment created but ID is missing");
 			}
+			const pendingForwardTab = pendingForwardTabRef.current;
+			pendingForwardTabRef.current = null;
 			const forwardCollectorId = String(
 				variables.forwardCollectorId ?? "none",
 			).trim();
@@ -1054,6 +1057,9 @@ function CreateDeploymentPage() {
 						deploymentId,
 					);
 					if (!forwardNetworkId) {
+						if (pendingForwardTab && !pendingForwardTab.closed) {
+							pendingForwardTab.close();
+						}
 						toast.error("Forward sync did not publish a network ID", {
 							description:
 								"Forward network ID was not resolved within the wait window.",
@@ -1061,6 +1067,10 @@ function CreateDeploymentPage() {
 						return;
 					}
 					const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
+					if (pendingForwardTab && !pendingForwardTab.closed) {
+						pendingForwardTab.location.href = forwardUrl;
+						return;
+					}
 					const openedTab = window.open(forwardUrl, "_blank");
 					if (!openedTab) {
 						toast.message("Forward window blocked", {
@@ -1072,6 +1082,11 @@ function CreateDeploymentPage() {
 			}
 		},
 		onError: (error) => {
+			const pendingForwardTab = pendingForwardTabRef.current;
+			pendingForwardTabRef.current = null;
+			if (pendingForwardTab && !pendingForwardTab.closed) {
+				pendingForwardTab.close();
+			}
 			toast.error("Failed to create deployment", {
 				description: (error as Error).message,
 			});
@@ -1212,6 +1227,21 @@ function CreateDeploymentPage() {
 	});
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
+		const forwardCollectorId = String(values.forwardCollectorId ?? "none").trim();
+		const shouldOpenForward = Boolean(
+			forwardCollectorId && forwardCollectorId !== "none",
+		);
+		const openedTab =
+			shouldOpenForward && typeof window !== "undefined"
+				? window.open("about:blank", "_blank")
+				: null;
+		pendingForwardTabRef.current = openedTab;
+		if (shouldOpenForward && typeof window !== "undefined" && !openedTab) {
+			toast.message("Forward window blocked", {
+				description:
+					"Allow popups for this site to open the synced Forward network tab automatically.",
+			});
+		}
 		mutation.mutate(values);
 	}
 
