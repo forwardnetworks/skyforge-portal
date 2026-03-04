@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Download, Info, Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -53,6 +53,7 @@ import {
 	type ExternalTemplateRepo,
 	type ResourceEstimateSummary,
 	type SkyforgeUserScope,
+	type UserScopeNetlabDeviceOptionsResponse,
 	type UserScopeTemplatesResponse,
 	type UserVariableGroup,
 	convertUserScopeEveLab,
@@ -61,6 +62,7 @@ import {
 	getDashboardSnapshot,
 	getDeploymentLifetimePolicy,
 	getSession,
+	getUserScopeNetlabDeviceOptions,
 	getUserScopeContainerlabTemplate,
 	getUserScopeContainerlabTemplates,
 	getUserScopeEveNgTemplates,
@@ -158,6 +160,17 @@ const fallbackAllowedHours = [4, 8, 24, 72];
 const USER_REPO_SOURCE = "user" as const;
 const toAPITemplateSource = (source: TemplateSource): string =>
 	source === USER_REPO_SOURCE ? "user" : source;
+const NETLAB_DEVICE_ENV_KEY = "NETLAB_DEVICE";
+const CUSTOM_ENV_KEY_VALUE = "__custom_env_key__";
+const CUSTOM_ENV_VALUE = "__custom_env_value__";
+const FORWARD_IN_APP_URL = "https://skyforge-fwd.local.forwardnetworks.com";
+const supportedEnvKeys = [
+	{
+		key: NETLAB_DEVICE_ENV_KEY,
+		label: "NETLAB_DEVICE",
+		description: "Override defaults.device for netlab runs",
+	},
+];
 
 const formSchema = z.object({
 	userId: z.string().min(1, "User is required"),
@@ -220,10 +233,34 @@ function resourceEstimateFallbackReason(err: unknown): string {
 	return "Resource estimate unavailable";
 }
 
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getDeploymentForwardNetworkId(
+	userId: string,
+	deploymentId: string,
+): Promise<string> {
+	const resp = await fetch(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/info`,
+		{
+			method: "GET",
+			credentials: "include",
+			headers: { Accept: "application/json" },
+		},
+	);
+	if (!resp.ok) {
+		throw new Error(`deployment info failed (${resp.status})`);
+	}
+	const data = (await resp.json()) as { forwardNetworkId?: string };
+	return String(data.forwardNetworkId ?? "").trim();
+}
+
 function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { userId } = Route.useSearch();
+	const pendingForwardTabRef = useRef<Window | null>(null);
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] =
 		useState<string>("all");
@@ -500,6 +537,35 @@ function CreateDeploymentPage() {
 		staleTime: 30_000,
 		retry: false,
 	});
+	const netlabDeviceOptionsQ = useQuery<UserScopeNetlabDeviceOptionsResponse>({
+		queryKey: queryKeys.userNetlabDeviceOptions(watchUserScopeId || ""),
+		queryFn: () => getUserScopeNetlabDeviceOptions(watchUserScopeId),
+		enabled: Boolean(watchUserScopeId),
+		staleTime: 5 * 60_000,
+		retry: false,
+	});
+	const netlabDeviceOptions = useMemo(() => {
+		const options = (netlabDeviceOptionsQ.data?.devices ?? [])
+			.map((v) => String(v ?? "").trim().toLowerCase())
+			.filter(Boolean);
+		const unique = Array.from(new Set(options)).sort((a, b) =>
+			a.localeCompare(b),
+		);
+		return unique.length > 0
+			? unique
+			: [
+					"asav",
+					"cumulus",
+					"eos",
+					"fortios",
+					"iol",
+					"iol_l2",
+					"iosxr",
+					"linux",
+					"sros",
+					"vmx",
+				];
+	}, [netlabDeviceOptionsQ.data?.devices]);
 
 	const userContainerlabServersQ = useQuery({
 		queryKey: queryKeys.userContainerlabServers(),
@@ -914,6 +980,8 @@ function CreateDeploymentPage() {
 			return createUserScopeDeployment(values.userId, body);
 		},
 		onSuccess: async (created, variables) => {
+			const pendingForwardTab = pendingForwardTabRef.current;
+			pendingForwardTabRef.current = null;
 			const deploymentId = String(created?.id ?? "").trim();
 			const scopeId = String(created?.userId ?? variables.userId ?? "").trim();
 			if (!deploymentId || !scopeId) {
@@ -950,6 +1018,33 @@ function CreateDeploymentPage() {
 			await queryClient.invalidateQueries({
 				queryKey: queryKeys.dashboardSnapshot(),
 			});
+
+			if (pendingForwardTab && !pendingForwardTab.closed) {
+				const deadline = Date.now() + 120_000;
+				let forwardNetworkId = "";
+				while (Date.now() < deadline) {
+					try {
+						forwardNetworkId = await getDeploymentForwardNetworkId(
+							scopeId,
+							deploymentId,
+						);
+						if (forwardNetworkId) break;
+					} catch {
+						// Keep polling while deploy + sync is in progress.
+					}
+					await sleep(2000);
+				}
+				const forwardUrl = forwardNetworkId
+					? `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`
+					: FORWARD_IN_APP_URL;
+				pendingForwardTab.location.href = forwardUrl;
+				if (!forwardNetworkId) {
+					toast.message("Forward network link is still warming up", {
+						description: "Opened the in-app Forward home page instead.",
+					});
+				}
+			}
+
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId },
@@ -957,6 +1052,11 @@ function CreateDeploymentPage() {
 			});
 		},
 		onError: (error) => {
+			const pendingForwardTab = pendingForwardTabRef.current;
+			pendingForwardTabRef.current = null;
+			if (pendingForwardTab && !pendingForwardTab.closed) {
+				pendingForwardTab.close();
+			}
 			toast.error("Failed to create deployment", {
 				description: (error as Error).message,
 			});
@@ -1097,6 +1197,18 @@ function CreateDeploymentPage() {
 	});
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
+		const forwardEnabled = String(values.forwardCollectorId ?? "").trim() !== "";
+		const openedTab =
+			forwardEnabled && typeof window !== "undefined"
+				? window.open(FORWARD_IN_APP_URL, "_blank")
+				: null;
+		pendingForwardTabRef.current = openedTab;
+		if (forwardEnabled && typeof window !== "undefined" && !openedTab) {
+			toast.message("Forward window blocked", {
+				description:
+					"Allow popups for this site to open the Forward network tab automatically.",
+			});
+		}
 		mutation.mutate(values);
 	}
 
@@ -1889,38 +2001,171 @@ function CreateDeploymentPage() {
 								{fields.length > 0 && (
 									<div className="space-y-2">
 										{fields.map((field, index) => (
-											<div key={field.id} className="flex gap-2 items-start">
+											<div
+												key={field.id}
+												className="flex flex-col gap-2 md:flex-row md:items-start"
+											>
 												<FormField
 													control={form.control}
 													name={`env.${index}.key`}
-													render={({ field }) => (
-														<FormItem className="flex-1">
-															<FormControl>
-																<Input
-																	{...field}
-																	placeholder="KEY"
-																	className="font-mono text-xs"
-																/>
-															</FormControl>
-															<FormMessage />
-														</FormItem>
-													)}
+													render={({ field: keyField }) => {
+														const currentKey = String(keyField.value ?? "").trim();
+														const hasPresetKey = supportedEnvKeys.some(
+															(option) => option.key === currentKey,
+														);
+														const keySelectValue = hasPresetKey
+															? currentKey
+															: CUSTOM_ENV_KEY_VALUE;
+														return (
+															<FormItem className="flex-1">
+																<FormControl>
+																	<div className="space-y-2">
+																		<Select
+																			value={keySelectValue}
+																			onValueChange={(next) => {
+																				if (next === CUSTOM_ENV_KEY_VALUE) {
+																					if (hasPresetKey) {
+																						setValue(`env.${index}.key`, "", {
+																							shouldDirty: true,
+																							shouldTouch: true,
+																							shouldValidate: true,
+																						});
+																					}
+																					return;
+																				}
+																				setValue(`env.${index}.key`, next, {
+																					shouldDirty: true,
+																					shouldTouch: true,
+																					shouldValidate: true,
+																				});
+																				if (next === NETLAB_DEVICE_ENV_KEY) {
+																					const currentValue = String(
+																						form.getValues(`env.${index}.value`) ?? "",
+																					)
+																						.trim()
+																						.toLowerCase();
+																					if (
+																						currentValue &&
+																						netlabDeviceOptions.includes(currentValue)
+																					)
+																						return;
+																					setValue(
+																						`env.${index}.value`,
+																						netlabDeviceOptions[0] ?? "eos",
+																						{
+																							shouldDirty: true,
+																							shouldTouch: true,
+																							shouldValidate: true,
+																						},
+																					);
+																				}
+																			}}
+																		>
+																			<SelectTrigger className="font-mono text-xs">
+																				<SelectValue placeholder="Select key" />
+																			</SelectTrigger>
+																			<SelectContent>
+																				{supportedEnvKeys.map((option) => (
+																					<SelectItem key={option.key} value={option.key}>
+																						{option.label}
+																					</SelectItem>
+																				))}
+																				<SelectItem value={CUSTOM_ENV_KEY_VALUE}>
+																					Custom key
+																				</SelectItem>
+																			</SelectContent>
+																		</Select>
+																		{keySelectValue === CUSTOM_ENV_KEY_VALUE && (
+																			<Input
+																				{...keyField}
+																				placeholder="KEY"
+																				className="font-mono text-xs"
+																			/>
+																		)}
+																	</div>
+																</FormControl>
+																<FormMessage />
+															</FormItem>
+														);
+													}}
 												/>
 												<FormField
 													control={form.control}
 													name={`env.${index}.value`}
-													render={({ field }) => (
-														<FormItem className="flex-1">
-															<FormControl>
-																<Input
-																	{...field}
-																	placeholder="VALUE"
-																	className="font-mono text-xs"
-																/>
-															</FormControl>
-															<FormMessage />
-														</FormItem>
-													)}
+													render={({ field: valueField }) => {
+														const currentKey = String(
+															watchEnv?.[index]?.key ?? "",
+														).trim();
+														const currentValue = String(valueField.value ?? "");
+														const normalizedValue = currentValue
+															.trim()
+															.toLowerCase();
+														const valueUsesPreset =
+															currentKey === NETLAB_DEVICE_ENV_KEY &&
+															netlabDeviceOptions.includes(normalizedValue);
+														const valueSelectValue = valueUsesPreset
+															? normalizedValue
+															: CUSTOM_ENV_VALUE;
+														const showCustomValueInput =
+															currentKey !== NETLAB_DEVICE_ENV_KEY ||
+															valueSelectValue === CUSTOM_ENV_VALUE;
+														return (
+															<FormItem className="flex-1">
+																<FormControl>
+																	<div className="space-y-2">
+																		{currentKey === NETLAB_DEVICE_ENV_KEY && (
+																			<Select
+																				value={valueSelectValue}
+																				onValueChange={(next) => {
+																					if (next === CUSTOM_ENV_VALUE) {
+																						if (valueUsesPreset) {
+																							setValue(`env.${index}.value`, "", {
+																								shouldDirty: true,
+																								shouldTouch: true,
+																								shouldValidate: true,
+																							});
+																						}
+																						return;
+																					}
+																					setValue(`env.${index}.value`, next, {
+																						shouldDirty: true,
+																						shouldTouch: true,
+																						shouldValidate: true,
+																					});
+																				}}
+																			>
+																				<SelectTrigger className="font-mono text-xs">
+																					<SelectValue placeholder="Select netlab device" />
+																				</SelectTrigger>
+																				<SelectContent>
+																					{netlabDeviceOptions.map((device) => (
+																						<SelectItem key={device} value={device}>
+																							{device}
+																						</SelectItem>
+																					))}
+																					<SelectItem value={CUSTOM_ENV_VALUE}>
+																						Custom value
+																					</SelectItem>
+																				</SelectContent>
+																			</Select>
+																		)}
+																		{showCustomValueInput && (
+																			<Input
+																				{...valueField}
+																				placeholder={
+																					currentKey === NETLAB_DEVICE_ENV_KEY
+																						? "custom-device-key"
+																						: "VALUE"
+																				}
+																				className="font-mono text-xs"
+																			/>
+																		)}
+																	</div>
+																</FormControl>
+																<FormMessage />
+															</FormItem>
+														);
+													}}
 												/>
 												<Button
 													type="button"
@@ -1935,6 +2180,11 @@ function CreateDeploymentPage() {
 										))}
 									</div>
 								)}
+								<div className="text-xs text-muted-foreground">
+									{netlabDeviceOptionsQ.isError
+										? "NETLAB_DEVICE options unavailable; custom values are still allowed."
+										: `NETLAB_DEVICE options sourced from netlab catalog (${netlabDeviceOptions.length} devices).`}
+								</div>
 							</div>
 							{mutation.isError && (
 								<div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive border border-destructive/20">

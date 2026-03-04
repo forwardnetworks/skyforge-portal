@@ -33,8 +33,10 @@ import {
 	SelectValue,
 } from "../../components/ui/select";
 import {
+	type AdminWorkspacePodCleanupResponse,
 	type AdminAuditResponse,
 	type QuickDeployTemplate,
+	adminCleanupWorkspacePods,
 	adminImpersonateStart,
 	adminImpersonateStop,
 	adminPurgeUser,
@@ -268,6 +270,33 @@ function AdminSettingsPage() {
 			});
 		},
 	});
+	const [cleanupScopeMode, setCleanupScopeMode] = useState<"all" | "scope">(
+		"all",
+	);
+	const [cleanupScopeID, setCleanupScopeID] = useState("");
+	const [cleanupNamespace, setCleanupNamespace] = useState("");
+	const [cleanupResult, setCleanupResult] =
+		useState<AdminWorkspacePodCleanupResponse | null>(null);
+	const cleanupWorkspacePods = useMutation({
+		mutationFn: async (dryRun: boolean) =>
+			adminCleanupWorkspacePods({
+				dryRun,
+				userScopeId:
+					cleanupScopeMode === "scope" ? cleanupScopeID.trim() : undefined,
+				namespace: cleanupNamespace.trim() || undefined,
+			}),
+		onSuccess: (res, dryRun) => {
+			setCleanupResult(res);
+			toast.success(dryRun ? "Pod cleanup preview complete" : "Pod cleanup complete", {
+				description: `Namespaces ${res.namespacesConsidered}, owners ${res.topologyOwnersFound}, deleted topologies ${res.topologiesDeleted}`,
+			});
+		},
+		onError: (e) => {
+			toast.error("Failed to clean workspace pods", {
+				description: (e as Error).message,
+			});
+		},
+	});
 
 	const [impersonateTarget, setImpersonateTarget] = useState("");
 	const impersonateStart = useMutation({
@@ -301,6 +330,34 @@ function AdminSettingsPage() {
 	});
 
 	const [purgeUsername, setPurgeUsername] = useState("");
+	const [purgeUserQuery, setPurgeUserQuery] = useState("");
+	const purgeUserOptions = useMemo(() => {
+		const users = new Set<string>();
+		for (const scope of allUserScopes) {
+			const createdBy = String(scope.createdBy ?? "").trim();
+			if (createdBy) users.add(createdBy);
+			for (const owner of scope.owners ?? []) {
+				const value = String(owner ?? "").trim();
+				if (value) users.add(value);
+			}
+			for (const editor of scope.editors ?? []) {
+				const value = String(editor ?? "").trim();
+				if (value) users.add(value);
+			}
+			for (const viewer of scope.viewers ?? []) {
+				const value = String(viewer ?? "").trim();
+				if (value) users.add(value);
+			}
+		}
+		return Array.from(users).sort((a, b) => a.localeCompare(b));
+	}, [allUserScopes]);
+	const filteredPurgeUserOptions = useMemo(() => {
+		const query = purgeUserQuery.trim().toLowerCase();
+		if (!query) return purgeUserOptions;
+		return purgeUserOptions.filter((username) =>
+			username.toLowerCase().includes(query),
+		);
+	}, [purgeUserOptions, purgeUserQuery]);
 	const purgeUser = useMutation({
 		mutationFn: async () =>
 			adminPurgeUser({ username: purgeUsername, confirm: purgeUsername }),
@@ -308,6 +365,9 @@ function AdminSettingsPage() {
 			toast.success("User purged", {
 				description: `Deleted user scopes: ${res.deletedUserScopes}`,
 			});
+			setPurgeUsername("");
+			setPurgeUserQuery("");
+			void userScopesQ.refetch();
 		},
 		onError: (e) => {
 			toast.error("Failed to purge user", {
@@ -837,6 +897,98 @@ function AdminSettingsPage() {
 											: "Reconcile running"}
 									</Button>
 								</div>
+
+								<div className="space-y-3 rounded-md border p-3">
+									<div>
+										<div className="font-medium">Workspace pod cleanup</div>
+										<div className="text-sm text-muted-foreground">
+											Force-clean clabernetes topology pods/resources when
+											deployment deletion leaves stragglers.
+										</div>
+									</div>
+									<div className="grid gap-2 md:grid-cols-2">
+										<Select
+											value={cleanupScopeMode}
+											onValueChange={(v) =>
+												setCleanupScopeMode(v === "scope" ? "scope" : "all")
+											}
+										>
+											<SelectTrigger>
+												<SelectValue placeholder="Scope mode" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="all">All user scopes</SelectItem>
+												<SelectItem value="scope">
+													Single user scope
+												</SelectItem>
+											</SelectContent>
+										</Select>
+										{cleanupScopeMode === "scope" ? (
+											<Select
+												value={cleanupScopeID}
+												onValueChange={setCleanupScopeID}
+											>
+												<SelectTrigger>
+													<SelectValue placeholder="Select user scope…" />
+												</SelectTrigger>
+												<SelectContent>
+													{allUserScopes.map((scope) => (
+														<SelectItem key={scope.id} value={scope.id}>
+															{scope.slug} ({scope.createdBy})
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										) : (
+											<Input
+												placeholder="Optional namespace override (ws-...)"
+												value={cleanupNamespace}
+												onChange={(e) => setCleanupNamespace(e.target.value)}
+											/>
+										)}
+									</div>
+									<div className="flex flex-wrap gap-2">
+										<Button
+											variant="outline"
+											disabled={
+												cleanupWorkspacePods.isPending ||
+												(cleanupScopeMode === "scope" &&
+													!cleanupScopeID.trim())
+											}
+											onClick={() => cleanupWorkspacePods.mutate(true)}
+										>
+											Preview cleanup
+										</Button>
+										<Button
+											variant="destructive"
+											disabled={
+												cleanupWorkspacePods.isPending ||
+												(cleanupScopeMode === "scope" &&
+													!cleanupScopeID.trim())
+											}
+											onClick={() => cleanupWorkspacePods.mutate(false)}
+										>
+											{cleanupWorkspacePods.isPending
+												? "Running…"
+												: "Run cleanup"}
+										</Button>
+									</div>
+									{cleanupResult ? (
+										<div className="rounded-md border bg-muted/40 p-3 text-xs">
+											<div>
+												namespaces={cleanupResult.namespacesConsidered} owners=
+												{cleanupResult.topologyOwnersFound} topologies=
+												{cleanupResult.topologiesFound} deleted=
+												{cleanupResult.topologiesDeleted}
+											</div>
+											{cleanupResult.errors?.length ? (
+												<div className="mt-2 text-amber-600">
+													{cleanupResult.errors.join(" | ")}
+												</div>
+											) : null}
+										</div>
+									) : null}
+								</div>
 							</CardContent>
 						</Card>
 					</TabsContent>
@@ -855,10 +1007,28 @@ function AdminSettingsPage() {
 							</CardHeader>
 							<CardContent className="space-y-3">
 								<Input
-									placeholder="user@example.com"
-									value={purgeUsername}
-									onChange={(e) => setPurgeUsername(e.target.value)}
+									placeholder="Filter users…"
+									value={purgeUserQuery}
+									onChange={(e) => setPurgeUserQuery(e.target.value)}
 								/>
+								<Select value={purgeUsername} onValueChange={setPurgeUsername}>
+									<SelectTrigger>
+										<SelectValue placeholder="Select user…" />
+									</SelectTrigger>
+									<SelectContent>
+										{filteredPurgeUserOptions.length > 0 ? (
+											filteredPurgeUserOptions.map((username) => (
+												<SelectItem key={username} value={username}>
+													{username}
+												</SelectItem>
+											))
+										) : (
+											<div className="px-2 py-1.5 text-sm text-muted-foreground">
+												No matching users
+											</div>
+										)}
+									</SelectContent>
+								</Select>
 								<Button
 									variant="destructive"
 									disabled={!purgeUsername.trim() || purgeUser.isPending}

@@ -1963,6 +1963,13 @@ export type UserScopeTemplatesResponse = {
 	updatedAt?: ISO8601;
 };
 
+export type UserScopeNetlabDeviceOptionsResponse = {
+	userId: string;
+	devices: string[];
+	source?: string;
+	generatedAt?: ISO8601;
+};
+
 export type ResourceEstimateSummary = {
 	supported: boolean;
 	vcpu: number;
@@ -2035,6 +2042,14 @@ export async function getUserScopeNetlabTemplate(
 	qs.set("template", params.template);
 	return apiFetch<UserScopeNetlabTemplateResponse>(
 		`/api/users/${encodeURIComponent(userId)}/netlab/template?${qs.toString()}`,
+	);
+}
+
+export async function getUserScopeNetlabDeviceOptions(
+	userId: string,
+): Promise<UserScopeNetlabDeviceOptionsResponse> {
+	return apiFetch<UserScopeNetlabDeviceOptionsResponse>(
+		`/api/users/${encodeURIComponent(userId)}/netlab/device-options`,
 	);
 }
 
@@ -2997,6 +3012,47 @@ export async function reconcileRunningTasks(
 ): Promise<AdminReconcileRunningTasksResponse> {
 	return apiFetch<AdminReconcileRunningTasksResponse>(
 		"/api/admin/tasks/reconcile-running",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export type AdminWorkspacePodCleanupRequest = {
+	userScopeId?: string;
+	namespace?: string;
+	dryRun?: boolean;
+};
+
+export type AdminWorkspacePodCleanupNamespaceResult = {
+	namespace: string;
+	topologiesFound: number;
+	topologyOwnersFound: number;
+	topologiesDeleted: number;
+	orphanCleanupAttempts: number;
+	errors?: string[];
+};
+
+export type AdminWorkspacePodCleanupResponse = {
+	status: string;
+	dryRun: boolean;
+	userScopeId?: string;
+	namespace?: string;
+	namespacesConsidered: number;
+	topologyOwnersFound: number;
+	topologiesFound: number;
+	topologiesDeleted: number;
+	orphanCleanupAttempts: number;
+	namespaceResults: AdminWorkspacePodCleanupNamespaceResult[];
+	errors?: string[];
+};
+
+export async function adminCleanupWorkspacePods(
+	body: AdminWorkspacePodCleanupRequest,
+): Promise<AdminWorkspacePodCleanupResponse> {
+	return apiFetch<AdminWorkspacePodCleanupResponse>(
+		"/api/admin/tasks/workspace-pods/cleanup",
 		{
 			method: "POST",
 			body: JSON.stringify(body),

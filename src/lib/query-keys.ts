@@ -82,6 +82,8 @@ export const queryKeys = {
 	userGitCredentials: () => ["userGitCredentials"] as const,
 	userSettings: () => ["userSettings"] as const,
 	userVariableGroups: () => ["userVariableGroups"] as const,
+	userNetlabDeviceOptions: (userId: string) =>
+		["userNetlabDeviceOptions", userId] as const,
 	userNetlabServers: () => ["userNetlabServers"] as const,
 	userEveServers: () => ["userEveServers"] as const,
 	userContainerlabServers: () => ["userContainerlabServers"] as const,
