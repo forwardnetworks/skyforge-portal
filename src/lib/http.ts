@@ -12,7 +12,7 @@ export class ApiError extends Error {
 	}
 }
 
-function extractErrorMessage(bodyText: string): string {
+export function extractErrorMessage(bodyText: string): string {
 	const raw = (bodyText ?? "").trim();
 	if (!raw) return "";
 	try {
@@ -48,13 +48,13 @@ export async function apiFetch<T>(
 		},
 	});
 
-	// 401 means "not logged in" (OIDC session missing/expired) -> redirect to login.
-	// 403 means "logged in but forbidden" -> do NOT redirect to Dex; show an error instead.
+	// 401 means "not logged in" -> redirect to the runtime-selected login path.
+	// 403 means "logged in but forbidden" -> do NOT redirect; show an error instead.
 	if (resp.status === 401) {
 		const text = await resp.text().catch(() => "");
 		// Only auto-redirect for navigation-style GET requests.
 		// For mutations (PUT/POST/DELETE), bubble an error so the UI can show a toast
-		// and not kick the user out to Dex while they are editing a form.
+		// and not kick the user out while they are editing a form.
 		if (method === "GET" && typeof window !== "undefined") {
 			const currentPath =
 				window.location.pathname + (window.location.search ?? "");

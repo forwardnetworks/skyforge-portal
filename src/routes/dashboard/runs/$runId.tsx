@@ -20,6 +20,7 @@ import {
 } from "../../../lib/api-client";
 import { loginWithPopup } from "../../../lib/auth-popup";
 import { queryKeys } from "../../../lib/query-keys";
+import { getRuntimeAuthMode } from "../../../lib/skyforge-config";
 import {
 	type RunLogState,
 	type TaskLogEntry,
@@ -87,6 +88,8 @@ function RunDetailPage() {
 	const loginHref = buildLoginUrl(
 		window.location.pathname + window.location.search,
 	);
+	const authMode = getRuntimeAuthMode();
+	const authModeReady = authMode !== null;
 
 	return (
 		<div className="space-y-6 p-6">
@@ -170,6 +173,10 @@ function RunDetailPage() {
 								onClick={(e) => {
 									e.preventDefault();
 									void (async () => {
+										if (authMode !== "oidc") {
+											window.location.href = loginHref;
+											return;
+										}
 										const ok = await loginWithPopup({ loginHref });
 										if (!ok) {
 											window.location.href = loginHref;

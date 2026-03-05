@@ -93,6 +93,7 @@ import {
 } from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
 import { sessionIsAdmin } from "../../../lib/rbac";
+import { getRuntimeAuthMode } from "../../../lib/skyforge-config";
 import { cn } from "../../../lib/utils";
 
 // Search Schema
@@ -658,6 +659,8 @@ function DeploymentsPage() {
 	const loginHref = buildLoginUrl(
 		window.location.pathname + window.location.search,
 	);
+	const authMode = getRuntimeAuthMode();
+	const authModeReady = authMode !== null;
 
 	const handleDestroy = async () => {
 		if (!destroyTarget) return;
@@ -764,10 +767,14 @@ function DeploymentsPage() {
 									If you are logged out,{" "}
 									<a
 										className="text-primary underline hover:no-underline"
-										href={loginHref}
+										href={authModeReady ? loginHref : loginHref}
 										onClick={(e) => {
 											e.preventDefault();
 											void (async () => {
+												if (authMode !== "oidc") {
+													window.location.href = loginHref;
+													return;
+												}
 												const ok = await loginWithPopup({ loginHref });
 												if (!ok) {
 													window.location.href = loginHref;

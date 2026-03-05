@@ -1,9 +1,10 @@
-import { apiFetch } from "./http";
+import { apiFetch, ApiError, extractErrorMessage } from "./http";
 import type { components, operations } from "./openapi.gen";
 import {
 	SKYFORGE_API,
 	SKYFORGE_PROXY_ROOT,
 	buildLoginUrl,
+	setRuntimeAuthMode,
 } from "./skyforge-config";
 
 export type ISO8601 = string;
@@ -314,6 +315,34 @@ export async function logout(): Promise<void> {
 		const text = await resp.text().catch(() => "");
 		throw new Error(`logout failed (${resp.status}): ${text}`);
 	}
+}
+
+export type LoginRequest = {
+	username: string;
+	password: string;
+};
+
+export async function login(
+	req: LoginRequest,
+): Promise<operations["POST:skyforge.Login"]["responses"][200]["content"]["application/json"]> {
+	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/api/login`, {
+		method: "POST",
+		credentials: "include",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(req),
+	});
+	if (!resp.ok) {
+		const text = await resp.text().catch(() => "");
+		const detail = extractErrorMessage(text);
+		throw new ApiError(
+			detail
+				? `login failed (${resp.status}): ${detail}`
+				: `login failed (${resp.status})`,
+			resp.status,
+			text,
+		);
+	}
+	return (await resp.json()) as operations["POST:skyforge.Login"]["responses"][200]["content"]["application/json"];
 }
 
 export type GetUserScopesResponse =
@@ -3430,9 +3459,13 @@ export async function deleteDeployment(
 }
 
 export type UIConfigResponse =
-	operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"];
+	operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"] & {
+		authMode?: "oidc" | "password" | string;
+	};
 export async function getUIConfig(): Promise<UIConfigResponse> {
-	return apiFetch<UIConfigResponse>("/api/ui/config");
+	const config = await apiFetch<UIConfigResponse>("/api/ui/config");
+	setRuntimeAuthMode(config.authMode);
+	return config;
 }
 
 export type StatusSummaryResponse =

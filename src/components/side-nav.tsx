@@ -58,10 +58,10 @@ export type Features = {
 };
 
 const FORWARD_CLUSTER_URL = "https://skyforge-fwd.local.forwardnetworks.com";
-const NAUTOBOT_LAUNCH_URL = buildLoginUrl("/nautobot/");
-const CODER_LAUNCH_URL = buildCoderLaunchUrl();
-
-const items: NavItem[] = [
+function createNavItems(): NavItem[] {
+	const nautobotLaunchUrl = buildLoginUrl("/nautobot/");
+	const coderLaunchUrl = buildCoderLaunchUrl();
+	return [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
 	{
@@ -129,7 +129,7 @@ const items: NavItem[] = [
 	},
 	{
 		label: "Coder",
-		href: CODER_LAUNCH_URL,
+		href: coderLaunchUrl,
 		icon: Cloud,
 		external: true,
 		featureFlag: "coderEnabled",
@@ -153,7 +153,7 @@ const items: NavItem[] = [
 	},
 	{
 		label: "Nautobot",
-		href: NAUTOBOT_LAUNCH_URL,
+		href: nautobotLaunchUrl,
 		icon: Network,
 		external: true,
 		featureFlag: "nautobotEnabled",
@@ -167,7 +167,7 @@ const items: NavItem[] = [
 			{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
 			{
 				label: "Coder Admin",
-				href: CODER_LAUNCH_URL,
+				href: coderLaunchUrl,
 				icon: Cloud,
 				external: true,
 				adminOnly: true,
@@ -187,7 +187,8 @@ const items: NavItem[] = [
 			},
 		],
 	},
-];
+	];
+}
 
 export function buildSideNavItems(
 	sessionOrAdmin?: unknown,
@@ -198,6 +199,7 @@ export function buildSideNavItems(
 			? { isAdmin: sessionOrAdmin }
 			: sessionOrAdmin;
 	const isAdmin = sessionHasRole(session, "ADMIN");
+	const items = createNavItems();
 	const filterItems = (input: NavItem[]): NavItem[] =>
 		input.flatMap((item) => {
 			if (item.adminOnly && !isAdmin) return [];

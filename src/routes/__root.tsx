@@ -30,6 +30,15 @@ import { ModeToggle } from "../components/mode-toggle";
 import { SideNav } from "../components/side-nav";
 import { ThemeProvider } from "../components/theme-provider";
 import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
 	Breadcrumb,
 	BreadcrumbItem,
 	BreadcrumbLink,
@@ -53,6 +62,7 @@ import {
 	getSession,
 	getUIConfig,
 	getUserNotifications,
+	login,
 	logout,
 	refreshSession,
 } from "../lib/api-client";
@@ -82,6 +92,12 @@ function RootLayout() {
 	const queryClient = useQueryClient();
 	const [loggingOut, setLoggingOut] = useState(false);
 	const [loggingIn, setLoggingIn] = useState(false);
+	const [passwordLoginOpen, setPasswordLoginOpen] = useState(false);
+	const [passwordUsername, setPasswordUsername] = useState("");
+	const [passwordValue, setPasswordValue] = useState("");
+	const [passwordLoginError, setPasswordLoginError] = useState<string | null>(
+		null,
+	);
 	const [navCollapsed, setNavCollapsed] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [expiryNowMs, setExpiryNowMs] = useState(() => Date.now());
@@ -121,13 +137,43 @@ function RootLayout() {
 	const productName = uiConfig.data?.productName || "Skyforge";
 	const productSubtitle =
 		uiConfig.data?.productSubtitle || "Automation Platform";
+	const authMode =
+		uiConfig.data?.authMode === "password"
+			? "password"
+			: uiConfig.data?.authMode === "oidc"
+				? "oidc"
+				: null;
+	const authModeReady = authMode !== null;
 
 	const next = useMemo(
 		() =>
 			`${location.pathname}${location.searchStr ?? ""}${location.hash ?? ""}`,
 		[location.pathname, location.searchStr, location.hash],
 	);
-	const loginHref = useMemo(() => buildLoginUrl(next), [next]);
+	const loginHref = useMemo(
+		() => buildLoginUrl(next, authMode),
+		[authMode, next],
+	);
+	const passwordLoginNext = useMemo(() => {
+		const raw = location.searchStr ?? "";
+		const qs = new URLSearchParams(raw.startsWith("?") ? raw.slice(1) : raw);
+		const requested = qs.get("next");
+		return requested && requested.startsWith("/") ? requested : next;
+	}, [location.searchStr, next]);
+
+	useEffect(() => {
+		if (authMode !== "password") return;
+		if (session.data?.authenticated) {
+			setPasswordLoginOpen(false);
+			setPasswordLoginError(null);
+			return;
+		}
+		const raw = location.searchStr ?? "";
+		const qs = new URLSearchParams(raw.startsWith("?") ? raw.slice(1) : raw);
+		if (qs.get("signin") === "1") {
+			setPasswordLoginOpen(true);
+		}
+	}, [authMode, location.searchStr, session.data?.authenticated]);
 
 	const isProtectedRoute = useMemo(() => {
 		const protectedPrefixes = [
@@ -160,6 +206,29 @@ function RootLayout() {
 	);
 	const showLoginGate =
 		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
+	const passwordLogin = useMutation({
+		mutationFn: async () =>
+			login({
+				username: passwordUsername.trim(),
+				password: passwordValue,
+			}),
+		onSuccess: async () => {
+			setPasswordLoginError(null);
+			setPasswordValue("");
+			setPasswordLoginOpen(false);
+			await queryClient.invalidateQueries({ queryKey: queryKeys.session() });
+			if (passwordLoginNext !== next) {
+				window.location.href = passwordLoginNext;
+				return;
+			}
+			if (location.pathname === "/status") {
+				void navigate({ to: "/status", replace: true });
+			}
+		},
+		onError: (err) => {
+			setPasswordLoginError((err as Error).message || "Login failed");
+		},
+	});
 
 	const username = session.data?.username ?? "";
 	const notificationsLimit = "20";
@@ -223,9 +292,112 @@ function RootLayout() {
 		return () => window.clearInterval(timer);
 	}, [session.data?.authenticated]);
 
+	const startLogin = async () => {
+		if (!authModeReady && !uiConfig.isError) {
+			return;
+		}
+		if (authMode === "password") {
+			setPasswordLoginError(null);
+			setPasswordLoginOpen(true);
+			return;
+		}
+		try {
+			setLoggingIn(true);
+			const ok = await loginWithPopup({ loginHref });
+			if (!ok) {
+				window.location.href = loginHref;
+				return;
+			}
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.session(),
+			});
+		} finally {
+			setLoggingIn(false);
+		}
+	};
+
+	const submitPasswordLogin = async (
+		event: React.FormEvent<HTMLFormElement>,
+	) => {
+		event.preventDefault();
+		setPasswordLoginError(null);
+		if (!passwordUsername.trim() || !passwordValue) {
+			setPasswordLoginError("Username and password are required");
+			return;
+		}
+		await passwordLogin.mutateAsync();
+	};
+
+	const closePasswordLogin = () => {
+		setPasswordLoginOpen(false);
+		setPasswordLoginError(null);
+		const raw = location.searchStr ?? "";
+		const qs = new URLSearchParams(raw.startsWith("?") ? raw.slice(1) : raw);
+		if (qs.get("signin") === "1" && location.pathname === "/status") {
+			void navigate({ to: "/status", replace: true });
+		}
+	};
+
 	return (
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 			<div className="min-h-full">
+				<Dialog
+					open={passwordLoginOpen}
+					onOpenChange={(open) => {
+						if (!open) {
+							closePasswordLogin();
+							return;
+						}
+						setPasswordLoginOpen(true);
+					}}
+				>
+					<DialogContent className="sm:max-w-md">
+						<DialogHeader>
+							<DialogTitle>Sign in</DialogTitle>
+							<DialogDescription>
+								Use your Skyforge credentials to continue.
+							</DialogDescription>
+						</DialogHeader>
+						<form className="space-y-4" onSubmit={submitPasswordLogin}>
+							<div className="space-y-2">
+								<Label htmlFor="password-login-username">Username</Label>
+								<Input
+									id="password-login-username"
+									autoComplete="username"
+									value={passwordUsername}
+									onChange={(e) => setPasswordUsername(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="password-login-password">Password</Label>
+								<Input
+									id="password-login-password"
+									type="password"
+									autoComplete="current-password"
+									value={passwordValue}
+									onChange={(e) => setPasswordValue(e.target.value)}
+								/>
+							</div>
+							{passwordLoginError ? (
+								<div className="text-sm text-destructive">
+									{passwordLoginError}
+								</div>
+							) : null}
+							<div className="flex justify-end gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={closePasswordLogin}
+								>
+									Cancel
+								</Button>
+								<Button type="submit" disabled={passwordLogin.isPending}>
+									{passwordLogin.isPending ? "…" : "Login"}
+								</Button>
+							</div>
+						</form>
+					</DialogContent>
+				</Dialog>
 				<GlobalSpinner />
 				<header className="sticky top-0 z-40 border-b glass-header">
 					<div className="flex h-16 w-full items-center justify-between gap-4 px-3 sm:px-4 lg:px-6 xl:px-8">
@@ -341,24 +513,16 @@ function RootLayout() {
 								<Button
 									variant="outline"
 									size="sm"
-									disabled={loggingIn}
-									onClick={async () => {
-										try {
-											setLoggingIn(true);
-											const ok = await loginWithPopup({ loginHref });
-											if (!ok) {
-												window.location.href = loginHref;
-												return;
-											}
-											await queryClient.invalidateQueries({
-												queryKey: queryKeys.session(),
-											});
-										} finally {
-											setLoggingIn(false);
-										}
-									}}
+									disabled={
+										loggingIn || uiConfig.isLoading || (!authModeReady && !uiConfig.isError)
+									}
+									onClick={() => void startLogin()}
 								>
-									{loggingIn ? "…" : "Login"}
+									{uiConfig.isLoading || (!authModeReady && !uiConfig.isError)
+										? "Loading…"
+										: loggingIn
+											? "…"
+											: "Login"}
 								</Button>
 							)}
 						</nav>
@@ -447,31 +611,25 @@ function RootLayout() {
 									<CardContent className="flex flex-col gap-3">
 										<Button
 											variant="default"
-											disabled={loggingIn}
-											onClick={async () => {
-												try {
-													setLoggingIn(true);
-													const ok = await loginWithPopup({ loginHref });
-													if (!ok) {
-														window.location.href = loginHref;
-														return;
-													}
-													await queryClient.invalidateQueries({
-														queryKey: queryKeys.session(),
-													});
-												} finally {
-													setLoggingIn(false);
-												}
-											}}
+											disabled={
+												loggingIn || uiConfig.isLoading || (!authModeReady && !uiConfig.isError)
+											}
+											onClick={() => void startLogin()}
 										>
-											{loggingIn ? "…" : "Login"}
+											{uiConfig.isLoading || (!authModeReady && !uiConfig.isError)
+												? "Loading login…"
+												: loggingIn
+													? "…"
+													: "Login"}
 										</Button>
-										<a
-											className="text-sm text-muted-foreground underline"
-											href={loginHref}
-										>
-											Login with redirect instead
-										</a>
+										{authMode === "oidc" ? (
+											<a
+												className="text-sm text-muted-foreground underline"
+												href={loginHref}
+											>
+												Login with redirect instead
+											</a>
+										) : null}
 									</CardContent>
 								</Card>
 							</div>
