@@ -36,8 +36,11 @@ import {
 	getStatusSummary,
 	getUIConfig,
 } from "../lib/api-client";
+import { buildLoginUrl } from "../lib/skyforge-config";
 import { queryKeys } from "../lib/query-keys";
+import { sessionIsAdmin } from "../lib/rbac";
 import { useStatusSummaryEvents } from "../lib/status-events";
+import { buildCoderLaunchUrl } from "../lib/tool-links";
 import { cn } from "../lib/utils";
 
 export const Route = createFileRoute("/status")({
@@ -45,6 +48,8 @@ export const Route = createFileRoute("/status")({
 });
 
 function StatusPage() {
+	const nautobotLaunchUrl = buildLoginUrl("/nautobot/");
+	const coderLaunchUrl = buildCoderLaunchUrl();
 	useStatusSummaryEvents(true);
 
 	const summary = useQuery({
@@ -65,13 +70,14 @@ function StatusPage() {
 		staleTime: 30_000,
 		retry: false,
 	});
+	const isAdmin = sessionIsAdmin(session.data);
 
 	const observability = useQuery({
 		queryKey: queryKeys.observabilitySummary(),
 		queryFn: getObservabilitySummary,
 		staleTime: 30_000,
 		retry: false,
-		enabled: !!session.data?.isAdmin,
+		enabled: isAdmin,
 	});
 	const features = uiConfig.data?.features;
 
@@ -169,7 +175,7 @@ function StatusPage() {
 
 			{/* Info Cards */}
 			<div className="grid gap-4 md:grid-cols-3">
-				{session.data?.isAdmin && (
+				{isAdmin && (
 					<Card variant="glass">
 						<CardHeader>
 							<CardTitle className="text-base flex items-center gap-2">
@@ -366,7 +372,7 @@ function StatusPage() {
 							{
 								id: "nautobot",
 								name: "Nautobot",
-								path: "/nautobot/",
+								path: nautobotLaunchUrl,
 								icon: Network,
 								enabled: features?.nautobotEnabled ?? false,
 								external: true,
@@ -374,7 +380,7 @@ function StatusPage() {
 							{
 								id: "coder",
 								name: "Coder",
-								path: "/coder/launch",
+								path: coderLaunchUrl,
 								icon: Cloud,
 								enabled: features?.coderEnabled ?? false,
 								external: true,

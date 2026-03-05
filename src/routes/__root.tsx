@@ -1,5 +1,6 @@
 import {
 	type QueryClient,
+	useMutation,
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
@@ -18,9 +19,11 @@ import {
 	ChevronRight,
 	Menu,
 	Search,
+	Shield,
 } from "lucide-react";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { CommandMenu } from "../components/command-menu";
 import { GlobalSpinner } from "../components/global-spinner";
 import { ModeToggle } from "../components/mode-toggle";
@@ -45,11 +48,13 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
 import { Toaster } from "../components/ui/sonner";
 import {
+	adminImpersonateStop,
 	buildLoginUrl,
 	getSession,
 	getUIConfig,
 	getUserNotifications,
 	logout,
+	refreshSession,
 } from "../lib/api-client";
 import { loginWithPopup } from "../lib/auth-popup";
 import {
@@ -57,6 +62,8 @@ import {
 	useNotificationsEvents,
 } from "../lib/notifications-events";
 import { queryKeys } from "../lib/query-keys";
+import { sessionIsAdmin } from "../lib/rbac";
+import { getSessionExpiryWarning } from "../lib/session-expiry";
 import { cn } from "../lib/utils";
 
 export type RouterContext = {
@@ -77,6 +84,7 @@ function RootLayout() {
 	const [loggingIn, setLoggingIn] = useState(false);
 	const [navCollapsed, setNavCollapsed] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const [expiryNowMs, setExpiryNowMs] = useState(() => Date.now());
 
 	const isLabDesignerRoute = useMemo(() => {
 		return location.pathname === "/dashboard/labs/designer";
@@ -138,7 +146,18 @@ function RootLayout() {
 	}, [location.pathname]);
 
 	const who = session.data?.displayName || session.data?.username || "";
-	const isAdmin = !!session.data?.isAdmin;
+	const isAdmin = sessionIsAdmin(session.data);
+	const isImpersonating = !!session.data?.impersonating;
+	const actorUsername = String(session.data?.actorUsername ?? "").trim();
+	const effectiveUsername = String(session.data?.username ?? "").trim();
+	const sessionExpiryWarning = useMemo(
+		() =>
+			getSessionExpiryWarning(session.data, {
+				nowMs: expiryNowMs,
+				warningWindowMs: 15 * 60_000,
+			}),
+		[expiryNowMs, session.data],
+	);
 	const showLoginGate =
 		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
 
@@ -162,13 +181,54 @@ function RootLayout() {
 		const list = notifications.data?.notifications ?? [];
 		return list.filter((n: any) => !n.is_read).length;
 	}, [notifications.data?.notifications]);
+	const stopImpersonation = useMutation({
+		mutationFn: async () => adminImpersonateStop(),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.session() });
+			window.location.reload();
+		},
+		onError: (e) => {
+			toast.error("Failed to stop impersonation", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	const refreshSessionM = useMutation({
+		mutationFn: refreshSession,
+		onSuccess: (nextSession) => {
+			queryClient.setQueryData(queryKeys.session(), nextSession);
+		},
+		onError: () => {
+			void queryClient.invalidateQueries({ queryKey: queryKeys.session() });
+		},
+	});
+
+	useEffect(() => {
+		if (!session.data?.authenticated) return;
+		if (typeof window === "undefined") return;
+		const refreshEveryMs = 5 * 60_000;
+		const timer = window.setInterval(() => {
+			if (document.visibilityState !== "visible") return;
+			refreshSessionM.mutate();
+		}, refreshEveryMs);
+		return () => window.clearInterval(timer);
+	}, [session.data?.authenticated, refreshSessionM]);
+
+	useEffect(() => {
+		if (!session.data?.authenticated) return;
+		if (typeof window === "undefined") return;
+		const timer = window.setInterval(() => {
+			setExpiryNowMs(Date.now());
+		}, 30_000);
+		return () => window.clearInterval(timer);
+	}, [session.data?.authenticated]);
 
 	return (
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 			<div className="min-h-full">
 				<GlobalSpinner />
 				<header className="sticky top-0 z-40 border-b glass-header">
-					<div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-4">
+					<div className="flex h-16 w-full items-center justify-between gap-4 px-3 sm:px-4 lg:px-6 xl:px-8">
 						<div className="flex items-center gap-6">
 							<div className="flex items-center gap-4">
 								<Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -182,6 +242,7 @@ function RootLayout() {
 										<div className="px-2 py-6">
 											<SideNav
 												collapsed={false}
+												session={session.data}
 												isAdmin={isAdmin}
 												features={uiConfig.data?.features}
 											/>
@@ -243,6 +304,14 @@ function RootLayout() {
 							<ModeToggle />
 							{session.data?.authenticated ? (
 								<div className="flex items-center gap-3">
+									{sessionExpiryWarning ? (
+										<span
+											className="hidden sm:inline-flex items-center rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] font-medium text-amber-700 dark:text-amber-100"
+											title={`Session expires at ${new Date(sessionExpiryWarning.expiresAt).toLocaleTimeString()}`}
+										>
+											Session expires in {sessionExpiryWarning.minutesRemaining}m
+										</span>
+									) : null}
 									<div className="hidden md:flex flex-col items-end">
 										<span className="text-[10px] text-muted-foreground uppercase leading-none">
 											Signed in as
@@ -295,27 +364,49 @@ function RootLayout() {
 						</nav>
 					</div>
 				</header>
-				<div
-					className={cn(
-						"mx-auto flex min-h-[calc(100vh-4rem)]",
-						isFullBleedRoute ? "max-w-none" : "max-w-[1600px]",
-					)}
-				>
+				{session.data?.authenticated && isImpersonating ? (
+					<div className="border-b border-amber-500/40 bg-amber-500/10">
+						<div className="flex w-full items-center justify-between gap-3 px-3 py-2 text-xs sm:px-4 lg:px-6 xl:px-8">
+							<div className="flex items-center gap-2">
+								<Shield className="h-4 w-4 text-amber-400" />
+								<span className="font-medium text-amber-100">
+									Impersonation active
+								</span>
+								<span className="text-amber-100/90">
+									{actorUsername || "actor"} as {effectiveUsername || "user"}
+								</span>
+							</div>
+							<Button
+								size="sm"
+								variant="outline"
+								className="h-7 border-amber-400/50 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20"
+								disabled={stopImpersonation.isPending}
+								onClick={() => stopImpersonation.mutate()}
+							>
+								{stopImpersonation.isPending
+									? "Stopping…"
+									: "Stop impersonation"}
+							</Button>
+						</div>
+					</div>
+				) : null}
+				<div className="flex min-h-[calc(100vh-4rem)] w-full">
 					{session.data?.authenticated && (
 						<aside
 							className={cn(
 								"hidden lg:block border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
 								"transition-all duration-300 ease-in-out",
-								navCollapsed ? "w-[64px]" : "w-[220px]",
+								navCollapsed ? "w-[56px]" : "w-[224px]",
 							)}
 						>
 							<div className="relative h-full">
 								<div className={cn("h-full px-4 py-4", navCollapsed && "px-2")}>
-									<SideNav
-										collapsed={navCollapsed}
-										isAdmin={isAdmin}
-										features={uiConfig.data?.features}
-									/>
+								<SideNav
+									collapsed={navCollapsed}
+									session={session.data}
+									isAdmin={isAdmin}
+									features={uiConfig.data?.features}
+								/>
 								</div>
 								<button
 									className={cn(
@@ -339,7 +430,9 @@ function RootLayout() {
 					<main
 						className={cn(
 							"flex-1 w-full overflow-hidden flex flex-col",
-							isFullBleedRoute ? "px-0 py-0" : "px-4 py-6",
+							isFullBleedRoute
+								? "px-0 py-0"
+								: "px-3 py-4 sm:px-4 sm:py-6 lg:px-6 xl:px-8 2xl:px-10",
 						)}
 					>
 						{showLoginGate ? (

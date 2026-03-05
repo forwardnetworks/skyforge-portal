@@ -81,6 +81,7 @@ export const queryKeys = {
 	userCollectorLogs: () => ["userCollectorLogs"] as const,
 	userGitCredentials: () => ["userGitCredentials"] as const,
 	userSettings: () => ["userSettings"] as const,
+	userApiTokens: () => ["userApiTokens"] as const,
 	userVariableGroups: () => ["userVariableGroups"] as const,
 	userNetlabDeviceOptions: (userId: string) =>
 		["userNetlabDeviceOptions", userId] as const,
@@ -147,6 +148,7 @@ export const queryKeys = {
 			limit ?? "",
 		] as const,
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
+	adminRbacUsers: () => ["adminRbacUsers"] as const,
 	adminConfig: () => ["adminConfig"] as const,
 	adminAudit: (limit?: string) => ["adminAudit", limit ?? ""] as const,
 	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,

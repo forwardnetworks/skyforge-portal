@@ -37,6 +37,7 @@ import {
 	type AdminAuditResponse,
 	type QuickDeployTemplate,
 	adminCleanupWorkspacePods,
+	deleteAdminUserRole,
 	adminImpersonateStart,
 	adminImpersonateStop,
 	adminPurgeUser,
@@ -44,6 +45,7 @@ import {
 	getAdminEffectiveConfig,
 	getAdminImpersonateStatus,
 	getAdminQuickDeployCatalog,
+	getAdminUserRoles,
 	getAdminQuickDeployTemplateOptions,
 	getGovernancePolicy,
 	getSession,
@@ -51,12 +53,16 @@ import {
 	listUserScopes,
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
+	upsertAdminUserRole,
 	updateAdminQuickDeployCatalog,
 	updateGovernancePolicy,
 } from "../../lib/api-client";
+import { requireAdminRouteAccess } from "../../lib/admin-route";
 import { queryKeys } from "../../lib/query-keys";
+import { sessionIsAdmin } from "../../lib/rbac";
 
 export const Route = createFileRoute("/admin/settings")({
+	beforeLoad: async ({ context }) => requireAdminRouteAccess(context),
 	component: AdminSettingsPage,
 });
 
@@ -88,7 +94,7 @@ function AdminSettingsPage() {
 		staleTime: 30_000,
 		retry: false,
 	});
-	const isAdmin = !!sessionQ.data?.isAdmin;
+	const isAdmin = sessionIsAdmin(sessionQ.data);
 	const effectiveUsername = String(sessionQ.data?.username ?? "").trim();
 
 	const userScopesQ = useQuery({
@@ -99,6 +105,13 @@ function AdminSettingsPage() {
 		retry: false,
 	});
 	const allUserScopes = userScopesQ.data ?? [];
+	const adminUserRolesQ = useQuery({
+		queryKey: queryKeys.adminRbacUsers(),
+		queryFn: getAdminUserRoles,
+		enabled: isAdmin,
+		staleTime: 15_000,
+		retry: false,
+	});
 	const adminScopeID = useMemo(() => {
 		if (allUserScopes.length === 0) return "";
 		if (!effectiveUsername) return allUserScopes[0]?.id ?? "";
@@ -299,6 +312,28 @@ function AdminSettingsPage() {
 	});
 
 	const [impersonateTarget, setImpersonateTarget] = useState("");
+	const impersonateUserOptions = useMemo(() => {
+		const users = new Set<string>();
+		for (const scope of allUserScopes) {
+			const createdBy = String(scope.createdBy ?? "").trim();
+			if (createdBy) users.add(createdBy);
+			for (const owner of scope.owners ?? []) {
+				const value = String(owner ?? "").trim();
+				if (value) users.add(value);
+			}
+			for (const editor of scope.editors ?? []) {
+				const value = String(editor ?? "").trim();
+				if (value) users.add(value);
+			}
+			for (const viewer of scope.viewers ?? []) {
+				const value = String(viewer ?? "").trim();
+				if (value) users.add(value);
+			}
+		}
+		const current = String(impersonateStatusQ.data?.effectiveUsername ?? "").trim();
+		if (current) users.delete(current);
+		return Array.from(users).sort((a, b) => a.localeCompare(b));
+	}, [allUserScopes, impersonateStatusQ.data?.effectiveUsername]);
 	const impersonateStart = useMutation({
 		mutationFn: async () =>
 			adminImpersonateStart({ username: impersonateTarget }),
@@ -324,6 +359,89 @@ function AdminSettingsPage() {
 		},
 		onError: (e) => {
 			toast.error("Failed to stop impersonation", {
+				description: (e as Error).message,
+			});
+		},
+	});
+
+	const [rbacUserQuery, setRbacUserQuery] = useState("");
+	const [rbacTargetUser, setRbacTargetUser] = useState("");
+	const [rbacTargetRole, setRbacTargetRole] = useState("ADMIN");
+	const availableRbacRoles = useMemo(() => {
+		const roles = adminUserRolesQ.data?.availableRoles ?? [];
+		const normalized = roles
+			.map((role) => String(role ?? "").trim().toUpperCase())
+			.filter((role) => role.length > 0);
+		return normalized.length > 0 ? normalized : ["ADMIN", "USER"];
+	}, [adminUserRolesQ.data?.availableRoles]);
+	const rbacKnownUsers = useMemo(() => {
+		const users = new Set<string>();
+		for (const row of adminUserRolesQ.data?.users ?? []) {
+			const username = String(row.username ?? "").trim();
+			if (username) users.add(username);
+		}
+		for (const scope of allUserScopes) {
+			const createdBy = String(scope.createdBy ?? "").trim();
+			if (createdBy) users.add(createdBy);
+			for (const owner of scope.owners ?? []) {
+				const value = String(owner ?? "").trim();
+				if (value) users.add(value);
+			}
+			for (const editor of scope.editors ?? []) {
+				const value = String(editor ?? "").trim();
+				if (value) users.add(value);
+			}
+			for (const viewer of scope.viewers ?? []) {
+				const value = String(viewer ?? "").trim();
+				if (value) users.add(value);
+			}
+		}
+		return Array.from(users).sort((a, b) => a.localeCompare(b));
+	}, [adminUserRolesQ.data?.users, allUserScopes]);
+	const filteredRbacKnownUsers = useMemo(() => {
+		const query = rbacUserQuery.trim().toLowerCase();
+		if (!query) return rbacKnownUsers;
+		return rbacKnownUsers.filter((username) =>
+			username.toLowerCase().includes(query),
+		);
+	}, [rbacKnownUsers, rbacUserQuery]);
+	const filteredRbacRows = useMemo(() => {
+		const query = rbacUserQuery.trim().toLowerCase();
+		const rows = adminUserRolesQ.data?.users ?? [];
+		if (!query) return rows;
+		return rows.filter((row) =>
+			String(row.username ?? "")
+				.toLowerCase()
+				.includes(query),
+		);
+	}, [adminUserRolesQ.data?.users, rbacUserQuery]);
+	useEffect(() => {
+		if (!availableRbacRoles.includes(rbacTargetRole)) {
+			setRbacTargetRole(availableRbacRoles[0] ?? "ADMIN");
+		}
+	}, [availableRbacRoles, rbacTargetRole]);
+	const upsertRbacRole = useMutation({
+		mutationFn: async () =>
+			upsertAdminUserRole(rbacTargetUser, { role: rbacTargetRole }),
+		onSuccess: async () => {
+			toast.success("Role updated");
+			await Promise.all([adminUserRolesQ.refetch(), sessionQ.refetch()]);
+		},
+		onError: (e) => {
+			toast.error("Failed to update role", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	const revokeRbacRole = useMutation({
+		mutationFn: async (payload: { username: string; role: string }) =>
+			deleteAdminUserRole(payload.username, payload.role),
+		onSuccess: async () => {
+			toast.success("Role removed");
+			await Promise.all([adminUserRolesQ.refetch(), sessionQ.refetch()]);
+		},
+		onError: (e) => {
+			toast.error("Failed to remove role", {
 				description: (e as Error).message,
 			});
 		},
@@ -368,6 +486,7 @@ function AdminSettingsPage() {
 			setPurgeUsername("");
 			setPurgeUserQuery("");
 			void userScopesQ.refetch();
+			void adminUserRolesQ.refetch();
 		},
 		onError: (e) => {
 			toast.error("Failed to purge user", {
@@ -588,20 +707,34 @@ function AdminSettingsPage() {
 									</div>
 								</div>
 
-								<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-									<Input
-										placeholder="user@example.com"
-										value={impersonateTarget}
-										onChange={(e) => setImpersonateTarget(e.target.value)}
-									/>
-									<Button
-										onClick={() => impersonateStart.mutate()}
-										disabled={
-											impersonateStart.isPending ||
-											!impersonateTarget.trim() ||
-											impersonateStatusQ.data?.impersonating
-										}
-									>
+									<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+										<Select
+											value={impersonateTarget}
+											onValueChange={setImpersonateTarget}
+											disabled={
+												impersonateStart.isPending ||
+												impersonateStatusQ.data?.impersonating
+											}
+										>
+											<SelectTrigger className="sm:flex-1">
+												<SelectValue placeholder="Select user to impersonate" />
+											</SelectTrigger>
+											<SelectContent>
+												{impersonateUserOptions.map((username) => (
+													<SelectItem key={username} value={username}>
+														{username}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<Button
+											onClick={() => impersonateStart.mutate()}
+											disabled={
+												impersonateStart.isPending ||
+												!impersonateTarget ||
+												impersonateStatusQ.data?.impersonating
+											}
+										>
 										<UserCog className="mr-2 h-4 w-4" />
 										Impersonate
 									</Button>
@@ -709,84 +842,95 @@ function AdminSettingsPage() {
 								{blueprintNetlabTemplatesQ.isError ||
 								quickDeployTemplateOptionsQ.isError ? (
 									<div className="text-xs text-amber-600">
-										Template index lookup failed. You can still edit manually,
-										but save will validate paths server-side.
+										Template index lookup failed. Save will still validate
+										paths server-side.
 									</div>
 								) : null}
 								<div className="space-y-3">
-									{quickDeployTemplates.map((item, index) => (
-										<div
-											key={`${item.id}-${item.template}-${index}`}
-											className="rounded-md border p-3"
-										>
-											<div className="grid gap-2 md:grid-cols-2">
-												<Input
-													placeholder="Card name"
-													value={item.name}
-													onChange={(e) =>
+									{quickDeployTemplates.map((item, index) => {
+										const currentTemplate = item.template.trim();
+										const templateOptions =
+											currentTemplate.length > 0 &&
+											!availableQuickDeployTemplates.includes(currentTemplate)
+												? [currentTemplate, ...availableQuickDeployTemplates]
+												: availableQuickDeployTemplates;
+										return (
+											<div
+												key={`${item.id}-${item.template}-${index}`}
+												className="rounded-md border p-3"
+											>
+												<div className="grid gap-2 md:grid-cols-2">
+													<Input
+														placeholder="Card name"
+														value={item.name}
+														onChange={(e) =>
+															upsertQuickDeployTemplateField(
+																index,
+																"name",
+																e.target.value,
+															)
+														}
+													/>
+													<Input
+														placeholder="ID (optional)"
+														value={item.id ?? ""}
+														onChange={(e) =>
+															upsertQuickDeployTemplateField(
+																index,
+																"id",
+																e.target.value,
+															)
+														}
+													/>
+												</div>
+												<Select
+													value={item.template}
+													onValueChange={(value) =>
 														upsertQuickDeployTemplateField(
 															index,
-															"name",
-															e.target.value,
+															"template",
+															value,
 														)
 													}
-												/>
-												<Input
-													placeholder="ID (optional)"
-													value={item.id ?? ""}
-													onChange={(e) =>
-														upsertQuickDeployTemplateField(
-															index,
-															"id",
-															e.target.value,
-														)
-													}
-												/>
-											</div>
-											<Input
-												className="mt-2"
-												list="quick-deploy-template-options"
-												placeholder="Template path (for example: EVPN/ebgp/topology.yml)"
-												value={item.template}
-												onChange={(e) =>
-													upsertQuickDeployTemplateField(
-														index,
-														"template",
-														e.target.value,
-													)
-												}
-											/>
-											<Input
-												className="mt-2"
-												placeholder="Description"
-												value={item.description ?? ""}
-												onChange={(e) =>
-													upsertQuickDeployTemplateField(
-														index,
-														"description",
-														e.target.value,
-													)
-												}
-											/>
-											<div className="mt-2 flex justify-end">
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() => removeQuickDeployTemplate(index)}
-													disabled={saveQuickDeployCatalog.isPending}
 												>
-													<Trash2 className="mr-2 h-4 w-4" />
-													Remove
-												</Button>
+													<SelectTrigger className="mt-2">
+														<SelectValue placeholder="Template path (for example: EVPN/ebgp/topology.yml)" />
+													</SelectTrigger>
+													<SelectContent>
+														{templateOptions.map((path) => (
+															<SelectItem key={path} value={path}>
+																{path}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+												<Input
+													className="mt-2"
+													placeholder="Description"
+													value={item.description ?? ""}
+													onChange={(e) =>
+														upsertQuickDeployTemplateField(
+															index,
+															"description",
+															e.target.value,
+														)
+													}
+												/>
+												<div className="mt-2 flex justify-end">
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() => removeQuickDeployTemplate(index)}
+														disabled={saveQuickDeployCatalog.isPending}
+													>
+														<Trash2 className="mr-2 h-4 w-4" />
+														Remove
+													</Button>
+												</div>
 											</div>
-										</div>
-									))}
+										);
+									})}
 								</div>
-								<datalist id="quick-deploy-template-options">
-									{availableQuickDeployTemplates.map((path) => (
-										<option key={path} value={path} />
-									))}
-								</datalist>
 								<div className="flex flex-wrap items-center gap-2">
 									<Button
 										variant="outline"
@@ -994,6 +1138,155 @@ function AdminSettingsPage() {
 					</TabsContent>
 
 					<TabsContent value="users" className="space-y-6">
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<Shield className="h-5 w-5" />
+									RBAC role assignments
+								</CardTitle>
+								<CardDescription>
+									Assign direct roles to users. Effective roles include config
+									admin users plus direct grants.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<Input
+									placeholder="Filter users…"
+									value={rbacUserQuery}
+									onChange={(e) => setRbacUserQuery(e.target.value)}
+								/>
+								<div className="grid gap-2 md:grid-cols-[1fr_180px_auto]">
+									<Select value={rbacTargetUser} onValueChange={setRbacTargetUser}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select user…" />
+										</SelectTrigger>
+										<SelectContent>
+											{filteredRbacKnownUsers.length > 0 ? (
+												filteredRbacKnownUsers.map((username) => (
+													<SelectItem key={username} value={username}>
+														{username}
+													</SelectItem>
+												))
+											) : (
+												<div className="px-2 py-1.5 text-sm text-muted-foreground">
+													No matching users
+												</div>
+											)}
+										</SelectContent>
+									</Select>
+									<Select value={rbacTargetRole} onValueChange={setRbacTargetRole}>
+										<SelectTrigger>
+											<SelectValue placeholder="Role" />
+										</SelectTrigger>
+										<SelectContent>
+											{availableRbacRoles.map((role) => (
+												<SelectItem key={role} value={role}>
+													{role}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<Button
+										onClick={() => upsertRbacRole.mutate()}
+										disabled={
+											!rbacTargetUser.trim() ||
+											!rbacTargetRole.trim() ||
+											upsertRbacRole.isPending
+										}
+									>
+										{upsertRbacRole.isPending ? "Saving…" : "Assign role"}
+									</Button>
+								</div>
+
+								{adminUserRolesQ.isLoading ? (
+									<Skeleton className="h-28 w-full" />
+								) : filteredRbacRows.length === 0 ? (
+									<EmptyState
+										title="No users"
+										description="No users available for RBAC assignment."
+									/>
+								) : (
+									<div className="space-y-3">
+										{filteredRbacRows.map((row) => {
+											const username = String(row.username ?? "").trim();
+											const directRoles = row.directRoles ?? [];
+											const effectiveRoles = row.effectiveRoles ?? [];
+											return (
+												<div
+													key={username}
+													className="rounded-md border p-3 text-sm"
+												>
+													<div className="mb-2 flex flex-wrap items-center gap-2">
+														<span className="font-medium">{username}</span>
+														{row.isConfigAdmin ? (
+															<Badge variant="outline">config-admin</Badge>
+														) : null}
+														{row.isAdmin ? (
+															<Badge variant="secondary">admin</Badge>
+														) : null}
+													</div>
+													<div className="space-y-2">
+														<div className="flex flex-wrap items-center gap-2">
+															<span className="text-xs text-muted-foreground">
+																Direct:
+															</span>
+															{directRoles.length > 0 ? (
+																directRoles.map((role) => (
+																	<div
+																		key={`${username}-direct-${role}`}
+																		className="inline-flex items-center gap-1"
+																	>
+																		<Badge variant="outline">{role}</Badge>
+																		<Button
+																			variant="ghost"
+																			size="sm"
+																			className="h-6 px-2"
+																			disabled={revokeRbacRole.isPending}
+																			onClick={() =>
+																				revokeRbacRole.mutate({
+																					username,
+																					role: String(role),
+																				})
+																			}
+																		>
+																			Remove
+																		</Button>
+																	</div>
+																))
+															) : (
+																<span className="text-xs text-muted-foreground">
+																	none
+																</span>
+															)}
+														</div>
+														<div className="flex flex-wrap items-center gap-2">
+															<span className="text-xs text-muted-foreground">
+																Effective:
+															</span>
+															{effectiveRoles.length > 0 ? (
+																effectiveRoles.map((role) => (
+																	<Badge
+																		key={`${username}-effective-${role}`}
+																		variant="secondary"
+																	>
+																		{role}
+																	</Badge>
+																))
+															) : (
+																<span className="text-xs text-muted-foreground">
+																	none
+																</span>
+															)}
+														</div>
+													</div>
+												</div>
+											);
+										})}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+
 						<Card variant="danger">
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">

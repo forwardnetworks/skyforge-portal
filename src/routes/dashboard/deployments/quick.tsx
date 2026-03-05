@@ -128,6 +128,12 @@ async function waitForForwardSyncAndNetwork(
 	throw new Error("Forward sync did not complete within the wait window.");
 }
 
+function hardRefreshToDeploymentTopology(deploymentId: string): void {
+	if (typeof window === "undefined") return;
+	const topologyUrl = `/dashboard/deployments/${encodeURIComponent(deploymentId)}?tab=topology&refresh=${Date.now()}`;
+	window.location.assign(topologyUrl);
+}
+
 function QuickDeployPage() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -195,30 +201,27 @@ function QuickDeployPage() {
 				search: { tab: "topology" } as any,
 			});
 
-			if (typeof window !== "undefined") {
-				void (async () => {
-					try {
-						const forwardNetworkId = await waitForForwardSyncAndNetwork(
-							result.userId,
-							result.deploymentId,
-						);
-						const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
-						const openedTab = window.open(forwardUrl, "_blank");
-						if (!openedTab) {
-							toast.message("Forward window blocked", {
+				if (typeof window !== "undefined") {
+					void (async () => {
+						try {
+							await waitForForwardSyncAndNetwork(
+								result.userId,
+								result.deploymentId,
+							);
+							toast.success("Forward sync completed", {
 								description:
-									"Allow popups for this site to open the synced Forward network tab automatically.",
+									"Use the deployment page buttons to open the network in Forward.",
 							});
-						}
-					} catch (error) {
-						toast.error("Forward sync did not complete", {
+							hardRefreshToDeploymentTopology(result.deploymentId);
+						} catch (error) {
+							toast.error("Forward sync did not complete", {
 							description:
 								error instanceof Error ? error.message : String(error),
 						});
 					}
 				})();
 			}
-		},
+			},
 		onError: (err) => {
 			toast.error("Quick deploy failed", {
 				description: err instanceof Error ? err.message : String(err),
@@ -276,12 +279,12 @@ function QuickDeployPage() {
 	});
 
 	return (
-		<div className="mx-auto w-full max-w-6xl space-y-6 p-6">
+		<div className="w-full space-y-5 p-4 lg:p-5">
 			<div className="space-y-1">
 				<h1 className="text-2xl font-bold tracking-tight">Quick Deploy</h1>
 				<p className="text-sm text-muted-foreground">
 					One-click curated labs using the in-app Forward cluster and managed
-					credentials. Deploy opens the deployment logs first, then opens
+					credentials. Deploy opens the deployment topology first, then opens
 					Forward only after post-deploy sync completes.
 				</p>
 			</div>
@@ -294,7 +297,7 @@ function QuickDeployPage() {
 						the Deployments page.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="max-w-xs">
+				<CardContent className="w-full sm:max-w-sm">
 					<div className="space-y-2">
 						<Label>Duration</Label>
 						<Select value={leaseHours} onValueChange={setLeaseHours}>
@@ -313,7 +316,7 @@ function QuickDeployPage() {
 				</CardContent>
 			</Card>
 
-			<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
 				{catalogQ.isError ? (
 					<Card className="md:col-span-2 xl:col-span-3">
 						<CardHeader>

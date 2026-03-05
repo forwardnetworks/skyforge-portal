@@ -54,7 +54,9 @@ import {
 	syncGovernanceSources,
 	updateGovernancePolicy,
 } from "../../lib/api-client";
+import { requireAdminRouteAccess } from "../../lib/admin-route";
 import { queryKeys } from "../../lib/query-keys";
+import { sessionIsAdmin } from "../../lib/rbac";
 
 function formatSeconds(seconds: unknown): string {
 	const n = Number(seconds);
@@ -78,8 +80,12 @@ const governanceSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/admin/governance")({
+	beforeLoad: async ({ context }) => requireAdminRouteAccess(context),
 	validateSearch: (search) => governanceSearchSchema.parse(search),
-	loaderDeps: ({ search: { q, tab } }) => ({ q, tab }),
+	loaderDeps: ({ search }) => ({
+		q: String((search as Record<string, unknown>)?.q ?? ""),
+		tab: String((search as Record<string, unknown>)?.tab ?? "policy"),
+	}),
 	loader: async ({ context: { queryClient } }) => {
 		const session = await queryClient.ensureQueryData({
 			queryKey: queryKeys.session(),
@@ -87,7 +93,7 @@ export const Route = createFileRoute("/admin/governance")({
 			staleTime: 30_000,
 			retry: false,
 		});
-		if (!session?.isAdmin) return;
+		if (!sessionIsAdmin(session)) return;
 
 		// Prefetch all data to ensure tab switching is instant
 		await Promise.all([
@@ -119,7 +125,9 @@ export const Route = createFileRoute("/admin/governance")({
 function GovernancePage() {
 	const queryClient = useQueryClient();
 	const navigate = Route.useNavigate();
-	const { q, tab } = Route.useSearch();
+	const search = Route.useSearch() as { q?: string; tab?: string };
+	const q = String(search.q ?? "");
+	const tab = String(search.tab ?? "policy");
 
 	const sessionQ = useQuery({
 		queryKey: queryKeys.session(),
@@ -127,7 +135,7 @@ function GovernancePage() {
 		staleTime: 30_000,
 		retry: false,
 	});
-	const isAdmin = !!sessionQ.data?.isAdmin;
+	const isAdmin = sessionIsAdmin(sessionQ.data);
 
 	const summary = useQuery({
 		queryKey: queryKeys.governanceSummary(),

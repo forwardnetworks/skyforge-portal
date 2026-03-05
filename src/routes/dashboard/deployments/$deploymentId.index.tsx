@@ -557,7 +557,7 @@ function DeploymentDetailPage() {
 	if (!deployment) {
 		if (snap.isLoading || snap.isFetching) {
 			return (
-				<div className="space-y-6 p-6">
+				<div className="space-y-5 p-4 lg:p-5">
 					<div className="flex items-center gap-4">
 						<Skeleton className="h-10 w-32" />
 						<Skeleton className="h-10 w-48" />
@@ -582,7 +582,7 @@ function DeploymentDetailPage() {
 	}
 
 	return (
-		<div className="space-y-6 p-6 pb-20">
+		<div className="space-y-5 p-4 pb-16 lg:p-5 lg:pb-20">
 			{/* Header */}
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 				<div className="flex items-center gap-3">

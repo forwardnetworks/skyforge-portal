@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { SKYFORGE_API } from "../lib/api-client";
+import { sessionHasRole } from "../lib/rbac";
+import { buildLoginUrl } from "../lib/skyforge-config";
+import { buildCoderLaunchUrl } from "../lib/tool-links";
 import { cn } from "../lib/utils";
 import {
 	DropdownMenu,
@@ -55,6 +58,8 @@ export type Features = {
 };
 
 const FORWARD_CLUSTER_URL = "https://skyforge-fwd.local.forwardnetworks.com";
+const NAUTOBOT_LAUNCH_URL = buildLoginUrl("/nautobot/");
+const CODER_LAUNCH_URL = buildCoderLaunchUrl();
 
 const items: NavItem[] = [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
@@ -124,7 +129,7 @@ const items: NavItem[] = [
 	},
 	{
 		label: "Coder",
-		href: "/coder/launch",
+		href: CODER_LAUNCH_URL,
 		icon: Cloud,
 		external: true,
 		featureFlag: "coderEnabled",
@@ -148,7 +153,7 @@ const items: NavItem[] = [
 	},
 	{
 		label: "Nautobot",
-		href: "/nautobot/",
+		href: NAUTOBOT_LAUNCH_URL,
 		icon: Network,
 		external: true,
 		featureFlag: "nautobotEnabled",
@@ -162,7 +167,7 @@ const items: NavItem[] = [
 			{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
 			{
 				label: "Coder Admin",
-				href: "/coder/",
+				href: CODER_LAUNCH_URL,
 				icon: Cloud,
 				external: true,
 				adminOnly: true,
@@ -185,9 +190,14 @@ const items: NavItem[] = [
 ];
 
 export function buildSideNavItems(
-	isAdmin?: boolean,
+	sessionOrAdmin?: unknown,
 	features?: Features,
 ): NavItem[] {
+	const session =
+		typeof sessionOrAdmin === "boolean"
+			? { isAdmin: sessionOrAdmin }
+			: sessionOrAdmin;
+	const isAdmin = sessionHasRole(session, "ADMIN");
 	const filterItems = (input: NavItem[]): NavItem[] =>
 		input.flatMap((item) => {
 			if (item.adminOnly && !isAdmin) return [];
@@ -205,6 +215,7 @@ export function buildSideNavItems(
 
 export function SideNav(props: {
 	collapsed?: boolean;
+	session?: unknown;
 	isAdmin?: boolean;
 	features?: Features;
 }) {
@@ -233,7 +244,7 @@ export function SideNav(props: {
 		<nav className="grid items-start gap-2">
 			<div className="space-y-2">
 				<div className="grid gap-1">
-					{buildSideNavItems(!!props.isAdmin, props.features).map((item) => {
+					{buildSideNavItems(props.session ?? { isAdmin: !!props.isAdmin }, props.features).map((item) => {
 						const Icon = item.icon;
 
 						if (item.children) {

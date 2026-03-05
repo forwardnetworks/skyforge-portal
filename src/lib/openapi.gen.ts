@@ -236,7 +236,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GetAdminImpersonateStatus returns current impersonation status (admin only). */
+        /** GetAdminImpersonateStatus returns current impersonation status. */
         get: operations["GET:skyforge.GetAdminImpersonateStatus"];
         put?: never;
         post?: never;
@@ -282,6 +282,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/observability/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetObservabilitySeries returns compact observability time series for admin
+         *     views.
+         */
+        get: operations["GET:skyforge.GetObservabilitySeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/observability/slow-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetObservabilitySlowRequests returns sampled slow request records (admin only). */
+        get: operations["GET:skyforge.GetObservabilitySlowRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/observability/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetObservabilitySummary returns lightweight native observability signals (admin
+         *     only).
+         */
+        get: operations["GET:skyforge.GetObservabilitySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/quick-deploy/catalog": {
         parameters: {
             query?: never;
@@ -298,6 +355,77 @@ export interface paths {
         put: operations["PUT:skyforge.UpdateAdminQuickDeployCatalog"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/quick-deploy/template-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetAdminQuickDeployTemplateOptions returns available blueprint templates for
+         *     quick deploy curation.
+         */
+        get: operations["GET:skyforge.GetAdminQuickDeployTemplateOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/rbac/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListAdminUserRoles returns direct and effective RBAC roles for known users. */
+        get: operations["GET:skyforge.ListAdminUserRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/rbac/users/{username}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** UpsertAdminUserRole grants or updates a direct RBAC role for a user. */
+        post: operations["POST:skyforge.UpsertAdminUserRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/rbac/users/{username}/roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DeleteAdminUserRole revokes a direct RBAC role from a user. */
+        delete: operations["DELETE:skyforge.DeleteAdminUserRole"];
         options?: never;
         head?: never;
         patch?: never;
@@ -375,6 +503,27 @@ export interface paths {
          * @description This is an admin-only manual guardrail; the worker also runs an automatic reconciler via cron.
          */
         post: operations["POST:skyforge.ReconcileRunningTasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/tasks/workspace-pods/cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CleanupWorkspacePods force-cleans clabernetes topology pods/resources from
+         *     workspace namespaces (admin only).
+         * @description This is a manual safety valve when deployment delete flows leave topology pods behind.
+         */
+        post: operations["POST:skyforge.CleanupWorkspacePods"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1361,6 +1510,64 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["POST:skyforge.Logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/api-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListUserAPITokens returns metadata for the current user's API tokens. */
+        get: operations["GET:skyforge.ListUserAPITokens"];
+        put?: never;
+        /**
+         * CreateUserAPIToken creates a new API token for the current user.
+         * @description NOTE: plaintext token is only returned once in this response.
+         */
+        post: operations["POST:skyforge.CreateUserAPIToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/api-tokens/{tokenID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** RevokeUserAPIToken revokes an existing API token. */
+        delete: operations["DELETE:skyforge.RevokeUserAPIToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/api-tokens/{tokenID}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RegenerateUserAPIToken rotates the secret for an existing API token.
+         * @description NOTE: plaintext token is only returned once in this response.
+         */
+        post: operations["POST:skyforge.RegenerateUserAPIToken"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3620,6 +3827,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/netlab/device-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserScopeNetlabDeviceOptions returns supported canonical netlab device keys
+         * @description for deployment environment overrides such as NETLAB\_DEVICE.
+         */
+        get: operations["GET:skyforge.GetUserScopeNetlabDeviceOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}/netlab/template": {
         parameters: {
             query?: never;
@@ -3981,9 +4208,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * SyncUserBlueprint keeps backward compatibility for explicit blueprint sync
+         * SyncUserBlueprint keeps backward compatibility for legacy "sync blueprint"
          *     calls.
-         * @description Blueprints are consumed directly from the shared catalog repo, so there is no per-user copy step anymore.
+         * @description In git-native mode this endpoint only refreshes template cache state.
          */
         post: operations["POST:skyforge.SyncUserBlueprint"];
         delete?: never;
@@ -4467,6 +4694,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["POST:skyforge.CronSnapshotGovernanceUsage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/cron/observability/cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:skyforge.CronCleanupObservability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/cron/observability/rollup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:skyforge.CronRollupObservability"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5145,6 +5404,31 @@ export interface components {
             status: string;
             workerImage: string;
         };
+        "skyforge.AdminUserRoleGrant": {
+            createdAt: string;
+            grantedBy: string;
+            role: string;
+        };
+        "skyforge.AdminUserRoleRecord": {
+            directRoles: string[];
+            effectiveRoles: string[];
+            grants: components["schemas"]["skyforge.AdminUserRoleGrant"][];
+            isAdmin: boolean;
+            isConfigAdmin: boolean;
+            username: string;
+        };
+        "skyforge.AdminWorkspacePodCleanupNamespaceResult": {
+            errors: string[];
+            namespace: string;
+            /** Format: int64 */
+            orphanCleanupAttempts: number;
+            /** Format: int64 */
+            topologiesDeleted: number;
+            /** Format: int64 */
+            topologiesFound: number;
+            /** Format: int64 */
+            topologyOwnersFound: number;
+        };
         "skyforge.AssignableUser": {
             display: string;
             email: string;
@@ -5295,6 +5579,14 @@ export interface components {
             apiUrl: string;
             labName: string;
         };
+        "skyforge.DeploymentActionQueue": {
+            expiresAt: string;
+            nextRetryAt: string;
+            /** Format: int64 */
+            position: number;
+            /** Format: int64 */
+            queueDepth: number;
+        };
         "skyforge.DeploymentActionState": {
             desired: components["schemas"]["skyforge.DeploymentPresenceState"];
             observed: components["schemas"]["skyforge.DeploymentPresenceState"];
@@ -5427,6 +5719,48 @@ export interface components {
          * @description All limits are optional. A value of 0 means "unlimited/disabled".
          */
         "skyforge.GovernancePolicy": {
+            /**
+             * AdvisoryLatencyCritMs marks p95 latency as critical level for observability
+             *     advisories.
+             * Format: int64
+             */
+            advisoryLatencyCritMs: number;
+            /**
+             * AdvisoryLatencyWarnMs marks p95 latency as warning level for observability
+             *     advisories.
+             * Format: int64
+             */
+            advisoryLatencyWarnMs: number;
+            /**
+             * AdvisoryNodeCPUCritPct marks node CPU p95 percentage as critical level.
+             * Format: int64
+             */
+            advisoryNodeCpuCritPct: number;
+            /**
+             * AdvisoryNodeCPUWarnPct marks node CPU p95 percentage as warning level.
+             * Format: int64
+             */
+            advisoryNodeCpuWarnPct: number;
+            /**
+             * AdvisoryNodeMemCritPct marks node memory p95 percentage as critical level.
+             * Format: int64
+             */
+            advisoryNodeMemCritPct: number;
+            /**
+             * AdvisoryNodeMemWarnPct marks node memory p95 percentage as warning level.
+             * Format: int64
+             */
+            advisoryNodeMemWarnPct: number;
+            /**
+             * AdvisoryQueueOldestCritSec marks queued oldest-age as critical level.
+             * Format: int64
+             */
+            advisoryQueueOldestCritSec: number;
+            /**
+             * AdvisoryQueueOldestWarnSec marks queued oldest-age as warning level.
+             * Format: int64
+             */
+            advisoryQueueOldestWarnSec: number;
             /**
              * AllowCustomTemplateRepos controls whether non-admin users may use template
              *     source = custom.
@@ -5618,6 +5952,35 @@ export interface components {
             updated_at: string;
             username: string;
         };
+        "skyforge.ObservabilityAdvisory": {
+            /** ok|warn|crit */
+            level: string;
+            message: string;
+            metric: string;
+            threshold: number;
+            value: number;
+        };
+        "skyforge.ObservabilitySeriesPoint": {
+            timestamp: string;
+            value: number;
+        };
+        "skyforge.ObservabilitySlowRequest": {
+            causeCode: string;
+            collectedAt: string;
+            endpointKey: string;
+            /** Format: int64 */
+            phaseDbMs: number;
+            /** Format: int64 */
+            phaseEnrichMs: number;
+            /** Format: int64 */
+            queueOldestSec: number;
+            /** Format: int64 */
+            statusCode: number;
+            /** Format: int64 */
+            totalMs: number;
+            /** Format: int64 */
+            workerHeartbeatSec: number;
+        };
         "skyforge.PolicyReportForwardNetwork": {
             collectorConfigId: string;
             /** Format: date-time */
@@ -5760,6 +6123,15 @@ export interface components {
             label: string;
             mgmtIp: string;
             status: string;
+        };
+        "skyforge.UserAPITokenMetadata": {
+            createdAt: string;
+            id: string;
+            lastUsedAt: string;
+            lastUsedIp: string;
+            name: string;
+            revokedAt: string;
+            updatedAt: string;
         };
         "skyforge.UserContainerlabServerConfig": {
             apiInsecure: boolean;
@@ -6000,6 +6372,20 @@ export interface components {
         "skyforge.deploymentPreflightSummary": {
             capacity: components["schemas"]["skyforge.JSONMap"];
             compatibility: components["schemas"]["skyforge.JSONMap"];
+        };
+        "skyforge.observabilityEndpointSummary": {
+            /** Format: int64 */
+            count: number;
+            endpointKey: string;
+            /** Format: int64 */
+            errorCount: number;
+            /** Format: int64 */
+            p50Ms: number;
+            /** Format: int64 */
+            p95Ms: number;
+            /** Format: int64 */
+            p99Ms: number;
+            topCause: string;
         };
         "skyforge.quickDeployTemplate": {
             description: string;
@@ -6364,6 +6750,7 @@ export interface operations {
                         costCurrency: string;
                         costLast30Days: number;
                         lastCostPeriodEnd: string;
+                        performanceAdvisories: components["schemas"]["skyforge.ObservabilityAdvisory"][];
                         providerBreakdown: components["schemas"]["skyforge.ProviderCostBreakdown"][];
                         /** Format: int64 */
                         resourceCount: number;
@@ -6565,6 +6952,97 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetObservabilitySeries": {
+        parameters: {
+            query: {
+                metric: string;
+                window?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        metric: string;
+                        points: components["schemas"]["skyforge.ObservabilitySeriesPoint"][];
+                        window: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetObservabilitySlowRequests": {
+        parameters: {
+            query?: {
+                window?: string;
+                endpoint?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requests: components["schemas"]["skyforge.ObservabilitySlowRequest"][];
+                        window: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetObservabilitySummary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        advisories: components["schemas"]["skyforge.ObservabilityAdvisory"][];
+                        endpoints: components["schemas"]["skyforge.observabilityEndpointSummary"][];
+                        generatedAt: string;
+                        nodeCpuActiveP95: number;
+                        nodeMemUsedP95: number;
+                        /** Format: int64 */
+                        queueOldestSec: number;
+                        /** Format: int64 */
+                        queueQueued: number;
+                        /** Format: int64 */
+                        queueRunning: number;
+                        /** Format: int64 */
+                        workerHeartbeatSec: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetAdminQuickDeployCatalog": {
         parameters: {
             query?: never;
@@ -6581,6 +7059,10 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        branch: string;
+                        dir: string;
+                        options: string[];
+                        repo: string;
                         retrievedAt: string;
                         source: string;
                         templates: components["schemas"]["skyforge.quickDeployTemplate"][];
@@ -6615,6 +7097,116 @@ export interface operations {
                         status: string;
                         templates: components["schemas"]["skyforge.quickDeployTemplate"][];
                         updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminQuickDeployTemplateOptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        branch: string;
+                        dir: string;
+                        repo: string;
+                        retrievedAt: string;
+                        templates: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListAdminUserRoles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        availableRoles: string[];
+                        generatedAt: string;
+                        users: components["schemas"]["skyforge.AdminUserRoleRecord"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.UpsertAdminUserRole": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    role: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: components["schemas"]["skyforge.AdminUserRoleRecord"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteAdminUserRole": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+                role: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        removedRole: string;
+                        user: components["schemas"]["skyforge.AdminUserRoleRecord"];
                     };
                 };
             };
@@ -6814,6 +7406,55 @@ export interface operations {
                         /** Format: int64 */
                         markedFailed: number;
                         status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CleanupWorkspacePods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** DryRun previews cleanup candidates without deleting anything. */
+                    dryRun: boolean;
+                    /** Optional namespace override (for targeted/manual cleanup). */
+                    namespace: string;
+                    /** Optional user scope filter. When empty, all known user scopes are considered. */
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dryRun: boolean;
+                        errors: string[];
+                        namespace: string;
+                        namespaceResults: components["schemas"]["skyforge.AdminWorkspacePodCleanupNamespaceResult"][];
+                        /** Format: int64 */
+                        namespacesConsidered: number;
+                        /** Format: int64 */
+                        orphanCleanupAttempts: number;
+                        status: string;
+                        /** Format: int64 */
+                        topologiesDeleted: number;
+                        /** Format: int64 */
+                        topologiesFound: number;
+                        /** Format: int64 */
+                        topologyOwnersFound: number;
+                        userScopeId: string;
                     };
                 };
             };
@@ -8711,6 +9352,111 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.ListUserAPITokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tokens: components["schemas"]["skyforge.UserAPITokenMetadata"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateUserAPIToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        token: string;
+                        tokenMeta: components["schemas"]["skyforge.UserAPITokenMetadata"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.RevokeUserAPIToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tokenID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        revoked: boolean;
+                        tokenId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RegenerateUserAPIToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tokenID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        token: string;
+                        tokenMeta: components["schemas"]["skyforge.UserAPITokenMetadata"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetUserAWSSSOCredentials": {
         parameters: {
             query?: never;
@@ -10105,10 +10851,13 @@ export interface operations {
                         actorUsername: string;
                         authenticated: boolean;
                         displayName: string;
+                        effectiveRole: string;
                         email: string;
+                        expiresAt: string;
                         groups: string[];
                         impersonating: boolean;
                         isAdmin: boolean;
+                        roles: string[];
                         username: string;
                     };
                 };
@@ -11654,10 +12403,12 @@ export interface operations {
                         deployment: components["schemas"]["skyforge.UserScopeDeployment"];
                         idempotent: boolean;
                         noOp: boolean;
+                        queue: components["schemas"]["skyforge.DeploymentActionQueue"];
                         reason: components["schemas"]["deploycore.Reason"];
                         run: components["schemas"]["skyforge.JSONMap"];
                         state: components["schemas"]["skyforge.DeploymentActionState"];
                         userId: string;
+                        warnings: string[];
                     };
                 };
             };
@@ -11692,10 +12443,12 @@ export interface operations {
                         deployment: components["schemas"]["skyforge.UserScopeDeployment"];
                         idempotent: boolean;
                         noOp: boolean;
+                        queue: components["schemas"]["skyforge.DeploymentActionQueue"];
                         reason: components["schemas"]["deploycore.Reason"];
                         run: components["schemas"]["skyforge.JSONMap"];
                         state: components["schemas"]["skyforge.DeploymentActionState"];
                         userId: string;
+                        warnings: string[];
                     };
                 };
             };
@@ -13491,6 +14244,34 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetUserScopeNetlabDeviceOptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        devices: string[];
+                        generatedAt: string;
+                        source: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetUserScopeNetlabTemplate": {
         parameters: {
             query?: {
@@ -14359,10 +15140,13 @@ export interface operations {
                         actorUsername: string;
                         authenticated: boolean;
                         displayName: string;
+                        effectiveRole: string;
                         email: string;
+                        expiresAt: string;
                         groups: string[];
                         impersonating: boolean;
                         isAdmin: boolean;
+                        roles: string[];
                         username: string;
                     };
                 };
@@ -14791,6 +15575,44 @@ export interface operations {
         };
     };
     "POST:skyforge.CronSnapshotGovernanceUsage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CronCleanupObservability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CronRollupObservability": {
         parameters: {
             query?: never;
             header?: never;

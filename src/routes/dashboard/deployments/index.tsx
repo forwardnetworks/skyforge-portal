@@ -92,6 +92,7 @@ import {
 	runDeploymentActionWithRetry,
 } from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
+import { sessionIsAdmin } from "../../../lib/rbac";
 import { cn } from "../../../lib/utils";
 
 // Search Schema
@@ -380,6 +381,7 @@ function DeploymentsPage() {
 	};
 
 	const fallbackManagedFamilies = ["c9s", "byos", "terraform"];
+	const isAdmin = sessionIsAdmin(session.data);
 	const managedFamilies = useMemo(
 		() =>
 			new Set(
@@ -399,8 +401,7 @@ function DeploymentsPage() {
 	const defaultLifetimeHours =
 		Number.parseInt(String(lifetimePolicyQ.data?.defaultHours ?? 24), 10) || 24;
 	const allowNoExpiry =
-		Boolean(session.data?.isAdmin) &&
-		Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? true);
+		isAdmin && Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? true);
 
 	const isManagedDeploymentType = (typ: string) =>
 		managedFamilies.has(String(typ).trim().toLowerCase());
@@ -731,7 +732,7 @@ function DeploymentsPage() {
 	const destroyHasForward = !!destroyTarget?.config?.forwardNetworkId;
 
 	return (
-		<div className="space-y-6 p-6">
+		<div className="space-y-5 p-4 lg:p-5">
 			{/* Top Header / User Context */}
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b pb-6">
 				<div>

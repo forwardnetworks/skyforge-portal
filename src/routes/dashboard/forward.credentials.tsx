@@ -138,7 +138,7 @@ function ForwardCredentialsPage() {
 	});
 
 	return (
-		<div className="mx-auto w-full max-w-3xl space-y-6 p-6">
+		<div className="w-full space-y-6 p-4 sm:p-6 xl:p-8">
 			<div className="space-y-1">
 				<h1 className="text-2xl font-bold tracking-tight">
 					Forward Credentials

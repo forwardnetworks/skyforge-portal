@@ -87,6 +87,7 @@ import {
 	runDeploymentActionWithRetry,
 } from "../../../lib/deployment-actions";
 import { queryKeys } from "../../../lib/query-keys";
+import { sessionIsAdmin } from "../../../lib/rbac";
 
 const deploymentsSearchSchema = z.object({
 	userId: z.string().optional().catch(""),
@@ -302,6 +303,12 @@ async function waitForForwardSyncAndNetwork(
 	throw new Error("Forward sync did not complete within the wait window.");
 }
 
+function hardRefreshToDeploymentTopology(deploymentId: string): void {
+	if (typeof window === "undefined") return;
+	const topologyUrl = `/dashboard/deployments/${encodeURIComponent(deploymentId)}?tab=topology&refresh=${Date.now()}`;
+	window.location.assign(topologyUrl);
+}
+
 function CreateDeploymentPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -348,6 +355,7 @@ function CreateDeploymentPage() {
 		staleTime: 30_000,
 		retry: false,
 	});
+	const isAdmin = sessionIsAdmin(sessionQ.data);
 	const lifetimePolicyQ = useQuery<DeploymentLifetimePolicyResponse>({
 		queryKey: queryKeys.deploymentLifetimePolicy(),
 		queryFn: getDeploymentLifetimePolicy,
@@ -461,7 +469,7 @@ function CreateDeploymentPage() {
 			.toLowerCase(),
 	);
 	const allowNoExpiry = Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? false);
-	const lifetimeCanEdit = Boolean(sessionQ.data?.isAdmin) && lifetimeManaged;
+	const lifetimeCanEdit = isAdmin && lifetimeManaged;
 	const expiryAction = String(
 		lifetimePolicyQ.data?.expiryActions?.[watchSpec.family] ?? "stop",
 	)
@@ -996,10 +1004,7 @@ function CreateDeploymentPage() {
 
 			const { family, engine } = deploymentKindToSpec(normalizedKind);
 			config.engine = engine;
-			if (
-				Boolean(sessionQ.data?.isAdmin) &&
-				managedFamilies.has(String(family).trim().toLowerCase())
-			) {
+			if (isAdmin && managedFamilies.has(String(family).trim().toLowerCase())) {
 				const selectedLifetime = String(values.labLifetime ?? "").trim();
 				if (selectedLifetime === "never") {
 					config.leaseEnabled = false;
@@ -1074,30 +1079,27 @@ function CreateDeploymentPage() {
 				search: { tab: "topology" } as any,
 			});
 
-			if (shouldOpenForward && typeof window !== "undefined") {
-				void (async () => {
-					try {
-						const forwardNetworkId = await waitForForwardSyncAndNetwork(
-							scopeId,
-							deploymentId,
-						);
-						const forwardUrl = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkId)}`;
-						const openedTab = window.open(forwardUrl, "_blank");
-						if (!openedTab) {
-							toast.message("Forward window blocked", {
+				if (shouldOpenForward && typeof window !== "undefined") {
+					void (async () => {
+						try {
+							await waitForForwardSyncAndNetwork(
+								scopeId,
+								deploymentId,
+							);
+							toast.success("Forward sync completed", {
 								description:
-									"Allow popups for this site to open the synced Forward network tab automatically.",
+									"Use the deployment page buttons to open the network in Forward.",
 							});
-						}
-					} catch (error) {
-						toast.error("Forward sync did not complete", {
+							hardRefreshToDeploymentTopology(deploymentId);
+						} catch (error) {
+							toast.error("Forward sync did not complete", {
 							description:
 								error instanceof Error ? error.message : String(error),
 						});
 					}
 				})();
 			}
-		},
+			},
 		onError: (error) => {
 			toast.error("Failed to create deployment", {
 				description: (error as Error).message,
@@ -1333,7 +1335,7 @@ function CreateDeploymentPage() {
 		!templateEstimateQ.error;
 
 	return (
-		<div className="space-y-6 p-6">
+		<div className="space-y-5 p-4 lg:p-5">
 			<Card variant="glass">
 				<CardHeader>
 					<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

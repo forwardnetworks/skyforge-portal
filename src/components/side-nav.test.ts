@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSideNavItems } from "./side-nav";
+import { buildLoginUrl } from "../lib/skyforge-config";
 
 function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 	return items.find((i) => i.label === label);
@@ -44,6 +45,7 @@ describe("side nav model", () => {
 			giteaEnabled: true,
 			coderEnabled: true,
 			yaadeEnabled: true,
+			nautobotEnabled: true,
 		});
 		const labels = items.map((i) => i.label);
 		expect(labels).toContain("Quick Deploy");
@@ -54,6 +56,10 @@ describe("side nav model", () => {
 		expect(labels).toContain("Integrations");
 		expect(labels).toContain("Git");
 		expect(labels).toContain("Webhooks");
+		const coder = items.find((i) => i.label === "Coder");
+		expect(coder?.href).toBe(buildLoginUrl("/coder/"));
+		const nautobot = items.find((i) => i.label === "Nautobot");
+		expect(nautobot?.href).toBe(buildLoginUrl("/nautobot/"));
 	});
 
 	it("moves Coder Admin under Settings", () => {
@@ -63,5 +69,7 @@ describe("side nav model", () => {
 
 		const settings = findGroup("Settings", items);
 		expect(settings?.children?.map((c) => c.label)).toContain("Coder Admin");
+		const coderAdmin = settings?.children?.find((c) => c.label === "Coder Admin");
+		expect(coderAdmin?.href).toBe(buildLoginUrl("/coder/"));
 	});
 });

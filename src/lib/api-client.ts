@@ -296,6 +296,13 @@ export async function getSession(): Promise<SessionResponseEnvelope> {
 	return apiFetch<SessionResponseEnvelope>("/api/session");
 }
 
+export async function refreshSession(): Promise<SessionResponseEnvelope> {
+	return apiFetch<SessionResponseEnvelope>("/auth/refresh", {
+		method: "POST",
+		body: "{}",
+	});
+}
+
 export async function logout(): Promise<void> {
 	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/auth/logout`, {
 		method: "POST",
@@ -698,6 +705,71 @@ export async function putUserSettings(payload: {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
+}
+
+export type UserAPITokenMetadata = {
+	id: string;
+	name: string;
+	createdAt: ISO8601;
+	updatedAt: ISO8601;
+	lastUsedAt?: ISO8601;
+	lastUsedIp?: string;
+	revokedAt?: ISO8601;
+};
+
+export type ListUserAPITokensResponse = {
+	tokens: UserAPITokenMetadata[];
+};
+
+export type CreateUserAPITokenResponse = {
+	token: string;
+	tokenMeta: UserAPITokenMetadata;
+};
+
+export type RegenerateUserAPITokenResponse = {
+	token: string;
+	tokenMeta: UserAPITokenMetadata;
+};
+
+export type RevokeUserAPITokenResponse = {
+	tokenId: string;
+	revoked: boolean;
+};
+
+export async function listUserAPITokens(): Promise<ListUserAPITokensResponse> {
+	return apiFetch<ListUserAPITokensResponse>("/api/me/api-tokens");
+}
+
+export async function createUserAPIToken(payload?: {
+	name?: string;
+}): Promise<CreateUserAPITokenResponse> {
+	return apiFetch<CreateUserAPITokenResponse>("/api/me/api-tokens", {
+		method: "POST",
+		body: JSON.stringify(payload ?? {}),
+	});
+}
+
+export async function regenerateUserAPIToken(
+	tokenId: string,
+): Promise<RegenerateUserAPITokenResponse> {
+	return apiFetch<RegenerateUserAPITokenResponse>(
+		`/api/me/api-tokens/${encodeURIComponent(tokenId)}/regenerate`,
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
+export async function revokeUserAPIToken(
+	tokenId: string,
+): Promise<RevokeUserAPITokenResponse> {
+	return apiFetch<RevokeUserAPITokenResponse>(
+		`/api/me/api-tokens/${encodeURIComponent(tokenId)}`,
+		{
+			method: "DELETE",
+		},
+	);
 }
 
 export type AwsSsoConfigResponse = {
@@ -2983,6 +3055,45 @@ export async function adminImpersonateStop(): Promise<AdminImpersonateStopRespon
 		method: "POST",
 		body: "{}",
 	});
+}
+
+export type AdminUserRolesResponse =
+	operations["GET:skyforge.ListAdminUserRoles"]["responses"][200]["content"]["application/json"];
+export type AdminUserRoleRecord = AdminUserRolesResponse["users"][number];
+export async function getAdminUserRoles(): Promise<AdminUserRolesResponse> {
+	return apiFetch<AdminUserRolesResponse>("/api/admin/rbac/users");
+}
+
+export type UpsertAdminUserRoleRequest = NonNullable<
+	operations["POST:skyforge.UpsertAdminUserRole"]["requestBody"]
+>["content"]["application/json"];
+export type UpsertAdminUserRoleResponse =
+	operations["POST:skyforge.UpsertAdminUserRole"]["responses"][200]["content"]["application/json"];
+export async function upsertAdminUserRole(
+	username: string,
+	body: UpsertAdminUserRoleRequest,
+): Promise<UpsertAdminUserRoleResponse> {
+	return apiFetch<UpsertAdminUserRoleResponse>(
+		`/api/admin/rbac/users/${encodeURIComponent(username)}/roles`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export type DeleteAdminUserRoleResponse =
+	operations["DELETE:skyforge.DeleteAdminUserRole"]["responses"][200]["content"]["application/json"];
+export async function deleteAdminUserRole(
+	username: string,
+	role: string,
+): Promise<DeleteAdminUserRoleResponse> {
+	return apiFetch<DeleteAdminUserRoleResponse>(
+		`/api/admin/rbac/users/${encodeURIComponent(username)}/roles/${encodeURIComponent(role)}`,
+		{
+			method: "DELETE",
+		},
+	);
 }
 
 export type AdminReconcileQueuedTasksRequest = NonNullable<

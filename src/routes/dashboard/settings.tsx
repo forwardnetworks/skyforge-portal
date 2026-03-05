@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { Loader2, Save, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Copy, Loader2, Save, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -21,16 +21,10 @@ import {
 	FormMessage,
 } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../../components/ui/select";
 import { Textarea } from "../../components/ui/textarea";
 import { UserVariableGroups } from "../../components/user-variable-groups";
 import {
+	createUserAPIToken,
 	deleteUserAWSStaticCredentials,
 	deleteUserAzureCredentials,
 	deleteUserContainerlabServer,
@@ -40,23 +34,26 @@ import {
 	deleteUserNetlabServer,
 	getAwsSsoConfig,
 	getAwsSsoStatus,
+	getUserAWSSSOCredentials,
 	getUserAWSStaticCredentials,
 	getUserAzureCredentials,
 	getUserGCPCredentials,
 	getUserIBMCredentials,
-	getUserServiceNowConfig,
 	getUserSettings,
+	listUserAPITokens,
 	listUserContainerlabServers,
 	listUserEveServers,
-	listUserForwardCollectorConfigs,
 	listUserNetlabServers,
 	logoutAwsSso,
 	pollAwsSso,
+	putUserAWSSSOCredentials,
 	putUserAWSStaticCredentials,
 	putUserAzureCredentials,
 	putUserGCPCredentials,
 	putUserIBMCredentials,
 	putUserSettings,
+	regenerateUserAPIToken,
+	revokeUserAPIToken,
 	startAwsSso,
 	upsertUserContainerlabServer,
 	upsertUserEveServer,
@@ -88,39 +85,28 @@ const formSchema = z.object({
 function UserSettingsPage() {
 	const queryClient = useQueryClient();
 
-	const collectorsQ = useQuery({
-		queryKey: queryKeys.userForwardCollectorConfigs(),
-		queryFn: listUserForwardCollectorConfigs,
-		staleTime: 10_000,
-	});
-
 	const settingsQ = useQuery({
 		queryKey: queryKeys.userSettings(),
 		queryFn: getUserSettings,
 		staleTime: 10_000,
 	});
-
-	const collectors = collectorsQ.data?.collectors ?? [];
-	const defaultCollectorId = useMemo(() => {
-		const explicit = settingsQ.data?.defaultForwardCollectorConfigId;
-		if (explicit) return explicit;
-		return (
-			collectors.find((c) => c.name === "default")?.id ??
-			collectors[0]?.id ??
-			""
-		);
-	}, [collectors, settingsQ.data?.defaultForwardCollectorConfigId]);
+	const apiTokensQ = useQuery({
+		queryKey: queryKeys.userApiTokens(),
+		queryFn: listUserAPITokens,
+		staleTime: 10_000,
+		retry: false,
+	});
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		values: {
-			defaultForwardCollectorConfigId: defaultCollectorId || undefined,
+			defaultForwardCollectorConfigId:
+				settingsQ.data?.defaultForwardCollectorConfigId || undefined,
 			defaultEnv: settingsQ.data?.defaultEnv ?? [],
 			externalTemplateRepos: settingsQ.data?.externalTemplateRepos ?? [],
 		},
 	});
 
-	const envArray = useFieldArray({ control: form.control, name: "defaultEnv" });
 	const reposArray = useFieldArray({
 		control: form.control,
 		name: "externalTemplateRepos",
@@ -164,8 +150,60 @@ function UserSettingsPage() {
 		},
 	});
 
-	const busy =
-		collectorsQ.isLoading || settingsQ.isLoading || mutation.isPending;
+	const busy = settingsQ.isLoading || mutation.isPending;
+	const [apiTokenName, setApiTokenName] = useState("");
+	const [revealedApiToken, setRevealedAPIToken] = useState("");
+	const [revealedApiTokenID, setRevealedAPITokenID] = useState("");
+
+	const createApiTokenM = useMutation({
+		mutationFn: async () =>
+			createUserAPIToken({
+				name: apiTokenName.trim() || undefined,
+			}),
+		onSuccess: async (resp) => {
+			setApiTokenName("");
+			setRevealedAPIToken(resp.token);
+			setRevealedAPITokenID(resp.tokenMeta.id);
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userApiTokens(),
+			});
+			toast.success("API token created");
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to create API token", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
+	const regenerateApiTokenM = useMutation({
+		mutationFn: async (tokenID: string) => regenerateUserAPIToken(tokenID),
+		onSuccess: async (resp) => {
+			setRevealedAPIToken(resp.token);
+			setRevealedAPITokenID(resp.tokenMeta.id);
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userApiTokens(),
+			});
+			toast.success("API token regenerated");
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to regenerate API token", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
+	const revokeApiTokenM = useMutation({
+		mutationFn: async (tokenID: string) => revokeUserAPIToken(tokenID),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userApiTokens(),
+			});
+			toast.success("API token revoked");
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to revoke API token", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
 
 	const awsStaticQ = useQuery({
 		queryKey: queryKeys.userAwsStaticCredentials(),
@@ -182,6 +220,12 @@ function UserSettingsPage() {
 	const awsSsoStatusQ = useQuery({
 		queryKey: queryKeys.awsSsoStatus(),
 		queryFn: getAwsSsoStatus,
+		staleTime: 10_000,
+		retry: false,
+	});
+	const userAwsSsoQ = useQuery({
+		queryKey: queryKeys.userAwsSsoCredentials(),
+		queryFn: getUserAWSSSOCredentials,
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -223,15 +267,10 @@ function UserSettingsPage() {
 		retry: false,
 	});
 
-	const serviceNowQ = useQuery({
-		queryKey: queryKeys.userServiceNowConfig(),
-		queryFn: getUserServiceNowConfig,
-		staleTime: 10_000,
-		retry: false,
-	});
-
 	const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
 	const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
+	const [awsSsoStartUrl, setAwsSsoStartUrl] = useState("");
+	const [awsSsoRegion, setAwsSsoRegion] = useState("");
 
 	const [azureTenantId, setAzureTenantId] = useState("");
 	const [azureClientId, setAzureClientId] = useState("");
@@ -266,6 +305,20 @@ function UserSettingsPage() {
 			return new URL(value).hostname || value;
 		} catch {
 			return value;
+		}
+	};
+	const apiTokens = apiTokensQ.data?.tokens ?? [];
+	const formatMaybeDateTime = (value?: string) =>
+		value ? new Date(value).toLocaleString() : "—";
+	const copyRevealedApiToken = async () => {
+		if (!revealedApiToken.trim()) return;
+		try {
+			await navigator.clipboard.writeText(revealedApiToken);
+			toast.success("API token copied");
+		} catch (err) {
+			toast.error("Failed to copy API token", {
+				description: err instanceof Error ? err.message : String(err),
+			});
 		}
 	};
 
@@ -304,6 +357,34 @@ function UserSettingsPage() {
 			}),
 	});
 
+	const saveAwsSsoConfigM = useMutation({
+		mutationFn: async () =>
+			putUserAWSSSOCredentials({
+				startUrl: awsSsoStartUrl.trim(),
+				region: awsSsoRegion.trim(),
+				accountId: (
+					userAwsSsoQ.data?.accountId ??
+					awsSsoConfigQ.data?.accountId ??
+					""
+				).trim(),
+				roleName: (
+					userAwsSsoQ.data?.roleName ??
+					awsSsoConfigQ.data?.roleName ??
+					""
+				).trim(),
+			}),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userAwsSsoCredentials(),
+			});
+			toast.success("AWS SSO settings saved");
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to save AWS SSO settings", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
 	const [awsSsoSession, setAwsSsoSession] = useState<{
 		requestId: string;
 		verificationUriComplete: string;
@@ -312,6 +393,26 @@ function UserSettingsPage() {
 		intervalSeconds: number;
 	} | null>(null);
 	const [awsSsoPollStatus, setAwsSsoPollStatus] = useState<string>("");
+
+	useEffect(() => {
+		const configuredStartUrl =
+			userAwsSsoQ.data?.startUrl ?? awsSsoConfigQ.data?.startUrl ?? "";
+		const configuredRegion =
+			userAwsSsoQ.data?.region ?? awsSsoConfigQ.data?.region ?? "";
+		if (!awsSsoStartUrl && configuredStartUrl) {
+			setAwsSsoStartUrl(configuredStartUrl);
+		}
+		if (!awsSsoRegion && configuredRegion) {
+			setAwsSsoRegion(configuredRegion);
+		}
+	}, [
+		userAwsSsoQ.data?.startUrl,
+		userAwsSsoQ.data?.region,
+		awsSsoConfigQ.data?.startUrl,
+		awsSsoConfigQ.data?.region,
+		awsSsoStartUrl,
+		awsSsoRegion,
+	]);
 
 	const startAwsSsoM = useMutation({
 		mutationFn: startAwsSso,
@@ -628,7 +729,7 @@ function UserSettingsPage() {
 	});
 
 	return (
-		<div className="mx-auto w-full max-w-4xl space-y-6 p-6">
+		<div className="w-full space-y-6 p-4 sm:p-6 xl:p-8">
 			<div className="space-y-1">
 				<h1 className="text-2xl font-bold tracking-tight">My Settings</h1>
 				<p className="text-sm text-muted-foreground">
@@ -637,164 +738,121 @@ function UserSettingsPage() {
 				</p>
 			</div>
 
+			<Card>
+				<CardHeader>
+					<CardTitle>API Tokens</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="text-sm text-muted-foreground">
+						Create per-user API tokens for automation. Token plaintext is shown
+						once at create/regenerate time.
+					</div>
+					<div className="flex flex-col gap-2 sm:flex-row">
+						<Input
+							placeholder="Token name (optional)"
+							value={apiTokenName}
+							onChange={(e) => setApiTokenName(e.target.value)}
+						/>
+						<Button
+							type="button"
+							onClick={() => createApiTokenM.mutate()}
+							disabled={createApiTokenM.isPending}
+						>
+							{createApiTokenM.isPending ? "Creating…" : "Create token"}
+						</Button>
+					</div>
+					{revealedApiToken ? (
+						<div className="rounded-md border p-3 space-y-2">
+							<div className="text-xs font-medium text-foreground">
+								New token {revealedApiTokenID ? `(${revealedApiTokenID})` : ""}
+							</div>
+							<div className="flex flex-col gap-2 sm:flex-row">
+								<Input value={revealedApiToken} readOnly />
+								<Button
+									type="button"
+									variant="outline"
+									onClick={copyRevealedApiToken}
+								>
+									<Copy className="mr-2 h-4 w-4" />
+									Copy
+								</Button>
+							</div>
+							<div className="text-xs text-amber-600">
+								Store this token now. It will not be shown again.
+							</div>
+						</div>
+					) : null}
+					{apiTokensQ.isLoading ? (
+						<div className="text-sm text-muted-foreground">Loading tokens…</div>
+					) : apiTokensQ.isError ? (
+						<div className="text-sm text-destructive">
+							Failed to load API tokens.
+						</div>
+					) : apiTokens.length === 0 ? (
+						<div className="text-sm text-muted-foreground">
+							No API tokens created.
+						</div>
+					) : (
+						<div className="space-y-3">
+							{apiTokens.map((token) => (
+								<div key={token.id} className="rounded-md border p-3 space-y-2">
+									<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+										<div>
+											<div className="text-sm font-medium">{token.name}</div>
+											<div className="font-mono text-xs text-muted-foreground">
+												{token.id}
+											</div>
+										</div>
+										<div className="flex gap-2">
+											<Button
+												type="button"
+												size="sm"
+												variant="outline"
+												onClick={() => regenerateApiTokenM.mutate(token.id)}
+												disabled={
+													regenerateApiTokenM.isPending ||
+													Boolean(token.revokedAt)
+												}
+											>
+												Regenerate
+											</Button>
+											<Button
+												type="button"
+												size="sm"
+												variant="outline"
+												onClick={() => revokeApiTokenM.mutate(token.id)}
+												disabled={
+													revokeApiTokenM.isPending || Boolean(token.revokedAt)
+												}
+											>
+												Revoke
+											</Button>
+										</div>
+									</div>
+									<div className="grid gap-1 text-xs text-muted-foreground md:grid-cols-3">
+										<div>Created: {formatMaybeDateTime(token.createdAt)}</div>
+										<div>Updated: {formatMaybeDateTime(token.updatedAt)}</div>
+										<div>
+											Last used: {formatMaybeDateTime(token.lastUsedAt)}
+										</div>
+									</div>
+									{token.revokedAt ? (
+										<div className="text-xs text-amber-600">
+											Revoked: {formatMaybeDateTime(token.revokedAt)}
+										</div>
+									) : null}
+								</div>
+							))}
+						</div>
+					)}
+				</CardContent>
+			</Card>
+
 			<Form {...form}>
 				<form
 					onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
 					className="space-y-6"
 				>
-					<Card>
-						<CardHeader>
-							<CardTitle>Integrations</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div className="flex items-center justify-between gap-3">
-								<div className="min-w-0">
-									<div className="text-sm font-medium">Forward collector</div>
-									<div className="text-sm text-muted-foreground">
-										{collectors.length
-											? `${collectors.length} configured`
-											: "None configured"}
-									</div>
-								</div>
-								<Button asChild variant="outline">
-									<Link to="/dashboard/forward">Open</Link>
-								</Button>
-							</div>
-
-							<div className="flex items-center justify-between gap-3">
-								<div className="min-w-0">
-									<div className="text-sm font-medium">ServiceNow</div>
-									<div className="text-sm text-muted-foreground">
-										{serviceNowQ.data?.configured
-											? "Configured"
-											: "Not configured"}
-									</div>
-								</div>
-								<Button asChild variant="outline">
-									<Link to="/dashboard/servicenow">Open</Link>
-								</Button>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>Defaults</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-6">
-							<FormField
-								control={form.control}
-								name="defaultForwardCollectorConfigId"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Default Forward collector</FormLabel>
-										<Select
-											value={field.value ?? ""}
-											onValueChange={(v) => field.onChange(v)}
-											disabled={collectors.length === 0}
-										>
-											<SelectTrigger>
-												<SelectValue
-													placeholder={
-														collectors.length
-															? "Select collector"
-															: "No collectors"
-													}
-												/>
-											</SelectTrigger>
-											<SelectContent>
-												{collectors
-													.slice()
-													.sort((a, b) =>
-														a.name === "default"
-															? -1
-															: b.name === "default"
-																? 1
-																: 0,
-													)
-													.map((c) => (
-														<SelectItem key={c.id} value={c.id}>
-															{c.name}
-														</SelectItem>
-													))}
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<div className="space-y-3">
-								<div className="flex items-center justify-between">
-									<div>
-										<div className="text-sm font-medium">
-											Default environment variables
-										</div>
-										<div className="text-sm text-muted-foreground">
-											Used for Netlab/Clabernetes generator env overrides.
-										</div>
-									</div>
-									<Button
-										type="button"
-										variant="outline"
-										onClick={() => envArray.append({ key: "", value: "" })}
-									>
-										Add variable
-									</Button>
-								</div>
-
-								{envArray.fields.length === 0 ? (
-									<div className="rounded border p-4 text-sm text-muted-foreground">
-										No default variables.
-									</div>
-								) : (
-									<div className="space-y-3">
-										{envArray.fields.map((f, idx) => {
-											const keyPath = `defaultEnv.${idx}.key` as const;
-											const valuePath = `defaultEnv.${idx}.value` as const;
-											return (
-												<div key={f.id} className="flex gap-2">
-													<FormField
-														control={form.control}
-														name={keyPath}
-														render={({ field }) => (
-															<FormItem className="w-1/2">
-																<FormLabel className="sr-only">Key</FormLabel>
-																<Input {...field} placeholder="KEY" />
-																<FormMessage />
-															</FormItem>
-														)}
-													/>
-
-													<FormField
-														control={form.control}
-														name={valuePath}
-														render={({ field }) => (
-															<FormItem className="w-1/2">
-																<FormLabel className="sr-only">Value</FormLabel>
-																<Input {...field} placeholder="VALUE" />
-																<FormMessage />
-															</FormItem>
-														)}
-													/>
-
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon"
-														onClick={() => envArray.remove(idx)}
-													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												</div>
-											);
-										})}
-									</div>
-								)}
-							</div>
-						</CardContent>
-					</Card>
-
 					<Card>
 						<CardHeader>
 							<CardTitle>External Template Repos</CardTitle>
@@ -979,13 +1037,24 @@ function UserSettingsPage() {
 							<div className="flex items-center justify-between">
 								<div className="text-sm font-medium">AWS (SSO)</div>
 								<div className="text-xs text-muted-foreground">
-									{awsSsoConfigQ.data?.configured
+									{userAwsSsoQ.data?.configured ||
+									awsSsoConfigQ.data?.configured
 										? awsSsoStatusQ.data?.connected
 											? "Connected"
 											: "Not connected"
 										: "Not configured"}
 								</div>
 							</div>
+							<Input
+								placeholder="Start URL"
+								value={awsSsoStartUrl}
+								onChange={(e) => setAwsSsoStartUrl(e.target.value)}
+							/>
+							<Input
+								placeholder="Region"
+								value={awsSsoRegion}
+								onChange={(e) => setAwsSsoRegion(e.target.value)}
+							/>
 							{awsSsoStatusQ.data?.lastAuthenticatedAt ? (
 								<div className="text-xs text-muted-foreground">
 									Last authenticated:{" "}
@@ -1023,6 +1092,18 @@ function UserSettingsPage() {
 								</div>
 							) : null}
 							<div className="flex gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => saveAwsSsoConfigM.mutate()}
+									disabled={
+										saveAwsSsoConfigM.isPending ||
+										!awsSsoStartUrl.trim() ||
+										!awsSsoRegion.trim()
+									}
+								>
+									Save settings
+								</Button>
 								<Button
 									type="button"
 									onClick={() => startAwsSsoM.mutate()}
