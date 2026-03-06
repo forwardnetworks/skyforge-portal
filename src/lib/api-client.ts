@@ -3039,6 +3039,61 @@ export async function getAdminEffectiveConfig(): Promise<AdminEffectiveConfigRes
 	return apiFetch<AdminEffectiveConfigResponse>("/api/admin/config");
 }
 
+export type AdminAuthSettingsResponse = {
+	mode: "password" | "oidc" | string;
+	configured: "password" | "oidc" | string;
+	persistedMode?: "password" | "oidc" | string;
+	oidcAvailable: boolean;
+};
+
+export type PutAdminAuthSettingsRequest = {
+	mode: "password" | "oidc";
+};
+
+export async function getAdminAuthSettings(): Promise<AdminAuthSettingsResponse> {
+	return apiFetch<AdminAuthSettingsResponse>("/api/admin/auth/settings");
+}
+
+export async function putAdminAuthSettings(
+	body: PutAdminAuthSettingsRequest,
+): Promise<AdminAuthSettingsResponse> {
+	return apiFetch<AdminAuthSettingsResponse>("/api/admin/auth/settings", {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
+}
+
+export type AdminOIDCSettingsResponse = {
+	enabled: boolean;
+	issuerUrl: string;
+	discoveryUrl?: string;
+	clientId: string;
+	redirectUrl: string;
+	hasClientSecret: boolean;
+};
+
+export type PutAdminOIDCSettingsRequest = {
+	enabled: boolean;
+	issuerUrl: string;
+	discoveryUrl?: string;
+	clientId: string;
+	clientSecret?: string;
+	redirectUrl: string;
+};
+
+export async function getAdminOIDCSettings(): Promise<AdminOIDCSettingsResponse> {
+	return apiFetch<AdminOIDCSettingsResponse>("/api/admin/auth/oidc-settings");
+}
+
+export async function putAdminOIDCSettings(
+	body: PutAdminOIDCSettingsRequest,
+): Promise<AdminOIDCSettingsResponse> {
+	return apiFetch<AdminOIDCSettingsResponse>("/api/admin/auth/oidc-settings", {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
+}
+
 export type AdminAuditResponse =
 	operations["GET:skyforge.GetAdminAudit"]["responses"][200]["content"]["application/json"];
 export async function getAdminAudit(params?: {
@@ -3091,6 +3146,68 @@ export type AdminUserRolesResponse =
 export type AdminUserRoleRecord = AdminUserRolesResponse["users"][number];
 export async function getAdminUserRoles(): Promise<AdminUserRolesResponse> {
 	return apiFetch<AdminUserRolesResponse>("/api/admin/rbac/users");
+}
+
+export type AdminAPICatalogEntry = {
+	service: string;
+	endpoint: string;
+	method: string;
+	path: string;
+	tags?: string[];
+	summary?: string;
+};
+
+export type AdminAPICatalogResponse = {
+	entries: AdminAPICatalogEntry[];
+	generatedAt: ISO8601;
+};
+
+export type AdminUserAPIPermission = {
+	service: string;
+	endpoint: string;
+	method: string;
+	decision: "allow" | "deny" | string;
+};
+
+export type AdminUserAPIPermissionsResponse = {
+	username: string;
+	permissions: AdminUserAPIPermission[];
+	generatedAt: ISO8601;
+};
+
+export type PutAdminUserAPIPermissionsRequest = {
+	permissions: AdminUserAPIPermission[];
+};
+
+export type PutAdminUserAPIPermissionsResponse = {
+	username: string;
+	permissions: AdminUserAPIPermission[];
+	updatedAt: ISO8601;
+};
+
+export async function getAdminAPICatalog(): Promise<AdminAPICatalogResponse> {
+	return apiFetch<AdminAPICatalogResponse>("/api/admin/rbac/api-catalog");
+}
+
+export async function getAdminUserAPIPermissions(
+	username: string,
+): Promise<AdminUserAPIPermissionsResponse> {
+	return apiFetch<AdminUserAPIPermissionsResponse>(
+		`/api/admin/rbac/users/${encodeURIComponent(username)}/api-permissions`,
+	);
+}
+
+export async function putAdminUserAPIPermissions(
+	username: string,
+	body: PutAdminUserAPIPermissionsRequest,
+): Promise<PutAdminUserAPIPermissionsResponse> {
+	return apiFetch<PutAdminUserAPIPermissionsResponse>(
+		`/api/admin/rbac/users/${encodeURIComponent(username)}/api-permissions`,
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
 }
 
 export type UpsertAdminUserRoleRequest = NonNullable<
@@ -3461,6 +3578,10 @@ export async function deleteDeployment(
 export type UIConfigResponse =
 	operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"] & {
 		authMode?: "oidc" | "password" | string;
+		jiraBaseUrl?: string;
+		features?: operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"]["features"] & {
+			jiraEnabled?: boolean;
+		};
 	};
 export async function getUIConfig(): Promise<UIConfigResponse> {
 	const config = await apiFetch<UIConfigResponse>("/api/ui/config");

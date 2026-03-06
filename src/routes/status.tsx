@@ -40,7 +40,7 @@ import { buildLoginUrl } from "../lib/skyforge-config";
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
 import { useStatusSummaryEvents } from "../lib/status-events";
-import { buildCoderLaunchUrl } from "../lib/tool-links";
+import { buildCoderLaunchUrl, buildToolLaunchUrl } from "../lib/tool-links";
 import { cn } from "../lib/utils";
 
 export const Route = createFileRoute("/status")({
@@ -48,8 +48,17 @@ export const Route = createFileRoute("/status")({
 });
 
 function StatusPage() {
-	const nautobotLaunchUrl = buildLoginUrl("/nautobot/");
-	const coderLaunchUrl = buildCoderLaunchUrl();
+	const uiConfig = useQuery({
+		queryKey: queryKeys.uiConfig(),
+		queryFn: getUIConfig,
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const authMode =
+		uiConfig.data?.authMode === "password"
+			? "password"
+			: uiConfig.data?.authMode === "oidc"
+				? "oidc"
+				: null;
 	useStatusSummaryEvents(true);
 
 	const summary = useQuery({
@@ -58,17 +67,19 @@ function StatusPage() {
 		staleTime: Number.POSITIVE_INFINITY,
 	});
 
-	const uiConfig = useQuery({
-		queryKey: queryKeys.uiConfig(),
-		queryFn: getUIConfig,
-		staleTime: Number.POSITIVE_INFINITY,
-	});
-
 	const session = useQuery({
 		queryKey: queryKeys.session(),
 		queryFn: getSession,
 		staleTime: 30_000,
 		retry: false,
+	});
+	const nautobotLaunchUrl = buildToolLaunchUrl("/nautobot/", {
+		authMode,
+		authenticated: session.data?.authenticated === true,
+	});
+	const coderLaunchUrl = buildCoderLaunchUrl({
+		authMode,
+		authenticated: session.data?.authenticated === true,
 	});
 	const isAdmin = sessionIsAdmin(session.data);
 
@@ -383,6 +394,16 @@ function StatusPage() {
 								path: coderLaunchUrl,
 								icon: Cloud,
 								enabled: features?.coderEnabled ?? false,
+								external: true,
+							},
+							{
+								id: "jira",
+								name: "Jira",
+								path:
+									uiConfig.data?.jiraBaseUrl ||
+									"/dashboard/integrations",
+								icon: Workflow,
+								enabled: features?.jiraEnabled ?? false,
 								external: true,
 							},
 							{

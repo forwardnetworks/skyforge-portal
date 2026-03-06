@@ -150,6 +150,11 @@ export const queryKeys = {
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
 	adminRbacUsers: () => ["adminRbacUsers"] as const,
 	adminConfig: () => ["adminConfig"] as const,
+	adminAuthSettings: () => ["adminAuthSettings"] as const,
+	adminOidcSettings: () => ["adminOidcSettings"] as const,
+	adminApiCatalog: () => ["adminApiCatalog"] as const,
+	adminUserApiPermissions: (username: string) =>
+		["adminUserApiPermissions", username] as const,
 	adminAudit: (limit?: string) => ["adminAudit", limit ?? ""] as const,
 	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,
 	registryRepos: (q: string) => ["registryRepos", q] as const,

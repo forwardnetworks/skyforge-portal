@@ -417,6 +417,7 @@ function RootLayout() {
 												session={session.data}
 												isAdmin={isAdmin}
 												features={uiConfig.data?.features}
+												authMode={authMode}
 											/>
 										</div>
 									</SheetContent>
@@ -570,6 +571,7 @@ function RootLayout() {
 									session={session.data}
 									isAdmin={isAdmin}
 									features={uiConfig.data?.features}
+									authMode={authMode}
 								/>
 								</div>
 								<button

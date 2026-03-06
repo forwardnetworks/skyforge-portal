@@ -21,8 +21,11 @@ import {
 import { useState } from "react";
 import { SKYFORGE_API } from "../lib/api-client";
 import { sessionHasRole } from "../lib/rbac";
-import { buildLoginUrl } from "../lib/skyforge-config";
-import { buildCoderLaunchUrl } from "../lib/tool-links";
+import {
+	type SkyforgeAuthMode,
+	buildLoginUrl,
+} from "../lib/skyforge-config";
+import { buildCoderLaunchUrl, buildToolLaunchUrl } from "../lib/tool-links";
 import { cn } from "../lib/utils";
 import {
 	DropdownMenu,
@@ -54,13 +57,18 @@ export type Features = {
 	forwardEnabled?: boolean;
 	netboxEnabled?: boolean;
 	nautobotEnabled?: boolean;
+	infobloxEnabled?: boolean;
+	jiraEnabled?: boolean;
 	dnsEnabled?: boolean;
 };
 
 const FORWARD_CLUSTER_URL = "https://skyforge-fwd.local.forwardnetworks.com";
-function createNavItems(): NavItem[] {
-	const nautobotLaunchUrl = buildLoginUrl("/nautobot/");
-	const coderLaunchUrl = buildCoderLaunchUrl();
+function createNavItems(options?: {
+	authMode?: SkyforgeAuthMode | null;
+	authenticated?: boolean;
+}): NavItem[] {
+	const nautobotLaunchUrl = buildToolLaunchUrl("/nautobot/", options);
+	const coderLaunchUrl = buildCoderLaunchUrl(options);
 	return [
 	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
@@ -152,11 +160,24 @@ function createNavItems(): NavItem[] {
 		featureFlag: "netboxEnabled",
 	},
 	{
+		label: "Jira",
+		href: "/dashboard/integrations",
+		icon: Workflow,
+		featureFlag: "jiraEnabled",
+	},
+	{
 		label: "Nautobot",
 		href: nautobotLaunchUrl,
 		icon: Network,
 		external: true,
 		featureFlag: "nautobotEnabled",
+	},
+	{
+		label: "Infoblox",
+		href: "/infoblox/",
+		icon: Server,
+		external: true,
+		featureFlag: "infobloxEnabled",
 	},
 	{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 	{
@@ -193,13 +214,22 @@ function createNavItems(): NavItem[] {
 export function buildSideNavItems(
 	sessionOrAdmin?: unknown,
 	features?: Features,
+	authMode?: SkyforgeAuthMode | null,
 ): NavItem[] {
 	const session =
 		typeof sessionOrAdmin === "boolean"
 			? { isAdmin: sessionOrAdmin }
 			: sessionOrAdmin;
 	const isAdmin = sessionHasRole(session, "ADMIN");
-	const items = createNavItems();
+	const isAuthenticated =
+		typeof session === "object" &&
+		session !== null &&
+		"authenticated" in session &&
+		(session as { authenticated?: boolean }).authenticated === true;
+	const items = createNavItems({
+		authMode,
+		authenticated: isAuthenticated,
+	});
 	const filterItems = (input: NavItem[]): NavItem[] =>
 		input.flatMap((item) => {
 			if (item.adminOnly && !isAdmin) return [];
@@ -220,6 +250,7 @@ export function SideNav(props: {
 	session?: unknown;
 	isAdmin?: boolean;
 	features?: Features;
+	authMode?: SkyforgeAuthMode | null;
 }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({
@@ -246,7 +277,11 @@ export function SideNav(props: {
 		<nav className="grid items-start gap-2">
 			<div className="space-y-2">
 				<div className="grid gap-1">
-					{buildSideNavItems(props.session ?? { isAdmin: !!props.isAdmin }, props.features).map((item) => {
+					{buildSideNavItems(
+						props.session ?? { isAdmin: !!props.isAdmin },
+						props.features,
+						props.authMode ?? null,
+					).map((item) => {
 						const Icon = item.icon;
 
 						if (item.children) {

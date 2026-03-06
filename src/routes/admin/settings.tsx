@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Shield, Trash2, UserCog, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -33,18 +33,26 @@ import {
 	SelectValue,
 } from "../../components/ui/select";
 import {
+	type AdminAPICatalogEntry,
 	type AdminWorkspacePodCleanupResponse,
 	type AdminAuditResponse,
+	type AdminAuthSettingsResponse,
+	type AdminOIDCSettingsResponse,
+	type AdminUserAPIPermission,
 	type QuickDeployTemplate,
 	adminCleanupWorkspacePods,
 	deleteAdminUserRole,
 	adminImpersonateStart,
 	adminImpersonateStop,
 	adminPurgeUser,
+	getAdminAPICatalog,
 	getAdminAudit,
+	getAdminAuthSettings,
+	getAdminOIDCSettings,
 	getAdminEffectiveConfig,
 	getAdminImpersonateStatus,
 	getAdminQuickDeployCatalog,
+	getAdminUserAPIPermissions,
 	getAdminUserRoles,
 	getAdminQuickDeployTemplateOptions,
 	getGovernancePolicy,
@@ -54,6 +62,9 @@ import {
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
 	upsertAdminUserRole,
+	putAdminAuthSettings,
+	putAdminOIDCSettings,
+	putAdminUserAPIPermissions,
 	updateAdminQuickDeployCatalog,
 	updateGovernancePolicy,
 } from "../../lib/api-client";
@@ -88,6 +99,7 @@ function quickDeployTemplateNameFromPath(path: string): string {
 }
 
 function AdminSettingsPage() {
+	const queryClient = useQueryClient();
 	const sessionQ = useQuery({
 		queryKey: queryKeys.session(),
 		queryFn: getSession,
@@ -140,6 +152,20 @@ function AdminSettingsPage() {
 		staleTime: 15_000,
 		retry: false,
 	});
+	const authSettingsQ = useQuery({
+		queryKey: queryKeys.adminAuthSettings(),
+		queryFn: getAdminAuthSettings,
+		enabled: isAdmin,
+		staleTime: 15_000,
+		retry: false,
+	});
+	const oidcSettingsQ = useQuery({
+		queryKey: queryKeys.adminOidcSettings(),
+		queryFn: getAdminOIDCSettings,
+		enabled: isAdmin,
+		staleTime: 15_000,
+		retry: false,
+	});
 	const governancePolicyQ = useQuery({
 		queryKey: queryKeys.governancePolicy(),
 		queryFn: getGovernancePolicy,
@@ -179,6 +205,15 @@ function AdminSettingsPage() {
 		retry: false,
 	});
 	const [blockedOrgIdsCsv, setBlockedOrgIdsCsv] = useState("");
+	const [authModeDraft, setAuthModeDraft] = useState<"password" | "oidc">(
+		"password",
+	);
+	const [oidcEnabledDraft, setOidcEnabledDraft] = useState(false);
+	const [oidcIssuerDraft, setOidcIssuerDraft] = useState("");
+	const [oidcDiscoveryDraft, setOidcDiscoveryDraft] = useState("");
+	const [oidcClientIDDraft, setOidcClientIDDraft] = useState("");
+	const [oidcClientSecretDraft, setOidcClientSecretDraft] = useState("");
+	const [oidcRedirectDraft, setOidcRedirectDraft] = useState("");
 	const [quickDeployTemplates, setQuickDeployTemplates] = useState<
 		QuickDeployTemplate[]
 	>([]);
@@ -234,6 +269,67 @@ function AdminSettingsPage() {
 		},
 		onError: (e) => {
 			toast.error("Failed to save quick deploy catalog", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	useEffect(() => {
+		const mode = String(authSettingsQ.data?.mode ?? "").trim().toLowerCase();
+		if (mode === "oidc" || mode === "password") {
+			setAuthModeDraft(mode);
+		}
+	}, [authSettingsQ.data?.mode]);
+	const saveAuthMode = useMutation({
+		mutationFn: async () => putAdminAuthSettings({ mode: authModeDraft }),
+		onSuccess: async (res: AdminAuthSettingsResponse) => {
+			const nextMode = String(res.mode ?? "password");
+			toast.success("Authentication mode updated", {
+				description: `Effective mode: ${nextMode}`,
+			});
+			await Promise.all([
+				authSettingsQ.refetch(),
+				queryClient.invalidateQueries({ queryKey: queryKeys.uiConfig() }),
+			]);
+		},
+		onError: (e) => {
+			toast.error("Failed to update authentication mode", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	useEffect(() => {
+		const data = oidcSettingsQ.data;
+		if (!data) return;
+		setOidcEnabledDraft(Boolean(data.enabled));
+		setOidcIssuerDraft(String(data.issuerUrl ?? ""));
+		setOidcDiscoveryDraft(String(data.discoveryUrl ?? ""));
+		setOidcClientIDDraft(String(data.clientId ?? ""));
+		setOidcClientSecretDraft("");
+		setOidcRedirectDraft(String(data.redirectUrl ?? ""));
+	}, [oidcSettingsQ.data]);
+	const saveOIDCSettings = useMutation({
+		mutationFn: async () =>
+			putAdminOIDCSettings({
+				enabled: oidcEnabledDraft,
+				issuerUrl: oidcIssuerDraft.trim(),
+				discoveryUrl: oidcDiscoveryDraft.trim(),
+				clientId: oidcClientIDDraft.trim(),
+				clientSecret: oidcClientSecretDraft.trim(),
+				redirectUrl: oidcRedirectDraft.trim(),
+			}),
+		onSuccess: async (res: AdminOIDCSettingsResponse) => {
+			toast.success("OIDC settings updated", {
+				description: res.enabled ? "OIDC is enabled" : "OIDC is disabled",
+			});
+			setOidcClientSecretDraft("");
+			await Promise.all([
+				oidcSettingsQ.refetch(),
+				authSettingsQ.refetch(),
+				queryClient.invalidateQueries({ queryKey: queryKeys.uiConfig() }),
+			]);
+		},
+		onError: (e) => {
+			toast.error("Failed to update OIDC settings", {
 				description: (e as Error).message,
 			});
 		},
@@ -367,6 +463,33 @@ function AdminSettingsPage() {
 	const [rbacUserQuery, setRbacUserQuery] = useState("");
 	const [rbacTargetUser, setRbacTargetUser] = useState("");
 	const [rbacTargetRole, setRbacTargetRole] = useState("ADMIN");
+	const [apiPermTargetUser, setApiPermTargetUser] = useState("");
+	const [apiPermFilter, setApiPermFilter] = useState("");
+	const [apiPermDraft, setApiPermDraft] = useState<
+		Record<string, "inherit" | "allow" | "deny">
+	>({});
+	const apiCatalogQ = useQuery({
+		queryKey: queryKeys.adminApiCatalog(),
+		queryFn: getAdminAPICatalog,
+		enabled: isAdmin,
+		staleTime: 60_000,
+		retry: false,
+	});
+	const userApiPermsQ = useQuery({
+		queryKey: queryKeys.adminUserApiPermissions(apiPermTargetUser || "none"),
+		queryFn: () => getAdminUserAPIPermissions(apiPermTargetUser),
+		enabled: isAdmin && apiPermTargetUser.trim().length > 0,
+		staleTime: 15_000,
+		retry: false,
+	});
+	const apiPermissionKey = (entry: {
+		service: string;
+		endpoint: string;
+		method: string;
+	}): string =>
+		`${entry.service.trim()}::${entry.endpoint.trim()}::${entry.method
+			.trim()
+			.toUpperCase()}`;
 	const availableRbacRoles = useMemo(() => {
 		const roles = adminUserRolesQ.data?.availableRoles ?? [];
 		const normalized = roles
@@ -405,6 +528,18 @@ function AdminSettingsPage() {
 			username.toLowerCase().includes(query),
 		);
 	}, [rbacKnownUsers, rbacUserQuery]);
+	useEffect(() => {
+		if (!apiPermTargetUser.trim() && rbacKnownUsers.length > 0) {
+			setApiPermTargetUser(rbacKnownUsers[0] ?? "");
+			return;
+		}
+		if (
+			apiPermTargetUser.trim() &&
+			!rbacKnownUsers.includes(apiPermTargetUser.trim())
+		) {
+			setApiPermTargetUser(rbacKnownUsers[0] ?? "");
+		}
+	}, [rbacKnownUsers, apiPermTargetUser]);
 	const filteredRbacRows = useMemo(() => {
 		const query = rbacUserQuery.trim().toLowerCase();
 		const rows = adminUserRolesQ.data?.users ?? [];
@@ -420,6 +555,86 @@ function AdminSettingsPage() {
 			setRbacTargetRole(availableRbacRoles[0] ?? "ADMIN");
 		}
 	}, [availableRbacRoles, rbacTargetRole]);
+	useEffect(() => {
+		const permissions = userApiPermsQ.data?.permissions ?? [];
+		const next: Record<string, "inherit" | "allow" | "deny"> = {};
+		for (const perm of permissions) {
+			const decisionRaw = String(perm.decision ?? "").trim().toLowerCase();
+			if (decisionRaw !== "allow" && decisionRaw !== "deny") {
+				continue;
+			}
+			next[
+				apiPermissionKey({
+					service: String(perm.service ?? ""),
+					endpoint: String(perm.endpoint ?? ""),
+					method: String(perm.method ?? ""),
+				})
+			] = decisionRaw;
+		}
+		setApiPermDraft(next);
+	}, [userApiPermsQ.data?.permissions]);
+	const filteredApiCatalogEntries = useMemo(() => {
+		const entries = apiCatalogQ.data?.entries ?? [];
+		const query = apiPermFilter.trim().toLowerCase();
+		if (!query) {
+			return entries;
+		}
+		return entries.filter((entry) => {
+			const tags = (entry.tags ?? []).join(" ").toLowerCase();
+			return (
+				entry.service.toLowerCase().includes(query) ||
+				entry.endpoint.toLowerCase().includes(query) ||
+				entry.method.toLowerCase().includes(query) ||
+				entry.path.toLowerCase().includes(query) ||
+				String(entry.summary ?? "")
+					.toLowerCase()
+					.includes(query) ||
+				tags.includes(query)
+			);
+		});
+	}, [apiCatalogQ.data?.entries, apiPermFilter]);
+	const saveUserApiPermissions = useMutation({
+		mutationFn: async () => {
+			if (!apiPermTargetUser.trim()) {
+				throw new Error("select a target user");
+			}
+			const permissions: AdminUserAPIPermission[] = [];
+			for (const [key, decision] of Object.entries(apiPermDraft)) {
+				if (decision !== "allow" && decision !== "deny") {
+					continue;
+				}
+				const [service, endpoint, method] = key.split("::");
+				if (!service || !endpoint || !method) {
+					continue;
+				}
+				permissions.push({
+					service,
+					endpoint,
+					method,
+					decision,
+				});
+			}
+			return putAdminUserAPIPermissions(apiPermTargetUser, {
+				permissions,
+			});
+		},
+		onSuccess: async () => {
+			toast.success("API permissions updated");
+			await userApiPermsQ.refetch();
+		},
+		onError: (e) => {
+			toast.error("Failed to update API permissions", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	const apiDraftOverrideCount = useMemo(
+		() =>
+			Object.values(apiPermDraft).filter(
+				(v) => v === "allow" || v === "deny",
+			).length,
+		[apiPermDraft],
+	);
 	const upsertRbacRole = useMutation({
 		mutationFn: async () =>
 			upsertAdminUserRole(rbacTargetUser, { role: rbacTargetRole }),
@@ -636,6 +851,159 @@ function AdminSettingsPage() {
 					</TabsList>
 
 					<TabsContent value="overview" className="space-y-6">
+						<Card>
+							<CardHeader>
+								<CardTitle>Authentication mode</CardTitle>
+								<CardDescription>
+									Select runtime login backend. This applies immediately for new
+									login redirects.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								{authSettingsQ.isLoading ? (
+									<Skeleton className="h-20 w-full" />
+								) : (
+									<>
+										<div className="grid gap-2 md:grid-cols-[220px_1fr] md:items-center">
+											<div className="text-sm text-muted-foreground">
+												Mode
+											</div>
+											<Select
+												value={authModeDraft}
+												onValueChange={(value) => {
+													if (value === "password" || value === "oidc") {
+														setAuthModeDraft(value);
+													}
+												}}
+												disabled={saveAuthMode.isPending}
+											>
+												<SelectTrigger className="max-w-xs">
+													<SelectValue placeholder="Select auth mode" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="password">password</SelectItem>
+													{authSettingsQ.data?.oidcAvailable ? (
+														<SelectItem value="oidc">oidc</SelectItem>
+													) : null}
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="text-xs text-muted-foreground">
+											Config default:{" "}
+											{authSettingsQ.data?.configured ?? "password"}{" "}
+											· Persisted override:{" "}
+											{authSettingsQ.data?.persistedMode || "none"} · OIDC
+											available: {authSettingsQ.data?.oidcAvailable ? "yes" : "no"}
+										</div>
+										<div>
+											<Button
+												onClick={() => saveAuthMode.mutate()}
+												disabled={
+													saveAuthMode.isPending ||
+													authSettingsQ.isLoading ||
+													(authSettingsQ.data?.mode ?? "password") === authModeDraft
+												}
+											>
+												{saveAuthMode.isPending
+													? "Saving…"
+													: "Save auth mode"}
+											</Button>
+										</div>
+									</>
+								)}
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader>
+								<CardTitle>OIDC settings</CardTitle>
+								<CardDescription>
+									Runtime Okta/OIDC configuration. These values are stored in
+									Skyforge settings (not chart-only config).
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-3">
+								{oidcSettingsQ.isLoading ? (
+									<Skeleton className="h-28 w-full" />
+								) : (
+									<>
+										<div className="grid gap-2 md:grid-cols-[220px_1fr] md:items-center">
+											<div className="text-sm text-muted-foreground">Enabled</div>
+											<Select
+												value={oidcEnabledDraft ? "true" : "false"}
+												onValueChange={(value) =>
+													setOidcEnabledDraft(value === "true")
+												}
+												disabled={saveOIDCSettings.isPending}
+											>
+												<SelectTrigger className="max-w-xs">
+													<SelectValue placeholder="Enable OIDC" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="false">disabled</SelectItem>
+													<SelectItem value="true">enabled</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="grid gap-3 md:grid-cols-2">
+											<Input
+												placeholder="Issuer URL"
+												value={oidcIssuerDraft}
+												onChange={(e) => setOidcIssuerDraft(e.target.value)}
+												disabled={saveOIDCSettings.isPending}
+											/>
+											<Input
+												placeholder="Discovery URL (optional)"
+												value={oidcDiscoveryDraft}
+												onChange={(e) => setOidcDiscoveryDraft(e.target.value)}
+												disabled={saveOIDCSettings.isPending}
+											/>
+											<Input
+												placeholder="Client ID"
+												value={oidcClientIDDraft}
+												onChange={(e) => setOidcClientIDDraft(e.target.value)}
+												disabled={saveOIDCSettings.isPending}
+											/>
+											<Input
+												placeholder="Redirect URL"
+												value={oidcRedirectDraft}
+												onChange={(e) => setOidcRedirectDraft(e.target.value)}
+												disabled={saveOIDCSettings.isPending}
+											/>
+										</div>
+										<div className="space-y-2">
+											<Input
+												type="password"
+												placeholder={
+													oidcSettingsQ.data?.hasClientSecret
+														? "Client secret (leave blank to keep current)"
+														: "Client secret"
+												}
+												value={oidcClientSecretDraft}
+												onChange={(e) =>
+													setOidcClientSecretDraft(e.target.value)
+												}
+												disabled={saveOIDCSettings.isPending}
+											/>
+											<div className="text-xs text-muted-foreground">
+												Stored client secret:{" "}
+												{oidcSettingsQ.data?.hasClientSecret ? "present" : "not set"}
+											</div>
+										</div>
+										<div>
+											<Button
+												onClick={() => saveOIDCSettings.mutate()}
+												disabled={saveOIDCSettings.isPending}
+											>
+												{saveOIDCSettings.isPending
+													? "Saving…"
+													: "Save OIDC settings"}
+											</Button>
+										</div>
+									</>
+								)}
+							</CardContent>
+						</Card>
+
 						<Card>
 							<CardHeader>
 								<CardTitle>Effective config</CardTitle>
@@ -1282,6 +1650,152 @@ function AdminSettingsPage() {
 												</div>
 											);
 										})}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader>
+								<CardTitle>API permission overrides</CardTitle>
+								<CardDescription>
+									Explicit per-user endpoint permissions layered on top of role
+									access. Use allow/deny only where needed.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div className="grid gap-2 md:grid-cols-[280px_1fr_auto]">
+									<Select
+										value={apiPermTargetUser}
+										onValueChange={setApiPermTargetUser}
+									>
+										<SelectTrigger>
+											<SelectValue placeholder="Select user…" />
+										</SelectTrigger>
+										<SelectContent>
+											{rbacKnownUsers.length > 0 ? (
+												rbacKnownUsers.map((username) => (
+													<SelectItem key={username} value={username}>
+														{username}
+													</SelectItem>
+												))
+											) : (
+												<div className="px-2 py-1.5 text-sm text-muted-foreground">
+													No users available
+												</div>
+											)}
+										</SelectContent>
+									</Select>
+									<Input
+										placeholder="Filter APIs by service, endpoint, path, tag…"
+										value={apiPermFilter}
+										onChange={(e) => setApiPermFilter(e.target.value)}
+									/>
+									<div className="flex items-center justify-end gap-2">
+										<Button
+											variant="outline"
+											onClick={() => {
+												void userApiPermsQ.refetch();
+											}}
+											disabled={
+												userApiPermsQ.isFetching || !apiPermTargetUser.trim()
+											}
+										>
+											Reload
+										</Button>
+										<Button
+											onClick={() => saveUserApiPermissions.mutate()}
+											disabled={
+												!apiPermTargetUser.trim() ||
+												saveUserApiPermissions.isPending
+											}
+										>
+											{saveUserApiPermissions.isPending
+												? "Saving…"
+												: "Save API permissions"}
+										</Button>
+									</div>
+								</div>
+								<div className="text-xs text-muted-foreground">
+									Overrides for <span className="font-mono">{apiPermTargetUser || "—"}</span>:{" "}
+									{apiDraftOverrideCount} explicit entries.
+								</div>
+								{apiCatalogQ.isLoading || userApiPermsQ.isLoading ? (
+									<Skeleton className="h-40 w-full" />
+								) : filteredApiCatalogEntries.length === 0 ? (
+									<EmptyState
+										title="No API endpoints"
+										description="No catalog entries match the current filter."
+									/>
+								) : (
+									<div className="max-h-[520px] overflow-auto rounded-md border">
+										<table className="w-full text-sm">
+											<thead className="sticky top-0 bg-muted/70">
+												<tr>
+													<th className="px-3 py-2 text-left font-medium">
+														Service.Endpoint
+													</th>
+													<th className="px-3 py-2 text-left font-medium">
+														Method
+													</th>
+													<th className="px-3 py-2 text-left font-medium">
+														Path
+													</th>
+													<th className="px-3 py-2 text-left font-medium">
+														Access
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{filteredApiCatalogEntries.map((entry) => {
+													const key = apiPermissionKey(entry);
+													const decision = apiPermDraft[key] ?? "inherit";
+													return (
+														<tr key={key} className="border-t align-top">
+															<td className="px-3 py-2">
+																<div className="font-mono text-xs">
+																	{entry.service}.{entry.endpoint}
+																</div>
+																{entry.summary ? (
+																	<div className="text-xs text-muted-foreground">
+																		{entry.summary}
+																	</div>
+																) : null}
+															</td>
+															<td className="px-3 py-2">
+																<Badge variant="outline">{entry.method}</Badge>
+															</td>
+															<td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+																{entry.path}
+															</td>
+															<td className="px-3 py-2">
+																<select
+																	className="h-8 rounded-md border bg-background px-2 text-xs"
+																	value={decision}
+																	onChange={(e) => {
+																		const nextDecision = e.target.value as
+																			| "inherit"
+																			| "allow"
+																			| "deny";
+																		setApiPermDraft((prev) => {
+																			if (nextDecision === "inherit") {
+																				const next = { ...prev };
+																				delete next[key];
+																				return next;
+																			}
+																			return { ...prev, [key]: nextDecision };
+																		});
+																	}}
+																>
+																	<option value="inherit">inherit</option>
+																	<option value="allow">allow</option>
+																	<option value="deny">deny</option>
+																</select>
+															</td>
+														</tr>
+													);
+												})}
+											</tbody>
+										</table>
 									</div>
 								)}
 							</CardContent>

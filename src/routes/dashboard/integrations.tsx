@@ -5,6 +5,7 @@ import { ExternalLink, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+	getUIConfig,
 	getUserServiceNowConfig,
 	listUserForwardCollectorConfigs,
 } from "@/lib/api-client";
@@ -27,8 +28,18 @@ function IntegrationsPage() {
 		retry: false,
 		staleTime: 10_000,
 	});
+	const uiConfigQ = useQuery({
+		queryKey: queryKeys.uiConfig(),
+		queryFn: getUIConfig,
+		retry: false,
+		staleTime: 10_000,
+	});
 	const collectorCount = collectorsQ.data?.collectors?.length ?? 0;
 	const hasCollector = collectorCount > 0;
+	const infobloxEnabled = uiConfigQ.data?.features?.infobloxEnabled ?? false;
+	const infobloxBaseUrl = uiConfigQ.data?.infobloxBaseUrl ?? "/infoblox";
+	const jiraEnabled = uiConfigQ.data?.features?.jiraEnabled ?? false;
+	const jiraBaseUrl = uiConfigQ.data?.jiraBaseUrl ?? "";
 
 	return (
 		<div className="space-y-6 p-6">
@@ -90,6 +101,66 @@ function IntegrationsPage() {
 						</div>
 					</CardContent>
 				</Card>
+
+				{jiraEnabled && (
+					<Card variant="glass">
+						<CardHeader>
+							<CardTitle>Jira</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3 text-sm">
+							<div className="text-muted-foreground">
+								{jiraBaseUrl
+									? `Configured (${jiraBaseUrl})`
+									: "Enabled, but no Jira URL is configured yet"}
+							</div>
+							<div className="flex gap-2">
+								{jiraBaseUrl ? (
+									<Button asChild size="sm">
+										<a
+											href={jiraBaseUrl}
+											target="_blank"
+											rel="noreferrer noopener"
+										>
+											Open
+										</a>
+									</Button>
+								) : (
+									<Button size="sm" disabled>
+										Open
+									</Button>
+								)}
+								<Button asChild size="sm" variant="secondary">
+									<Link
+										to="/dashboard/docs/$slug"
+										params={{ slug: "getting-started" }}
+									>
+										Plan
+									</Link>
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				)}
+
+				{infobloxEnabled && (
+					<Card variant="glass">
+						<CardHeader>
+							<CardTitle>Infoblox</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3 text-sm">
+							<div className="text-muted-foreground">
+								KubeVirt-backed NIOS appliance exposed through the shared Skyforge ingress.
+							</div>
+							<div className="flex gap-2">
+								<Button asChild size="sm">
+									<a href={infobloxBaseUrl} target="_blank" rel="noreferrer noopener">
+										Open
+									</a>
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				)}
 
 				<Card variant="glass">
 					<CardHeader>
