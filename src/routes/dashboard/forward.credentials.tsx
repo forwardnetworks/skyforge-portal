@@ -14,13 +14,6 @@ import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../../components/ui/select";
-import {
 	createUserForwardCollectorConfig,
 	deleteUserForwardCollectorConfig,
 	listUserForwardCollectorConfigs,
@@ -67,40 +60,21 @@ function ForwardCredentialsPage() {
 		staleTime: 10_000,
 	});
 
-	const [target, setTarget] =
-		useState<ForwardCredentialTarget>("in_cluster_org");
 	const [customHost, setCustomHost] = useState("");
 	const [skipTlsVerify, setSkipTlsVerify] = useState(false);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
-	const tlsCheckboxDisabled = target !== "custom_onprem";
-	const effectiveSkipTlsVerify =
-		target === "in_cluster_org" ? false : skipTlsVerify;
+	const tlsCheckboxDisabled = false;
+	const effectiveSkipTlsVerify = skipTlsVerify;
 
 	const credentialSets = useMemo(
 		() => collectorsQ.data?.collectors ?? [],
 		[collectorsQ.data?.collectors],
 	);
-	const hasInClusterCredential = useMemo(
-		() =>
-			credentialSets.some((c) =>
-				isInClusterCollectorBaseURL((c.baseUrl || "").trim()),
-			),
-		[credentialSets],
-	);
-
 	const createMutation = useMutation({
 		mutationFn: async () => {
-			const baseUrl = normalizeBaseURL(target, customHost);
+			const baseUrl = normalizeBaseURL("custom_onprem", customHost);
 			if (!baseUrl) throw new Error("Host is required for custom on-prem");
-			if (
-				target === "in_cluster_org" &&
-				hasInClusterCredential
-			) {
-				throw new Error(
-					"An in-cluster Forward credential set already exists for this user",
-				);
-			}
 			if (!username.trim()) throw new Error("Username is required");
 			if (!password.trim()) throw new Error("Password is required");
 			const hostKey = stripProtocol(baseUrl).replace(/\/+$/, "");
@@ -144,7 +118,8 @@ function ForwardCredentialsPage() {
 					Forward Credentials
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Create and remove saved Forward credential sets.
+					In-cluster Forward credentials are managed automatically. Add custom
+					on-prem credential sets here when needed.
 				</p>
 			</div>
 
@@ -157,45 +132,14 @@ function ForwardCredentialsPage() {
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label>Target</Label>
-							<Select
-								value={target}
-								onValueChange={(v) => {
-									const next = v as ForwardCredentialTarget;
-									setTarget(next);
-								}}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="in_cluster_org">
-										in-cluster forward
-									</SelectItem>
-									<SelectItem value="custom_onprem">custom on-prem</SelectItem>
-								</SelectContent>
-							</Select>
+						<div className="space-y-2 md:col-span-2">
+							<Label>Host</Label>
+							<Input
+								value={customHost}
+								onChange={(e) => setCustomHost(e.target.value)}
+								placeholder="https://forward.example.com"
+							/>
 						</div>
-						{target === "custom_onprem" ? (
-							<div className="space-y-2">
-								<Label>Host</Label>
-								<Input
-									value={customHost}
-									onChange={(e) => setCustomHost(e.target.value)}
-									placeholder="https://forward.example.com"
-								/>
-							</div>
-						) : (
-							<div className="space-y-2">
-								<Label>Host</Label>
-								<Input
-									value={normalizeBaseURL(target, customHost)}
-									readOnly
-									disabled
-								/>
-							</div>
-						)}
 						</div>
 
 					<div className="flex items-center gap-2">
@@ -206,13 +150,6 @@ function ForwardCredentialsPage() {
 						/>
 						<Label className="text-sm">Disable TLS verification</Label>
 					</div>
-					{target === "in_cluster_org" && hasInClusterCredential ? (
-						<p className="text-xs text-muted-foreground">
-							An in-cluster credential set already exists. Delete it first to
-							create a new one.
-						</p>
-					) : null}
-
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<Label>Username</Label>
@@ -235,10 +172,7 @@ function ForwardCredentialsPage() {
 
 					<Button
 						onClick={() => createMutation.mutate()}
-						disabled={
-							createMutation.isPending ||
-							(target === "in_cluster_org" && hasInClusterCredential)
-						}
+						disabled={createMutation.isPending}
 					>
 						{createMutation.isPending ? "Saving…" : "Save credential set"}
 					</Button>
@@ -265,6 +199,7 @@ function ForwardCredentialsPage() {
 					) : null}
 
 					{credentialSets.map((c) => {
+						const inClusterManaged = isInClusterCollectorBaseURL((c.baseUrl || "").trim());
 						const key =
 							`${(c.username || "").trim()}@${stripProtocol((c.baseUrl || "").trim())}`.replace(
 								/@$/,
@@ -282,14 +217,19 @@ function ForwardCredentialsPage() {
 									<div className="truncate font-mono text-xs text-muted-foreground">
 										{c.baseUrl}
 									</div>
+									{inClusterManaged ? (
+										<div className="text-xs text-muted-foreground">
+											Managed automatically from your Forward tenant API token.
+										</div>
+									) : null}
 								</div>
 								<Button
 									variant="destructive"
 									size="sm"
 									onClick={() => deleteMutation.mutate(String(c.id))}
-									disabled={deleteMutation.isPending}
+									disabled={deleteMutation.isPending || inClusterManaged}
 								>
-									Delete
+									{inClusterManaged ? "Managed" : "Delete"}
 								</Button>
 							</div>
 						);
