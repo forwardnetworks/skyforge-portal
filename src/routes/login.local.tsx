@@ -56,9 +56,9 @@ function LocalLoginPage() {
 		<div className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-md items-center px-4">
 			<Card className="w-full">
 				<CardHeader>
-					<CardTitle>Emergency Local Login</CardTitle>
+					<CardTitle>Local Sign In</CardTitle>
 					<CardDescription>
-						Use this only when external login is unavailable.
+						Sign in with your Skyforge local account.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -95,4 +95,3 @@ function LocalLoginPage() {
 		</div>
 	);
 }
-

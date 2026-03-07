@@ -494,7 +494,7 @@ function RootLayout() {
 													? "…"
 													: "Login"}
 										</Button>
-										{breakGlassEnabled ? (
+										{breakGlassEnabled && authMode === "oidc" ? (
 											<a
 												className="text-sm text-muted-foreground underline"
 												href={localLoginHref}

@@ -16,7 +16,9 @@ import { Label } from "../../components/ui/label";
 import {
 	createUserForwardCollectorConfig,
 	deleteUserForwardCollectorConfig,
+	getCurrentUserForwardTenantCredential,
 	listUserForwardCollectorConfigs,
+	resetCurrentUserForwardTenantCredential,
 } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 
@@ -54,9 +56,15 @@ function isInClusterCollectorBaseURL(value: string): boolean {
 function ForwardCredentialsPage() {
 	const queryClient = useQueryClient();
 	const collectorsKey = queryKeys.userForwardCollectorConfigs();
+	const tenantCredentialKey = ["forward", "tenant-credential"] as const;
 	const collectorsQ = useQuery({
 		queryKey: collectorsKey,
 		queryFn: listUserForwardCollectorConfigs,
+		staleTime: 10_000,
+	});
+	const tenantCredentialQ = useQuery({
+		queryKey: tenantCredentialKey,
+		queryFn: getCurrentUserForwardTenantCredential,
 		staleTime: 10_000,
 	});
 
@@ -64,6 +72,7 @@ function ForwardCredentialsPage() {
 	const [skipTlsVerify, setSkipTlsVerify] = useState(false);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
+	const [showTenantPassword, setShowTenantPassword] = useState(false);
 	const tlsCheckboxDisabled = false;
 	const effectiveSkipTlsVerify = skipTlsVerify;
 
@@ -110,6 +119,19 @@ function ForwardCredentialsPage() {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
+	const resetTenantCredentialMutation = useMutation({
+		mutationFn: resetCurrentUserForwardTenantCredential,
+		onSuccess: async () => {
+			toast.success("Forward tenant credential reset");
+			setShowTenantPassword(false);
+			await queryClient.invalidateQueries({ queryKey: tenantCredentialKey });
+			await queryClient.invalidateQueries({ queryKey: collectorsKey });
+		},
+		onError: (err) =>
+			toast.error("Failed to reset Forward tenant credential", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
 
 	return (
 		<div className="w-full space-y-6 p-4 sm:p-6 xl:p-8">
@@ -122,6 +144,96 @@ function ForwardCredentialsPage() {
 					on-prem credential sets here when needed.
 				</p>
 			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Managed In-Cluster Credential</CardTitle>
+					<CardDescription>
+						Auto-provisioned tenant credential used for in-cluster Forward flows.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					{tenantCredentialQ.isLoading ? (
+						<div className="text-sm text-muted-foreground">Loading…</div>
+					) : null}
+					{tenantCredentialQ.isError ? (
+						<div className="text-sm text-destructive">
+							Failed to load managed credential.
+						</div>
+					) : null}
+					{tenantCredentialQ.data && !tenantCredentialQ.data.configured ? (
+						<div className="text-sm text-muted-foreground">
+							Managed credential is not configured yet.
+						</div>
+					) : null}
+					{tenantCredentialQ.data?.configured ? (
+						<div className="space-y-2">
+							<div className="grid gap-3 md:grid-cols-2">
+								<div className="space-y-1">
+									<div className="text-xs text-muted-foreground">Forward username</div>
+									<div className="font-mono text-sm break-all">
+										{tenantCredentialQ.data.username || "—"}
+									</div>
+								</div>
+								<div className="space-y-1">
+									<div className="text-xs text-muted-foreground">Forward password</div>
+									<div className="font-mono text-sm break-all">
+										{showTenantPassword
+											? (tenantCredentialQ.data.password || "—")
+											: "••••••••••••••••"}
+									</div>
+								</div>
+							</div>
+							<div className="text-xs text-muted-foreground">
+								Org: {tenantCredentialQ.data.orgName || tenantCredentialQ.data.orgId || "—"}
+							</div>
+							<div className="flex flex-wrap gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setShowTenantPassword((v) => !v)}
+								>
+									{showTenantPassword ? "Hide password" : "Show password"}
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										const value = tenantCredentialQ.data?.username?.trim();
+										if (!value) return;
+										void navigator.clipboard?.writeText(value);
+										toast.success("Forward username copied");
+									}}
+								>
+									Copy username
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										const value = tenantCredentialQ.data?.password?.trim();
+										if (!value) return;
+										void navigator.clipboard?.writeText(value);
+										toast.success("Forward password copied");
+									}}
+								>
+									Copy password
+								</Button>
+								<Button
+									variant="destructive"
+									size="sm"
+									disabled={resetTenantCredentialMutation.isPending}
+									onClick={() => resetTenantCredentialMutation.mutate()}
+								>
+									{resetTenantCredentialMutation.isPending
+										? "Resetting…"
+										: "Reset managed credential"}
+								</Button>
+							</div>
+						</div>
+					) : null}
+				</CardContent>
+			</Card>
 
 			<Card>
 				<CardHeader>

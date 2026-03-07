@@ -331,7 +331,7 @@ export async function refreshSession(): Promise<SessionResponseEnvelope> {
 }
 
 export async function logout(): Promise<void> {
-	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/auth/logout`, {
+	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/api/logout`, {
 		method: "POST",
 		credentials: "include",
 		headers: { "Content-Type": "application/json" },
@@ -2631,6 +2631,18 @@ export type DeleteUserForwardCollectorConfigResponse = {
 	deleted: boolean;
 };
 
+export type ForwardTenantCredentialResponse = {
+	configured: boolean;
+	orgId?: string;
+	orgName?: string;
+	username?: string;
+	email?: string;
+	password?: string;
+	updatedAt?: ISO8601;
+	lastRotatedAt?: ISO8601;
+	source?: string;
+};
+
 export type UserForwardCollectorConfigUpdateResponse = {
 	id: string;
 	deploymentName?: string;
@@ -2649,6 +2661,17 @@ export async function listUserForwardCollectorConfigs(): Promise<ListUserForward
 	return apiFetch<ListUserForwardCollectorConfigsResponse>(
 		"/api/forward/collector-configs",
 	);
+}
+
+export async function getCurrentUserForwardTenantCredential(): Promise<ForwardTenantCredentialResponse> {
+	return apiFetch<ForwardTenantCredentialResponse>("/api/forward/tenant-credential");
+}
+
+export async function resetCurrentUserForwardTenantCredential(): Promise<ForwardTenantCredentialResponse> {
+	return apiFetch<ForwardTenantCredentialResponse>("/api/forward/tenant-credential/reset", {
+		method: "POST",
+		body: "{}",
+	});
 }
 
 export async function createUserForwardCollectorConfig(
