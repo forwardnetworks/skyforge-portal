@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
 	BookOpen,
 	ChevronDown,
@@ -21,7 +21,7 @@ import {
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { SKYFORGE_API, wakeUserInfoblox } from "../lib/api-client";
+import { getUserInfobloxStatus, SKYFORGE_API, wakeUserInfoblox } from "../lib/api-client";
 import { sessionHasRole } from "../lib/rbac";
 import {
 	type SkyforgeAuthMode,
@@ -255,6 +255,7 @@ export function SideNav(props: {
 	authMode?: SkyforgeAuthMode | null;
 }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const navigate = useNavigate();
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({
 		Forward: true,
 		Settings: true,
@@ -275,23 +276,29 @@ export function SideNav(props: {
 		(href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
 			if (!isInfobloxHref(href)) return;
 			event.preventDefault();
-			const popup = window.open("about:blank", targetForExternal, "noopener,noreferrer");
+
 			void wakeUserInfoblox()
-				.then((resp) => {
-					if (!resp.ready) {
-						toast.message(resp.message ?? "Infoblox VM is starting");
+				.then(async (resp) => {
+					let ready = !!resp.ready;
+					if (!ready) {
+						try {
+							const status = await getUserInfobloxStatus();
+							ready = !!status.ready;
+						} catch {
+							ready = false;
+						}
 					}
-				})
-				.catch((error) => {
-					console.error("infoblox wake failed", error);
-					toast.error("Failed to start Infoblox VM; opening route directly");
-				})
-				.finally(() => {
-					if (popup && !popup.closed) {
-						popup.location.href = href;
+					if (!ready) {
+						toast.message(resp.message ?? "Infoblox VM is starting");
+						void navigate({ to: "/dashboard/integrations" });
 						return;
 					}
 					window.open(href, targetForExternal, "noopener,noreferrer");
+				})
+				.catch((error) => {
+					console.error("infoblox wake failed", error);
+					toast.error("Failed to start Infoblox VM");
+					void navigate({ to: "/dashboard/integrations" });
 				});
 		};
 
