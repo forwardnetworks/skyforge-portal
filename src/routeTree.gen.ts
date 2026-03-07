@@ -13,12 +13,14 @@ import { Route as WebhooksRouteImport } from './routes/webhooks'
 import { Route as SyslogRouteImport } from './routes/syslog'
 import { Route as StatusRouteImport } from './routes/status'
 import { Route as SnmpRouteImport } from './routes/snmp'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as DesignRouteImport } from './routes/design'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as LoginLocalRouteImport } from './routes/login.local'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
@@ -66,6 +68,11 @@ const SnmpRoute = SnmpRouteImport.update({
   path: '/snmp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -94,6 +101,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginLocalRoute = LoginLocalRouteImport.update({
+  id: '/login/local',
+  path: '/login/local',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsSlugRoute = DocsSlugRouteImport.update({
@@ -240,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/design': typeof DesignRoute
   '/notifications': typeof NotificationsRoute
+  '/settings': typeof SettingsRoute
   '/snmp': typeof SnmpRoute
   '/status': typeof StatusRoute
   '/syslog': typeof SyslogRoute
@@ -253,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/docs/$slug': typeof DocsSlugRoute
+  '/login/local': typeof LoginLocalRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
@@ -278,6 +292,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/design': typeof DesignRoute
   '/notifications': typeof NotificationsRoute
+  '/settings': typeof SettingsRoute
   '/snmp': typeof SnmpRoute
   '/status': typeof StatusRoute
   '/syslog': typeof SyslogRoute
@@ -290,6 +305,7 @@ export interface FileRoutesByTo {
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/docs/$slug': typeof DocsSlugRoute
+  '/login/local': typeof LoginLocalRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
@@ -316,6 +332,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/design': typeof DesignRoute
   '/notifications': typeof NotificationsRoute
+  '/settings': typeof SettingsRoute
   '/snmp': typeof SnmpRoute
   '/status': typeof StatusRoute
   '/syslog': typeof SyslogRoute
@@ -329,6 +346,7 @@ export interface FileRoutesById {
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/docs/$slug': typeof DocsSlugRoute
+  '/login/local': typeof LoginLocalRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
@@ -356,6 +374,7 @@ export interface FileRouteTypes {
     | '/'
     | '/design'
     | '/notifications'
+    | '/settings'
     | '/snmp'
     | '/status'
     | '/syslog'
@@ -369,6 +388,7 @@ export interface FileRouteTypes {
     | '/dashboard/servicenow'
     | '/dashboard/settings'
     | '/docs/$slug'
+    | '/login/local'
     | '/admin'
     | '/dashboard'
     | '/docs'
@@ -394,6 +414,7 @@ export interface FileRouteTypes {
     | '/'
     | '/design'
     | '/notifications'
+    | '/settings'
     | '/snmp'
     | '/status'
     | '/syslog'
@@ -406,6 +427,7 @@ export interface FileRouteTypes {
     | '/dashboard/servicenow'
     | '/dashboard/settings'
     | '/docs/$slug'
+    | '/login/local'
     | '/admin'
     | '/dashboard'
     | '/docs'
@@ -431,6 +453,7 @@ export interface FileRouteTypes {
     | '/'
     | '/design'
     | '/notifications'
+    | '/settings'
     | '/snmp'
     | '/status'
     | '/syslog'
@@ -444,6 +467,7 @@ export interface FileRouteTypes {
     | '/dashboard/servicenow'
     | '/dashboard/settings'
     | '/docs/$slug'
+    | '/login/local'
     | '/admin/'
     | '/dashboard/'
     | '/docs/'
@@ -470,6 +494,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DesignRoute: typeof DesignRoute
   NotificationsRoute: typeof NotificationsRoute
+  SettingsRoute: typeof SettingsRoute
   SnmpRoute: typeof SnmpRoute
   StatusRoute: typeof StatusRoute
   SyslogRoute: typeof SyslogRoute
@@ -483,6 +508,7 @@ export interface RootRouteChildren {
   DashboardServicenowRoute: typeof DashboardServicenowRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DocsSlugRoute: typeof DocsSlugRoute
+  LoginLocalRoute: typeof LoginLocalRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
@@ -532,6 +558,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SnmpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notifications': {
       id: '/notifications'
       path: '/notifications'
@@ -572,6 +605,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/local': {
+      id: '/login/local'
+      path: '/login/local'
+      fullPath: '/login/local'
+      preLoaderRoute: typeof LoginLocalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/$slug': {
@@ -778,6 +818,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DesignRoute: DesignRoute,
   NotificationsRoute: NotificationsRoute,
+  SettingsRoute: SettingsRoute,
   SnmpRoute: SnmpRoute,
   StatusRoute: StatusRoute,
   SyslogRoute: SyslogRoute,
@@ -791,6 +832,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardServicenowRoute: DashboardServicenowRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DocsSlugRoute: DocsSlugRoute,
+  LoginLocalRoute: LoginLocalRoute,
   AdminIndexRoute: AdminIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DocsIndexRoute: DocsIndexRoute,

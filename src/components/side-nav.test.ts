@@ -8,11 +8,11 @@ function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 
 describe("side nav model", () => {
 	it("shows Forward section with expected entries when enabled", () => {
-		const items = buildSideNavItems(
-			false,
-			{ forwardEnabled: true },
-			"password",
-		);
+			const items = buildSideNavItems(
+				false,
+				{ forwardEnabled: true },
+				"local",
+			);
 		const forward = findGroup("Forward", items);
 
 		expect(forward).toBeDefined();
@@ -35,11 +35,11 @@ describe("side nav model", () => {
 	});
 
 	it("hides Forward section when forward feature is disabled", () => {
-		const items = buildSideNavItems(
-			false,
-			{ forwardEnabled: false },
-			"password",
-		);
+			const items = buildSideNavItems(
+				false,
+				{ forwardEnabled: false },
+				"local",
+			);
 		const forward = findGroup("Forward", items);
 		const labels = items.map((i) => i.label);
 
@@ -54,7 +54,7 @@ describe("side nav model", () => {
 			coderEnabled: true,
 			yaadeEnabled: true,
 			nautobotEnabled: true,
-		}, "password");
+		}, "local");
 		const labels = items.map((i) => i.label);
 		expect(labels).toContain("Quick Deploy");
 		expect(labels).not.toContain("Connect");
@@ -65,27 +65,27 @@ describe("side nav model", () => {
 		expect(labels).toContain("Git");
 		expect(labels).toContain("Webhooks");
 		const coder = items.find((i) => i.label === "Coder");
-		expect(coder?.href).toBe(buildLoginUrl("/coder/", "password"));
+			expect(coder?.href).toBe(buildLoginUrl("/coder/", "local"));
 		const nautobot = items.find((i) => i.label === "Nautobot");
-		expect(nautobot?.href).toBe(buildLoginUrl("/nautobot/", "password"));
+			expect(nautobot?.href).toBe(buildLoginUrl("/nautobot/", "local"));
 	});
 
 	it("moves Coder Admin under Settings", () => {
-		const items = buildSideNavItems(true, { coderEnabled: true }, "password");
+		const items = buildSideNavItems(true, { coderEnabled: true }, "local");
 		const topLevelLabels = items.map((i) => i.label);
 		expect(topLevelLabels).not.toContain("Coder Admin");
 
 		const settings = findGroup("Settings", items);
 		expect(settings?.children?.map((c) => c.label)).toContain("Coder Admin");
 		const coderAdmin = settings?.children?.find((c) => c.label === "Coder Admin");
-		expect(coderAdmin?.href).toBe(buildLoginUrl("/coder/", "password"));
+		expect(coderAdmin?.href).toBe(buildLoginUrl("/coder/", "local"));
 	});
 
 	it("uses direct tool links once the session is authenticated", () => {
 		const items = buildSideNavItems(
 			{ authenticated: true, roles: ["ADMIN"] },
 			{ coderEnabled: true, nautobotEnabled: true },
-			"password",
+			"local",
 		);
 		const coder = items.find((i) => i.label === "Coder");
 		const nautobot = items.find((i) => i.label === "Nautobot");

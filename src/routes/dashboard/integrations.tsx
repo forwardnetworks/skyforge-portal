@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ExternalLink, Workflow } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +10,7 @@ import {
 	getUIConfig,
 	getUserServiceNowConfig,
 	listUserForwardCollectorConfigs,
+	wakeUserInfoblox,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -16,6 +19,7 @@ export const Route = createFileRoute("/dashboard/integrations")({
 });
 
 function IntegrationsPage() {
+	const [startingInfoblox, setStartingInfoblox] = useState(false);
 	const snQ = useQuery({
 		queryKey: queryKeys.userServiceNowConfig(),
 		queryFn: getUserServiceNowConfig,
@@ -40,6 +44,28 @@ function IntegrationsPage() {
 	const infobloxBaseUrl = uiConfigQ.data?.infobloxBaseUrl ?? "/infoblox";
 	const jiraEnabled = uiConfigQ.data?.features?.jiraEnabled ?? false;
 	const jiraBaseUrl = uiConfigQ.data?.jiraBaseUrl ?? "";
+
+	const launchInfoblox = async () => {
+		const href = infobloxBaseUrl || "/infoblox/";
+		const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+		setStartingInfoblox(true);
+		try {
+			const resp = await wakeUserInfoblox();
+			if (!resp.ready) {
+				toast.message(resp.message ?? "Infoblox VM is starting");
+			}
+		} catch (error) {
+			console.error("infoblox wake failed", error);
+			toast.error("Failed to start Infoblox VM; opening route directly");
+		} finally {
+			setStartingInfoblox(false);
+			if (popup && !popup.closed) {
+				popup.location.href = href;
+				return;
+			}
+			window.open(href, "_blank", "noopener,noreferrer");
+		}
+	};
 
 	return (
 		<div className="space-y-6 p-6">
@@ -152,10 +178,8 @@ function IntegrationsPage() {
 								KubeVirt-backed NIOS appliance exposed through the shared Skyforge ingress.
 							</div>
 							<div className="flex gap-2">
-								<Button asChild size="sm">
-									<a href={infobloxBaseUrl} target="_blank" rel="noreferrer noopener">
-										Open
-									</a>
+								<Button size="sm" onClick={launchInfoblox} disabled={startingInfoblox}>
+									{startingInfoblox ? "Starting…" : "Open"}
 								</Button>
 							</div>
 						</CardContent>
@@ -172,7 +196,7 @@ function IntegrationsPage() {
 						</div>
 						<div className="flex flex-wrap gap-2">
 							<Button asChild size="sm" variant="secondary">
-								<Link to="/dashboard/settings">Open My Settings</Link>
+								<Link to="/settings">Open Settings</Link>
 							</Button>
 							<Button asChild size="sm" variant="secondary">
 								<a href="/dashboard/docs/getting-started">

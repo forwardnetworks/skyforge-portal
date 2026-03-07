@@ -3,7 +3,9 @@ import type { components, operations } from "./openapi.gen";
 import {
 	SKYFORGE_API,
 	SKYFORGE_PROXY_ROOT,
+	buildLocalLoginUrl,
 	buildLoginUrl,
+	setRuntimeAuthProvider,
 	setRuntimeAuthMode,
 } from "./skyforge-config";
 
@@ -68,6 +70,30 @@ export type ServiceNowSchemaStatusResponse = {
 	status: "ok" | "missing" | "error" | string;
 	missing?: string[];
 	detail?: string;
+	checkedAt?: ISO8601;
+};
+
+export type UserInfobloxStatusResponse = {
+	vmName?: string;
+	namespace?: string;
+	runStrategy?: string;
+	printableStatus?: string;
+	phase?: string;
+	serviceReady?: boolean;
+	ready: boolean;
+	checkedAt?: ISO8601;
+};
+
+export type WakeUserInfobloxResponse = {
+	vmName?: string;
+	namespace?: string;
+	runStrategy?: string;
+	printableStatus?: string;
+	phase?: string;
+	serviceReady?: boolean;
+	ready: boolean;
+	woken: boolean;
+	message?: string;
 	checkedAt?: ISO8601;
 };
 
@@ -288,7 +314,7 @@ export type DashboardSnapshot = {
 	};
 };
 
-export { buildLoginUrl, SKYFORGE_API, SKYFORGE_PROXY_ROOT };
+export { buildLocalLoginUrl, buildLoginUrl, SKYFORGE_API, SKYFORGE_PROXY_ROOT };
 
 export type SessionResponseEnvelope =
 	operations["GET:skyforge.Session"]["responses"][200]["content"]["application/json"];
@@ -648,6 +674,19 @@ export async function wakeUserServiceNowPdi(): Promise<ServiceNowPdiStatusRespon
 			body: "{}",
 		},
 	);
+}
+
+export async function getUserInfobloxStatus(): Promise<UserInfobloxStatusResponse> {
+	return apiFetch<UserInfobloxStatusResponse>(
+		"/api/me/integrations/infoblox/status",
+	);
+}
+
+export async function wakeUserInfoblox(): Promise<WakeUserInfobloxResponse> {
+	return apiFetch<WakeUserInfobloxResponse>("/api/me/integrations/infoblox/wake", {
+		method: "POST",
+		body: "{}",
+	});
 }
 
 export async function configureForwardServiceNowTicketing(): Promise<ConfigureForwardServiceNowTicketingResponse> {
@@ -3039,15 +3078,33 @@ export async function getAdminEffectiveConfig(): Promise<AdminEffectiveConfigRes
 	return apiFetch<AdminEffectiveConfigResponse>("/api/admin/config");
 }
 
+export type AdminAuthProviderStatus = {
+	id: string;
+	label: string;
+	implemented: boolean;
+	selectable: boolean;
+	configured: boolean;
+	healthy: boolean;
+};
+
 export type AdminAuthSettingsResponse = {
-	mode: "password" | "oidc" | string;
-	configured: "password" | "oidc" | string;
-	persistedMode?: "password" | "oidc" | string;
+	primaryProvider: "local" | "okta" | string;
+	configuredProvider: "local" | "okta" | string;
+	persistedProvider?: "local" | "okta" | string;
+	breakGlassEnabled: boolean;
+	breakGlassLabel: string;
+	providers: AdminAuthProviderStatus[];
+	mode: "local" | "oidc" | string;
+	configured: "local" | "oidc" | string;
+	persistedMode?: "local" | "oidc" | string;
 	oidcAvailable: boolean;
 };
 
 export type PutAdminAuthSettingsRequest = {
-	mode: "password" | "oidc";
+	primaryProvider: "local" | "okta";
+	breakGlassEnabled?: boolean;
+	breakGlassLabel?: string;
+	mode?: "local" | "oidc";
 };
 
 export async function getAdminAuthSettings(): Promise<AdminAuthSettingsResponse> {
@@ -3577,14 +3634,22 @@ export async function deleteDeployment(
 
 export type UIConfigResponse =
 	operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"] & {
-		authMode?: "oidc" | "password" | string;
+		authMode?: "oidc" | "local" | string;
+		auth?: {
+			primaryProvider?: "local" | "okta" | string;
+			breakGlassEnabled?: boolean;
+			breakGlassLabel?: string;
+		};
 		jiraBaseUrl?: string;
+		infobloxBaseUrl?: string;
 		features?: operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"]["features"] & {
 			jiraEnabled?: boolean;
+			infobloxEnabled?: boolean;
 		};
 	};
 export async function getUIConfig(): Promise<UIConfigResponse> {
 	const config = await apiFetch<UIConfigResponse>("/api/ui/config");
+	setRuntimeAuthProvider(config.auth?.primaryProvider);
 	setRuntimeAuthMode(config.authMode);
 	return config;
 }

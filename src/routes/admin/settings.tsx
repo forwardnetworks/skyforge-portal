@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Plus, Shield, Trash2, UserCog, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -73,7 +73,10 @@ import { queryKeys } from "../../lib/query-keys";
 import { sessionIsAdmin } from "../../lib/rbac";
 
 export const Route = createFileRoute("/admin/settings")({
-	beforeLoad: async ({ context }) => requireAdminRouteAccess(context),
+	beforeLoad: async ({ context }) => {
+		await requireAdminRouteAccess(context);
+		throw redirect({ to: "/settings", search: { tab: "admin" } });
+	},
 	component: AdminSettingsPage,
 });
 
@@ -98,7 +101,7 @@ function quickDeployTemplateNameFromPath(path: string): string {
 	return last.replace(/[-_]/g, " ");
 }
 
-function AdminSettingsPage() {
+export function AdminSettingsPage() {
 	const queryClient = useQueryClient();
 	const sessionQ = useQuery({
 		queryKey: queryKeys.session(),
@@ -205,8 +208,12 @@ function AdminSettingsPage() {
 		retry: false,
 	});
 	const [blockedOrgIdsCsv, setBlockedOrgIdsCsv] = useState("");
-	const [authModeDraft, setAuthModeDraft] = useState<"password" | "oidc">(
-		"password",
+	const [authProviderDraft, setAuthProviderDraft] = useState<"local" | "okta">(
+		"local",
+	);
+	const [breakGlassEnabledDraft, setBreakGlassEnabledDraft] = useState(false);
+	const [breakGlassLabelDraft, setBreakGlassLabelDraft] = useState(
+		"Emergency local login",
 	);
 	const [oidcEnabledDraft, setOidcEnabledDraft] = useState(false);
 	const [oidcIssuerDraft, setOidcIssuerDraft] = useState("");
@@ -274,17 +281,34 @@ function AdminSettingsPage() {
 		},
 	});
 	useEffect(() => {
-		const mode = String(authSettingsQ.data?.mode ?? "").trim().toLowerCase();
-		if (mode === "oidc" || mode === "password") {
-			setAuthModeDraft(mode);
+		const provider = String(authSettingsQ.data?.primaryProvider ?? "")
+			.trim()
+			.toLowerCase();
+		if (provider === "okta" || provider === "local") {
+			setAuthProviderDraft(provider);
 		}
-	}, [authSettingsQ.data?.mode]);
-	const saveAuthMode = useMutation({
-		mutationFn: async () => putAdminAuthSettings({ mode: authModeDraft }),
+		setBreakGlassEnabledDraft(
+			Boolean(authSettingsQ.data?.breakGlassEnabled),
+		);
+		setBreakGlassLabelDraft(
+			String(authSettingsQ.data?.breakGlassLabel ?? "Emergency local login"),
+		);
+	}, [
+		authSettingsQ.data?.primaryProvider,
+		authSettingsQ.data?.breakGlassEnabled,
+		authSettingsQ.data?.breakGlassLabel,
+	]);
+	const saveAuthSettings = useMutation({
+		mutationFn: async () =>
+			putAdminAuthSettings({
+				primaryProvider: authProviderDraft,
+				breakGlassEnabled: breakGlassEnabledDraft,
+				breakGlassLabel: breakGlassLabelDraft.trim() || "Emergency local login",
+			}),
 		onSuccess: async (res: AdminAuthSettingsResponse) => {
-			const nextMode = String(res.mode ?? "password");
+			const nextMode = String(res.primaryProvider ?? "local");
 			toast.success("Authentication mode updated", {
-				description: `Effective mode: ${nextMode}`,
+				description: `Primary provider: ${nextMode}`,
 			});
 			await Promise.all([
 				authSettingsQ.refetch(),
@@ -853,10 +877,9 @@ function AdminSettingsPage() {
 					<TabsContent value="overview" className="space-y-6">
 						<Card>
 							<CardHeader>
-								<CardTitle>Authentication mode</CardTitle>
+								<CardTitle>Authentication</CardTitle>
 								<CardDescription>
-									Select runtime login backend. This applies immediately for new
-									login redirects.
+									Select primary login provider and emergency local access behavior.
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-3">
@@ -866,47 +889,102 @@ function AdminSettingsPage() {
 									<>
 										<div className="grid gap-2 md:grid-cols-[220px_1fr] md:items-center">
 											<div className="text-sm text-muted-foreground">
-												Mode
+												Primary provider
 											</div>
 											<Select
-												value={authModeDraft}
+												value={authProviderDraft}
 												onValueChange={(value) => {
-													if (value === "password" || value === "oidc") {
-														setAuthModeDraft(value);
+													if (value === "local" || value === "okta") {
+														setAuthProviderDraft(value);
 													}
 												}}
-												disabled={saveAuthMode.isPending}
+												disabled={saveAuthSettings.isPending}
 											>
 												<SelectTrigger className="max-w-xs">
-													<SelectValue placeholder="Select auth mode" />
+													<SelectValue placeholder="Select provider" />
 												</SelectTrigger>
 												<SelectContent>
-													<SelectItem value="password">password</SelectItem>
-													{authSettingsQ.data?.oidcAvailable ? (
-														<SelectItem value="oidc">oidc</SelectItem>
-													) : null}
+													<SelectItem value="local">local</SelectItem>
+													<SelectItem
+														value="okta"
+														disabled={!authSettingsQ.data?.oidcAvailable}
+													>
+														okta
+													</SelectItem>
 												</SelectContent>
 											</Select>
 										</div>
+										<div className="grid gap-2 md:grid-cols-[220px_1fr] md:items-center">
+											<div className="text-sm text-muted-foreground">
+												Break-glass local login
+											</div>
+											<Select
+												value={breakGlassEnabledDraft ? "true" : "false"}
+												onValueChange={(value) =>
+													setBreakGlassEnabledDraft(value === "true")
+												}
+												disabled={saveAuthSettings.isPending}
+											>
+												<SelectTrigger className="max-w-xs">
+													<SelectValue placeholder="Break-glass local login" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="false">disabled</SelectItem>
+													<SelectItem value="true">enabled</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="grid gap-2 md:grid-cols-[220px_1fr] md:items-center">
+											<div className="text-sm text-muted-foreground">
+												Break-glass label
+											</div>
+											<Input
+												value={breakGlassLabelDraft}
+												onChange={(e) => setBreakGlassLabelDraft(e.target.value)}
+												disabled={saveAuthSettings.isPending}
+												placeholder="Emergency local login"
+												className="max-w-md"
+											/>
+										</div>
 										<div className="text-xs text-muted-foreground">
 											Config default:{" "}
-											{authSettingsQ.data?.configured ?? "password"}{" "}
-											· Persisted override:{" "}
-											{authSettingsQ.data?.persistedMode || "none"} · OIDC
+											{authSettingsQ.data?.configuredProvider ?? "local"} · Persisted
+											override:{" "}
+											{authSettingsQ.data?.persistedProvider || "none"} · Okta
 											available: {authSettingsQ.data?.oidcAvailable ? "yes" : "no"}
+										</div>
+										<div className="flex flex-wrap gap-2">
+											{(authSettingsQ.data?.providers ?? []).map((provider) => (
+												<Badge
+													key={provider.id}
+													variant={provider.implemented ? "secondary" : "outline"}
+												>
+													{provider.label}
+													{provider.implemented ? "" : " (coming soon)"}
+												</Badge>
+											))}
 										</div>
 										<div>
 											<Button
-												onClick={() => saveAuthMode.mutate()}
+												onClick={() => saveAuthSettings.mutate()}
 												disabled={
-													saveAuthMode.isPending ||
+													saveAuthSettings.isPending ||
 													authSettingsQ.isLoading ||
-													(authSettingsQ.data?.mode ?? "password") === authModeDraft
+													(authSettingsQ.data?.primaryProvider ?? "local") ===
+														authProviderDraft &&
+														Boolean(authSettingsQ.data?.breakGlassEnabled) ===
+															breakGlassEnabledDraft &&
+														String(
+															authSettingsQ.data?.breakGlassLabel ??
+																"Emergency local login",
+														).trim() ===
+															(breakGlassLabelDraft.trim() ||
+																"Emergency local login")
 												}
 											>
-												{saveAuthMode.isPending
-													? "Saving…"
-													: "Save auth mode"}
+												{saveAuthSettings.isPending
+													? "Saving..."
+													: "Save auth settings"}
 											</Button>
 										</div>
 									</>

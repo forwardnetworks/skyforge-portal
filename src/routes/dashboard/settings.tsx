@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Copy, Loader2, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -62,6 +62,9 @@ import {
 import { queryKeys } from "../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/settings")({
+	beforeLoad: () => {
+		throw redirect({ to: "/settings", search: { tab: "profile" } });
+	},
 	component: UserSettingsPage,
 });
 
@@ -82,7 +85,7 @@ const formSchema = z.object({
 		.optional(),
 });
 
-function UserSettingsPage() {
+export function UserSettingsPage() {
 	const queryClient = useQueryClient();
 
 	const settingsQ = useQuery({

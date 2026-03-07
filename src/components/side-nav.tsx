@@ -18,8 +18,10 @@ import {
 	Webhook,
 	Workflow,
 } from "lucide-react";
+import type { MouseEvent } from "react";
 import { useState } from "react";
-import { SKYFORGE_API } from "../lib/api-client";
+import { toast } from "sonner";
+import { SKYFORGE_API, wakeUserInfoblox } from "../lib/api-client";
 import { sessionHasRole } from "../lib/rbac";
 import {
 	type SkyforgeAuthMode,
@@ -161,7 +163,7 @@ function createNavItems(options?: {
 	},
 	{
 		label: "Jira",
-		href: "/dashboard/integrations",
+		href: "/jira",
 		icon: Workflow,
 		featureFlag: "jiraEnabled",
 	},
@@ -180,32 +182,32 @@ function createNavItems(options?: {
 		featureFlag: "infobloxEnabled",
 	},
 	{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
-	{
-		label: "Settings",
-		href: "",
-		icon: Settings,
-		children: [
-			{ label: "My Settings", href: "/dashboard/settings", icon: Settings },
-			{
-				label: "Coder Admin",
-				href: coderLaunchUrl,
+		{
+			label: "Settings",
+			href: "",
+			icon: Settings,
+			children: [
+				{ label: "Settings Hub", href: "/settings", icon: Settings },
+				{
+					label: "Coder Admin",
+					href: coderLaunchUrl,
 				icon: Cloud,
 				external: true,
 				adminOnly: true,
 				featureFlag: "coderEnabled",
 			},
-			{
-				label: "Admin Settings",
-				href: "/admin/settings",
-				icon: Settings,
-				adminOnly: true,
-			},
-			{
-				label: "Governance",
-				href: "/admin/governance",
-				icon: ShieldCheck,
-				adminOnly: true,
-			},
+				{
+					label: "Users & Access",
+					href: "/settings?tab=admin",
+					icon: Settings,
+					adminOnly: true,
+				},
+				{
+					label: "Governance",
+					href: "/settings?tab=governance",
+					icon: ShieldCheck,
+					adminOnly: true,
+				},
 		],
 	},
 	];
@@ -261,6 +263,37 @@ export function SideNav(props: {
 	const targetForExternal = "_blank";
 	const relForExternal = "noreferrer noopener";
 	const shouldOpenNewTab = (item: NavItem) => !!item.external || !!item.newTab;
+	const isInfobloxHref = (href: string) => {
+		const normalized = href.trim().toLowerCase();
+		return (
+			normalized === "/infoblox" ||
+			normalized === "/infoblox/" ||
+			normalized.startsWith("/infoblox/")
+		);
+	};
+	const handleExternalLaunchClick =
+		(href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+			if (!isInfobloxHref(href)) return;
+			event.preventDefault();
+			const popup = window.open("about:blank", targetForExternal, "noopener,noreferrer");
+			void wakeUserInfoblox()
+				.then((resp) => {
+					if (!resp.ready) {
+						toast.message(resp.message ?? "Infoblox VM is starting");
+					}
+				})
+				.catch((error) => {
+					console.error("infoblox wake failed", error);
+					toast.error("Failed to start Infoblox VM; opening route directly");
+				})
+				.finally(() => {
+					if (popup && !popup.closed) {
+						popup.location.href = href;
+						return;
+					}
+					window.open(href, targetForExternal, "noopener,noreferrer");
+				});
+		};
 
 	const isActiveHref = (href: string) => {
 		if (!href) return false;
@@ -323,6 +356,7 @@ export function SideNav(props: {
 															href={child.href}
 															target={targetForExternal}
 															rel={relForExternal}
+															onClick={handleExternalLaunchClick(child.href)}
 															className="flex items-center gap-2 cursor-pointer w-full"
 														>
 															<child.icon className="h-4 w-4 mr-2" />
@@ -387,6 +421,7 @@ export function SideNav(props: {
 															href={child.href}
 															target={targetForExternal}
 															rel={relForExternal}
+															onClick={handleExternalLaunchClick(child.href)}
 															className={childClass}
 														>
 															<ChildIcon className="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" />
@@ -433,6 +468,7 @@ export function SideNav(props: {
 									href={item.href}
 									target={targetForExternal}
 									rel={relForExternal}
+									onClick={handleExternalLaunchClick(item.href)}
 									className={baseClass}
 									title={props.collapsed ? item.label : undefined}
 								>

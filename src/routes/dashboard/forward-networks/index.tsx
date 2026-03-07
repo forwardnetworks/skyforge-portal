@@ -223,7 +223,7 @@ function ForwardNetworksPage() {
 						className="h-8 w-8"
 						disabled={!selectedUserScopeId}
 						onClick={() => {
-							void navigate({ to: "/dashboard/settings" });
+							void navigate({ to: "/settings" });
 						}}
 					>
 						<Settings className="h-4 w-4" />

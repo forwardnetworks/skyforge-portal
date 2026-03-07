@@ -14,11 +14,11 @@ describe("tool links", () => {
 
 	it("returns the direct tool path once authenticated", () => {
 		expect(
-			buildCoderLaunchUrl({ authMode: "password", authenticated: true }),
+			buildCoderLaunchUrl({ authMode: "local", authenticated: true }),
 		).toBe("/coder/");
 		expect(
 			buildToolLaunchUrl("/nautobot/", {
-				authMode: "password",
+				authMode: "local",
 				authenticated: true,
 			}),
 		).toBe("/nautobot/");

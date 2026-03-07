@@ -54,11 +54,15 @@ function StatusPage() {
 		staleTime: Number.POSITIVE_INFINITY,
 	});
 	const authMode =
-		uiConfig.data?.authMode === "password"
-			? "password"
-			: uiConfig.data?.authMode === "oidc"
+		uiConfig.data?.auth?.primaryProvider === "local"
+			? "local"
+			: uiConfig.data?.auth?.primaryProvider === "okta"
 				? "oidc"
-				: null;
+				: uiConfig.data?.authMode === "local"
+					? "local"
+					: uiConfig.data?.authMode === "oidc"
+						? "oidc"
+						: null;
 	useStatusSummaryEvents(true);
 
 	const summary = useQuery({
@@ -401,7 +405,7 @@ function StatusPage() {
 								name: "Jira",
 								path:
 									uiConfig.data?.jiraBaseUrl ||
-									"/dashboard/integrations",
+									"/jira",
 								icon: Workflow,
 								enabled: features?.jiraEnabled ?? false,
 								external: true,

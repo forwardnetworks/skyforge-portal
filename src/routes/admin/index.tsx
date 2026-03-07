@@ -10,7 +10,7 @@ export const Route = createFileRoute("/admin/")({
 function AdminIndex() {
 	const navigate = useNavigate();
 	useEffect(() => {
-		void navigate({ to: "/admin/settings", replace: true });
+		void navigate({ to: "/settings", search: { tab: "admin" }, replace: true });
 	}, [navigate]);
 	return null;
 }
