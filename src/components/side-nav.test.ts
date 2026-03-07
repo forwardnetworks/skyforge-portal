@@ -54,6 +54,11 @@ describe("side nav model", () => {
 			coderEnabled: true,
 			yaadeEnabled: true,
 			nautobotEnabled: true,
+			netboxEnabled: true,
+			jiraEnabled: true,
+			rapid7Enabled: true,
+			infobloxEnabled: true,
+			dnsEnabled: true,
 		}, "local");
 		const labels = items.map((i) => i.label);
 		expect(labels).toContain("Quick Deploy");
@@ -62,23 +67,50 @@ describe("side nav model", () => {
 		expect(labels).not.toContain("Runs");
 		expect(labels).not.toContain("Policy Reports");
 		expect(labels).toContain("Integrations");
-		expect(labels).toContain("Git");
-		expect(labels).toContain("Webhooks");
-		const coder = items.find((i) => i.label === "Coder");
-			expect(coder?.href).toBe(buildLoginUrl("/coder/", "local"));
-		const nautobot = items.find((i) => i.label === "Nautobot");
-			expect(nautobot?.href).toBe(buildLoginUrl("/nautobot/", "local"));
+		expect(labels).toContain("Platform");
+		expect(labels).toContain("Settings");
+		expect(labels).not.toContain("Git");
+		expect(labels).not.toContain("Webhooks");
+
+		const integrations = findGroup("Integrations", items);
+		expect(integrations?.children?.map((c) => c.label)).toEqual(
+			expect.arrayContaining([
+				"Overview",
+				"ServiceNow",
+				"NetBox",
+				"Nautobot",
+				"Jira",
+				"Rapid7",
+				"Infoblox",
+				"Infoblox Console",
+			]),
+		);
+
+		const platform = findGroup("Platform", items);
+		expect(platform?.children?.map((c) => c.label)).toEqual(
+			expect.arrayContaining([
+				"Git",
+				"Artifacts",
+				"DNS",
+				"Coder",
+				"API Testing",
+				"Webhooks",
+				"Syslog",
+				"SNMP",
+			]),
+		);
+		const coder = platform?.children?.find((c) => c.label === "Coder");
+		expect(coder?.href).toBe(buildLoginUrl("/coder/", "local"));
+		const nautobot = integrations?.children?.find((c) => c.label === "Nautobot");
+		expect(nautobot?.href).toBe(buildLoginUrl("/nautobot/", "local"));
 	});
 
-	it("moves Coder Admin under Settings", () => {
+	it("collapses admin controls into settings hub", () => {
 		const items = buildSideNavItems(true, { coderEnabled: true }, "local");
-		const topLevelLabels = items.map((i) => i.label);
-		expect(topLevelLabels).not.toContain("Coder Admin");
-
-		const settings = findGroup("Settings", items);
-		expect(settings?.children?.map((c) => c.label)).toContain("Coder Admin");
-		const coderAdmin = settings?.children?.find((c) => c.label === "Coder Admin");
-		expect(coderAdmin?.href).toBe(buildLoginUrl("/coder/", "local"));
+		const settings = items.find((i) => i.label === "Settings");
+		expect(settings).toBeDefined();
+		expect(settings?.children).toBeUndefined();
+		expect(settings?.href).toBe("/settings");
 	});
 
 	it("uses direct tool links once the session is authenticated", () => {
@@ -87,8 +119,10 @@ describe("side nav model", () => {
 			{ coderEnabled: true, nautobotEnabled: true },
 			"local",
 		);
-		const coder = items.find((i) => i.label === "Coder");
-		const nautobot = items.find((i) => i.label === "Nautobot");
+		const platform = findGroup("Platform", items);
+		const integrations = findGroup("Integrations", items);
+		const coder = platform?.children?.find((i) => i.label === "Coder");
+		const nautobot = integrations?.children?.find((i) => i.label === "Nautobot");
 		expect(coder?.href).toBe("/coder/");
 		expect(nautobot?.href).toBe("/nautobot/");
 	});

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
 	BookOpen,
 	ChevronDown,
@@ -18,10 +18,8 @@ import {
 	Webhook,
 	Workflow,
 } from "lucide-react";
-import type { MouseEvent } from "react";
 import { useState } from "react";
-import { toast } from "sonner";
-import { getUserInfobloxStatus, SKYFORGE_API, wakeUserInfoblox } from "../lib/api-client";
+import { SKYFORGE_API } from "../lib/api-client";
 import { sessionHasRole } from "../lib/rbac";
 import {
 	type SkyforgeAuthMode,
@@ -51,8 +49,6 @@ type NavItem = {
 
 export type Features = {
 	giteaEnabled?: boolean;
-	minioEnabled?: boolean;
-	dexEnabled?: boolean;
 	coderEnabled?: boolean;
 	yaadeEnabled?: boolean;
 	swaggerUIEnabled?: boolean;
@@ -61,6 +57,7 @@ export type Features = {
 	nautobotEnabled?: boolean;
 	infobloxEnabled?: boolean;
 	jiraEnabled?: boolean;
+	rapid7Enabled?: boolean;
 	dnsEnabled?: boolean;
 };
 
@@ -72,144 +69,156 @@ function createNavItems(options?: {
 	const nautobotLaunchUrl = buildToolLaunchUrl("/nautobot/", options);
 	const coderLaunchUrl = buildCoderLaunchUrl(options);
 	return [
-	{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
-	{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
-	{
-		label: "Quick Deploy",
-		href: "/dashboard/deployments/quick",
-		icon: Workflow,
-		featureFlag: "forwardEnabled",
-	},
-	{
-		label: "Designer",
-		href: "/dashboard/labs/designer",
-		icon: Hammer,
-		newTab: true,
-	},
-	{
-		label: "Forward",
-		href: "",
-		icon: Network,
-		featureFlag: "forwardEnabled",
-		children: [
-			{
-				label: "Credentials",
-				href: "/dashboard/forward/credentials",
-				icon: Settings,
-			},
-			{
-				label: "Collector",
-				href: "/dashboard/forward/collectors",
-				icon: Radio,
-			},
-			{
-				label: "Cluster",
-				href: FORWARD_CLUSTER_URL,
-				icon: Network,
-				external: true,
-			},
-			{
-				label: "Analytics",
-				href: "/dashboard/forward-networks",
-				icon: ShieldCheck,
-			},
-			{ label: "ServiceNow", href: "/dashboard/servicenow", icon: Workflow },
-		],
-	},
-	{ label: "Integrations", href: "/dashboard/integrations", icon: Workflow },
-	{
-		label: "Artifacts",
-		href: "/dashboard/s3",
-		icon: Server,
-		featureFlag: "minioEnabled",
-	},
-	{
-		label: "Git",
-		href: "/api/gitea/public",
-		icon: GitBranch,
-		external: true,
-		featureFlag: "giteaEnabled",
-	},
-	{
-		label: "DNS",
-		href: `${SKYFORGE_API}/dns/sso?next=/dns/`,
-		icon: Network,
-		external: true,
-		featureFlag: "dnsEnabled",
-	},
-	{
-		label: "Coder",
-		href: coderLaunchUrl,
-		icon: Cloud,
-		external: true,
-		featureFlag: "coderEnabled",
-	},
-	{ label: "Webhooks", href: "/webhooks", icon: Webhook },
-	{ label: "Syslog", href: "/syslog", icon: Inbox },
-	{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
-	{
-		label: "API Testing",
-		href: `${SKYFORGE_API}/yaade/sso`,
-		icon: PanelTop,
-		external: true,
-		featureFlag: "yaadeEnabled",
-	},
-	{
-		label: "NetBox",
-		href: "/netbox/",
-		icon: Network,
-		external: true,
-		featureFlag: "netboxEnabled",
-	},
-	{
-		label: "Jira",
-		href: "/jira",
-		icon: Workflow,
-		featureFlag: "jiraEnabled",
-	},
-	{
-		label: "Nautobot",
-		href: nautobotLaunchUrl,
-		icon: Network,
-		external: true,
-		featureFlag: "nautobotEnabled",
-	},
-	{
-		label: "Infoblox",
-		href: "/infoblox/",
-		icon: Server,
-		external: true,
-		featureFlag: "infobloxEnabled",
-	},
-	{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
+		{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
+		{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
+		{
+			label: "Quick Deploy",
+			href: "/dashboard/deployments/quick",
+			icon: Workflow,
+			featureFlag: "forwardEnabled",
+		},
+		{
+			label: "Designer",
+			href: "/dashboard/labs/designer",
+			icon: Hammer,
+			newTab: true,
+		},
+		{
+			label: "Forward",
+			href: "",
+			icon: Network,
+			featureFlag: "forwardEnabled",
+			children: [
+				{
+					label: "Credentials",
+					href: "/dashboard/forward/credentials",
+					icon: Settings,
+				},
+				{
+					label: "Collector",
+					href: "/dashboard/forward/collectors",
+					icon: Radio,
+				},
+				{
+					label: "Cluster",
+					href: FORWARD_CLUSTER_URL,
+					icon: Network,
+					external: true,
+				},
+				{
+					label: "Analytics",
+					href: "/dashboard/forward-networks",
+					icon: ShieldCheck,
+				},
+			],
+		},
+		{
+			label: "Integrations",
+			href: "",
+			icon: Workflow,
+			children: [
+				{
+					label: "Overview",
+					href: "/dashboard/integrations",
+					icon: Workflow,
+				},
+				{
+					label: "ServiceNow",
+					href: "/dashboard/servicenow",
+					icon: Workflow,
+				},
+				{
+					label: "NetBox",
+					href: "/netbox/",
+					icon: Network,
+					external: true,
+					featureFlag: "netboxEnabled",
+				},
+				{
+					label: "Nautobot",
+					href: nautobotLaunchUrl,
+					icon: Network,
+					external: true,
+					featureFlag: "nautobotEnabled",
+				},
+				{
+					label: "Jira",
+					href: "/jira",
+					icon: Workflow,
+					external: true,
+					featureFlag: "jiraEnabled",
+				},
+				{
+					label: "Rapid7",
+					href: "/rapid7",
+					icon: Workflow,
+					external: true,
+					featureFlag: "rapid7Enabled",
+				},
+				{
+					label: "Infoblox",
+					icon: Server,
+					href: "/dashboard/integrations/infoblox",
+					featureFlag: "infobloxEnabled",
+				},
+				{
+					label: "Infoblox Console",
+					href: "/dashboard/integrations/infoblox/console",
+					icon: Server,
+					featureFlag: "infobloxEnabled",
+				},
+			],
+		},
+		{
+			label: "Platform",
+			href: "",
+			icon: Cloud,
+			children: [
+				{
+					label: "Git",
+					href: "/api/gitea/public",
+					icon: GitBranch,
+					external: true,
+					featureFlag: "giteaEnabled",
+				},
+				{
+					label: "Artifacts",
+					href: "/files/",
+					icon: Inbox,
+					external: true,
+				},
+				{
+					label: "DNS",
+					href: `${SKYFORGE_API}/dns/sso?next=/dns/`,
+					icon: Network,
+					external: true,
+					featureFlag: "dnsEnabled",
+				},
+				{
+					label: "Coder",
+					href: coderLaunchUrl,
+					icon: Cloud,
+					external: true,
+					featureFlag: "coderEnabled",
+				},
+				{
+					label: "API Testing",
+					href: `${SKYFORGE_API}/yaade/sso`,
+					icon: PanelTop,
+					external: true,
+					featureFlag: "yaadeEnabled",
+				},
+				{ label: "Webhooks", href: "/webhooks", icon: Webhook },
+				{ label: "Syslog", href: "/syslog", icon: Inbox },
+				{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
+			],
+		},
+		{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 		{
 			label: "Settings",
-			href: "",
+			href: "/settings",
 			icon: Settings,
-			children: [
-				{ label: "Settings Hub", href: "/settings", icon: Settings },
-				{
-					label: "Coder Admin",
-					href: coderLaunchUrl,
-				icon: Cloud,
-				external: true,
-				adminOnly: true,
-				featureFlag: "coderEnabled",
-			},
-				{
-					label: "Users & Access",
-					href: "/settings?tab=admin",
-					icon: Settings,
-					adminOnly: true,
-				},
-				{
-					label: "Governance",
-					href: "/settings?tab=governance",
-					icon: ShieldCheck,
-					adminOnly: true,
-				},
-		],
-	},
+		},
 	];
 }
 
@@ -255,53 +264,15 @@ export function SideNav(props: {
 	authMode?: SkyforgeAuthMode | null;
 }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
-	const navigate = useNavigate();
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({
 		Forward: true,
-		Settings: true,
+		Integrations: true,
+		Platform: true,
 	});
 
-	const targetForExternal = "_blank";
 	const relForExternal = "noreferrer noopener";
-	const shouldOpenNewTab = (item: NavItem) => !!item.external || !!item.newTab;
-	const isInfobloxHref = (href: string) => {
-		const normalized = href.trim().toLowerCase();
-		return (
-			normalized === "/infoblox" ||
-			normalized === "/infoblox/" ||
-			normalized.startsWith("/infoblox/")
-		);
-	};
-	const handleExternalLaunchClick =
-		(href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
-			if (!isInfobloxHref(href)) return;
-			event.preventDefault();
-
-			void wakeUserInfoblox()
-				.then(async (resp) => {
-					let ready = !!resp.ready;
-					if (!ready) {
-						try {
-							const status = await getUserInfobloxStatus();
-							ready = !!status.ready;
-						} catch {
-							ready = false;
-						}
-					}
-					if (!ready) {
-						toast.message(resp.message ?? "Infoblox VM is starting");
-						void navigate({ to: "/dashboard/integrations" });
-						return;
-					}
-					window.open(href, targetForExternal, "noopener,noreferrer");
-				})
-				.catch((error) => {
-					console.error("infoblox wake failed", error);
-					toast.error("Failed to start Infoblox VM");
-					void navigate({ to: "/dashboard/integrations" });
-				});
-		};
-
+	const targetForItem = (item: NavItem) => (item.newTab ? "_blank" : undefined);
+	const relForItem = (item: NavItem) => (item.newTab ? relForExternal : undefined);
 	const isActiveHref = (href: string) => {
 		if (!href) return false;
 		if (href === "/") return pathname === "/";
@@ -355,15 +326,14 @@ export function SideNav(props: {
 											sideOffset={10}
 										>
 											<DropdownMenuLabel>{item.label}</DropdownMenuLabel>
-											<DropdownMenuSeparator />
+									<DropdownMenuSeparator />
 											{item.children.map((child) => (
 												<DropdownMenuItem key={child.href} asChild>
 													{child.external ? (
 														<a
 															href={child.href}
-															target={targetForExternal}
-															rel={relForExternal}
-															onClick={handleExternalLaunchClick(child.href)}
+															target={targetForItem(child)}
+															rel={relForItem(child)}
 															className="flex items-center gap-2 cursor-pointer w-full"
 														>
 															<child.icon className="h-4 w-4 mr-2" />
@@ -426,9 +396,8 @@ export function SideNav(props: {
 														<a
 															key={child.href}
 															href={child.href}
-															target={targetForExternal}
-															rel={relForExternal}
-															onClick={handleExternalLaunchClick(child.href)}
+															target={targetForItem(child)}
+															rel={relForItem(child)}
 															className={childClass}
 														>
 															<ChildIcon className="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" />
@@ -473,9 +442,8 @@ export function SideNav(props: {
 								<a
 									key={item.href}
 									href={item.href}
-									target={targetForExternal}
-									rel={relForExternal}
-									onClick={handleExternalLaunchClick(item.href)}
+									target={targetForItem(item)}
+									rel={relForItem(item)}
 									className={baseClass}
 									title={props.collapsed ? item.label : undefined}
 								>
@@ -491,8 +459,8 @@ export function SideNav(props: {
 								to={item.href}
 								className={baseClass}
 								title={props.collapsed ? item.label : undefined}
-								target={shouldOpenNewTab(item) ? targetForExternal : undefined}
-								rel={shouldOpenNewTab(item) ? relForExternal : undefined}
+								target={targetForItem(item)}
+								rel={relForItem(item)}
 							>
 								<Icon className={iconClass} />
 								{!props.collapsed ? <span>{item.label}</span> : null}

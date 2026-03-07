@@ -38,12 +38,14 @@ import { Route as DashboardDeploymentsIndexRouteImport } from './routes/dashboar
 import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/$runId'
 import { Route as DashboardLabsMapRouteImport } from './routes/dashboard/labs/map'
 import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/labs/designer'
+import { Route as DashboardIntegrationsInfobloxRouteImport } from './routes/dashboard/integrations.infoblox'
 import { Route as DashboardForwardCredentialsRouteImport } from './routes/dashboard/forward.credentials'
 import { Route as DashboardForwardCollectorsRouteImport } from './routes/dashboard/forward.collectors'
 import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$slug'
 import { Route as DashboardDeploymentsQuickRouteImport } from './routes/dashboard/deployments/quick'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
+import { Route as DashboardIntegrationsInfobloxConsoleRouteImport } from './routes/dashboard/integrations.infoblox.console'
 import { Route as DashboardForwardNetworksNetworkRefCapacityRouteImport } from './routes/dashboard/forward-networks/$networkRef.capacity'
 import { Route as DashboardDeploymentsDeploymentIdMapRouteImport } from './routes/dashboard/deployments/$deploymentId.map'
 import { Route as DashboardDeploymentsDeploymentIdCapacityRouteImport } from './routes/dashboard/deployments/$deploymentId.capacity'
@@ -195,6 +197,12 @@ const DashboardLabsDesignerRoute = DashboardLabsDesignerRouteImport.update({
   path: '/dashboard/labs/designer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIntegrationsInfobloxRoute =
+  DashboardIntegrationsInfobloxRouteImport.update({
+    id: '/infoblox',
+    path: '/infoblox',
+    getParentRoute: () => DashboardIntegrationsRoute,
+  } as any)
 const DashboardForwardCredentialsRoute =
   DashboardForwardCredentialsRouteImport.update({
     id: '/credentials',
@@ -229,6 +237,12 @@ const DashboardDeploymentsDeploymentIdIndexRoute =
     path: '/dashboard/deployments/$deploymentId/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DashboardIntegrationsInfobloxConsoleRoute =
+  DashboardIntegrationsInfobloxConsoleRouteImport.update({
+    id: '/console',
+    path: '/console',
+    getParentRoute: () => DashboardIntegrationsInfobloxRoute,
+  } as any)
 const DashboardForwardNetworksNetworkRefCapacityRoute =
   DashboardForwardNetworksNetworkRefCapacityRouteImport.update({
     id: '/dashboard/forward-networks/$networkRef/capacity',
@@ -260,7 +274,7 @@ export interface FileRoutesByFullPath {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
-  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRouteWithChildren
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
@@ -275,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
+  '/dashboard/integrations/infoblox': typeof DashboardIntegrationsInfobloxRouteWithChildren
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -286,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/integrations/infoblox/console': typeof DashboardIntegrationsInfobloxConsoleRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -299,7 +315,7 @@ export interface FileRoutesByTo {
   '/webhooks': typeof WebhooksRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRouteWithChildren
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
@@ -314,6 +330,7 @@ export interface FileRoutesByTo {
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
+  '/dashboard/integrations/infoblox': typeof DashboardIntegrationsInfobloxRouteWithChildren
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -325,6 +342,7 @@ export interface FileRoutesByTo {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/integrations/infoblox/console': typeof DashboardIntegrationsInfobloxConsoleRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesById {
@@ -340,7 +358,7 @@ export interface FileRoutesById {
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
-  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRouteWithChildren
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
@@ -355,6 +373,7 @@ export interface FileRoutesById {
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
+  '/dashboard/integrations/infoblox': typeof DashboardIntegrationsInfobloxRouteWithChildren
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -366,6 +385,7 @@ export interface FileRoutesById {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/integrations/infoblox/console': typeof DashboardIntegrationsInfobloxConsoleRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -397,6 +417,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
+    | '/dashboard/integrations/infoblox'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -408,6 +429,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/integrations/infoblox/console'
     | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -436,6 +458,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
+    | '/dashboard/integrations/infoblox'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -447,6 +470,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/integrations/infoblox/console'
     | '/dashboard/deployments/$deploymentId'
   id:
     | '__root__'
@@ -476,6 +500,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
+    | '/dashboard/integrations/infoblox'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -487,6 +512,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/integrations/infoblox/console'
     | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
 }
@@ -502,7 +528,7 @@ export interface RootRouteChildren {
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardForwardRoute: typeof DashboardForwardRouteWithChildren
-  DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
+  DashboardIntegrationsRoute: typeof DashboardIntegrationsRouteWithChildren
   DashboardPolicyReportsRoute: typeof DashboardPolicyReportsRoute
   DashboardS3Route: typeof DashboardS3Route
   DashboardServicenowRoute: typeof DashboardServicenowRoute
@@ -733,6 +759,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLabsDesignerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/integrations/infoblox': {
+      id: '/dashboard/integrations/infoblox'
+      path: '/infoblox'
+      fullPath: '/dashboard/integrations/infoblox'
+      preLoaderRoute: typeof DashboardIntegrationsInfobloxRouteImport
+      parentRoute: typeof DashboardIntegrationsRoute
+    }
     '/dashboard/forward/credentials': {
       id: '/dashboard/forward/credentials'
       path: '/credentials'
@@ -775,6 +808,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsDeploymentIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/integrations/infoblox/console': {
+      id: '/dashboard/integrations/infoblox/console'
+      path: '/console'
+      fullPath: '/dashboard/integrations/infoblox/console'
+      preLoaderRoute: typeof DashboardIntegrationsInfobloxConsoleRouteImport
+      parentRoute: typeof DashboardIntegrationsInfobloxRoute
+    }
     '/dashboard/forward-networks/$networkRef/capacity': {
       id: '/dashboard/forward-networks/$networkRef/capacity'
       path: '/dashboard/forward-networks/$networkRef/capacity'
@@ -814,6 +854,35 @@ const DashboardForwardRouteChildren: DashboardForwardRouteChildren = {
 const DashboardForwardRouteWithChildren =
   DashboardForwardRoute._addFileChildren(DashboardForwardRouteChildren)
 
+interface DashboardIntegrationsInfobloxRouteChildren {
+  DashboardIntegrationsInfobloxConsoleRoute: typeof DashboardIntegrationsInfobloxConsoleRoute
+}
+
+const DashboardIntegrationsInfobloxRouteChildren: DashboardIntegrationsInfobloxRouteChildren =
+  {
+    DashboardIntegrationsInfobloxConsoleRoute:
+      DashboardIntegrationsInfobloxConsoleRoute,
+  }
+
+const DashboardIntegrationsInfobloxRouteWithChildren =
+  DashboardIntegrationsInfobloxRoute._addFileChildren(
+    DashboardIntegrationsInfobloxRouteChildren,
+  )
+
+interface DashboardIntegrationsRouteChildren {
+  DashboardIntegrationsInfobloxRoute: typeof DashboardIntegrationsInfobloxRouteWithChildren
+}
+
+const DashboardIntegrationsRouteChildren: DashboardIntegrationsRouteChildren = {
+  DashboardIntegrationsInfobloxRoute:
+    DashboardIntegrationsInfobloxRouteWithChildren,
+}
+
+const DashboardIntegrationsRouteWithChildren =
+  DashboardIntegrationsRoute._addFileChildren(
+    DashboardIntegrationsRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DesignRoute: DesignRoute,
@@ -826,7 +895,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   DashboardForwardRoute: DashboardForwardRouteWithChildren,
-  DashboardIntegrationsRoute: DashboardIntegrationsRoute,
+  DashboardIntegrationsRoute: DashboardIntegrationsRouteWithChildren,
   DashboardPolicyReportsRoute: DashboardPolicyReportsRoute,
   DashboardS3Route: DashboardS3Route,
   DashboardServicenowRoute: DashboardServicenowRoute,

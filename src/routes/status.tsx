@@ -311,9 +311,6 @@ function StatusPage() {
 						>
 							→ Create a deployment
 						</Link>
-						<Link className="text-primary hover:underline" to="/dashboard/s3">
-							→ Browse artifacts (S3)
-						</Link>
 						<p className="text-xs text-muted-foreground mt-3">
 							Status is refreshed automatically via Server-Sent Events.
 						</p>

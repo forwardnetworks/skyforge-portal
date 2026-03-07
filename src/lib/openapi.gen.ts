@@ -6416,11 +6416,9 @@ export interface components {
         };
         "skyforgecore.FeaturesConfig": {
             coderEnabled: boolean;
-            dexEnabled: boolean;
             dnsEnabled: boolean;
             forwardEnabled: boolean;
             giteaEnabled: boolean;
-            minioEnabled: boolean;
             nautobotEnabled: boolean;
             netboxEnabled: boolean;
             swaggerUIEnabled: boolean;

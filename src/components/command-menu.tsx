@@ -5,7 +5,6 @@ import {
 	FolderKanban,
 	Inbox,
 	LayoutDashboard,
-	Server,
 	ShieldCheck,
 	Webhook,
 } from "lucide-react";
@@ -67,15 +66,6 @@ export function CommandMenu() {
 					>
 						<Activity className="mr-2 h-4 w-4" />
 						<span>Platform Status</span>
-					</CommandItem>
-				</CommandGroup>
-				<CommandSeparator />
-				<CommandGroup heading="Infrastructure">
-					<CommandItem
-						onSelect={() => runCommand(() => navigate({ to: "/dashboard/s3" }))}
-					>
-						<Server className="mr-2 h-4 w-4" />
-						<span>Artifacts (S3)</span>
 					</CommandItem>
 				</CommandGroup>
 				<CommandSeparator />

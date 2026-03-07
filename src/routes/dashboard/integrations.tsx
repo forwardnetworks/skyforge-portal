@@ -1,15 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ExternalLink, Workflow } from "lucide-react";
-import { useState } from "react";
+import { Server } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	getUIConfig,
+	getUserInfobloxStatus,
 	getUserServiceNowConfig,
-	listUserForwardCollectorConfigs,
 	wakeUserInfoblox,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
@@ -19,18 +18,29 @@ export const Route = createFileRoute("/dashboard/integrations")({
 });
 
 function IntegrationsPage() {
-	const [startingInfoblox, setStartingInfoblox] = useState(false);
 	const snQ = useQuery({
 		queryKey: queryKeys.userServiceNowConfig(),
 		queryFn: getUserServiceNowConfig,
 		retry: false,
 		staleTime: 10_000,
 	});
-	const collectorsQ = useQuery({
-		queryKey: queryKeys.userForwardCollectorConfigs(),
-		queryFn: listUserForwardCollectorConfigs,
+	const infobloxQ = useQuery({
+		queryKey: ["infobloxStatus", "integrationsPage"],
+		queryFn: getUserInfobloxStatus,
 		retry: false,
 		staleTime: 10_000,
+	});
+	const wake = useMutation({
+		mutationFn: wakeUserInfoblox,
+		onSuccess: async (resp) => {
+			toast.message(resp.message || "Wake requested");
+			await infobloxQ.refetch();
+		},
+		onError: (error) => {
+			toast.error("Failed to wake Infoblox", {
+				description: error instanceof Error ? error.message : String(error),
+			});
+		},
 	});
 	const uiConfigQ = useQuery({
 		queryKey: queryKeys.uiConfig(),
@@ -38,68 +48,128 @@ function IntegrationsPage() {
 		retry: false,
 		staleTime: 10_000,
 	});
-	const collectorCount = collectorsQ.data?.collectors?.length ?? 0;
-	const hasCollector = collectorCount > 0;
 	const infobloxEnabled = uiConfigQ.data?.features?.infobloxEnabled ?? false;
-	const infobloxBaseUrl = uiConfigQ.data?.infobloxBaseUrl ?? "/infoblox";
 	const jiraEnabled = uiConfigQ.data?.features?.jiraEnabled ?? false;
 	const jiraBaseUrl = uiConfigQ.data?.jiraBaseUrl ?? "";
+	const rapid7Enabled = uiConfigQ.data?.features?.rapid7Enabled ?? false;
+	const rapid7BaseUrl = uiConfigQ.data?.rapid7BaseUrl ?? "";
+	const infobloxBaseUrl = uiConfigQ.data?.infobloxBaseUrl ?? "/infoblox/";
+	const netboxEnabled = uiConfigQ.data?.features?.netboxEnabled ?? false;
+	const nautobotEnabled = uiConfigQ.data?.features?.nautobotEnabled ?? false;
 
-	const launchInfoblox = async () => {
-		const href = infobloxBaseUrl || "/infoblox/";
-		const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
-		setStartingInfoblox(true);
-		try {
-			const resp = await wakeUserInfoblox();
-			if (!resp.ready) {
-				toast.message(resp.message ?? "Infoblox VM is starting");
-			}
-		} catch (error) {
-			console.error("infoblox wake failed", error);
-			toast.error("Failed to start Infoblox VM; opening route directly");
-		} finally {
-			setStartingInfoblox(false);
-			if (popup && !popup.closed) {
-				popup.location.href = href;
-				return;
-			}
-			window.open(href, "_blank", "noopener,noreferrer");
-		}
-	};
+	const infobloxStatus = infobloxQ.data?.ready
+		? "Ready"
+		: infobloxQ.data?.printableStatus || "Not ready";
 
 	return (
 		<div className="space-y-6 p-6">
 			<div>
 				<h1 className="text-2xl font-bold">Integrations</h1>
 				<p className="mt-1 text-sm text-muted-foreground">
-					Connect optional tools and services that enhance Skyforge workflows.
+					Status hub for external tools and in-cluster services.
 				</p>
 			</div>
 
-			<div className="grid gap-4 md:grid-cols-2">
-				<Card variant="glass">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Workflow className="h-5 w-5" />
-							Forward collector
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3 text-sm">
-						<div className="text-muted-foreground">
-							{collectorsQ.isLoading
-								? "Loading…"
-								: hasCollector
-									? `${collectorCount} collector(s) configured`
-									: "No collectors configured"}
-						</div>
-						<div className="flex gap-2">
-							<Button asChild size="sm">
-								<Link to="/dashboard/forward">Open</Link>
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
+			<div className="space-y-3">
+				<h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+					External Tools
+				</h2>
+				<div className="grid gap-4 md:grid-cols-2">
+					{jiraEnabled && (
+						<Card variant="glass">
+							<CardHeader>
+								<CardTitle>Jira</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3 text-sm">
+								<div className="text-muted-foreground">
+									{jiraBaseUrl
+										? `Configured (${jiraBaseUrl})`
+										: "Enabled, but no Jira URL is configured yet"}
+								</div>
+								<div className="flex gap-2">
+									{jiraBaseUrl ? (
+										<Button asChild size="sm">
+											<a href={jiraBaseUrl}>Open</a>
+										</Button>
+									) : (
+										<Button size="sm" disabled>
+											Open
+										</Button>
+									)}
+								</div>
+							</CardContent>
+						</Card>
+					)}
 
+					{rapid7Enabled && (
+						<Card variant="glass">
+							<CardHeader>
+								<CardTitle>Rapid7</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3 text-sm">
+								<div className="text-muted-foreground">
+									{rapid7BaseUrl
+										? `Configured (${rapid7BaseUrl})`
+										: "Enabled, but no Rapid7 URL is configured yet"}
+								</div>
+								<div className="flex gap-2">
+									{rapid7BaseUrl ? (
+										<Button asChild size="sm">
+											<a href={rapid7BaseUrl}>Open</a>
+										</Button>
+									) : (
+										<Button size="sm" disabled>
+											Open
+										</Button>
+									)}
+								</div>
+							</CardContent>
+						</Card>
+					)}
+
+					{netboxEnabled && (
+						<Card variant="glass">
+							<CardHeader>
+								<CardTitle>NetBox</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3 text-sm">
+								<div className="text-muted-foreground">Enabled</div>
+								<div className="flex gap-2">
+									<Button asChild size="sm">
+										<a href="/netbox/" target="_blank" rel="noreferrer noopener">
+											Open
+										</a>
+									</Button>
+								</div>
+							</CardContent>
+						</Card>
+					)}
+
+					{nautobotEnabled && (
+						<Card variant="glass">
+							<CardHeader>
+								<CardTitle>Nautobot</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3 text-sm">
+								<div className="text-muted-foreground">Enabled</div>
+								<div className="flex gap-2">
+									<Button asChild size="sm">
+										<a href="/nautobot/" target="_blank" rel="noreferrer noopener">
+											Open
+										</a>
+									</Button>
+								</div>
+							</CardContent>
+						</Card>
+					)}
+				</div>
+			</div>
+
+			<div className="space-y-3">
+				<h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+					In-Cluster Services
+				</h2>
+				<div className="grid gap-4 md:grid-cols-2">
 				<Card variant="glass">
 					<CardHeader>
 						<CardTitle>ServiceNow</CardTitle>
@@ -112,101 +182,43 @@ function IntegrationsPage() {
 									? `Configured (${snQ.data.instanceUrl ?? "instance"})`
 									: "Not configured"}
 						</div>
-						<div className="flex gap-2">
-							<Button asChild size="sm">
-								<Link to="/dashboard/servicenow">Open</Link>
-							</Button>
-							<Button asChild size="sm" variant="secondary">
-								<Link
-									to="/dashboard/docs/$slug"
-									params={{ slug: "servicenow" }}
-								>
-									Docs
-								</Link>
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
+							<div className="flex gap-2">
+								<Button asChild size="sm">
+									<Link to="/dashboard/servicenow">Open</Link>
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
 
-				{jiraEnabled && (
+				{infobloxEnabled && (
 					<Card variant="glass">
 						<CardHeader>
-							<CardTitle>Jira</CardTitle>
+							<CardTitle className="flex items-center gap-2">
+								<Server className="h-5 w-5" />
+								Infoblox
+							</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-3 text-sm">
 							<div className="text-muted-foreground">
-								{jiraBaseUrl
-									? `Configured (${jiraBaseUrl})`
-									: "Enabled, but no Jira URL is configured yet"}
+								{infobloxQ.isLoading ? "Loading…" : infobloxStatus}
 							</div>
 							<div className="flex gap-2">
-								{jiraBaseUrl ? (
-									<Button asChild size="sm">
-										<a
-											href={jiraBaseUrl}
-											target="_blank"
-											rel="noreferrer noopener"
-										>
-											Open
-										</a>
-									</Button>
-								) : (
-									<Button size="sm" disabled>
-										Open
-									</Button>
-								)}
+								<Button size="sm" onClick={() => wake.mutate()} disabled={wake.isPending}>
+									{wake.isPending ? "Starting…" : "Start/Wake"}
+								</Button>
+								<Button asChild size="sm">
+									<a href={infobloxBaseUrl}>Open UI</a>
+								</Button>
 								<Button asChild size="sm" variant="secondary">
-									<Link
-										to="/dashboard/docs/$slug"
-										params={{ slug: "getting-started" }}
-									>
-										Plan
+									<Link to="/dashboard/integrations/infoblox/console">
+										Open Console
 									</Link>
 								</Button>
 							</div>
 						</CardContent>
 					</Card>
 				)}
-
-				{infobloxEnabled && (
-					<Card variant="glass">
-						<CardHeader>
-							<CardTitle>Infoblox</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-3 text-sm">
-							<div className="text-muted-foreground">
-								KubeVirt-backed NIOS appliance exposed through the shared Skyforge ingress.
-							</div>
-							<div className="flex gap-2">
-								<Button size="sm" onClick={launchInfoblox} disabled={startingInfoblox}>
-									{startingInfoblox ? "Starting…" : "Open"}
-								</Button>
-							</div>
-						</CardContent>
-					</Card>
-				)}
-
-				<Card variant="glass">
-					<CardHeader>
-						<CardTitle>Advanced settings</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3 text-sm">
-						<div className="text-muted-foreground">
-							Cloud creds, BYOL servers, defaults, and external template repos.
-						</div>
-						<div className="flex flex-wrap gap-2">
-							<Button asChild size="sm" variant="secondary">
-								<Link to="/settings">Open Settings</Link>
-							</Button>
-							<Button asChild size="sm" variant="secondary">
-								<a href="/dashboard/docs/getting-started">
-									Getting started{" "}
-									<ExternalLink className="ml-1 inline h-4 w-4" />
-								</a>
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
+				</div>
 			</div>
 		</div>
 	);

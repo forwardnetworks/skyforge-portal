@@ -41,6 +41,8 @@ import {
 	type AdminUserAPIPermission,
 	type QuickDeployTemplate,
 	adminCleanupWorkspacePods,
+	createAdminUser,
+	deleteAdminUser,
 	deleteAdminUserRole,
 	adminImpersonateStart,
 	adminImpersonateStop,
@@ -487,6 +489,10 @@ export function AdminSettingsPage() {
 	const [rbacUserQuery, setRbacUserQuery] = useState("");
 	const [rbacTargetUser, setRbacTargetUser] = useState("");
 	const [rbacTargetRole, setRbacTargetRole] = useState("ADMIN");
+	const [manageUsername, setManageUsername] = useState("");
+	const [manageInitialRole, setManageInitialRole] = useState("USER");
+	const [deleteManagedUser, setDeleteManagedUser] = useState("");
+	const [deleteManagedUserQuery, setDeleteManagedUserQuery] = useState("");
 	const [apiPermTargetUser, setApiPermTargetUser] = useState("");
 	const [apiPermFilter, setApiPermFilter] = useState("");
 	const [apiPermDraft, setApiPermDraft] = useState<
@@ -579,6 +585,15 @@ export function AdminSettingsPage() {
 			setRbacTargetRole(availableRbacRoles[0] ?? "ADMIN");
 		}
 	}, [availableRbacRoles, rbacTargetRole]);
+	useEffect(() => {
+		if (!availableRbacRoles.includes(manageInitialRole)) {
+			setManageInitialRole(
+				availableRbacRoles.includes("USER")
+					? "USER"
+					: (availableRbacRoles[0] ?? "USER"),
+			);
+		}
+	}, [availableRbacRoles, manageInitialRole]);
 	useEffect(() => {
 		const permissions = userApiPermsQ.data?.permissions ?? [];
 		const next: Record<string, "inherit" | "allow" | "deny"> = {};
@@ -685,6 +700,53 @@ export function AdminSettingsPage() {
 			});
 		},
 	});
+	const createManagedUser = useMutation({
+		mutationFn: async () =>
+			createAdminUser({
+				username: manageUsername,
+				role: manageInitialRole,
+			}),
+		onSuccess: async () => {
+			toast.success("User created");
+			setManageUsername("");
+			await Promise.all([
+				adminUserRolesQ.refetch(),
+				userScopesQ.refetch(),
+				sessionQ.refetch(),
+			]);
+		},
+		onError: (e) => {
+			toast.error("Failed to create user", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	const deleteManagedUserMutation = useMutation({
+		mutationFn: async () => deleteAdminUser(deleteManagedUser),
+		onSuccess: async () => {
+			toast.success("User deleted");
+			setDeleteManagedUser("");
+			setDeleteManagedUserQuery("");
+			await Promise.all([
+				adminUserRolesQ.refetch(),
+				userScopesQ.refetch(),
+				sessionQ.refetch(),
+			]);
+		},
+		onError: (e) => {
+			toast.error("Failed to delete user", {
+				description: (e as Error).message,
+			});
+		},
+	});
+
+	const filteredManagedDeleteUsers = useMemo(() => {
+		const query = deleteManagedUserQuery.trim().toLowerCase();
+		if (!query) return rbacKnownUsers;
+		return rbacKnownUsers.filter((username) =>
+			username.toLowerCase().includes(query),
+		);
+	}, [rbacKnownUsers, deleteManagedUserQuery]);
 
 	const [purgeUsername, setPurgeUsername] = useState("");
 	const [purgeUserQuery, setPurgeUserQuery] = useState("");
@@ -1584,6 +1646,98 @@ export function AdminSettingsPage() {
 					</TabsContent>
 
 					<TabsContent value="users" className="space-y-6">
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<UserCog className="h-5 w-5" />
+									User management
+								</CardTitle>
+								<CardDescription>
+									Add or remove users from the Skyforge directory. Use purge for full state reset.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div className="grid gap-2 md:grid-cols-[1fr_180px_auto]">
+									<Input
+										placeholder="username (e.g. jane.doe)"
+										value={manageUsername}
+										onChange={(e) => setManageUsername(e.target.value)}
+									/>
+									<Select
+										value={manageInitialRole}
+										onValueChange={setManageInitialRole}
+									>
+										<SelectTrigger>
+											<SelectValue placeholder="Initial role" />
+										</SelectTrigger>
+										<SelectContent>
+											{availableRbacRoles.map((role) => (
+												<SelectItem key={`manage-role-${role}`} value={role}>
+													{role}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<Button
+										onClick={() => createManagedUser.mutate()}
+										disabled={!manageUsername.trim() || createManagedUser.isPending}
+									>
+										{createManagedUser.isPending ? "Adding…" : "Add user"}
+									</Button>
+								</div>
+
+								<div className="space-y-2 rounded-md border p-3">
+									<div className="text-sm font-medium">Delete user</div>
+									<Input
+										placeholder="Filter users…"
+										value={deleteManagedUserQuery}
+										onChange={(e) => setDeleteManagedUserQuery(e.target.value)}
+									/>
+									<div className="grid gap-2 md:grid-cols-[1fr_auto]">
+										<Select
+											value={deleteManagedUser}
+											onValueChange={setDeleteManagedUser}
+										>
+											<SelectTrigger>
+												<SelectValue placeholder="Select user…" />
+											</SelectTrigger>
+											<SelectContent>
+												{filteredManagedDeleteUsers.length > 0 ? (
+													filteredManagedDeleteUsers.map((username) => (
+														<SelectItem
+															key={`delete-user-${username}`}
+															value={username}
+														>
+															{username}
+														</SelectItem>
+													))
+												) : (
+													<div className="px-2 py-1.5 text-sm text-muted-foreground">
+														No matching users
+													</div>
+												)}
+											</SelectContent>
+										</Select>
+										<Button
+											variant="destructive"
+											onClick={() => deleteManagedUserMutation.mutate()}
+											disabled={
+												!deleteManagedUser.trim() ||
+												deleteManagedUserMutation.isPending
+											}
+										>
+											{deleteManagedUserMutation.isPending
+												? "Deleting…"
+												: "Delete user"}
+										</Button>
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Delete removes directory + direct RBAC/API overrides. If user
+										owns scopes, use purge.
+									</div>
+								</div>
+							</CardContent>
+						</Card>
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">

@@ -3388,6 +3388,39 @@ export async function adminPurgeUser(
 	});
 }
 
+export type CreateAdminUserRequest = {
+	username: string;
+	role?: string;
+};
+export type CreateAdminUserResponse = {
+	status: string;
+	username: string;
+	role?: string;
+};
+export async function createAdminUser(
+	body: CreateAdminUserRequest,
+): Promise<CreateAdminUserResponse> {
+	return apiFetch<CreateAdminUserResponse>("/api/admin/users", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
+export type DeleteAdminUserResponse = {
+	status: string;
+	username: string;
+};
+export async function deleteAdminUser(
+	username: string,
+): Promise<DeleteAdminUserResponse> {
+	return apiFetch<DeleteAdminUserResponse>(
+		`/api/admin/users/${encodeURIComponent(username)}`,
+		{
+			method: "DELETE",
+		},
+	);
+}
+
 export type GovernancePolicy = {
 	maxDeploymentsPerUser: number;
 	maxCollectorsPerUser: number;
@@ -3642,9 +3675,11 @@ export type UIConfigResponse =
 		};
 		jiraBaseUrl?: string;
 		infobloxBaseUrl?: string;
+		rapid7BaseUrl?: string;
 		features?: operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"]["features"] & {
 			jiraEnabled?: boolean;
 			infobloxEnabled?: boolean;
+			rapid7Enabled?: boolean;
 		};
 	};
 export async function getUIConfig(): Promise<UIConfigResponse> {
