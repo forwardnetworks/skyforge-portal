@@ -96,8 +96,6 @@ export const Route = createFileRoute("/dashboard/deployments/$deploymentId/")({
 	},
 });
 
-const FORWARD_IN_APP_URL = "https://skyforge-fwd.local.forwardnetworks.com";
-
 function formatResourceEstimateSummary(
 	estimate?: ResourceEstimateSummary,
 ): string {
@@ -636,18 +634,13 @@ function DeploymentDetailPage() {
 						}
 						onClick={() => {
 							if (!forwardNetworkID) return;
-							const forwardURL = `${FORWARD_IN_APP_URL}/?/search?networkId=${encodeURIComponent(forwardNetworkID)}`;
-							const openedTab = window.open(
-								forwardURL,
-								"_blank",
-								"noopener,noreferrer",
-							);
-							if (!openedTab) {
-								toast.message("Forward window blocked", {
-									description:
-										"Allow popups for this site to open the synced Forward network tab automatically.",
-								});
-							}
+							void navigate({
+								to: "/dashboard/tools/$tool",
+								params: { tool: "forward-cluster" },
+								search: {
+									path: `/?/search?networkId=${encodeURIComponent(forwardNetworkID)}`,
+								},
+							});
 						}}
 					>
 						<ExternalLink className="mr-2 h-4 w-4" />

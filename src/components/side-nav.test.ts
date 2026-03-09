@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSideNavItems } from "./side-nav";
-import { buildLoginUrl } from "../lib/skyforge-config";
+import { embeddedToolHref } from "../lib/embedded-tools";
 
 function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 	return items.find((i) => i.label === label);
@@ -100,9 +100,9 @@ describe("side nav model", () => {
 			]),
 		);
 		const coder = platform?.children?.find((c) => c.label === "Coder");
-		expect(coder?.href).toBe(buildLoginUrl("/coder/", "local"));
+		expect(coder?.href).toBe(embeddedToolHref("coder"));
 		const nautobot = integrations?.children?.find((c) => c.label === "Nautobot");
-		expect(nautobot?.href).toBe(buildLoginUrl("/nautobot/", "local"));
+		expect(nautobot?.href).toBe(embeddedToolHref("nautobot"));
 	});
 
 	it("collapses admin controls into settings hub", () => {
@@ -123,7 +123,7 @@ describe("side nav model", () => {
 		const integrations = findGroup("Integrations", items);
 		const coder = platform?.children?.find((i) => i.label === "Coder");
 		const nautobot = integrations?.children?.find((i) => i.label === "Nautobot");
-		expect(coder?.href).toBe("/coder/");
-		expect(nautobot?.href).toBe("/nautobot/");
+		expect(coder?.href).toBe(embeddedToolHref("coder"));
+		expect(nautobot?.href).toBe(embeddedToolHref("nautobot"));
 	});
 });

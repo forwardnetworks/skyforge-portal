@@ -6,7 +6,7 @@ export default defineConfig({
 	build: {
 		// Build directly into the Skyforge Encore service so it can embed + serve the SPA
 		// without a separate nginx/frontend container.
-		outDir: "../skyforge-server/skyforge/frontend_dist",
+		outDir: "../skyforge-server/frontend/frontend_dist",
 		emptyOutDir: true,
 		// Avoid clobbering other apps' `/assets/*` paths.
 		// Skyforge serves the SPA under `/assets/skyforge/*`.

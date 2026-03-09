@@ -317,21 +317,21 @@ export type DashboardSnapshot = {
 export { buildLocalLoginUrl, buildLoginUrl, SKYFORGE_API, SKYFORGE_PROXY_ROOT };
 
 export type SessionResponseEnvelope =
-	operations["GET:skyforge.Session"]["responses"][200]["content"]["application/json"];
+	operations["GET:authn.Session"]["responses"][200]["content"]["application/json"];
 
 export async function getSession(): Promise<SessionResponseEnvelope> {
-	return apiFetch<SessionResponseEnvelope>("/api/session");
+	return apiFetch<SessionResponseEnvelope>("/api/auth/session");
 }
 
 export async function refreshSession(): Promise<SessionResponseEnvelope> {
-	return apiFetch<SessionResponseEnvelope>("/auth/refresh", {
+	return apiFetch<SessionResponseEnvelope>("/api/auth/refresh", {
 		method: "POST",
 		body: "{}",
 	});
 }
 
 export async function logout(): Promise<void> {
-	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/api/logout`, {
+	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/api/auth/logout`, {
 		method: "POST",
 		credentials: "include",
 		headers: { "Content-Type": "application/json" },
@@ -350,8 +350,8 @@ export type LoginRequest = {
 
 export async function login(
 	req: LoginRequest,
-): Promise<operations["POST:skyforge.Login"]["responses"][200]["content"]["application/json"]> {
-	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/api/login`, {
+): Promise<operations["POST:authn.Login"]["responses"][200]["content"]["application/json"]> {
+	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/api/auth/login`, {
 		method: "POST",
 		credentials: "include",
 		headers: { "Content-Type": "application/json" },
@@ -368,7 +368,7 @@ export async function login(
 			text,
 		);
 	}
-	return (await resp.json()) as operations["POST:skyforge.Login"]["responses"][200]["content"]["application/json"];
+	return (await resp.json()) as operations["POST:authn.Login"]["responses"][200]["content"]["application/json"];
 }
 
 export type GetUserScopesResponse =
@@ -631,7 +631,7 @@ export async function listForwardCollectors(): Promise<ListForwardCollectorsResp
 
 export async function getUserServiceNowConfig(): Promise<UserServiceNowConfigResponse> {
 	return apiFetch<UserServiceNowConfigResponse>(
-		"/api/me/integrations/servicenow",
+		"/api/integrations/servicenow",
 	);
 }
 
@@ -639,7 +639,7 @@ export async function putUserServiceNowConfig(
 	payload: PutUserServiceNowConfigRequest,
 ): Promise<UserServiceNowConfigResponse> {
 	return apiFetch<UserServiceNowConfigResponse>(
-		"/api/me/integrations/servicenow",
+		"/api/integrations/servicenow",
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -649,26 +649,26 @@ export async function putUserServiceNowConfig(
 
 export async function installUserServiceNowDemo(): Promise<InstallUserServiceNowDemoResponse> {
 	return apiFetch<InstallUserServiceNowDemoResponse>(
-		"/api/me/integrations/servicenow/install",
+		"/api/integrations/servicenow/install",
 		{ method: "POST", body: "{}" },
 	);
 }
 
 export async function getUserServiceNowPdiStatus(): Promise<ServiceNowPdiStatusResponse> {
 	return apiFetch<ServiceNowPdiStatusResponse>(
-		"/api/me/integrations/servicenow/pdiStatus",
+		"/api/integrations/servicenow/pdiStatus",
 	);
 }
 
 export async function getUserServiceNowSchemaStatus(): Promise<ServiceNowSchemaStatusResponse> {
 	return apiFetch<ServiceNowSchemaStatusResponse>(
-		"/api/me/integrations/servicenow/schemaStatus",
+		"/api/integrations/servicenow/schemaStatus",
 	);
 }
 
 export async function wakeUserServiceNowPdi(): Promise<ServiceNowPdiStatusResponse> {
 	return apiFetch<ServiceNowPdiStatusResponse>(
-		"/api/me/integrations/servicenow/wake",
+		"/api/integrations/servicenow/wake",
 		{
 			method: "POST",
 			body: "{}",
@@ -678,12 +678,12 @@ export async function wakeUserServiceNowPdi(): Promise<ServiceNowPdiStatusRespon
 
 export async function getUserInfobloxStatus(): Promise<UserInfobloxStatusResponse> {
 	return apiFetch<UserInfobloxStatusResponse>(
-		"/api/me/integrations/infoblox/status",
+		"/api/integrations/infoblox/status",
 	);
 }
 
 export async function wakeUserInfoblox(): Promise<WakeUserInfobloxResponse> {
-	return apiFetch<WakeUserInfobloxResponse>("/api/me/integrations/infoblox/wake", {
+	return apiFetch<WakeUserInfobloxResponse>("/api/integrations/infoblox/wake", {
 		method: "POST",
 		body: "{}",
 	});
@@ -691,14 +691,14 @@ export async function wakeUserInfoblox(): Promise<WakeUserInfobloxResponse> {
 
 export async function configureForwardServiceNowTicketing(): Promise<ConfigureForwardServiceNowTicketingResponse> {
 	return apiFetch<ConfigureForwardServiceNowTicketingResponse>(
-		"/api/me/integrations/servicenow/configureForwardTicketing",
+		"/api/integrations/servicenow/configureForwardTicketing",
 		{ method: "POST", body: "{}" },
 	);
 }
 
 export async function getUserServiceNowSetupStatus(): Promise<ServiceNowSetupStatusResponse> {
 	return apiFetch<ServiceNowSetupStatusResponse>(
-		"/api/me/integrations/servicenow/setup/status",
+		"/api/integrations/servicenow/setup/status",
 	);
 }
 
@@ -706,7 +706,7 @@ export async function startUserServiceNowSetup(payload?: {
 	resume?: boolean;
 }): Promise<ServiceNowSetupStatusResponse> {
 	return apiFetch<ServiceNowSetupStatusResponse>(
-		"/api/me/integrations/servicenow/setup",
+		"/api/integrations/servicenow/setup",
 		{ method: "POST", body: JSON.stringify(payload ?? {}) },
 	);
 }
@@ -715,7 +715,7 @@ export async function cancelUserServiceNowSetup(): Promise<{
 	canceled: boolean;
 }> {
 	return apiFetch<{ canceled: boolean }>(
-		"/api/me/integrations/servicenow/setup/cancel",
+		"/api/integrations/servicenow/setup/cancel",
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -729,7 +729,7 @@ export type UserGitCredentialsResponse = {
 };
 
 export async function getUserGitCredentials(): Promise<UserGitCredentialsResponse> {
-	return apiFetch<UserGitCredentialsResponse>("/api/me/git-credentials");
+	return apiFetch<UserGitCredentialsResponse>("/api/git-credentials");
 }
 
 export async function updateUserGitCredentials(payload: {
@@ -737,7 +737,7 @@ export async function updateUserGitCredentials(payload: {
 	httpsToken?: string;
 	clearToken?: boolean;
 }): Promise<UserGitCredentialsResponse> {
-	return apiFetch<UserGitCredentialsResponse>("/api/me/git-credentials", {
+	return apiFetch<UserGitCredentialsResponse>("/api/git-credentials", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
@@ -745,7 +745,7 @@ export async function updateUserGitCredentials(payload: {
 
 export async function rotateUserGitDeployKey(): Promise<UserGitCredentialsResponse> {
 	return apiFetch<UserGitCredentialsResponse>(
-		"/api/me/git-credentials/rotate",
+		"/api/git-credentials/rotate",
 		{
 			method: "POST",
 			body: "{}",
@@ -761,7 +761,7 @@ export type UserSettingsResponse = {
 };
 
 export async function getUserSettings(): Promise<UserSettingsResponse> {
-	return apiFetch<UserSettingsResponse>("/api/me/settings");
+	return apiFetch<UserSettingsResponse>("/api/settings");
 }
 
 export async function putUserSettings(payload: {
@@ -769,7 +769,7 @@ export async function putUserSettings(payload: {
 	defaultEnv?: Array<{ key: string; value: string }>;
 	externalTemplateRepos?: ExternalTemplateRepo[];
 }): Promise<UserSettingsResponse> {
-	return apiFetch<UserSettingsResponse>("/api/me/settings", {
+	return apiFetch<UserSettingsResponse>("/api/settings", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
@@ -805,13 +805,13 @@ export type RevokeUserAPITokenResponse = {
 };
 
 export async function listUserAPITokens(): Promise<ListUserAPITokensResponse> {
-	return apiFetch<ListUserAPITokensResponse>("/api/me/api-tokens");
+	return apiFetch<ListUserAPITokensResponse>("/api/api-tokens");
 }
 
 export async function createUserAPIToken(payload?: {
 	name?: string;
 }): Promise<CreateUserAPITokenResponse> {
-	return apiFetch<CreateUserAPITokenResponse>("/api/me/api-tokens", {
+	return apiFetch<CreateUserAPITokenResponse>("/api/api-tokens", {
 		method: "POST",
 		body: JSON.stringify(payload ?? {}),
 	});
@@ -821,7 +821,7 @@ export async function regenerateUserAPIToken(
 	tokenId: string,
 ): Promise<RegenerateUserAPITokenResponse> {
 	return apiFetch<RegenerateUserAPITokenResponse>(
-		`/api/me/api-tokens/${encodeURIComponent(tokenId)}/regenerate`,
+		`/api/api-tokens/${encodeURIComponent(tokenId)}/regenerate`,
 		{
 			method: "POST",
 			body: "{}",
@@ -833,7 +833,7 @@ export async function revokeUserAPIToken(
 	tokenId: string,
 ): Promise<RevokeUserAPITokenResponse> {
 	return apiFetch<RevokeUserAPITokenResponse>(
-		`/api/me/api-tokens/${encodeURIComponent(tokenId)}`,
+		`/api/api-tokens/${encodeURIComponent(tokenId)}`,
 		{
 			method: "DELETE",
 		},
@@ -917,7 +917,7 @@ export type UserAWSStaticCredentialsGetResponse = {
 
 export async function getUserAWSStaticCredentials(): Promise<UserAWSStaticCredentialsGetResponse> {
 	return apiFetch<UserAWSStaticCredentialsGetResponse>(
-		"/api/me/cloud/aws-static",
+		"/api/cloud/aws-static",
 	);
 }
 
@@ -926,7 +926,7 @@ export async function putUserAWSStaticCredentials(payload: {
 	secretAccessKey: string;
 }): Promise<UserAWSStaticCredentialsGetResponse> {
 	return apiFetch<UserAWSStaticCredentialsGetResponse>(
-		"/api/me/cloud/aws-static",
+		"/api/cloud/aws-static",
 		{
 			method: "PUT",
 			body: JSON.stringify(payload),
@@ -935,7 +935,7 @@ export async function putUserAWSStaticCredentials(payload: {
 }
 
 export async function deleteUserAWSStaticCredentials(): Promise<void> {
-	await apiFetch<void>("/api/me/cloud/aws-static", { method: "DELETE" });
+	await apiFetch<void>("/api/cloud/aws-static", { method: "DELETE" });
 }
 
 export type UserAWSSSOCredentialsResponse = {
@@ -948,7 +948,7 @@ export type UserAWSSSOCredentialsResponse = {
 };
 
 export async function getUserAWSSSOCredentials(): Promise<UserAWSSSOCredentialsResponse> {
-	return apiFetch<UserAWSSSOCredentialsResponse>("/api/me/cloud/aws-sso");
+	return apiFetch<UserAWSSSOCredentialsResponse>("/api/cloud/aws-sso");
 }
 
 export async function putUserAWSSSOCredentials(payload: {
@@ -957,14 +957,14 @@ export async function putUserAWSSSOCredentials(payload: {
 	accountId: string;
 	roleName: string;
 }): Promise<UserAWSSSOCredentialsResponse> {
-	return apiFetch<UserAWSSSOCredentialsResponse>("/api/me/cloud/aws-sso", {
+	return apiFetch<UserAWSSSOCredentialsResponse>("/api/cloud/aws-sso", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserAWSSSOCredentials(): Promise<void> {
-	await apiFetch<void>("/api/me/cloud/aws-sso", { method: "DELETE" });
+	await apiFetch<void>("/api/cloud/aws-sso", { method: "DELETE" });
 }
 
 export type UserAzureCredentialsResponse = {
@@ -977,7 +977,7 @@ export type UserAzureCredentialsResponse = {
 };
 
 export async function getUserAzureCredentials(): Promise<UserAzureCredentialsResponse> {
-	return apiFetch<UserAzureCredentialsResponse>("/api/me/cloud/azure");
+	return apiFetch<UserAzureCredentialsResponse>("/api/cloud/azure");
 }
 
 export async function putUserAzureCredentials(payload: {
@@ -986,14 +986,14 @@ export async function putUserAzureCredentials(payload: {
 	clientSecret: string;
 	subscriptionId?: string;
 }): Promise<UserAzureCredentialsResponse> {
-	return apiFetch<UserAzureCredentialsResponse>("/api/me/cloud/azure", {
+	return apiFetch<UserAzureCredentialsResponse>("/api/cloud/azure", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserAzureCredentials(): Promise<void> {
-	await apiFetch<void>("/api/me/cloud/azure", { method: "DELETE" });
+	await apiFetch<void>("/api/cloud/azure", { method: "DELETE" });
 }
 
 export type UserGCPCredentialsResponse = {
@@ -1004,21 +1004,21 @@ export type UserGCPCredentialsResponse = {
 };
 
 export async function getUserGCPCredentials(): Promise<UserGCPCredentialsResponse> {
-	return apiFetch<UserGCPCredentialsResponse>("/api/me/cloud/gcp");
+	return apiFetch<UserGCPCredentialsResponse>("/api/cloud/gcp");
 }
 
 export async function putUserGCPCredentials(payload: {
 	projectId: string;
 	serviceAccountJSON: string;
 }): Promise<UserGCPCredentialsResponse> {
-	return apiFetch<UserGCPCredentialsResponse>("/api/me/cloud/gcp", {
+	return apiFetch<UserGCPCredentialsResponse>("/api/cloud/gcp", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserGCPCredentials(): Promise<void> {
-	await apiFetch<void>("/api/me/cloud/gcp", { method: "DELETE" });
+	await apiFetch<void>("/api/cloud/gcp", { method: "DELETE" });
 }
 
 export type UserIBMCredentialsResponse = {
@@ -1030,7 +1030,7 @@ export type UserIBMCredentialsResponse = {
 };
 
 export async function getUserIBMCredentials(): Promise<UserIBMCredentialsResponse> {
-	return apiFetch<UserIBMCredentialsResponse>("/api/me/cloud/ibm");
+	return apiFetch<UserIBMCredentialsResponse>("/api/cloud/ibm");
 }
 
 export async function putUserIBMCredentials(payload: {
@@ -1038,14 +1038,14 @@ export async function putUserIBMCredentials(payload: {
 	region: string;
 	resourceGroupId?: string;
 }): Promise<UserIBMCredentialsResponse> {
-	return apiFetch<UserIBMCredentialsResponse>("/api/me/cloud/ibm", {
+	return apiFetch<UserIBMCredentialsResponse>("/api/cloud/ibm", {
 		method: "PUT",
 		body: JSON.stringify(payload),
 	});
 }
 
 export async function deleteUserIBMCredentials(): Promise<void> {
-	await apiFetch<void>("/api/me/cloud/ibm", { method: "DELETE" });
+	await apiFetch<void>("/api/cloud/ibm", { method: "DELETE" });
 }
 
 export type UserNetlabServerConfig = {
@@ -3113,13 +3113,11 @@ export type AdminAuthProviderStatus = {
 export type AdminAuthSettingsResponse = {
 	primaryProvider: "local" | "okta" | string;
 	configuredProvider: "local" | "okta" | string;
-	persistedProvider?: "local" | "okta" | string;
 	breakGlassEnabled: boolean;
 	breakGlassLabel: string;
 	providers: AdminAuthProviderStatus[];
 	mode: "local" | "oidc" | string;
 	configured: "local" | "oidc" | string;
-	persistedMode?: "local" | "oidc" | string;
 	oidcAvailable: boolean;
 };
 
@@ -3127,7 +3125,6 @@ export type PutAdminAuthSettingsRequest = {
 	primaryProvider: "local" | "okta";
 	breakGlassEnabled?: boolean;
 	breakGlassLabel?: string;
-	mode?: "local" | "oidc";
 };
 
 export async function getAdminAuthSettings(): Promise<AdminAuthSettingsResponse> {
@@ -3175,7 +3172,7 @@ export async function putAdminOIDCSettings(
 }
 
 export type AdminAuditResponse =
-	operations["GET:skyforge.GetAdminAudit"]["responses"][200]["content"]["application/json"];
+	operations["GET:authn.GetAdminAudit"]["responses"][200]["content"]["application/json"];
 export async function getAdminAudit(params?: {
 	limit?: string;
 }): Promise<AdminAuditResponse> {
@@ -3188,7 +3185,7 @@ export async function getAdminAudit(params?: {
 }
 
 export type AdminImpersonateStatusResponse =
-	operations["GET:skyforge.GetAdminImpersonateStatus"]["responses"][200]["content"]["application/json"];
+	operations["GET:authn.GetAdminImpersonateStatus"]["responses"][200]["content"]["application/json"];
 export async function getAdminImpersonateStatus(): Promise<AdminImpersonateStatusResponse> {
 	return apiFetch<AdminImpersonateStatusResponse>(
 		"/api/admin/impersonate/status",
@@ -3196,10 +3193,10 @@ export async function getAdminImpersonateStatus(): Promise<AdminImpersonateStatu
 }
 
 export type AdminImpersonateStartRequest = NonNullable<
-	operations["POST:skyforge.AdminImpersonateStart"]["requestBody"]
+	operations["POST:authn.AdminImpersonateStart"]["requestBody"]
 >["content"]["application/json"];
 export type AdminImpersonateStartResponse =
-	operations["POST:skyforge.AdminImpersonateStart"]["responses"][200]["content"]["application/json"];
+	operations["POST:authn.AdminImpersonateStart"]["responses"][200]["content"]["application/json"];
 export async function adminImpersonateStart(
 	body: AdminImpersonateStartRequest,
 ): Promise<AdminImpersonateStartResponse> {
@@ -3213,7 +3210,7 @@ export async function adminImpersonateStart(
 }
 
 export type AdminImpersonateStopResponse =
-	operations["POST:skyforge.AdminImpersonateStop"]["responses"][200]["content"]["application/json"];
+	operations["POST:authn.AdminImpersonateStop"]["responses"][200]["content"]["application/json"];
 export async function adminImpersonateStop(): Promise<AdminImpersonateStopResponse> {
 	return apiFetch<AdminImpersonateStopResponse>("/api/admin/impersonate/stop", {
 		method: "POST",
@@ -3689,17 +3686,19 @@ export async function deleteDeployment(
 }
 
 export type UIConfigResponse =
-	operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"] & {
+	operations["GET:authn.GetUIConfig"]["responses"][200]["content"]["application/json"] & {
 		authMode?: "oidc" | "local" | string;
 		auth?: {
 			primaryProvider?: "local" | "okta" | string;
 			breakGlassEnabled?: boolean;
 			breakGlassLabel?: string;
 		};
+		netboxBaseUrl?: string;
+		nautobotBaseUrl?: string;
 		jiraBaseUrl?: string;
 		infobloxBaseUrl?: string;
 		rapid7BaseUrl?: string;
-		features?: operations["GET:skyforge.GetUIConfig"]["responses"][200]["content"]["application/json"]["features"] & {
+		features?: operations["GET:authn.GetUIConfig"]["responses"][200]["content"]["application/json"]["features"] & {
 			jiraEnabled?: boolean;
 			infobloxEnabled?: boolean;
 			rapid7Enabled?: boolean;
@@ -3807,13 +3806,13 @@ export type UserVariableGroupUpsertRequest = {
 };
 
 export async function listUserVariableGroups(): Promise<UserVariableGroupListResponse> {
-	return apiFetch<UserVariableGroupListResponse>("/api/me/variable-groups");
+	return apiFetch<UserVariableGroupListResponse>("/api/variable-groups");
 }
 
 export async function createUserVariableGroup(
 	body: UserVariableGroupUpsertRequest,
 ): Promise<UserVariableGroup> {
-	return apiFetch<UserVariableGroup>("/api/me/variable-groups", {
+	return apiFetch<UserVariableGroup>("/api/variable-groups", {
 		method: "POST",
 		body: JSON.stringify(body),
 	});
@@ -3824,7 +3823,7 @@ export async function updateUserVariableGroup(
 	body: UserVariableGroupUpsertRequest,
 ): Promise<UserVariableGroup> {
 	return apiFetch<UserVariableGroup>(
-		`/api/me/variable-groups/${encodeURIComponent(groupId)}`,
+		`/api/variable-groups/${encodeURIComponent(groupId)}`,
 		{
 			method: "PUT",
 			body: JSON.stringify(body),
@@ -3836,7 +3835,7 @@ export async function deleteUserVariableGroup(
 	groupId: number,
 ): Promise<UserVariableGroupListResponse> {
 	return apiFetch<UserVariableGroupListResponse>(
-		`/api/me/variable-groups/${encodeURIComponent(groupId)}`,
+		`/api/variable-groups/${encodeURIComponent(groupId)}`,
 		{
 			method: "DELETE",
 		},

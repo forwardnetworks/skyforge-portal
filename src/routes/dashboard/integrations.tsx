@@ -11,6 +11,7 @@ import {
 	getUserServiceNowConfig,
 	wakeUserInfoblox,
 } from "@/lib/api-client";
+import { embeddedToolHref } from "@/lib/embedded-tools";
 import { queryKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/integrations")({
@@ -89,7 +90,7 @@ function IntegrationsPage() {
 								<div className="flex gap-2">
 									{jiraBaseUrl ? (
 										<Button asChild size="sm">
-											<a href={jiraBaseUrl}>Open</a>
+											<Link to={embeddedToolHref("jira")}>Open</Link>
 										</Button>
 									) : (
 										<Button size="sm" disabled>
@@ -115,7 +116,7 @@ function IntegrationsPage() {
 								<div className="flex gap-2">
 									{rapid7BaseUrl ? (
 										<Button asChild size="sm">
-											<a href={rapid7BaseUrl}>Open</a>
+											<Link to={embeddedToolHref("rapid7")}>Open</Link>
 										</Button>
 									) : (
 										<Button size="sm" disabled>
@@ -136,9 +137,7 @@ function IntegrationsPage() {
 								<div className="text-muted-foreground">Enabled</div>
 								<div className="flex gap-2">
 									<Button asChild size="sm">
-										<a href="/netbox/" target="_blank" rel="noreferrer noopener">
-											Open
-										</a>
+										<Link to={embeddedToolHref("netbox")}>Open</Link>
 									</Button>
 								</div>
 							</CardContent>
@@ -154,9 +153,7 @@ function IntegrationsPage() {
 								<div className="text-muted-foreground">Enabled</div>
 								<div className="flex gap-2">
 									<Button asChild size="sm">
-										<a href="/nautobot/" target="_blank" rel="noreferrer noopener">
-											Open
-										</a>
+										<Link to={embeddedToolHref("nautobot")}>Open</Link>
 									</Button>
 								</div>
 							</CardContent>

@@ -19,13 +19,9 @@ import {
 	Workflow,
 } from "lucide-react";
 import { useState } from "react";
-import { SKYFORGE_API } from "../lib/api-client";
+import { embeddedToolHref } from "../lib/embedded-tools";
 import { sessionHasRole } from "../lib/rbac";
-import {
-	type SkyforgeAuthMode,
-	buildLoginUrl,
-} from "../lib/skyforge-config";
-import { buildCoderLaunchUrl, buildToolLaunchUrl } from "../lib/tool-links";
+import { type SkyforgeAuthMode } from "../lib/skyforge-config";
 import { cn } from "../lib/utils";
 import {
 	DropdownMenu,
@@ -61,13 +57,7 @@ export type Features = {
 	dnsEnabled?: boolean;
 };
 
-const FORWARD_CLUSTER_URL = "https://skyforge-fwd.local.forwardnetworks.com";
-function createNavItems(options?: {
-	authMode?: SkyforgeAuthMode | null;
-	authenticated?: boolean;
-}): NavItem[] {
-	const nautobotLaunchUrl = buildToolLaunchUrl("/nautobot/", options);
-	const coderLaunchUrl = buildCoderLaunchUrl(options);
+function createNavItems(): NavItem[] {
 	return [
 		{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
 		{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
@@ -101,9 +91,8 @@ function createNavItems(options?: {
 				},
 				{
 					label: "Cluster",
-					href: FORWARD_CLUSTER_URL,
+					href: embeddedToolHref("forward-cluster"),
 					icon: Network,
-					external: true,
 				},
 				{
 					label: "Analytics",
@@ -129,30 +118,26 @@ function createNavItems(options?: {
 				},
 				{
 					label: "NetBox",
-					href: "/netbox/",
+					href: embeddedToolHref("netbox"),
 					icon: Network,
-					external: true,
 					featureFlag: "netboxEnabled",
 				},
 				{
 					label: "Nautobot",
-					href: nautobotLaunchUrl,
+					href: embeddedToolHref("nautobot"),
 					icon: Network,
-					external: true,
 					featureFlag: "nautobotEnabled",
 				},
 				{
 					label: "Jira",
-					href: "/jira",
+					href: embeddedToolHref("jira"),
 					icon: Workflow,
-					external: true,
 					featureFlag: "jiraEnabled",
 				},
 				{
 					label: "Rapid7",
-					href: "/rapid7",
+					href: embeddedToolHref("rapid7"),
 					icon: Workflow,
-					external: true,
 					featureFlag: "rapid7Enabled",
 				},
 				{
@@ -176,36 +161,31 @@ function createNavItems(options?: {
 			children: [
 				{
 					label: "Git",
-					href: "/api/gitea/public",
+					href: embeddedToolHref("git"),
 					icon: GitBranch,
-					external: true,
 					featureFlag: "giteaEnabled",
 				},
 				{
 					label: "Artifacts",
-					href: "/files/",
+					href: embeddedToolHref("artifacts"),
 					icon: Inbox,
-					external: true,
 				},
 				{
 					label: "DNS",
-					href: `${SKYFORGE_API}/dns/sso?next=/dns/`,
+					href: embeddedToolHref("dns"),
 					icon: Network,
-					external: true,
 					featureFlag: "dnsEnabled",
 				},
 				{
 					label: "Coder",
-					href: coderLaunchUrl,
+					href: embeddedToolHref("coder"),
 					icon: Cloud,
-					external: true,
 					featureFlag: "coderEnabled",
 				},
 				{
 					label: "API Testing",
-					href: `${SKYFORGE_API}/yaade/sso`,
+					href: embeddedToolHref("api-testing"),
 					icon: PanelTop,
-					external: true,
 					featureFlag: "yaadeEnabled",
 				},
 				{ label: "Webhooks", href: "/webhooks", icon: Webhook },
@@ -225,22 +205,14 @@ function createNavItems(options?: {
 export function buildSideNavItems(
 	sessionOrAdmin?: unknown,
 	features?: Features,
-	authMode?: SkyforgeAuthMode | null,
+	_authMode?: SkyforgeAuthMode | null,
 ): NavItem[] {
 	const session =
 		typeof sessionOrAdmin === "boolean"
 			? { isAdmin: sessionOrAdmin }
 			: sessionOrAdmin;
 	const isAdmin = sessionHasRole(session, "ADMIN");
-	const isAuthenticated =
-		typeof session === "object" &&
-		session !== null &&
-		"authenticated" in session &&
-		(session as { authenticated?: boolean }).authenticated === true;
-	const items = createNavItems({
-		authMode,
-		authenticated: isAuthenticated,
-	});
+	const items = createNavItems();
 	const filterItems = (input: NavItem[]): NavItem[] =>
 		input.flatMap((item) => {
 			if (item.adminOnly && !isAdmin) return [];

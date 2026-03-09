@@ -90,15 +90,22 @@ function RootLayout() {
 	const isLabDesignerRoute = useMemo(() => {
 		return location.pathname === "/dashboard/labs/designer";
 	}, [location.pathname]);
+	const isEmbeddedToolRoute = useMemo(() => {
+		return location.pathname.startsWith("/dashboard/tools/");
+	}, [location.pathname]);
 
 	const isFullBleedRoute = useMemo(() => {
-		return isLabDesignerRoute || location.pathname === "/dashboard/labs/map";
-	}, [isLabDesignerRoute, location.pathname]);
+		return (
+			isLabDesignerRoute ||
+			isEmbeddedToolRoute ||
+			location.pathname === "/dashboard/labs/map"
+		);
+	}, [isEmbeddedToolRoute, isLabDesignerRoute, location.pathname]);
 
 	useEffect(() => {
-		if (!isLabDesignerRoute) return;
+		if (!isLabDesignerRoute && !isEmbeddedToolRoute) return;
 		setNavCollapsed(true);
-	}, [isLabDesignerRoute]);
+	}, [isEmbeddedToolRoute, isLabDesignerRoute]);
 
 	useEffect(() => {
 		if (window.location.pathname === "/index.html") {

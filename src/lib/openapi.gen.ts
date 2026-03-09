@@ -12,7 +12,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendAdmin serves the SPA for admin routes. */
-        get: operations["GET:skyforge.FrontendAdmin"];
+        get: operations["GET:frontend.FrontendAdmin"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29,8 +29,44 @@ export interface paths {
             cookie?: never;
         };
         /** GetAdminAudit returns audit events (admin only). */
-        get: operations["GET:skyforge.GetAdminAudit"];
+        get: operations["GET:authn.GetAdminAudit"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/auth/oidc-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetAdminOIDCSettings returns runtime OIDC settings (admin only). */
+        get: operations["GET:authn.GetAdminOIDCSettings"];
+        /** PutAdminOIDCSettings updates runtime OIDC settings (admin only). */
+        put: operations["PUT:authn.PutAdminOIDCSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/auth/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetAdminAuthSettings returns runtime authentication settings (admin only). */
+        get: operations["GET:authn.GetAdminAuthSettings"];
+        /** PutAdminAuthSettings updates runtime authentication mode (admin only). */
+        put: operations["PUT:authn.PutAdminAuthSettings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -222,7 +258,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["POST:skyforge.AdminImpersonateStart"];
+        post: operations["POST:authn.AdminImpersonateStart"];
         delete?: never;
         options?: never;
         head?: never;
@@ -237,7 +273,7 @@ export interface paths {
             cookie?: never;
         };
         /** GetAdminImpersonateStatus returns current impersonation status. */
-        get: operations["GET:skyforge.GetAdminImpersonateStatus"];
+        get: operations["GET:authn.GetAdminImpersonateStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -255,7 +291,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["POST:skyforge.AdminImpersonateStop"];
+        post: operations["POST:authn.AdminImpersonateStop"];
         delete?: never;
         options?: never;
         head?: never;
@@ -380,6 +416,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/rbac/api-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListAdminAPICatalog returns the discoverable API catalog for RBAC policy
+         *     management.
+         */
+        get: operations["GET:skyforge.ListAdminAPICatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/rbac/users": {
         parameters: {
             query?: never;
@@ -390,6 +446,24 @@ export interface paths {
         /** ListAdminUserRoles returns direct and effective RBAC roles for known users. */
         get: operations["GET:skyforge.ListAdminUserRoles"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/rbac/users/{username}/api-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetAdminUserAPIPermissions returns explicit per-user API permissions. */
+        get: operations["GET:skyforge.GetAdminUserAPIPermissions"];
+        /** PutAdminUserAPIPermissions replaces explicit per-user API permissions. */
+        put: operations["PUT:skyforge.PutAdminUserAPIPermissions"];
         post?: never;
         delete?: never;
         options?: never;
@@ -530,6 +604,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CreateAdminUser seeds a user in the RBAC/user directory and optionally grants a
+         *     role.
+         */
+        post: operations["POST:skyforge.CreateAdminUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users/purge": {
         parameters: {
             query?: never;
@@ -561,6 +655,262 @@ export interface paths {
         put?: never;
         /** SyncUserScopes syncs all user scopes from external systems (admin only). */
         post: operations["POST:skyforge.SyncUserScopes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DeleteAdminUser removes a user from the RBAC/user directory.
+         * @description If the user owns scopes, use purge instead.
+         */
+        delete: operations["DELETE:skyforge.DeleteAdminUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/api-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListUserAPITokens returns metadata for the current user's API tokens. */
+        get: operations["GET:authn.ListUserAPITokens"];
+        put?: never;
+        /**
+         * CreateUserAPIToken creates a new API token for the current user.
+         * @description NOTE: plaintext token is only returned once in this response.
+         */
+        post: operations["POST:authn.CreateUserAPIToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/api-tokens/{tokenID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** RevokeUserAPIToken revokes an existing API token. */
+        delete: operations["DELETE:authn.RevokeUserAPIToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/api-tokens/{tokenID}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RegenerateUserAPIToken rotates the secret for an existing API token.
+         * @description NOTE: plaintext token is only returned once in this response.
+         */
+        post: operations["POST:authn.RegenerateUserAPIToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/forwardauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** SessionForwardAuth is a Skyforge SSO gate endpoint used by Traefik forwardAuth. */
+        get: operations["GET:authn.SessionForwardAuth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head: operations["HEAD:authn.SessionForwardAuthHead"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/forwardauth/envoy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:authn.SessionForwardAuthEnvoy"];
+        put?: never;
+        post: operations["POST:authn.SessionForwardAuthEnvoyPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/forwardauth/envoy/{rest}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:authn.SessionForwardAuthEnvoyAny"];
+        put?: never;
+        post: operations["POST:authn.SessionForwardAuthEnvoyPostAny"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:authn.Login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:authn.Logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/oidc/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:authn.OIDCCallback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/oidc/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:authn.OIDCLogin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/reauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reauth clears the current session cookie and redirects back to the login page. */
+        get: operations["GET:authn.Reauth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:authn.AuthRefresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:authn.Session"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head: operations["HEAD:authn.SessionHead"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/validate-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:authn.AuthValidateToken"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1043,6 +1393,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/aws-sso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserAWSSSOCredentials returns AWS SSO configuration for the
+         *     authenticated user.
+         */
+        get: operations["GET:cloudcredentials.GetCurrentUserAWSSSOCredentials"];
+        /**
+         * PutCurrentUserAWSSSOCredentials saves AWS SSO configuration for the
+         *     authenticated user.
+         */
+        put: operations["PUT:cloudcredentials.PutCurrentUserAWSSSOCredentials"];
+        post?: never;
+        /**
+         * DeleteCurrentUserAWSSSOCredentials deletes AWS SSO configuration for the
+         *     authenticated user.
+         */
+        delete: operations["DELETE:cloudcredentials.DeleteCurrentUserAWSSSOCredentials"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cloud/aws-static": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserAWSStaticCredentials returns AWS static credential status for the
+         *     authenticated user.
+         */
+        get: operations["GET:cloudcredentials.GetCurrentUserAWSStaticCredentials"];
+        /**
+         * PutCurrentUserAWSStaticCredentials saves AWS static credentials for the
+         *     authenticated user.
+         */
+        put: operations["PUT:cloudcredentials.PutCurrentUserAWSStaticCredentials"];
+        post?: never;
+        /**
+         * DeleteCurrentUserAWSStaticCredentials deletes AWS static credentials for the
+         *     authenticated user.
+         */
+        delete: operations["DELETE:cloudcredentials.DeleteCurrentUserAWSStaticCredentials"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/aws/validate": {
         parameters: {
             query?: never;
@@ -1053,8 +1459,36 @@ export interface paths {
         get?: never;
         put?: never;
         /** ValidateAwsSSO checks that AWS SSO credentials can mint role credentials. */
-        post: operations["POST:skyforge.ValidateAwsSSO"];
+        post: operations["POST:cloudcredentials.ValidateAwsSSO"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cloud/azure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserAzureCredentials returns Azure credential status for the
+         *     authenticated user.
+         */
+        get: operations["GET:cloudcredentials.GetCurrentUserAzureCredentials"];
+        /**
+         * PutCurrentUserAzureCredentials saves Azure credentials for the authenticated
+         *     user.
+         */
+        put: operations["PUT:cloudcredentials.PutCurrentUserAzureCredentials"];
+        post?: never;
+        /**
+         * DeleteCurrentUserAzureCredentials deletes Azure credentials for the
+         *     authenticated user.
+         */
+        delete: operations["DELETE:cloudcredentials.DeleteCurrentUserAzureCredentials"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1073,7 +1507,7 @@ export interface paths {
          * ListAzureSubscriptions returns available subscriptions for the provided service
          *     principal.
          */
-        post: operations["POST:skyforge.ListAzureSubscriptions"];
+        post: operations["POST:cloudcredentials.ListAzureSubscriptions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1090,8 +1524,33 @@ export interface paths {
         get?: never;
         put?: never;
         /** ValidateAzureSP verifies Azure service principal credentials. */
-        post: operations["POST:skyforge.ValidateAzureSP"];
+        post: operations["POST:cloudcredentials.ValidateAzureSP"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cloud/gcp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserGCPCredentials returns GCP credential status for the authenticated
+         *     user.
+         */
+        get: operations["GET:cloudcredentials.GetCurrentUserGCPCredentials"];
+        /** PutCurrentUserGCPCredentials saves GCP credentials for the authenticated user. */
+        put: operations["PUT:cloudcredentials.PutCurrentUserGCPCredentials"];
+        post?: never;
+        /**
+         * DeleteCurrentUserGCPCredentials deletes GCP credentials for the authenticated
+         *     user.
+         */
+        delete: operations["DELETE:cloudcredentials.DeleteCurrentUserGCPCredentials"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1107,7 +1566,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** ListGCPProjects returns accessible projects for the provided service identity. */
-        post: operations["POST:skyforge.ListGCPProjects"];
+        post: operations["POST:cloudcredentials.ListGCPProjects"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1124,8 +1583,36 @@ export interface paths {
         get?: never;
         put?: never;
         /** ValidateGCPServiceAccount verifies GCP service identity JSON by minting a token. */
-        post: operations["POST:skyforge.ValidateGCPServiceAccount"];
+        post: operations["POST:cloudcredentials.ValidateGCPServiceAccount"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cloud/ibm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserIBMCredentials returns IBM Cloud credential status for the
+         *     authenticated user.
+         */
+        get: operations["GET:cloudcredentials.GetCurrentUserIBMCredentials"];
+        /**
+         * PutCurrentUserIBMCredentials saves IBM Cloud credentials for the authenticated
+         *     user.
+         */
+        put: operations["PUT:cloudcredentials.PutCurrentUserIBMCredentials"];
+        post?: never;
+        /**
+         * DeleteCurrentUserIBMCredentials deletes IBM Cloud credentials for the
+         *     authenticated user.
+         */
+        delete: operations["DELETE:cloudcredentials.DeleteCurrentUserIBMCredentials"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1416,6 +1903,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forward/tenant-credential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserForwardTenantCredential returns the current user's Forward tenant
+         *     credential.
+         */
+        get: operations["GET:skyforge.GetCurrentUserForwardTenantCredential"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/tenant-credential/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ResetCurrentUserForwardTenantPassword rotates the current user's Forward tenant
+         *     password.
+         */
+        post: operations["POST:skyforge.ResetCurrentUserForwardTenantPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gcp/console": {
         parameters: {
             query?: never;
@@ -1427,6 +1954,44 @@ export interface paths {
         get: operations["GET:skyforge.GCPConsoleRedirect"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/git-credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserCredentials returns the current user's deploy key (public) and
+         *     HTTPS token status.
+         */
+        get: operations["GET:gitcredentials.GetCurrentUserCredentials"];
+        /** UpdateCurrentUserCredentials sets (or clears) the user's HTTPS git token. */
+        put: operations["PUT:gitcredentials.UpdateCurrentUserCredentials"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/git-credentials/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RotateCurrentUserDeployKey rotates the user's SSH deploy key. */
+        post: operations["POST:gitcredentials.RotateCurrentUserDeployKey"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1458,7 +2023,7 @@ export interface paths {
             cookie?: never;
         };
         /** GetAPIHealth returns a summary of database health. */
-        get: operations["GET:skyforge.GetAPIHealth"];
+        get: operations["GET:health.GetAPIHealth"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1484,77 +2049,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/login": {
+    "/api/integrations/infoblox/console/ws": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        post: operations["POST:skyforge.Login"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["POST:skyforge.Logout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/api-tokens": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ListUserAPITokens returns metadata for the current user's API tokens. */
-        get: operations["GET:skyforge.ListUserAPITokens"];
-        put?: never;
         /**
-         * CreateUserAPIToken creates a new API token for the current user.
-         * @description NOTE: plaintext token is only returned once in this response.
+         * InfobloxConsoleWS provides an in-cluster troubleshooting shell via the managed
+         *     Infoblox VM launcher pod.
          */
-        post: operations["POST:skyforge.CreateUserAPIToken"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/api-tokens/{tokenID}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
+        get: operations["GET:skyforge.InfobloxConsoleWS"];
         put?: never;
         post?: never;
-        /** RevokeUserAPIToken revokes an existing API token. */
-        delete: operations["DELETE:skyforge.RevokeUserAPIToken"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/me/api-tokens/{tokenID}/regenerate": {
+    "/api/integrations/infoblox/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetUserInfobloxStatus returns current KubeVirt VM status for managed Infoblox. */
+        get: operations["GET:skyforge.GetUserInfobloxStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/integrations/infoblox/wake": {
         parameters: {
             query?: never;
             header?: never;
@@ -1564,162 +2096,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * RegenerateUserAPIToken rotates the secret for an existing API token.
-         * @description NOTE: plaintext token is only returned once in this response.
+         * WakeUserInfoblox ensures managed Infoblox VM is set to run and waits briefly for
+         *     readiness.
          */
-        post: operations["POST:skyforge.RegenerateUserAPIToken"];
+        post: operations["POST:skyforge.WakeUserInfoblox"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/me/cloud/aws-sso": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GetUserAWSSSOCredentials returns the current user's AWS SSO configuration
-         *     (non-token).
-         */
-        get: operations["GET:skyforge.GetUserAWSSSOCredentials"];
-        /**
-         * PutUserAWSSSOCredentials saves AWS SSO configuration (non-token) for the current
-         *     user.
-         */
-        put: operations["PUT:skyforge.PutUserAWSSSOCredentials"];
-        post?: never;
-        /** DeleteUserAWSSSOCredentials deletes AWS SSO configuration for the current user. */
-        delete: operations["DELETE:skyforge.DeleteUserAWSSSOCredentials"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/cloud/aws-static": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GetUserAWSStaticCredentials returns the current user's AWS static credential
-         *     status.
-         */
-        get: operations["GET:skyforge.GetUserAWSStaticCredentials"];
-        /** PutUserAWSStaticCredentials saves AWS static credentials for the current user. */
-        put: operations["PUT:skyforge.PutUserAWSStaticCredentials"];
-        post?: never;
-        /**
-         * DeleteUserAWSStaticCredentials deletes AWS static credentials for the current
-         *     user.
-         */
-        delete: operations["DELETE:skyforge.DeleteUserAWSStaticCredentials"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/cloud/azure": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GetUserAzureCredentials returns the current user's Azure credential status. */
-        get: operations["GET:skyforge.GetUserAzureCredentials"];
-        /** PutUserAzureCredentials saves Azure credentials for the current user. */
-        put: operations["PUT:skyforge.PutUserAzureCredentials"];
-        post?: never;
-        /** DeleteUserAzureCredentials deletes Azure credentials for the current user. */
-        delete: operations["DELETE:skyforge.DeleteUserAzureCredentials"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/cloud/gcp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GetUserGCPCredentials returns the current user's GCP credential status. */
-        get: operations["GET:skyforge.GetUserGCPCredentials"];
-        /** PutUserGCPCredentials saves GCP credentials for the current user. */
-        put: operations["PUT:skyforge.PutUserGCPCredentials"];
-        post?: never;
-        /** DeleteUserGCPCredentials deletes GCP credentials for the current user. */
-        delete: operations["DELETE:skyforge.DeleteUserGCPCredentials"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/cloud/ibm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GetUserIBMCredentials returns the current user's IBM Cloud credential status. */
-        get: operations["GET:skyforge.GetUserIBMCredentials"];
-        /** PutUserIBMCredentials saves IBM Cloud credentials for the current user. */
-        put: operations["PUT:skyforge.PutUserIBMCredentials"];
-        post?: never;
-        /** DeleteUserIBMCredentials deletes IBM Cloud credentials for the current user. */
-        delete: operations["DELETE:skyforge.DeleteUserIBMCredentials"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/git-credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GetUserGitCredentials returns the current user's deploy key (public) and HTTPS
-         *     token status.
-         */
-        get: operations["GET:skyforge.GetUserGitCredentials"];
-        /** UpdateUserGitCredentials sets (or clears) the user's HTTPS git token. */
-        put: operations["PUT:skyforge.UpdateUserGitCredentials"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/git-credentials/rotate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** RotateUserGitDeployKey rotates the user's SSH deploy key. */
-        post: operations["POST:skyforge.RotateUserGitDeployKey"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/integrations/servicenow": {
+    "/api/integrations/servicenow": {
         parameters: {
             query?: never;
             header?: never;
@@ -1743,7 +2130,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/integrations/servicenow/configureForwardTicketing": {
+    "/api/integrations/servicenow/configureForwardTicketing": {
         parameters: {
             query?: never;
             header?: never;
@@ -1764,7 +2151,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/integrations/servicenow/install": {
+    "/api/integrations/servicenow/install": {
         parameters: {
             query?: never;
             header?: never;
@@ -1784,7 +2171,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/integrations/servicenow/pdiStatus": {
+    "/api/integrations/servicenow/pdiStatus": {
         parameters: {
             query?: never;
             header?: never;
@@ -1804,7 +2191,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/integrations/servicenow/schemaStatus": {
+    "/api/integrations/servicenow/schemaStatus": {
         parameters: {
             query?: never;
             header?: never;
@@ -1824,7 +2211,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/integrations/servicenow/setup": {
+    "/api/integrations/servicenow/setup": {
         parameters: {
             query?: never;
             header?: never;
@@ -1844,7 +2231,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/integrations/servicenow/setup/cancel": {
+    "/api/integrations/servicenow/setup/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -1861,7 +2248,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/integrations/servicenow/setup/status": {
+    "/api/integrations/servicenow/setup/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -1878,7 +2265,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/integrations/servicenow/wake": {
+    "/api/integrations/servicenow/wake": {
         parameters: {
             query?: never;
             header?: never;
@@ -1893,66 +2280,6 @@ export interface paths {
          */
         post: operations["POST:skyforge.WakeServiceNowPDI"];
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GetUserSettings returns the current user's saved defaults used to pre-fill forms
-         *     (deployments, etc).
-         */
-        get: operations["GET:skyforge.GetUserSettings"];
-        /**
-         * PutUserSettings upserts the current user's saved defaults used to pre-fill forms
-         *     (deployments, etc).
-         */
-        put: operations["PUT:skyforge.PutUserSettings"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/variable-groups": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ListUserVariableGroups lists variable groups for the current user. */
-        get: operations["GET:skyforge.ListUserVariableGroups"];
-        put?: never;
-        /** CreateUserVariableGroup creates a variable group for the current user. */
-        post: operations["POST:skyforge.CreateUserVariableGroup"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/me/variable-groups/{groupID}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** UpdateUserVariableGroup updates a variable group for the current user. */
-        put: operations["PUT:skyforge.UpdateUserVariableGroup"];
-        post?: never;
-        /** DeleteUserVariableGroup deletes a variable group for the current user. */
-        delete: operations["DELETE:skyforge.DeleteUserVariableGroup"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1997,40 +2324,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/oidc/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** OIDCCallback finishes the OIDC flow and issues the Skyforge session cookie. */
-        get: operations["GET:skyforge.OIDCCallback"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/oidc/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** OIDCLogin starts the Dex OIDC auth flow and stores state/nonce cookies. */
-        get: operations["GET:skyforge.OIDCLogin"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/public/config": {
         parameters: {
             query?: never;
@@ -2039,7 +2332,7 @@ export interface paths {
             cookie?: never;
         };
         /** PublicConfig exposes non-sensitive public UI configuration. */
-        get: operations["GET:skyforge.PublicConfig"];
+        get: operations["GET:platform.PublicConfig"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2082,27 +2375,6 @@ export interface paths {
          *     Forward sync.
          */
         post: operations["POST:skyforge.RunQuickDeploy"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/reauth": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Reauth clears the current session cookie (and any cached LDAP password) and
-         *     redirects
-         * @description back to the Skyforge login page, preserving the requested next hop.
-         */
-        get: operations["GET:skyforge.Reauth"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2246,80 +2518,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/session": {
+    "/api/settings": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["GET:skyforge.Session"];
-        put?: never;
+        /** GetCurrentUserSettings returns saved defaults for the authenticated user. */
+        get: operations["GET:settings.GetCurrentUserSettings"];
+        /** PutCurrentUserSettings upserts saved defaults for the authenticated user. */
+        put: operations["PUT:settings.PutCurrentUserSettings"];
         post?: never;
-        delete?: never;
-        options?: never;
-        head: operations["HEAD:skyforge.SessionHead"];
-        patch?: never;
-        trace?: never;
-    };
-    "/api/session/forwardauth": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** SessionForwardAuth is a Skyforge SSO gate endpoint used by Traefik forwardAuth. */
-        get: operations["GET:skyforge.SessionForwardAuth"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        /**
-         * SessionForwardAuthHead is a Skyforge SSO gate endpoint used by Traefik
-         *     forwardAuth (HEAD).
-         */
-        head: operations["HEAD:skyforge.SessionForwardAuthHead"];
-        patch?: never;
-        trace?: never;
-    };
-    "/api/session/forwardauth/envoy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * SessionForwardAuthEnvoy is a Skyforge SSO gate endpoint for Envoy ext_authz.
-         * @description It behaves like SessionForwardAuth on success, but on unauthenticated requests it returns a 302 redirect to Skyforge login, preserving the original request URI via the \`next\` parameter.
-         *
-         *     NOTE: Envoy's ext\_authz filter commonly forwards the original request path in \`x-envoy-original-path\` (preferred) rather than \`x-forwarded-uri\`.
-         */
-        get: operations["GET:skyforge.SessionForwardAuthEnvoy"];
-        put?: never;
-        post: operations["POST:skyforge.SessionForwardAuthEnvoyPost"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/session/forwardauth/envoy/{rest}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * NOTE: Envoy's ext_authz `path_prefix` can append the original request path to
-         *     the
-         * @description configured prefix (e.g. \`/api/session/forwardauth/envoy/\`), so we also expose wildcard handlers.
-         */
-        get: operations["GET:skyforge.SessionForwardAuthEnvoyAny"];
-        put?: never;
-        post: operations["POST:skyforge.SessionForwardAuthEnvoyPostAny"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2515,7 +2725,7 @@ export interface paths {
             cookie?: never;
         };
         /** GetUIConfig returns UI configuration values. */
-        get: operations["GET:skyforge.GetUIConfig"];
+        get: operations["GET:authn.GetUIConfig"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4198,7 +4408,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{userID}/blueprint/sync": {
+    "/api/variable-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListCurrentUserVariableGroups lists variable groups for the authenticated user. */
+        get: operations["GET:variablegroups.ListCurrentUserVariableGroups"];
+        put?: never;
+        /**
+         * CreateCurrentUserVariableGroup creates a variable group for the authenticated
+         *     user.
+         */
+        post: operations["POST:variablegroups.CreateCurrentUserVariableGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/variable-groups/{groupID}": {
         parameters: {
             query?: never;
             header?: never;
@@ -4206,14 +4437,17 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
         /**
-         * SyncUserBlueprint keeps backward compatibility for legacy "sync blueprint"
-         *     calls.
-         * @description In git-native mode this endpoint only refreshes template cache state.
+         * UpdateCurrentUserVariableGroup updates a variable group for the authenticated
+         *     user.
          */
-        post: operations["POST:skyforge.SyncUserBlueprint"];
-        delete?: never;
+        put: operations["PUT:variablegroups.UpdateCurrentUserVariableGroup"];
+        post?: never;
+        /**
+         * DeleteCurrentUserVariableGroup deletes a variable group for the authenticated
+         *     user.
+         */
+        delete: operations["DELETE:variablegroups.DeleteCurrentUserVariableGroup"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4315,6 +4549,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/apitokens.AuthenticateToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:apitokens.AuthenticateToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apitokens.CreateToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:apitokens.CreateToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apitokens.ListTokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:apitokens.ListTokens"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apitokens.RegenerateToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:apitokens.RegenerateToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apitokens.RevokeToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:apitokens.RevokeToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/assets/skyforge/{path}": {
         parameters: {
             query?: never;
@@ -4323,7 +4637,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendAssets serves hashed frontend assets built by Vite. */
-        get: operations["GET:skyforge.FrontendAssets"];
+        get: operations["GET:frontend.FrontendAssets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4332,7 +4646,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/refresh": {
+    "/cloudcredentials.DeleteAWSSSOCredentials": {
         parameters: {
             query?: never;
             header?: never;
@@ -4341,14 +4655,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["POST:skyforge.AuthRefresh"];
+        post: operations["POST:cloudcredentials.DeleteAWSSSOCredentials"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/auth/validate-token": {
+    "/cloudcredentials.DeleteAWSStaticCredentials": {
         parameters: {
             query?: never;
             header?: never;
@@ -4357,7 +4671,215 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["POST:skyforge.AuthValidateToken"];
+        post: operations["POST:cloudcredentials.DeleteAWSStaticCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.DeleteAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.DeleteAzureCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.DeleteGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.DeleteGCPCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.DeleteIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.DeleteIBMCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.GetAWSSSOCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.GetAWSSSOCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.GetAWSStaticCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.GetAWSStaticCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.GetAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.GetAzureCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.GetGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.GetGCPCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.GetIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.GetIBMCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.PutAWSSSOCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.PutAWSSSOCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.PutAWSStaticCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.PutAWSStaticCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.PutAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.PutAzureCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.PutGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.PutGCPCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cloudcredentials.PutIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:cloudcredentials.PutIBMCredentials"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4372,7 +4894,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendDashboard serves the SPA for dashboard routes. */
-        get: operations["GET:skyforge.FrontendDashboard"];
+        get: operations["GET:frontend.FrontendDashboard"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4398,6 +4920,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/deploymentruntime.GetDeploymentRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:deploymentruntime.GetDeploymentRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deploymentruntime.GetForwardState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:deploymentruntime.GetForwardState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deploymentruntime.GetLatestDeploymentByType": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:deploymentruntime.GetLatestDeploymentByType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deploymentruntime.GetLeaseState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:deploymentruntime.GetLeaseState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deploymentruntime.GetTopologyCurrent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:deploymentruntime.GetTopologyCurrent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deploymentruntime.PutForwardState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:deploymentruntime.PutForwardState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deploymentruntime.PutLeaseState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:deploymentruntime.PutLeaseState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deploymentruntime.UpdateDeploymentStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:deploymentruntime.UpdateDeploymentStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/design": {
         parameters: {
             query?: never;
@@ -4406,7 +5056,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendDesign serves the SPA design sandbox route. */
-        get: operations["GET:skyforge.FrontendDesign"];
+        get: operations["GET:frontend.FrontendDesign"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4423,7 +5073,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendDocs serves embedded UI docs pages. */
-        get: operations["GET:skyforge.FrontendDocs"];
+        get: operations["GET:frontend.FrontendDocs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4439,7 +5089,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["GET:skyforge.FrontendFaviconICO"];
+        get: operations["GET:frontend.FrontendFaviconICO"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4456,9 +5106,155 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendFavicon serves the SPA favicon (including alternate icon paths). */
-        get: operations["GET:skyforge.FrontendFavicon"];
+        get: operations["GET:frontend.FrontendFavicon"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/forwardregistry.CreateNetwork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:forwardregistry.CreateNetwork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/forwardregistry.DeleteNetwork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:forwardregistry.DeleteNetwork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/forwardregistry.ListNetworks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:forwardregistry.ListNetworks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/forwardtenant.EnsureTenantCredential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** EnsureTenantCredential ensures the user's Forward org/user credential exists. */
+        post: operations["POST:forwardtenant.EnsureTenantCredential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/forwardtenant.ResetTenantPassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ResetTenantPassword rotates the user's Forward tenant password. */
+        post: operations["POST:forwardtenant.ResetTenantPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gitcredentials.EnsureDeployKey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:gitcredentials.EnsureDeployKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gitcredentials.GetCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:gitcredentials.GetCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gitcredentials.RotateDeployKey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:gitcredentials.RotateDeployKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gitcredentials.UpdateCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:gitcredentials.UpdateCredentials"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4529,7 +5325,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendIndex serves the SPA entrypoint. */
-        get: operations["GET:skyforge.FrontendIndex"];
+        get: operations["GET:frontend.FrontendIndex"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4594,6 +5390,40 @@ export interface paths {
          * @description This endpoint is intentionally unauthenticated (SSO) and guarded by an internal token header.
          */
         post: operations["POST:skyforge.IngestSyslog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/authn/oidc/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RefreshOIDCClient reloads the authn OIDC runtime client from stored settings. */
+        post: operations["POST:authn.RefreshOIDCClient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/authn/oidc/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetOIDCStatus reports authn-owned OIDC runtime availability. */
+        get: operations["GET:authn.GetOIDCStatus"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4824,6 +5654,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/login/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** FrontendLogin serves the SPA for local login routes. */
+        get: operations["GET:frontend.FrontendLogin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/logout": {
         parameters: {
             query?: never;
@@ -4835,7 +5682,7 @@ export interface paths {
          * LogoutAll clears the Skyforge cookie and redirects to the landing page (used for
          *     manual "reset").
          */
-        get: operations["GET:skyforge.LogoutAll"];
+        get: operations["GET:authn.LogoutAll"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4852,7 +5699,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendManifest serves the PWA manifest. */
-        get: operations["GET:skyforge.FrontendManifest"];
+        get: operations["GET:frontend.FrontendManifest"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4872,7 +5719,7 @@ export interface paths {
          * NautobotLogout clears the Skyforge session cookie and redirects to the Skyforge
          *     landing page.
          */
-        get: operations["GET:skyforge.NautobotLogout"];
+        get: operations["GET:authn.NautobotLogout"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4889,7 +5736,7 @@ export interface paths {
             cookie?: never;
         };
         /** NautobotLogoutAny handles `/nautobot/logout/*` (including a trailing slash). */
-        get: operations["GET:skyforge.NautobotLogoutAny"];
+        get: operations["GET:authn.NautobotLogoutAny"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4909,7 +5756,7 @@ export interface paths {
          * NetboxLogout clears the Skyforge session cookie and redirects to the Skyforge
          *     landing page.
          */
-        get: operations["GET:skyforge.NetboxLogout"];
+        get: operations["GET:authn.NetboxLogout"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4926,7 +5773,7 @@ export interface paths {
             cookie?: never;
         };
         /** NetboxLogoutAny handles `/netbox/logout/*` (including a trailing slash). */
-        get: operations["GET:skyforge.NetboxLogoutAny"];
+        get: operations["GET:authn.NetboxLogoutAny"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4943,7 +5790,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendNotifications serves the SPA notifications page. */
-        get: operations["GET:skyforge.FrontendNotifications"];
+        get: operations["GET:frontend.FrontendNotifications"];
         put?: never;
         /** CreateNotification creates a new notification. */
         post: operations["POST:skyforge.CreateNotification"];
@@ -5029,9 +5876,337 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendRobots serves robots.txt. */
-        get: operations["GET:skyforge.FrontendRobots"];
+        get: operations["GET:frontend.FrontendRobots"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.CheckPDIStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.CheckPDIStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.DeleteForwardIntegration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.DeleteForwardIntegration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.ForwardIntegrationSupported": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.ForwardIntegrationSupported"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.GetConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.GetConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.GetConfigRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.GetConfigRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.GetLatestSetupRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.GetLatestSetupRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.GetSchemaStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.GetSchemaStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.InstallDemo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.InstallDemo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.PatchForwardIntegration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.PatchForwardIntegration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.ProbeForwardReachability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.ProbeForwardReachability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.PutConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.PutConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.ResolveForwardCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.ResolveForwardCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.UpdateInstallStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.UpdateInstallStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.UpsertSetupRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.UpsertSetupRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.ValidateForwardAuth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.ValidateForwardAuth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.WakePDI": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.WakePDI"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings.GetUserSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:settings.GetUserSettings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings.PutUserSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:settings.PutUserSettings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skyforge.BootstrapForwardTenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * BootstrapForwardTenant is a worker-facing private API for durable user
+         *     bootstrap.
+         */
+        post: operations["POST:skyforge.BootstrapForwardTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skyforge.EnsureManagedCollectorDeployment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * EnsureManagedCollectorDeployment is a worker-facing private API for queued
+         * @description collector deployment reconciliation.
+         */
+        post: operations["POST:skyforge.EnsureManagedCollectorDeployment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5046,7 +6221,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendSNMP serves the SPA for SNMP routes. */
-        get: operations["GET:skyforge.FrontendSNMP"];
+        get: operations["GET:frontend.FrontendSNMP"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5063,7 +6238,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendStatus serves the SPA status page. */
-        get: operations["GET:skyforge.FrontendStatus"];
+        get: operations["GET:frontend.FrontendStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5258,7 +6433,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendSyslog serves the SPA for syslog routes. */
-        get: operations["GET:skyforge.FrontendSyslog"];
+        get: operations["GET:frontend.FrontendSyslog"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5305,6 +6480,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/taskruns.CancelRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:taskruns.CancelRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/taskruns.GetNextQueuedDeploymentTask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:taskruns.GetNextQueuedDeploymentTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/taskruns.GetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:taskruns.GetRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/taskruns.GetRunOutput": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:taskruns.GetRunOutput"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/taskruns.ListRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:taskruns.ListRuns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/assignable": {
         parameters: {
             query?: never;
@@ -5342,6 +6597,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/variablegroups.CreateUserVariableGroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:variablegroups.CreateUserVariableGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/variablegroups.DeleteUserVariableGroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:variablegroups.DeleteUserVariableGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/variablegroups.ListUserVariableGroups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:variablegroups.ListUserVariableGroups"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/variablegroups.UpdateUserVariableGroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:variablegroups.UpdateUserVariableGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/version": {
         parameters: {
             query?: never;
@@ -5350,7 +6669,7 @@ export interface paths {
             cookie?: never;
         };
         /** Version reports the running server version info. */
-        get: operations["GET:skyforge.Version"];
+        get: operations["GET:platform.Version"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5367,7 +6686,7 @@ export interface paths {
             cookie?: never;
         };
         /** FrontendWebhooks serves the SPA for the webhook inbox UI route. */
-        get: operations["GET:skyforge.FrontendWebhooks"];
+        get: operations["GET:frontend.FrontendWebhooks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5380,8 +6699,164 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "apitokens.TokenMetadata": {
+            createdAt: string;
+            id: string;
+            lastUsedAt: string;
+            lastUsedIp: string;
+            name: string;
+            revokedAt: string;
+            updatedAt: string;
+        };
+        "authn.AdminAuthProviderStatus": {
+            configured: boolean;
+            healthy: boolean;
+            id: string;
+            implemented: boolean;
+            label: string;
+            selectable: boolean;
+        };
+        "authn.AuditEvent": {
+            action: string;
+            actorIsAdmin: boolean;
+            actorUsername: string;
+            /** Format: date-time */
+            createdAt: string;
+            details: string;
+            /** Format: int64 */
+            id: number;
+            impersonatedUsername: string;
+            userId: string;
+        };
+        "authn.UIAuthConfig": {
+            breakGlassEnabled: boolean;
+            breakGlassLabel: string;
+            primaryProvider: string;
+        };
+        "authn.UserAPITokenMetadata": {
+            createdAt: string;
+            id: string;
+            lastUsedAt: string;
+            lastUsedIp: string;
+            name: string;
+            revokedAt: string;
+            updatedAt: string;
+        };
+        "authsession.UserProfile": {
+            actorUsername: string;
+            authenticated: boolean;
+            displayName: string;
+            email: string;
+            groups: string[];
+            impersonating: boolean;
+            isAdmin: boolean;
+            username: string;
+        };
+        "cloudcredentials.AzureSubscription": {
+            displayName: string;
+            state: string;
+            subscriptionId: string;
+        };
+        "cloudcredentials.GCPProject": {
+            lifecycleState: string;
+            name: string;
+            projectId: string;
+        };
         "deploycore.Action": string;
         "deploycore.Reason": string;
+        "deploymentruntime.ForwardState": {
+            cliCredentialFingerprintsByDevice: {
+                [key: string]: string;
+            };
+            cliCredentialId: string;
+            cliCredentialIdsByDevice: {
+                [key: string]: string;
+            };
+            collectorConfigId: string;
+            collectorUsername: string;
+            deploymentId: string;
+            enabled: boolean;
+            endpointProfileId: string;
+            jumpServerId: string;
+            networkId: string;
+            networkName: string;
+            snapshotUrl: string;
+            snmpCredentialId: string;
+            userScopeId: string;
+        };
+        "deploymentruntime.LeaseState": {
+            deploymentId: string;
+            enabled: boolean;
+            expiresAt: string;
+            /** Format: int64 */
+            hours: number;
+            status: string;
+            /** Format: int64 */
+            stopTaskId: number;
+            stoppedAt: string;
+            userScopeId: string;
+        };
+        "forwardregistry.CreateRequest": {
+            collectorConfigId: string;
+            description: string;
+            forwardNetworkId: string;
+            name: string;
+        };
+        "forwardregistry.ForwardNetwork": {
+            collectorConfigId: string;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            description: string;
+            forwardNetworkId: string;
+            id: string;
+            name: string;
+            /** Format: date-time */
+            updatedAt: string;
+            userId: string;
+        };
+        "servicenow.ForwardCredentials": {
+            baseUrl: string;
+            password: string;
+            skipTlsVerify: boolean;
+            username: string;
+        };
+        "servicenow.SetupRunRecord": {
+            currentStep: string;
+            /** Format: date-time */
+            finishedAt: string;
+            lastError: string;
+            remediation: string[];
+            runId: string;
+            /** Format: date-time */
+            startedAt: string;
+            status: string;
+            steps: components["schemas"]["servicenow.SetupStepResult"][];
+            /** Format: date-time */
+            ticketingCheckedAt: string;
+            ticketingSupported: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            username: string;
+        };
+        "servicenow.SetupStepResult": {
+            detail: string;
+            status: string;
+            step: string;
+            updatedAt: string;
+        };
+        "settings.UserEnvVar": {
+            key: string;
+            value: string;
+        };
+        "skyforge.APICatalogEntry": {
+            endpoint: string;
+            method: string;
+            path: string;
+            service: string;
+            summary: string;
+            tags: string[];
+        };
         "skyforge.AdminSmokeRunCheck": {
             detail: string;
             name: string;
@@ -5403,6 +6878,12 @@ export interface components {
             source: string;
             status: string;
             workerImage: string;
+        };
+        "skyforge.AdminUserAPIPermission": {
+            decision: string;
+            endpoint: string;
+            method: string;
+            service: string;
         };
         "skyforge.AdminUserRoleGrant": {
             createdAt: string;
@@ -5435,18 +6916,6 @@ export interface components {
             id: string;
             username: string;
         };
-        "skyforge.AuditEvent": {
-            action: string;
-            actorIsAdmin: boolean;
-            actorUsername: string;
-            /** Format: date-time */
-            createdAt: string;
-            details: string;
-            /** Format: int64 */
-            id: number;
-            impersonatedUsername: string;
-            userId: string;
-        };
         "skyforge.AwsSSOAccount": {
             accountId: string;
             email: string;
@@ -5454,11 +6923,6 @@ export interface components {
         };
         "skyforge.AwsSSORole": {
             roleName: string;
-        };
-        "skyforge.AzureSubscription": {
-            displayName: string;
-            state: string;
-            subscriptionId: string;
         };
         "skyforge.CapacityBgpNeighborRow": {
             /** Format: int64 */
@@ -5680,11 +7144,6 @@ export interface components {
             id: string;
             name: string;
             username: string;
-        };
-        "skyforge.GCPProject": {
-            lifecycleState: string;
-            name: string;
-            projectId: string;
         };
         "skyforge.GovernanceCostInput": {
             amount: number;
@@ -6124,15 +7583,6 @@ export interface components {
             mgmtIp: string;
             status: string;
         };
-        "skyforge.UserAPITokenMetadata": {
-            createdAt: string;
-            id: string;
-            lastUsedAt: string;
-            lastUsedIp: string;
-            name: string;
-            revokedAt: string;
-            updatedAt: string;
-        };
         "skyforge.UserContainerlabServerConfig": {
             apiInsecure: boolean;
             apiPassword: string;
@@ -6142,10 +7592,6 @@ export interface components {
             hasPassword: boolean;
             id: string;
             name: string;
-        };
-        "skyforge.UserEnvVar": {
-            key: string;
-            value: string;
         };
         "skyforge.UserEveServerConfig": {
             apiPassword: string;
@@ -6184,16 +7630,6 @@ export interface components {
             hasPassword: boolean;
             id: string;
             name: string;
-        };
-        "skyforge.UserProfile": {
-            actorUsername: string;
-            authenticated: boolean;
-            displayName: string;
-            email: string;
-            groups: string[];
-            impersonating: boolean;
-            isAdmin: boolean;
-            username: string;
         };
         /**
          * UserScope is the user-facing user-scope object stored in Postgres and returned
@@ -6325,14 +7761,6 @@ export interface components {
                 [key: string]: string;
             };
         };
-        "skyforge.UserVariableGroup": {
-            /** Format: int64 */
-            id: number;
-            name: string;
-            variables: {
-                [key: string]: string;
-            };
-        };
         "skyforge.WebhookEvent": {
             body: string;
             /** Format: int64 */
@@ -6414,15 +7842,65 @@ export interface components {
             updated: boolean;
             userId: string;
         };
+        "skyforgecore.ExternalTemplateRepo": {
+            defaultBranch: string;
+            id: string;
+            name: string;
+            /** gitea owner/repo */
+            repo: string;
+        };
         "skyforgecore.FeaturesConfig": {
             coderEnabled: boolean;
             dnsEnabled: boolean;
             forwardEnabled: boolean;
             giteaEnabled: boolean;
+            infobloxEnabled: boolean;
+            jiraEnabled: boolean;
             nautobotEnabled: boolean;
             netboxEnabled: boolean;
+            rapid7Enabled: boolean;
             swaggerUIEnabled: boolean;
             yaadeEnabled: boolean;
+        };
+        "taskruns.Run": {
+            createdAt: string;
+            createdBy: string;
+            deploymentId: string;
+            error: string;
+            finishedAt: string;
+            /** Format: int64 */
+            id: number;
+            message: string;
+            metadata: components["schemas"]["taskstore.JSONMap"];
+            /** Format: int64 */
+            priority: number;
+            runInfo: components["schemas"]["taskstore.JSONMap"];
+            startedAt: string;
+            status: string;
+            taskType: string;
+            userScopeId: string;
+        };
+        "taskruns.RunOutputEntry": {
+            output: string;
+            stream: string;
+            time: string;
+        };
+        "taskstore.JSONMap": {
+            [key: string]: Record<string, never>;
+        };
+        "variablegroups.UserVariableGroup": {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            variables: {
+                [key: string]: string;
+            };
+        };
+        "variablegroups.UserVariableGroupUpsertRequest": {
+            name: string;
+            variables: {
+                [key: string]: string;
+            };
         };
     };
     responses: {
@@ -6453,7 +7931,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    "GET:skyforge.FrontendAdmin": {
+    "GET:frontend.FrontendAdmin": {
         parameters: {
             query?: never;
             header?: never;
@@ -6474,7 +7952,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetAdminAudit": {
+    "GET:authn.GetAdminAudit": {
         parameters: {
             query?: {
                 limit?: string;
@@ -6492,10 +7970,145 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        events: components["schemas"]["skyforge.AuditEvent"][];
+                        events: components["schemas"]["authn.AuditEvent"][];
                         /** Format: int64 */
                         limit: number;
                         timestamp: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.GetAdminOIDCSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        clientId: string;
+                        discoveryUrl: string;
+                        enabled: boolean;
+                        hasClientSecret: boolean;
+                        issuerUrl: string;
+                        redirectUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:authn.PutAdminOIDCSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    clientId: string;
+                    clientSecret: string;
+                    discoveryUrl: string;
+                    enabled: boolean;
+                    issuerUrl: string;
+                    redirectUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        clientId: string;
+                        discoveryUrl: string;
+                        enabled: boolean;
+                        hasClientSecret: boolean;
+                        issuerUrl: string;
+                        redirectUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.GetAdminAuthSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        breakGlassEnabled: boolean;
+                        breakGlassLabel: string;
+                        configured: string;
+                        configuredProvider: string;
+                        mode: string;
+                        oidcAvailable: boolean;
+                        primaryProvider: string;
+                        providers: components["schemas"]["authn.AdminAuthProviderStatus"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:authn.PutAdminAuthSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    breakGlassEnabled: boolean;
+                    breakGlassLabel: string;
+                    primaryProvider: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        breakGlassEnabled: boolean;
+                        breakGlassLabel: string;
+                        configured: string;
+                        configuredProvider: string;
+                        mode: string;
+                        oidcAvailable: boolean;
+                        primaryProvider: string;
+                        providers: components["schemas"]["authn.AdminAuthProviderStatus"][];
                     };
                 };
             };
@@ -6533,8 +8146,11 @@ export interface operations {
                         };
                         integrations: {
                             giteaBaseUrl: string;
+                            infobloxBaseUrl: string;
+                            jiraBaseUrl: string;
                             nautobotBaseUrl: string;
                             netboxBaseUrl: string;
+                            rapid7BaseUrl: string;
                             yaadeBaseUrl: string;
                         };
                         missing: string[];
@@ -6844,7 +8460,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.AdminImpersonateStart": {
+    "POST:authn.AdminImpersonateStart": {
         parameters: {
             query?: never;
             header?: never;
@@ -6876,7 +8492,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetAdminImpersonateStatus": {
+    "GET:authn.GetAdminImpersonateStatus": {
         parameters: {
             query?: never;
             header?: never;
@@ -6902,7 +8518,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.AdminImpersonateStop": {
+    "POST:authn.AdminImpersonateStop": {
         parameters: {
             query?: never;
             header?: never;
@@ -7128,6 +8744,30 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.ListAdminAPICatalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        entries: components["schemas"]["skyforge.APICatalogEntry"][];
+                        generatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.ListAdminUserRoles": {
         parameters: {
             query?: never;
@@ -7147,6 +8787,66 @@ export interface operations {
                         availableRoles: string[];
                         generatedAt: string;
                         users: components["schemas"]["skyforge.AdminUserRoleRecord"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminUserAPIPermissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        generatedAt: string;
+                        permissions: components["schemas"]["skyforge.AdminUserAPIPermission"][];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutAdminUserAPIPermissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    permissions: components["schemas"]["skyforge.AdminUserAPIPermission"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        permissions: components["schemas"]["skyforge.AdminUserAPIPermission"][];
+                        updatedAt: string;
+                        username: string;
                     };
                 };
             };
@@ -7459,6 +9159,38 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:skyforge.CreateAdminUser": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    role: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        role: string;
+                        status: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.PurgeUser": {
         parameters: {
             query?: never;
@@ -7516,6 +9248,469 @@ export interface operations {
                         updated: number;
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteAdminUser": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.ListUserAPITokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tokens: components["schemas"]["authn.UserAPITokenMetadata"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.CreateUserAPIToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        token: string;
+                        tokenMeta: components["schemas"]["authn.UserAPITokenMetadata"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:authn.RevokeUserAPIToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tokenID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        revoked: boolean;
+                        tokenId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.RegenerateUserAPIToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tokenID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        token: string;
+                        tokenMeta: components["schemas"]["authn.UserAPITokenMetadata"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.SessionForwardAuth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "HEAD:authn.SessionForwardAuthHead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.SessionForwardAuthEnvoy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.SessionForwardAuthEnvoyPost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.SessionForwardAuthEnvoyAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.SessionForwardAuthEnvoyPostAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.Login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    password: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: components["schemas"]["authsession.UserProfile"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.Logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.OIDCCallback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.OIDCLogin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.Reauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.AuthRefresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        actorUsername: string;
+                        authenticated: boolean;
+                        displayName: string;
+                        effectiveRole: string;
+                        email: string;
+                        expiresAt: string;
+                        groups: string[];
+                        impersonating: boolean;
+                        isAdmin: boolean;
+                        roles: string[];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.Session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        actorUsername: string;
+                        authenticated: boolean;
+                        displayName: string;
+                        effectiveRole: string;
+                        email: string;
+                        expiresAt: string;
+                        groups: string[];
+                        impersonating: boolean;
+                        isAdmin: boolean;
+                        roles: string[];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "HEAD:authn.SessionHead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.AuthValidateToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -8604,7 +10799,167 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.ValidateAwsSSO": {
+    "GET:cloudcredentials.GetCurrentUserAWSSSOCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accountId: string;
+                        configured: boolean;
+                        region: string;
+                        roleName: string;
+                        startUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:cloudcredentials.PutCurrentUserAWSSSOCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    accountId: string;
+                    region: string;
+                    roleName: string;
+                    startUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accountId: string;
+                        configured: boolean;
+                        region: string;
+                        roleName: string;
+                        startUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:cloudcredentials.DeleteCurrentUserAWSSSOCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:cloudcredentials.GetCurrentUserAWSStaticCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accessKeyLast4: string;
+                        configured: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:cloudcredentials.PutCurrentUserAWSStaticCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    accessKeyId: string;
+                    secretAccessKey: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accessKeyLast4: string;
+                        configured: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:cloudcredentials.DeleteCurrentUserAWSStaticCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.ValidateAwsSSO": {
         parameters: {
             query?: never;
             header?: never;
@@ -8635,7 +10990,91 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.ListAzureSubscriptions": {
+    "GET:cloudcredentials.GetCurrentUserAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        clientId: string;
+                        configured: boolean;
+                        hasClientSecret: boolean;
+                        subscriptionId: string;
+                        tenantId: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:cloudcredentials.PutCurrentUserAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    clientId: string;
+                    clientSecret: string;
+                    subscriptionId: string;
+                    tenantId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        clientId: string;
+                        configured: boolean;
+                        hasClientSecret: boolean;
+                        subscriptionId: string;
+                        tenantId: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:cloudcredentials.DeleteCurrentUserAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.ListAzureSubscriptions": {
         parameters: {
             query?: never;
             header?: never;
@@ -8659,14 +11098,14 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        subscriptions: components["schemas"]["skyforge.AzureSubscription"][];
+                        subscriptions: components["schemas"]["cloudcredentials.AzureSubscription"][];
                     };
                 };
             };
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.ValidateAzureSP": {
+    "POST:cloudcredentials.ValidateAzureSP": {
         parameters: {
             query?: never;
             header?: never;
@@ -8698,7 +11137,83 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.ListGCPProjects": {
+    "GET:cloudcredentials.GetCurrentUserGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        hasServiceAccountJson: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:cloudcredentials.PutCurrentUserGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    projectIdOverride: string;
+                    serviceAccountJson: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        hasServiceAccountJson: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:cloudcredentials.DeleteCurrentUserGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.ListGCPProjects": {
         parameters: {
             query?: never;
             header?: never;
@@ -8720,14 +11235,14 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        projects: components["schemas"]["skyforge.GCPProject"][];
+                        projects: components["schemas"]["cloudcredentials.GCPProject"][];
                     };
                 };
             };
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.ValidateGCPServiceAccount": {
+    "POST:cloudcredentials.ValidateGCPServiceAccount": {
         parameters: {
             query?: never;
             header?: never;
@@ -8753,6 +11268,87 @@ export interface operations {
                         status: string;
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:cloudcredentials.GetCurrentUserIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        hasApiKey: boolean;
+                        region: string;
+                        resourceGroupId: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:cloudcredentials.PutCurrentUserIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    apiKey: string;
+                    region: string;
+                    resourceGroupId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        hasApiKey: boolean;
+                        region: string;
+                        resourceGroupId: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:cloudcredentials.DeleteCurrentUserIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -9206,6 +11802,68 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetCurrentUserForwardTenantCredential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        email: string;
+                        lastRotatedAt: string;
+                        orgId: string;
+                        orgName: string;
+                        password: string;
+                        source: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ResetCurrentUserForwardTenantPassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        email: string;
+                        lastRotatedAt: string;
+                        orgId: string;
+                        orgName: string;
+                        password: string;
+                        source: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GCPConsoleRedirect": {
         parameters: {
             query?: never;
@@ -9221,6 +11879,95 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:gitcredentials.GetCurrentUserCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:gitcredentials.UpdateCurrentUserCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    clearToken: boolean;
+                    httpsToken: string;
+                    httpsUsername: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:gitcredentials.RotateCurrentUserDeployKey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };
@@ -9244,7 +11991,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetAPIHealth": {
+    "GET:health.GetAPIHealth": {
         parameters: {
             query?: never;
             header?: never;
@@ -9297,230 +12044,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.Login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    password: string;
-                    username: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        user: components["schemas"]["skyforge.UserProfile"];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.Logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        status: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListUserAPITokens": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        tokens: components["schemas"]["skyforge.UserAPITokenMetadata"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.CreateUserAPIToken": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    name: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        token: string;
-                        tokenMeta: components["schemas"]["skyforge.UserAPITokenMetadata"];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.RevokeUserAPIToken": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tokenID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        revoked: boolean;
-                        tokenId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.RegenerateUserAPIToken": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tokenID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        token: string;
-                        tokenMeta: components["schemas"]["skyforge.UserAPITokenMetadata"];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetUserAWSSSOCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        accountId: string;
-                        configured: boolean;
-                        region: string;
-                        roleName: string;
-                        startUrl: string;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.PutUserAWSSSOCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    accountId: string;
-                    region: string;
-                    roleName: string;
-                    startUrl: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        accountId: string;
-                        configured: boolean;
-                        region: string;
-                        roleName: string;
-                        startUrl: string;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserAWSSSOCredentials": {
+    "GET:skyforge.InfobloxConsoleWS": {
         parameters: {
             query?: never;
             header?: never;
@@ -9539,7 +12063,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetUserAWSStaticCredentials": {
+    "GET:skyforge.GetUserInfobloxStatus": {
         parameters: {
             query?: never;
             header?: never;
@@ -9555,67 +12079,21 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        accessKeyLast4: string;
-                        configured: boolean;
-                        updatedAt: string;
+                        checkedAt: string;
+                        namespace: string;
+                        phase: string;
+                        printableStatus: string;
+                        ready: boolean;
+                        runStrategy: string;
+                        serviceReady: boolean;
+                        vmName: string;
                     };
                 };
             };
             default: components["responses"]["APIError"];
         };
     };
-    "PUT:skyforge.PutUserAWSStaticCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    accessKeyId: string;
-                    secretAccessKey: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        accessKeyLast4: string;
-                        configured: boolean;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserAWSStaticCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetUserAzureCredentials": {
+    "POST:skyforge.WakeUserInfoblox": {
         parameters: {
             query?: never;
             header?: never;
@@ -9631,314 +12109,16 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        clientId: string;
-                        configured: boolean;
-                        hasClientSecret: boolean;
-                        subscriptionId: string;
-                        tenantId: string;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.PutUserAzureCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    clientId: string;
-                    clientSecret: string;
-                    subscriptionId: string;
-                    tenantId: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        clientId: string;
-                        configured: boolean;
-                        hasClientSecret: boolean;
-                        subscriptionId: string;
-                        tenantId: string;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserAzureCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetUserGCPCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        configured: boolean;
-                        hasServiceAccountJson: boolean;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.PutUserGCPCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    projectIdOverride: string;
-                    serviceAccountJson: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        configured: boolean;
-                        hasServiceAccountJson: boolean;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserGCPCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetUserIBMCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        configured: boolean;
-                        hasApiKey: boolean;
-                        region: string;
-                        resourceGroupId: string;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.PutUserIBMCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    apiKey: string;
-                    region: string;
-                    resourceGroupId: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        configured: boolean;
-                        hasApiKey: boolean;
-                        region: string;
-                        resourceGroupId: string;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserIBMCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetUserGitCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        hasHttpsToken: boolean;
-                        hasSshKey: boolean;
-                        httpsUsername: string;
-                        sshPublicKey: string;
-                        username: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.UpdateUserGitCredentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    clearToken: boolean;
-                    httpsToken: string;
-                    httpsUsername: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        hasHttpsToken: boolean;
-                        hasSshKey: boolean;
-                        httpsUsername: string;
-                        sshPublicKey: string;
-                        username: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.RotateUserGitDeployKey": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        hasHttpsToken: boolean;
-                        hasSshKey: boolean;
-                        httpsUsername: string;
-                        sshPublicKey: string;
-                        username: string;
+                        checkedAt: string;
+                        message: string;
+                        namespace: string;
+                        phase: string;
+                        printableStatus: string;
+                        ready: boolean;
+                        runStrategy: string;
+                        serviceReady: boolean;
+                        vmName: string;
+                        woken: boolean;
                     };
                 };
             };
@@ -10113,7 +12293,6 @@ export interface operations {
                         checkedAt: string;
                         detail: string;
                         missing: string[];
-                        /** ok | missing | error */
                         status: string;
                     };
                 };
@@ -10243,190 +12422,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetUserSettings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        defaultEnv: components["schemas"]["skyforge.UserEnvVar"][];
-                        defaultForwardCollectorConfigId: string;
-                        externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.PutUserSettings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    defaultEnv: components["schemas"]["skyforge.UserEnvVar"][];
-                    defaultForwardCollectorConfigId: string;
-                    externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        defaultEnv: components["schemas"]["skyforge.UserEnvVar"][];
-                        defaultForwardCollectorConfigId: string;
-                        externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListUserVariableGroups": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        groups: components["schemas"]["skyforge.UserVariableGroup"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.CreateUserVariableGroup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    name: string;
-                    variables: {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int64 */
-                        id: number;
-                        name: string;
-                        variables: {
-                            [key: string]: string;
-                        };
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.UpdateUserVariableGroup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                groupID: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    name: string;
-                    variables: {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int64 */
-                        id: number;
-                        name: string;
-                        variables: {
-                            [key: string]: string;
-                        };
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "DELETE:skyforge.DeleteUserVariableGroup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                groupID: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        groups: components["schemas"]["skyforge.UserVariableGroup"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "GET:skyforge.GetNetlabRuns": {
         parameters: {
             query?: {
@@ -10474,45 +12469,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.OIDCCallback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.OIDCLogin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.PublicConfig": {
+    "GET:platform.PublicConfig": {
         parameters: {
             query?: never;
             header?: never;
@@ -10589,25 +12546,6 @@ export interface operations {
                         userId: string;
                     };
                 };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.Reauth": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -10830,7 +12768,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.Session": {
+    "GET:settings.GetCurrentUserSettings": {
         parameters: {
             query?: never;
             header?: never;
@@ -10846,156 +12784,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        actorUsername: string;
-                        authenticated: boolean;
-                        displayName: string;
-                        effectiveRole: string;
-                        email: string;
-                        expiresAt: string;
-                        groups: string[];
-                        impersonating: boolean;
-                        isAdmin: boolean;
-                        roles: string[];
-                        username: string;
+                        defaultEnv: components["schemas"]["settings.UserEnvVar"][];
+                        defaultForwardCollectorConfigId: string;
+                        externalTemplateRepos: components["schemas"]["skyforgecore.ExternalTemplateRepo"][];
+                        updatedAt: string;
                     };
                 };
             };
             default: components["responses"]["APIError"];
         };
     };
-    "HEAD:skyforge.SessionHead": {
+    "PUT:settings.PutCurrentUserSettings": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    defaultEnv: components["schemas"]["settings.UserEnvVar"][];
+                    defaultForwardCollectorConfigId: string;
+                    externalTemplateRepos: components["schemas"]["skyforgecore.ExternalTemplateRepo"][];
+                };
+            };
+        };
         responses: {
             /** @description Success response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.SessionForwardAuth": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
+                content: {
+                    "application/json": {
+                        defaultEnv: components["schemas"]["settings.UserEnvVar"][];
+                        defaultForwardCollectorConfigId: string;
+                        externalTemplateRepos: components["schemas"]["skyforgecore.ExternalTemplateRepo"][];
+                        updatedAt: string;
+                    };
                 };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "HEAD:skyforge.SessionForwardAuthHead": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.SessionForwardAuthEnvoy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.SessionForwardAuthEnvoyPost": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.SessionForwardAuthEnvoyAny": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                rest: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.SessionForwardAuthEnvoyPostAny": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                rest: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             default: components["responses"]["APIError"];
         };
@@ -11308,7 +13136,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetUIConfig": {
+    "GET:authn.GetUIConfig": {
         parameters: {
             query?: never;
             header?: never;
@@ -11324,15 +13152,20 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        auth: components["schemas"]["authn.UIAuthConfig"];
+                        authMode: string;
                         externalUrl: string;
                         features: components["schemas"]["skyforgecore.FeaturesConfig"];
                         headerBackground: string;
+                        infobloxBaseUrl: string;
+                        jiraBaseUrl: string;
                         logoAlt: string;
                         logoUrl: string;
                         oidcEnabled: boolean;
                         oidcLoginUrl: string;
                         productName: string;
                         productSubtitle: string;
+                        rapid7BaseUrl: string;
                         supportText: string;
                         supportUrl: string;
                         themeDefault: string;
@@ -14959,12 +16792,111 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.SyncUserBlueprint": {
+    "GET:variablegroups.ListCurrentUserVariableGroups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        groups: components["schemas"]["variablegroups.UserVariableGroup"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:variablegroups.CreateCurrentUserVariableGroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    name: string;
+                    variables: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        id: number;
+                        name: string;
+                        variables: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:variablegroups.UpdateCurrentUserVariableGroup": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                userID: string;
+                groupID: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    name: string;
+                    variables: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        id: number;
+                        name: string;
+                        variables: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:variablegroups.DeleteCurrentUserVariableGroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupID: number;
             };
             cookie?: never;
         };
@@ -14977,7 +16909,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        status: string;
+                        groups: components["schemas"]["variablegroups.UserVariableGroup"][];
                     };
                 };
             };
@@ -15098,7 +17030,160 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendAssets": {
+    "POST:apitokens.AuthenticateToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    rawToken: string;
+                    sourceIp: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:apitokens.CreateToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    name: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        token: string;
+                        tokenMeta: components["schemas"]["apitokens.TokenMetadata"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:apitokens.ListTokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tokens: components["schemas"]["apitokens.TokenMetadata"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:apitokens.RegenerateToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    tokenId: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        token: string;
+                        tokenMeta: components["schemas"]["apitokens.TokenMetadata"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:apitokens.RevokeToken": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    tokenId: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        revoked: boolean;
+                        tokenId: string;
+                        tokenName: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:frontend.FrontendAssets": {
         parameters: {
             query?: never;
             header?: never;
@@ -15119,47 +17204,20 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.AuthRefresh": {
+    "POST:cloudcredentials.DeleteAWSSSOCredentials": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        actorUsername: string;
-                        authenticated: boolean;
-                        displayName: string;
-                        effectiveRole: string;
-                        email: string;
-                        expiresAt: string;
-                        groups: string[];
-                        impersonating: boolean;
-                        isAdmin: boolean;
-                        roles: string[];
-                        username: string;
-                    };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
                 };
             };
-            default: components["responses"]["APIError"];
         };
-    };
-    "POST:skyforge.AuthValidateToken": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description Success response */
             200: {
@@ -15171,7 +17229,458 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendDashboard": {
+    "POST:cloudcredentials.DeleteAWSStaticCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.DeleteAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.DeleteGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.DeleteIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.GetAWSSSOCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accountId: string;
+                        configured: boolean;
+                        region: string;
+                        roleName: string;
+                        startUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.GetAWSStaticCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accessKeyLast4: string;
+                        configured: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.GetAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        clientId: string;
+                        configured: boolean;
+                        hasClientSecret: boolean;
+                        subscriptionId: string;
+                        tenantId: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.GetGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        hasServiceAccountJson: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.GetIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        hasApiKey: boolean;
+                        region: string;
+                        resourceGroupId: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.PutAWSSSOCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    accountId: string;
+                    region: string;
+                    roleName: string;
+                    sessionSecret: string;
+                    startUrl: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accountId: string;
+                        configured: boolean;
+                        region: string;
+                        roleName: string;
+                        startUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.PutAWSStaticCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    accessKeyId: string;
+                    secretAccessKey: string;
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accessKeyLast4: string;
+                        configured: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.PutAzureCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    clientId: string;
+                    clientSecret: string;
+                    sessionSecret: string;
+                    subscriptionId: string;
+                    tenantId: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        clientId: string;
+                        configured: boolean;
+                        hasClientSecret: boolean;
+                        subscriptionId: string;
+                        tenantId: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.PutGCPCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    projectIdOverride: string;
+                    serviceAccountJson: string;
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        hasServiceAccountJson: boolean;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:cloudcredentials.PutIBMCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    apiKey: string;
+                    region: string;
+                    resourceGroupId: string;
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        hasApiKey: boolean;
+                        region: string;
+                        resourceGroupId: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:frontend.FrontendDashboard": {
         parameters: {
             query?: never;
             header?: never;
@@ -15211,7 +17720,287 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendDesign": {
+    "POST:deploymentruntime.GetDeploymentRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configJson: string;
+                        createdAt: string;
+                        createdBy: string;
+                        id: string;
+                        lastFinishedAt: string;
+                        lastStartedAt: string;
+                        lastStatus: string;
+                        /** Format: int64 */
+                        lastTaskId: number;
+                        /** Format: int64 */
+                        lastTaskUserScopeId: number;
+                        name: string;
+                        storedFamily: string;
+                        updatedAt: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:deploymentruntime.GetForwardState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cliCredentialFingerprintsByDevice: {
+                            [key: string]: string;
+                        };
+                        cliCredentialId: string;
+                        cliCredentialIdsByDevice: {
+                            [key: string]: string;
+                        };
+                        collectorConfigId: string;
+                        collectorUsername: string;
+                        deploymentId: string;
+                        enabled: boolean;
+                        endpointProfileId: string;
+                        jumpServerId: string;
+                        networkId: string;
+                        networkName: string;
+                        snapshotUrl: string;
+                        snmpCredentialId: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:deploymentruntime.GetLatestDeploymentByType": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    type: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:deploymentruntime.GetLeaseState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    nowRfc3339: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deploymentId: string;
+                        enabled: boolean;
+                        expiresAt: string;
+                        /** Format: int64 */
+                        hours: number;
+                        status: string;
+                        /** Format: int64 */
+                        stopTaskId: number;
+                        stoppedAt: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:deploymentruntime.GetTopologyCurrent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        artifactKey: string;
+                        deploymentId: string;
+                        /** Format: int64 */
+                        edgeCount: number;
+                        generatedAt: string;
+                        /** Format: int64 */
+                        nodeCount: number;
+                        source: string;
+                        /** Format: int64 */
+                        taskId: number;
+                        updatedAt: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:deploymentruntime.PutForwardState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    state: components["schemas"]["deploymentruntime.ForwardState"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:deploymentruntime.PutLeaseState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    state: components["schemas"]["deploymentruntime.LeaseState"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:deploymentruntime.UpdateDeploymentStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    finishedAtRfc3339: string;
+                    status: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:frontend.FrontendDesign": {
         parameters: {
             query?: never;
             header?: never;
@@ -15230,7 +18019,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendDocs": {
+    "GET:frontend.FrontendDocs": {
         parameters: {
             query?: never;
             header?: never;
@@ -15251,7 +18040,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendFaviconICO": {
+    "GET:frontend.FrontendFaviconICO": {
         parameters: {
             query?: never;
             header?: never;
@@ -15270,7 +18059,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendFavicon": {
+    "GET:frontend.FrontendFavicon": {
         parameters: {
             query?: never;
             header?: never;
@@ -15285,6 +18074,334 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:forwardregistry.CreateNetwork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    actor: string;
+                    spec: components["schemas"]["forwardregistry.CreateRequest"];
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        collectorConfigId: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        createdBy: string;
+                        description: string;
+                        forwardNetworkId: string;
+                        id: string;
+                        name: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:forwardregistry.DeleteNetwork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    networkRef: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                        storeMissing: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:forwardregistry.ListNetworks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        networks: components["schemas"]["forwardregistry.ForwardNetwork"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:forwardtenant.EnsureTenantCredential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    baseUrl: string;
+                    displayName: string;
+                    email: string;
+                    forwardEnabled: boolean;
+                    sessionSecret: string;
+                    skipTlsVerify: boolean;
+                    supportPassword: string;
+                    supportUsername: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: string;
+                        /** Format: date-time */
+                        lastRotatedAt: string;
+                        orgId: string;
+                        orgName: string;
+                        password: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:forwardtenant.ResetTenantPassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    baseUrl: string;
+                    forwardEnabled: boolean;
+                    sessionSecret: string;
+                    skipTlsVerify: boolean;
+                    supportPassword: string;
+                    supportUsername: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: string;
+                        /** Format: date-time */
+                        lastRotatedAt: string;
+                        orgId: string;
+                        orgName: string;
+                        password: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:gitcredentials.EnsureDeployKey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        httpsToken: string;
+                        httpsUsername: string;
+                        sshPrivateKey: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:gitcredentials.GetCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:gitcredentials.RotateDeployKey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:gitcredentials.UpdateCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    clearToken: boolean;
+                    httpsToken: string;
+                    httpsUsername: string;
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasHttpsToken: boolean;
+                        hasSshKey: boolean;
+                        httpsUsername: string;
+                        sshPublicKey: string;
+                        username: string;
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };
@@ -15356,7 +18473,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendIndex": {
+    "GET:frontend.FrontendIndex": {
         parameters: {
             query?: never;
             header?: never;
@@ -15473,6 +18590,53 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:authn.RefreshOIDCClient": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.GetOIDCStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        available: boolean;
+                        enabled: boolean;
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };
@@ -15724,7 +18888,28 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.LogoutAll": {
+    "GET:frontend.FrontendLogin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:authn.LogoutAll": {
         parameters: {
             query?: never;
             header?: never;
@@ -15743,7 +18928,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendManifest": {
+    "GET:frontend.FrontendManifest": {
         parameters: {
             query?: never;
             header?: never;
@@ -15762,7 +18947,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.NautobotLogout": {
+    "GET:authn.NautobotLogout": {
         parameters: {
             query?: never;
             header?: never;
@@ -15781,7 +18966,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.NautobotLogoutAny": {
+    "GET:authn.NautobotLogoutAny": {
         parameters: {
             query?: never;
             header?: never;
@@ -15802,7 +18987,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.NetboxLogout": {
+    "GET:authn.NetboxLogout": {
         parameters: {
             query?: never;
             header?: never;
@@ -15821,7 +19006,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.NetboxLogoutAny": {
+    "GET:authn.NetboxLogoutAny": {
         parameters: {
             query?: never;
             header?: never;
@@ -15842,7 +19027,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendNotifications": {
+    "GET:frontend.FrontendNotifications": {
         parameters: {
             query?: never;
             header?: never;
@@ -16000,7 +19185,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendRobots": {
+    "GET:frontend.FrontendRobots": {
         parameters: {
             query?: never;
             header?: never;
@@ -16019,7 +19204,667 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendSNMP": {
+    "POST:servicenow.CheckPDIStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminPassword: string;
+                    adminUsername: string;
+                    instanceUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        checkedAt: string;
+                        detail: string;
+                        /** Format: int64 */
+                        httpStatus: number;
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.DeleteForwardIntegration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    credentials: components["schemas"]["servicenow.ForwardCredentials"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.ForwardIntegrationSupported": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    credentials: components["schemas"]["servicenow.ForwardCredentials"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        supported: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.GetConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminUsername: string;
+                        configured: boolean;
+                        forwardCredentialSetId: string;
+                        hasAdminPassword: boolean;
+                        instanceUrl: string;
+                        lastInstallError: string;
+                        lastInstallFinishedAt: string;
+                        lastInstallStartedAt: string;
+                        lastInstallStatus: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.GetConfigRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminPassword: string;
+                        adminUsername: string;
+                        decryptionFailed: boolean;
+                        forwardBaseUrl: string;
+                        forwardCredentialSetId: string;
+                        instanceUrl: string;
+                        lastInstallError: string;
+                        /** Format: date-time */
+                        lastInstallFinishedAt: string;
+                        /** Format: date-time */
+                        lastInstallStartedAt: string;
+                        lastInstallStatus: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.GetLatestSetupRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        currentStep: string;
+                        /** Format: date-time */
+                        finishedAt: string;
+                        lastError: string;
+                        remediation: string[];
+                        runId: string;
+                        /** Format: date-time */
+                        startedAt: string;
+                        status: string;
+                        steps: components["schemas"]["servicenow.SetupStepResult"][];
+                        /** Format: date-time */
+                        ticketingCheckedAt: string;
+                        ticketingSupported: boolean;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.GetSchemaStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminPassword: string;
+                    adminUsername: string;
+                    instanceUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        checkedAt: string;
+                        detail: string;
+                        missing: string[];
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.InstallDemo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminPassword: string;
+                    adminUsername: string;
+                    forwardBaseUrl: string;
+                    forwardPassword: string;
+                    forwardUsername: string;
+                    instanceUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        installed: boolean;
+                        message: string;
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.PatchForwardIntegration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    credentials: components["schemas"]["servicenow.ForwardCredentials"];
+                    instanceUrl: string;
+                    snPassword: string;
+                    snUsername: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.ProbeForwardReachability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminPassword: string;
+                    adminUsername: string;
+                    forwardBaseUrl: string;
+                    forwardPassword: string;
+                    forwardUsername: string;
+                    instanceUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.PutConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminPassword: string;
+                    adminUsername: string;
+                    forwardCredentialSetId: string;
+                    instanceUrl: string;
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminUsername: string;
+                        configured: boolean;
+                        forwardCredentialSetId: string;
+                        hasAdminPassword: boolean;
+                        instanceUrl: string;
+                        lastInstallError: string;
+                        lastInstallFinishedAt: string;
+                        lastInstallStartedAt: string;
+                        lastInstallStatus: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.ResolveForwardCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    forwardCredentialSetId: string;
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseUrl: string;
+                        password: string;
+                        skipTlsVerify: boolean;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.UpdateInstallStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: date-time */
+                    finishedAt: string;
+                    installError: string;
+                    /** Format: date-time */
+                    startedAt: string;
+                    status: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.UpsertSetupRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    run: components["schemas"]["servicenow.SetupRunRecord"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.ValidateForwardAuth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    credentials: components["schemas"]["servicenow.ForwardCredentials"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.WakePDI": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminPassword: string;
+                    adminUsername: string;
+                    instanceUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        checkedAt: string;
+                        detail: string;
+                        /** Format: int64 */
+                        httpStatus: number;
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:settings.GetUserSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        defaultEnv: components["schemas"]["settings.UserEnvVar"][];
+                        defaultForwardCollectorConfigId: string;
+                        externalTemplateRepos: components["schemas"]["skyforgecore.ExternalTemplateRepo"][];
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:settings.PutUserSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    defaultEnv: components["schemas"]["settings.UserEnvVar"][];
+                    defaultForwardCollectorConfigId: string;
+                    externalTemplateRepos: components["schemas"]["skyforgecore.ExternalTemplateRepo"][];
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        defaultEnv: components["schemas"]["settings.UserEnvVar"][];
+                        defaultForwardCollectorConfigId: string;
+                        externalTemplateRepos: components["schemas"]["skyforgecore.ExternalTemplateRepo"][];
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.BootstrapForwardTenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    displayName: string;
+                    email: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.EnsureManagedCollectorDeployment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentName: string;
+                    forwardBaseUrl: string;
+                    skipTlsVerify: boolean;
+                    token: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:frontend.FrontendSNMP": {
         parameters: {
             query?: never;
             header?: never;
@@ -16040,7 +19885,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendStatus": {
+    "GET:frontend.FrontendStatus": {
         parameters: {
             query?: never;
             header?: never;
@@ -16341,7 +20186,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendSyslog": {
+    "GET:frontend.FrontendSyslog": {
         parameters: {
             query?: never;
             header?: never;
@@ -16445,6 +20290,157 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:taskruns.CancelRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    taskId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:taskruns.GetNextQueuedDeploymentTask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        taskId: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:taskruns.GetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    taskId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        run: components["schemas"]["taskruns.Run"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:taskruns.GetRunOutput": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    limit: number;
+                    /** Format: int64 */
+                    taskId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        output: components["schemas"]["taskruns.RunOutputEntry"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:taskruns.ListRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    limit: number;
+                    owner: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs: components["schemas"]["taskruns.Run"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.ListAssignableUsers": {
         parameters: {
             query?: never;
@@ -16493,7 +20489,139 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.Version": {
+    "POST:variablegroups.CreateUserVariableGroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    body: components["schemas"]["variablegroups.UserVariableGroupUpsertRequest"];
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        id: number;
+                        name: string;
+                        variables: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:variablegroups.DeleteUserVariableGroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    groupId: number;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        groups: components["schemas"]["variablegroups.UserVariableGroup"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:variablegroups.ListUserVariableGroups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        groups: components["schemas"]["variablegroups.UserVariableGroup"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:variablegroups.UpdateUserVariableGroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    body: components["schemas"]["variablegroups.UserVariableGroupUpsertRequest"];
+                    /** Format: int64 */
+                    groupId: number;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        id: number;
+                        name: string;
+                        variables: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:platform.Version": {
         parameters: {
             query?: never;
             header?: never;
@@ -16517,7 +20645,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.FrontendWebhooks": {
+    "GET:frontend.FrontendWebhooks": {
         parameters: {
             query?: never;
             header?: never;

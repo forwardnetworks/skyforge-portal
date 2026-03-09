@@ -35,6 +35,7 @@ import { Route as DashboardForwardIndexRouteImport } from './routes/dashboard/fo
 import { Route as DashboardForwardNetworksIndexRouteImport } from './routes/dashboard/forward-networks/index'
 import { Route as DashboardDocsIndexRouteImport } from './routes/dashboard/docs/index'
 import { Route as DashboardDeploymentsIndexRouteImport } from './routes/dashboard/deployments/index'
+import { Route as DashboardToolsToolRouteImport } from './routes/dashboard/tools.$tool'
 import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/$runId'
 import { Route as DashboardLabsMapRouteImport } from './routes/dashboard/labs/map'
 import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/labs/designer'
@@ -182,6 +183,11 @@ const DashboardDeploymentsIndexRoute =
     path: '/dashboard/deployments/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DashboardToolsToolRoute = DashboardToolsToolRouteImport.update({
+  id: '/dashboard/tools/$tool',
+  path: '/dashboard/tools/$tool',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRunsRunIdRoute = DashboardRunsRunIdRouteImport.update({
   id: '/dashboard/runs/$runId',
   path: '/dashboard/runs/$runId',
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/tools/$tool': typeof DashboardToolsToolRoute
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/forward-networks': typeof DashboardForwardNetworksIndexRoute
@@ -334,6 +341,7 @@ export interface FileRoutesByTo {
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/tools/$tool': typeof DashboardToolsToolRoute
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
   '/dashboard/forward-networks': typeof DashboardForwardNetworksIndexRoute
@@ -377,6 +385,7 @@ export interface FileRoutesById {
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
+  '/dashboard/tools/$tool': typeof DashboardToolsToolRoute
   '/dashboard/deployments/': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
   '/dashboard/forward-networks/': typeof DashboardForwardNetworksIndexRoute
@@ -421,6 +430,7 @@ export interface FileRouteTypes {
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
+    | '/dashboard/tools/$tool'
     | '/dashboard/deployments'
     | '/dashboard/docs'
     | '/dashboard/forward-networks'
@@ -462,6 +472,7 @@ export interface FileRouteTypes {
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
+    | '/dashboard/tools/$tool'
     | '/dashboard/deployments'
     | '/dashboard/docs'
     | '/dashboard/forward-networks'
@@ -504,6 +515,7 @@ export interface FileRouteTypes {
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
+    | '/dashboard/tools/$tool'
     | '/dashboard/deployments/'
     | '/dashboard/docs/'
     | '/dashboard/forward-networks/'
@@ -544,6 +556,7 @@ export interface RootRouteChildren {
   DashboardLabsDesignerRoute: typeof DashboardLabsDesignerRoute
   DashboardLabsMapRoute: typeof DashboardLabsMapRoute
   DashboardRunsRunIdRoute: typeof DashboardRunsRunIdRoute
+  DashboardToolsToolRoute: typeof DashboardToolsToolRoute
   DashboardDeploymentsIndexRoute: typeof DashboardDeploymentsIndexRoute
   DashboardDocsIndexRoute: typeof DashboardDocsIndexRoute
   DashboardForwardNetworksIndexRoute: typeof DashboardForwardNetworksIndexRoute
@@ -738,6 +751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/tools/$tool': {
+      id: '/dashboard/tools/$tool'
+      path: '/dashboard/tools/$tool'
+      fullPath: '/dashboard/tools/$tool'
+      preLoaderRoute: typeof DashboardToolsToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/runs/$runId': {
       id: '/dashboard/runs/$runId'
       path: '/dashboard/runs/$runId'
@@ -911,6 +931,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardLabsDesignerRoute: DashboardLabsDesignerRoute,
   DashboardLabsMapRoute: DashboardLabsMapRoute,
   DashboardRunsRunIdRoute: DashboardRunsRunIdRoute,
+  DashboardToolsToolRoute: DashboardToolsToolRoute,
   DashboardDeploymentsIndexRoute: DashboardDeploymentsIndexRoute,
   DashboardDocsIndexRoute: DashboardDocsIndexRoute,
   DashboardForwardNetworksIndexRoute: DashboardForwardNetworksIndexRoute,

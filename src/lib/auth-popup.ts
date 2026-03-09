@@ -9,7 +9,7 @@ type LoginPopupOptions = {
 
 async function fetchSessionNoRedirect(): Promise<SessionResponseEnvelope | null> {
 	try {
-		const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/api/session`, {
+		const resp = await fetch(`${SKYFORGE_PROXY_ROOT}/api/auth/session`, {
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
 		});

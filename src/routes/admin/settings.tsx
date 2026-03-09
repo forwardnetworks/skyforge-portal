@@ -1010,10 +1010,10 @@ export function AdminSettingsPage() {
 										</div>
 										<div className="text-xs text-muted-foreground">
 											Config default:{" "}
-											{authSettingsQ.data?.configuredProvider ?? "local"} · Persisted
-											override:{" "}
-											{authSettingsQ.data?.persistedProvider || "none"} · Okta
-											available: {authSettingsQ.data?.oidcAvailable ? "yes" : "no"}
+											{authSettingsQ.data?.configuredProvider ?? "local"} · Active
+											provider: {authSettingsQ.data?.primaryProvider ?? "local"} ·
+											Okta available:{" "}
+											{authSettingsQ.data?.oidcAvailable ? "yes" : "no"}
 										</div>
 										<div className="flex flex-wrap gap-2">
 											{(authSettingsQ.data?.providers ?? []).map((provider) => (

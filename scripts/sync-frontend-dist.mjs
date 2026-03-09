@@ -14,14 +14,14 @@ function copyDir(src, dest) {
 const root = process.cwd();
 const canonicalOutDir = path.resolve(
 	root,
-	"../skyforge-server/skyforge/frontend_dist",
+	"../skyforge-server/frontend/frontend_dist",
 );
 
 // Keep alternate code layouts in sync so local builds always work,
 // regardless of which server tree is used to build images.
 const targets = [
-	path.resolve(root, "../skyforge/components/server/skyforge/frontend_dist"),
-	path.resolve(root, "../server/skyforge/frontend_dist"),
+	path.resolve(root, "../skyforge/components/server/frontend/frontend_dist"),
+	path.resolve(root, "../server/frontend/frontend_dist"),
 ];
 
 for (const dest of targets) {

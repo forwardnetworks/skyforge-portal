@@ -8,7 +8,7 @@ export function InfobloxConsoleView(props: {
 }) {
 	const wsURL = useMemo(() => {
 		const proto = window.location.protocol === "https:" ? "wss" : "ws";
-		return `${proto}://${window.location.host}${SKYFORGE_PROXY_ROOT}/api/me/integrations/infoblox/console/ws`;
+		return `${proto}://${window.location.host}${SKYFORGE_PROXY_ROOT}/api/integrations/infoblox/console/ws`;
 	}, []);
 
 	return (
