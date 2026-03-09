@@ -925,7 +925,7 @@ export interface paths {
             cookie?: never;
         };
         /** ListAwsSSOAccounts returns accounts available for the current SSO session. */
-        get: operations["GET:skyforge.ListAwsSSOAccounts"];
+        get: operations["GET:cloudcredentials.ListAwsSSOAccounts"];
         put?: never;
         post?: never;
         delete?: never;
@@ -942,7 +942,7 @@ export interface paths {
             cookie?: never;
         };
         /** ListAwsSSORoles returns roles for a selected AWS environment. */
-        get: operations["GET:skyforge.ListAwsSSORoles"];
+        get: operations["GET:cloudcredentials.ListAwsSSORoles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -959,7 +959,7 @@ export interface paths {
             cookie?: never;
         };
         /** GetAwsSSOConfig returns the configured AWS SSO start URL and region. */
-        get: operations["GET:skyforge.GetAwsSSOConfig"];
+        get: operations["GET:cloudcredentials.GetAwsSSOConfig"];
         put?: never;
         post?: never;
         delete?: never;
@@ -978,7 +978,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** LogoutAwsSSO clears any stored AWS SSO tokens. */
-        post: operations["POST:skyforge.LogoutAwsSSO"];
+        post: operations["POST:cloudcredentials.LogoutAwsSSO"];
         delete?: never;
         options?: never;
         head?: never;
@@ -995,7 +995,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** PollAwsSSO polls for device authorization completion. */
-        post: operations["POST:skyforge.PollAwsSSO"];
+        post: operations["POST:cloudcredentials.PollAwsSSO"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1012,7 +1012,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** StartAwsSSO begins the AWS device authorization flow. */
-        post: operations["POST:skyforge.StartAwsSSO"];
+        post: operations["POST:cloudcredentials.StartAwsSSO"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1027,7 +1027,7 @@ export interface paths {
             cookie?: never;
         };
         /** GetAwsSSOStatus returns connection status for the authenticated user. */
-        get: operations["GET:skyforge.GetAwsSSOStatus"];
+        get: operations["GET:cloudcredentials.GetAwsSSOStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2024,23 +2024,6 @@ export interface paths {
         };
         /** GetAPIHealth returns a summary of database health. */
         get: operations["GET:health.GetAPIHealth"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/health/ldap": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GetLDAPHealth checks LDAP connectivity. */
-        get: operations["GET:skyforge.GetLDAPHealth"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6587,7 +6570,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** SearchUsers searches LDAP for users matching q. */
+        /** SearchUsers searches known Skyforge users matching q. */
         get: operations["GET:skyforge.SearchUsers"];
         put?: never;
         post?: never;
@@ -6752,6 +6735,14 @@ export interface components {
             isAdmin: boolean;
             username: string;
         };
+        "cloudcredentials.AwsSSOAccount": {
+            accountId: string;
+            email: string;
+            name: string;
+        };
+        "cloudcredentials.AwsSSORole": {
+            roleName: string;
+        };
         "cloudcredentials.AzureSubscription": {
             displayName: string;
             state: string;
@@ -6915,14 +6906,6 @@ export interface components {
             email: string;
             id: string;
             username: string;
-        };
-        "skyforge.AwsSSOAccount": {
-            accountId: string;
-            email: string;
-            name: string;
-        };
-        "skyforge.AwsSSORole": {
-            roleName: string;
         };
         "skyforge.CapacityBgpNeighborRow": {
             /** Format: int64 */
@@ -9715,7 +9698,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.ListAwsSSOAccounts": {
+    "GET:cloudcredentials.ListAwsSSOAccounts": {
         parameters: {
             query?: never;
             header?: never;
@@ -9731,14 +9714,14 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        accounts: components["schemas"]["skyforge.AwsSSOAccount"][];
+                        accounts: components["schemas"]["cloudcredentials.AwsSSOAccount"][];
                     };
                 };
             };
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.ListAwsSSORoles": {
+    "GET:cloudcredentials.ListAwsSSORoles": {
         parameters: {
             query?: never;
             header?: never;
@@ -9756,14 +9739,14 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        roles: components["schemas"]["skyforge.AwsSSORole"][];
+                        roles: components["schemas"]["cloudcredentials.AwsSSORole"][];
                     };
                 };
             };
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetAwsSSOConfig": {
+    "GET:cloudcredentials.GetAwsSSOConfig": {
         parameters: {
             query?: never;
             header?: never;
@@ -9791,7 +9774,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.LogoutAwsSSO": {
+    "POST:cloudcredentials.LogoutAwsSSO": {
         parameters: {
             query?: never;
             header?: never;
@@ -9814,7 +9797,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.PollAwsSSO": {
+    "POST:cloudcredentials.PollAwsSSO": {
         parameters: {
             query?: never;
             header?: never;
@@ -9848,7 +9831,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.StartAwsSSO": {
+    "POST:cloudcredentials.StartAwsSSO": {
         parameters: {
             query?: never;
             header?: never;
@@ -9876,7 +9859,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.GetAwsSSOStatus": {
+    "GET:cloudcredentials.GetAwsSSOStatus": {
         parameters: {
             query?: never;
             header?: never;
@@ -12012,32 +11995,6 @@ export interface operations {
                         redis: string;
                         status: string;
                         time: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetLDAPHealth": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        starttls: boolean;
-                        status: string;
-                        time: string;
-                        url: string;
                     };
                 };
             };
