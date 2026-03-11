@@ -1,4 +1,5 @@
 import type { LabDesignerWorkspaceProps } from "@/components/lab-designer-workspace-types";
+import type { DesignEdge, DesignNode } from "@/components/lab-designer-types";
 import {
 	Background,
 	Controls,
@@ -46,6 +47,45 @@ type Props = Pick<
 	| "autoLayout"
 >;
 
+function nextInterfaceName(
+	nodes: DesignNode[],
+	edges: DesignEdge[],
+	nodeId: string,
+): string {
+	const used = new Set<string>();
+	const node = nodes.find((item) => String(item.id) === nodeId);
+	for (const iface of node?.data?.interfaces ?? []) {
+		const name = String(iface.name ?? "").trim();
+		if (name) used.add(name);
+	}
+	for (const edge of edges) {
+		if (String(edge.source) === nodeId) {
+			const name = String(edge.data?.sourceIf ?? "").trim();
+			if (name) used.add(name);
+		}
+		if (String(edge.target) === nodeId) {
+			const name = String(edge.data?.targetIf ?? "").trim();
+			if (name) used.add(name);
+		}
+	}
+	let index = 1;
+	let candidate = `eth${index}`;
+	while (used.has(candidate)) {
+		index += 1;
+		candidate = `eth${index}`;
+	}
+	return candidate;
+}
+
+function edgeLabel(
+	source: string,
+	sourceIf: string,
+	target: string,
+	targetIf: string,
+): string {
+	return `${source}:${sourceIf} ↔ ${target}:${targetIf}`;
+}
+
 export function LabDesignerCanvasSurface(props: Props) {
 	return (
 		<div
@@ -81,12 +121,36 @@ export function LabDesignerCanvasSurface(props: Props) {
 				onNodesChange={props.onNodesChangeWithWarnings}
 				onEdgesChange={props.onEdgesChangeWithWarnings}
 				onConnect={(connection) => {
-					const label =
-						connection.source && connection.target
-							? `${connection.source} ↔ ${connection.target}`
-							: undefined;
+					if (!connection.source || !connection.target) return;
+					const sourceIf = nextInterfaceName(
+						props.nodes,
+						props.edges,
+						String(connection.source),
+					);
+					const targetIf = nextInterfaceName(
+						props.nodes,
+						props.edges,
+						String(connection.target),
+					);
+					const label = edgeLabel(
+						String(connection.source),
+						sourceIf,
+						String(connection.target),
+						targetIf,
+					);
 					props.setEdges((current) =>
-						addEdge({ ...connection, label }, current),
+						addEdge(
+							{
+								...connection,
+								label,
+								data: {
+									label,
+									sourceIf,
+									targetIf,
+								},
+							},
+							current,
+						),
 					);
 				}}
 				fitView
@@ -101,6 +165,12 @@ export function LabDesignerCanvasSurface(props: Props) {
 							props.setPendingLinkSource("");
 							return;
 						}
+						const sourceIf = nextInterfaceName(
+							props.nodes,
+							props.edges,
+							props.pendingLinkSource,
+						);
+						const targetIf = nextInterfaceName(props.nodes, props.edges, id);
 						const edgeId = `e-${props.pendingLinkSource}-${id}-${Date.now()}`;
 						props.setEdges((current) =>
 							addEdge(
@@ -108,7 +178,22 @@ export function LabDesignerCanvasSurface(props: Props) {
 									id: edgeId,
 									source: props.pendingLinkSource,
 									target: id,
-									label: `${props.pendingLinkSource} ↔ ${id}`,
+									label: edgeLabel(
+										props.pendingLinkSource,
+										sourceIf,
+										id,
+										targetIf,
+									),
+									data: {
+										label: edgeLabel(
+											props.pendingLinkSource,
+											sourceIf,
+											id,
+											targetIf,
+										),
+										sourceIf,
+										targetIf,
+									},
 								},
 								current,
 							),

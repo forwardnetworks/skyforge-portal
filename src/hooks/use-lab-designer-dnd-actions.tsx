@@ -66,7 +66,7 @@ export function createLabDesignerDndActions(opts: LabDesignerActionsOptions) {
 		const next: Node<DesignNodeData> = {
 			id,
 			position,
-			data: { label: id, kind, image },
+			data: { label: id, kind, image, interfaces: [] },
 			type: "designerNode",
 		};
 		opts.markWarningsVisible();

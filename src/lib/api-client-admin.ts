@@ -102,6 +102,33 @@ export type AdminServiceNowPushForwardConfigResponse = {
 	updatedAt?: string;
 };
 
+export type AdminTeamsGlobalConfigResponse = {
+	configured: boolean;
+	enabled: boolean;
+	displayName?: string;
+	publicBaseUrl?: string;
+	callbackUrl?: string;
+	hasInboundSharedSecret: boolean;
+	updatedAt?: string;
+};
+
+export type PutAdminTeamsGlobalConfigRequest = {
+	enabled: boolean;
+	displayName?: string;
+	publicBaseUrl: string;
+	inboundSharedSecret?: string;
+};
+
+export type AdminTeamsTestOutgoingRequest = {
+	webhookUrl: string;
+	text?: string;
+};
+
+export type AdminTeamsTestOutgoingResponse = {
+	sent: boolean;
+	message?: string;
+};
+
 export async function getAdminServiceNowGlobalConfig(): Promise<AdminServiceNowGlobalConfigResponse> {
 	return apiFetch<AdminServiceNowGlobalConfigResponse>(
 		"/api/admin/integrations/servicenow/global-config",
@@ -126,6 +153,36 @@ export async function pushAdminServiceNowForwardConfig(): Promise<AdminServiceNo
 		{
 			method: "POST",
 			body: "{}",
+		},
+	);
+}
+
+export async function getAdminTeamsGlobalConfig(): Promise<AdminTeamsGlobalConfigResponse> {
+	return apiFetch<AdminTeamsGlobalConfigResponse>(
+		"/api/admin/integrations/teams/global-config",
+	);
+}
+
+export async function putAdminTeamsGlobalConfig(
+	body: PutAdminTeamsGlobalConfigRequest,
+): Promise<AdminTeamsGlobalConfigResponse> {
+	return apiFetch<AdminTeamsGlobalConfigResponse>(
+		"/api/admin/integrations/teams/global-config",
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function testAdminTeamsOutgoing(
+	body: AdminTeamsTestOutgoingRequest,
+): Promise<AdminTeamsTestOutgoingResponse> {
+	return apiFetch<AdminTeamsTestOutgoingResponse>(
+		"/api/admin/integrations/teams/test/outgoing",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
 		},
 	);
 }

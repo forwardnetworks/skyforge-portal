@@ -164,6 +164,26 @@ export function AdminSettingsPage() {
 						onPushServiceNowForwardConfig={() =>
 							page.pushServiceNowForwardConfig.mutate()
 						}
+						teamsGlobalConfig={page.teamsGlobalConfigQ.data}
+						teamsGlobalConfigLoading={page.teamsGlobalConfigQ.isLoading}
+						teamsEnabledDraft={page.teamsEnabledDraft}
+						teamsDisplayNameDraft={page.teamsDisplayNameDraft}
+						teamsPublicBaseURLDraft={page.teamsPublicBaseURLDraft}
+						teamsInboundSecretDraft={page.teamsInboundSecretDraft}
+						teamsTestWebhookURLDraft={page.teamsTestWebhookURLDraft}
+						saveTeamsGlobalConfigPending={
+							page.saveTeamsGlobalConfig.isPending
+						}
+						testTeamsOutgoingPending={page.testTeamsOutgoing.isPending}
+						onTeamsEnabledChange={page.setTeamsEnabledDraft}
+						onTeamsDisplayNameChange={page.setTeamsDisplayNameDraft}
+						onTeamsPublicBaseURLChange={page.setTeamsPublicBaseURLDraft}
+						onTeamsInboundSecretChange={page.setTeamsInboundSecretDraft}
+						onTeamsTestWebhookURLChange={page.setTeamsTestWebhookURLDraft}
+						onSaveTeamsGlobalConfig={() =>
+							page.saveTeamsGlobalConfig.mutate()
+						}
+						onTestTeamsOutgoing={() => page.testTeamsOutgoing.mutate()}
 					/>
 
 					<AdminAuditTab

@@ -1,4 +1,6 @@
 import type {
+	DesignEdge,
+	DesignNode,
 	DesignNodeData,
 	SavedConfigRef,
 } from "@/components/lab-designer-types";
@@ -48,7 +50,7 @@ export function createLabDesignerPersistenceActions(
 		opts.setLastSaved(null);
 
 		const topo = await getDeploymentTopology(ws, depId);
-		const nextNodes: Array<Node<DesignNodeData>> = (topo.nodes ?? []).map(
+		const nextNodes: Array<DesignNode> = (topo.nodes ?? []).map(
 			(n, idx) => ({
 				id: String(n.id),
 				position: {
@@ -59,15 +61,19 @@ export function createLabDesignerPersistenceActions(
 					label: String(n.label || n.id),
 					kind: String(n.kind || ""),
 					image: "",
+					status: String(n.status || ""),
 				},
 				type: "designerNode",
 			}),
 		);
-		const nextEdges: Array<Edge> = (topo.edges ?? []).map((e) => ({
+		const nextEdges: Array<DesignEdge> = (topo.edges ?? []).map((e) => ({
 			id: String(e.id),
 			source: String(e.source),
 			target: String(e.target),
 			label: e.label || `${e.source} ↔ ${e.target}`,
+			data: {
+				label: e.label || "",
+			},
 		}));
 
 		if (!nextNodes.length) {
@@ -93,6 +99,7 @@ export function createLabDesignerPersistenceActions(
 		try {
 			const payload = {
 				labName: opts.labName,
+				defaultKind: opts.defaultKind,
 				userId: opts.userId,
 				runtime,
 				containerlabServer,
@@ -119,6 +126,9 @@ export function createLabDesignerPersistenceActions(
 			}
 			const parsed = JSON.parse(raw) as any;
 			if (typeof parsed?.labName === "string") opts.setLabName(parsed.labName);
+			if (typeof parsed?.defaultKind === "string") {
+				opts.setDefaultKind(parsed.defaultKind);
+			}
 			if (typeof parsed?.userId === "string") {
 				opts.setUserScopeId(parsed.userId);
 			}

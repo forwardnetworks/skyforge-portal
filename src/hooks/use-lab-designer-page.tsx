@@ -1,6 +1,7 @@
 import { DesignerNode } from "@/components/lab-designer-node";
 import type {
 	CanvasMenuState,
+	DesignEdge,
 	DesignNode,
 	EdgeMenuState,
 	LabDesignerSearch,
@@ -20,7 +21,7 @@ import {
 	designToContainerlabYaml,
 } from "@/lib/containerlab-yaml";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Edge, ReactFlowInstance } from "@xyflow/react";
+import type { ReactFlowInstance } from "@xyflow/react";
 import { useEdgesState, useNodesState } from "@xyflow/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
@@ -32,6 +33,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 	const queryClient = useQueryClient();
 
 	const [labName, setLabName] = useState("lab");
+	const [defaultKind, setDefaultKind] = useState("");
 	const [userId, setUserScopeId] = useState("");
 	const [runtime, setRuntime] = useState<"clabernetes" | "containerlab">(
 		"clabernetes",
@@ -47,7 +49,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 	const [paletteRole, setPaletteRole] = useState<string>("all");
 	const [rfInstance, setRfInstance] = useState<ReactFlowInstance<
 		DesignNode,
-		Edge
+		DesignEdge
 	> | null>(null);
 	const [selectedNodeId, setSelectedNodeId] = useState<string>("");
 	const [linkMode, setLinkMode] = useState(false);
@@ -79,29 +81,44 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		{
 			id: "r1",
 			position: { x: 80, y: 80 },
-			data: { label: "r1", kind: "linux", image: "" },
+			data: { label: "r1", kind: "linux", image: "", interfaces: [] },
 			type: "designerNode",
 		},
 	]);
-	const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+	const [edges, setEdges, onEdgesChange] = useEdgesState<DesignEdge>([]);
 
 	const design: LabDesign = useMemo(
 		() => ({
 			name: labName,
+			defaultKind: defaultKind || undefined,
 			nodes: nodes.map((n) => ({
 				id: String(n.id),
 				label: String(n.data?.label ?? n.id),
 				kind: String((n.data as any)?.kind ?? ""),
 				image: String((n.data as any)?.image ?? ""),
+				mgmtIpv4: String((n.data as any)?.mgmtIpv4 ?? "").trim() || undefined,
+				startupConfig:
+					String((n.data as any)?.startupConfig ?? "").trim() || undefined,
+				env: (n.data as any)?.env,
+				interfaces: (n.data as any)?.interfaces,
+				notes: String((n.data as any)?.notes ?? "").trim() || undefined,
+				status: String((n.data as any)?.status ?? "").trim() || undefined,
 				position: { x: n.position.x, y: n.position.y },
 			})),
 			links: edges.map((e) => ({
 				id: String(e.id),
 				source: String(e.source),
 				target: String(e.target),
+				sourceIf: String(e.data?.sourceIf ?? "").trim() || undefined,
+				targetIf: String(e.data?.targetIf ?? "").trim() || undefined,
+				label: String(e.data?.label ?? e.label ?? "").trim() || undefined,
+				mtu: Number.isFinite(Number(e.data?.mtu))
+					? Number(e.data?.mtu)
+					: undefined,
+				notes: String(e.data?.notes ?? "").trim() || undefined,
 			})),
 		}),
-		[edges, labName, nodes],
+		[defaultKind, edges, labName, nodes],
 	);
 	const { yaml } = useMemo(() => designToContainerlabYaml(design), [design]);
 	const effectiveYaml = useMemo(() => {
@@ -161,12 +178,19 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		setYamlMode,
 		setCustomYaml,
 		setImportOpen,
+		setLabName,
+		setDefaultKind,
+		setNodes,
+		setEdges,
+		setSelectedNodeId,
+		setUseSavedConfig,
 	});
 
 	const derived = useLabDesignerDerived({
 		nodes,
 		edges,
 		labName,
+		defaultKind,
 		selectedNodeId,
 		yamlMode,
 		customYaml,
@@ -192,6 +216,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		nodes,
 		edges,
 		labName,
+		defaultKind,
 		qsName,
 		qsSpines,
 		qsLeaves,
@@ -208,6 +233,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		effectiveTemplateFile: derived.effectiveTemplateFile,
 		lastSaved,
 		setLabName,
+		setDefaultKind,
 		setNodes,
 		setEdges,
 		setSelectedNodeId,
@@ -251,6 +277,8 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		rfRef,
 		labName,
 		setLabName,
+		defaultKind,
+		setDefaultKind,
 		userId,
 		setUserScopeId,
 		runtime,

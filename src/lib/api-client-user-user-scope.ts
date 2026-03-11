@@ -114,6 +114,36 @@ export type ServiceNowSetupStatusResponse = {
 	finishedAt?: ISO8601;
 };
 
+export type UserTeamsConfigResponse = {
+	configured: boolean;
+	globalConfigured: boolean;
+	enabled: boolean;
+	displayName?: string;
+	callbackUrl?: string;
+	teamsUserRef?: string;
+	hasOutboundWebhook: boolean;
+	forwardCredentialSetId?: string;
+	defaultNetworkId?: string;
+	updatedAt?: ISO8601;
+};
+
+export type PutUserTeamsConfigRequest = {
+	enabled: boolean;
+	teamsUserRef?: string;
+	outboundWebhookUrl?: string;
+	forwardCredentialSetId?: string;
+	defaultNetworkId?: string;
+};
+
+export type UserTeamsTestOutgoingRequest = {
+	text?: string;
+};
+
+export type UserTeamsTestOutgoingResponse = {
+	sent: boolean;
+	message?: string;
+};
+
 // NOTE: OpenAPI schema may lag behind the live dashboard/deployment view (e.g. activeTaskId/queueDepth).
 // This type reflects the fields Skyforge currently emits in the dashboard snapshot and related APIs.
 export type UserScopeDeployment = {
@@ -663,6 +693,31 @@ export async function rotateUserServiceNowTenant(): Promise<RotateUserServiceNow
 		{
 			method: "POST",
 			body: "{}",
+		},
+	);
+}
+
+export async function getUserTeamsConfig(): Promise<UserTeamsConfigResponse> {
+	return apiFetch<UserTeamsConfigResponse>("/api/integrations/teams");
+}
+
+export async function putUserTeamsConfig(
+	payload: PutUserTeamsConfigRequest,
+): Promise<UserTeamsConfigResponse> {
+	return apiFetch<UserTeamsConfigResponse>("/api/integrations/teams", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function testUserTeamsOutgoing(
+	payload?: UserTeamsTestOutgoingRequest,
+): Promise<UserTeamsTestOutgoingResponse> {
+	return apiFetch<UserTeamsTestOutgoingResponse>(
+		"/api/integrations/teams/test/outgoing",
+		{
+			method: "POST",
+			body: JSON.stringify(payload ?? {}),
 		},
 	);
 }

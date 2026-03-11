@@ -1,12 +1,31 @@
 import type { Edge, Node } from "@xyflow/react";
 
+export type LabNodeInterface = {
+	id: string;
+	name: string;
+};
+
 export type DesignNodeData = {
 	label: string;
 	kind: string;
 	image: string;
+	mgmtIpv4?: string;
+	startupConfig?: string;
+	env?: Record<string, string>;
+	interfaces?: LabNodeInterface[];
+	notes?: string;
+	status?: string;
 };
 
 export type DesignNode = Node<DesignNodeData>;
+
+export type DesignEdgeData = {
+	label?: string;
+	sourceIf?: string;
+	targetIf?: string;
+	mtu?: number;
+	notes?: string;
+};
 
 export type PaletteCategory =
 	| "Hosts"
@@ -56,4 +75,4 @@ export type LabDesignerSearch = {
 	importDeploymentId?: string;
 };
 
-export type DesignEdge = Edge;
+export type DesignEdge = Edge<DesignEdgeData>;

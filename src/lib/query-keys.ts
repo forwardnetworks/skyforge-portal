@@ -104,6 +104,7 @@ export const queryKeys = {
 	userServiceNowSetupStatus: () => ["userServiceNowSetupStatus"] as const,
 	userServiceNowPdiStatus: () => ["userServiceNowPdiStatus"] as const,
 	userServiceNowSchemaStatus: () => ["userServiceNowSchemaStatus"] as const,
+	userTeamsConfig: () => ["userTeamsConfig"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	userArtifacts: (userId: string) => ["userArtifacts", userId] as const,
 	userEveServersByScope: (userId: string) =>
@@ -148,6 +149,7 @@ export const queryKeys = {
 		] as const,
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
 	adminServiceNowGlobalConfig: () => ["adminServiceNowGlobalConfig"] as const,
+	adminTeamsGlobalConfig: () => ["adminTeamsGlobalConfig"] as const,
 	adminRbacUsers: () => ["adminRbacUsers"] as const,
 	adminConfig: () => ["adminConfig"] as const,
 	adminAuthSettings: () => ["adminAuthSettings"] as const,

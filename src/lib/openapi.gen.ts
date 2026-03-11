@@ -188,6 +188,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/integrations/teams/global-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetAdminTeamsGlobalConfig returns global Teams bridge settings (admin only). */
+        get: operations["GET:skyforge.GetAdminTeamsGlobalConfig"];
+        /** PutAdminTeamsGlobalConfig updates global Teams bridge settings (admin only). */
+        put: operations["PUT:skyforge.PutAdminTeamsGlobalConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/integrations/teams/test/outgoing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * TestAdminTeamsOutgoing verifies outbound Teams bridge delivery using a provided
+         *     webhook URL.
+         */
+        post: operations["POST:skyforge.TestAdminTeamsOutgoing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/node-metrics": {
         parameters: {
             query?: never;
@@ -2178,6 +2216,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/integrations/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetUserTeamsConfig returns the current user's Teams bridge settings. */
+        get: operations["GET:skyforge.GetUserTeamsConfig"];
+        /** PutUserTeamsConfig stores the current user's Teams bridge settings. */
+        put: operations["PUT:skyforge.PutUserTeamsConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/integrations/teams/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * HandleTeamsBridgeEvent executes a Teams-like bridge command and optionally posts
+         *     the result
+         * @description back to the user's configured outbound webhook.
+         */
+        post: operations["POST:skyforge.HandleTeamsBridgeEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/integrations/teams/test/outgoing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * TestUserTeamsOutgoing sends a test message using the current user's configured
+         *     webhook.
+         */
+        post: operations["POST:skyforge.TestUserTeamsOutgoing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/netlab/runs": {
         parameters: {
             query?: never;
@@ -2923,6 +3020,26 @@ export interface paths {
         get: operations["GET:skyforge.GetUserScopeContainerlabTemplates"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/containerlab/topologies/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ValidateContainerlabTopologyYAML validates and normalizes containerlab topology
+         *     YAML for the lab designer.
+         */
+        post: operations["POST:skyforge.ValidateContainerlabTopologyYAML"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5456,6 +5573,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/cron/servicenow/pdi/keepalive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:skyforge.CronServiceNowPDIKeepalive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/cron/tasks/metrics": {
         parameters: {
             query?: never;
@@ -6579,6 +6712,150 @@ export interface paths {
         put?: never;
         /** TaskQueueDiag returns queue diagnostics from task storage. */
         post: operations["POST:taskruns.TaskQueueDiag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.GetConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.GetConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.GetConfigRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.GetConfigRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.GetGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.GetGlobalConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.GetGlobalConfigRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.GetGlobalConfigRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.PutConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.PutConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.PutGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.PutGlobalConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.ResolveForwardCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.ResolveForwardCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.RunPathCommand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.RunPathCommand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teams.SendWebhookMessage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:teams.SendWebhookMessage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7743,6 +8020,7 @@ export interface components {
             netboxEnabled: boolean;
             rapid7Enabled: boolean;
             swaggerUIEnabled: boolean;
+            teamsEnabled: boolean;
             yaadeEnabled: boolean;
         };
         "taskruns.Run": {
@@ -7770,6 +8048,12 @@ export interface components {
         };
         "taskstore.JSONMap": {
             [key: string]: Record<string, never>;
+        };
+        "teams.ForwardCredentials": {
+            baseUrl: string;
+            password: string;
+            skipTlsVerify: boolean;
+            username: string;
         };
         "variablegroups.UserVariableGroup": {
             /** Format: int64 */
@@ -8221,6 +8505,104 @@ export interface operations {
                         configured: boolean;
                         message: string;
                         updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminTeamsGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        configured: boolean;
+                        displayName: string;
+                        enabled: boolean;
+                        hasInboundSharedSecret: boolean;
+                        publicBaseUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutAdminTeamsGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    displayName: string;
+                    enabled: boolean;
+                    inboundSharedSecret: string;
+                    publicBaseUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        configured: boolean;
+                        displayName: string;
+                        enabled: boolean;
+                        hasInboundSharedSecret: boolean;
+                        publicBaseUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.TestAdminTeamsOutgoing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    text: string;
+                    webhookUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        sent: boolean;
                     };
                 };
             };
@@ -12106,6 +12488,129 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetUserTeamsConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        configured: boolean;
+                        defaultNetworkId: string;
+                        displayName: string;
+                        enabled: boolean;
+                        forwardCredentialSetId: string;
+                        globalConfigured: boolean;
+                        hasOutboundWebhook: boolean;
+                        teamsUserRef: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutUserTeamsConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    defaultNetworkId: string;
+                    enabled: boolean;
+                    forwardCredentialSetId: string;
+                    outboundWebhookUrl: string;
+                    teamsUserRef: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        configured: boolean;
+                        defaultNetworkId: string;
+                        displayName: string;
+                        enabled: boolean;
+                        forwardCredentialSetId: string;
+                        globalConfigured: boolean;
+                        hasOutboundWebhook: boolean;
+                        teamsUserRef: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.HandleTeamsBridgeEvent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.TestUserTeamsOutgoing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    text: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        sent: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetNetlabRuns": {
         parameters: {
             query?: {
@@ -12895,7 +13400,6 @@ export interface operations {
                         auth: components["schemas"]["authn.UIAuthConfig"];
                         authMode: string;
                         elkBaseUrl: string;
-                        externalUrl: string;
                         features: components["schemas"]["skyforgecore.FeaturesConfig"];
                         headerBackground: string;
                         infobloxBaseUrl: string;
@@ -13650,6 +14154,44 @@ export interface operations {
                         repo: string;
                         templates: string[];
                         userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ValidateContainerlabTopologyYAML": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Name drives normalization defaults and preview metadata only. */
+                    name: string;
+                    /** TopologyYAML is the raw containerlab topology YAML. */
+                    topologyYAML: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        errors: string[];
+                        normalizedYAML: string;
+                        userId: string;
+                        valid: boolean;
+                        warnings: string[];
                     };
                 };
             };
@@ -18481,6 +19023,25 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:skyforge.CronServiceNowPDIKeepalive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.CronRefreshTaskQueueMetrics": {
         parameters: {
             query?: never;
@@ -20451,6 +21012,340 @@ export interface operations {
                         workerHeartbeatAgeSec: number;
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.GetConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        configured: boolean;
+                        defaultNetworkId: string;
+                        displayName: string;
+                        enabled: boolean;
+                        forwardCredentialSetId: string;
+                        globalConfigured: boolean;
+                        hasOutboundWebhook: boolean;
+                        teamsUserRef: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.GetConfigRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        decryptionFailed: boolean;
+                        defaultNetworkId: string;
+                        displayName: string;
+                        enabled: boolean;
+                        forwardCredentialSetId: string;
+                        inboundSharedSecret: string;
+                        outboundWebhookUrl: string;
+                        publicBaseUrl: string;
+                        teamsUserRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.GetGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        configured: boolean;
+                        displayName: string;
+                        enabled: boolean;
+                        hasInboundSharedSecret: boolean;
+                        publicBaseUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.GetGlobalConfigRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        displayName: string;
+                        enabled: boolean;
+                        inboundSharedSecret: string;
+                        publicBaseUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.PutConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    defaultNetworkId: string;
+                    enabled: boolean;
+                    forwardCredentialSetId: string;
+                    outboundWebhookUrl: string;
+                    sessionSecret: string;
+                    teamsUserRef: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        configured: boolean;
+                        defaultNetworkId: string;
+                        displayName: string;
+                        enabled: boolean;
+                        forwardCredentialSetId: string;
+                        globalConfigured: boolean;
+                        hasOutboundWebhook: boolean;
+                        teamsUserRef: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.PutGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    displayName: string;
+                    enabled: boolean;
+                    inboundSharedSecret: string;
+                    publicBaseUrl: string;
+                    sessionSecret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        callbackUrl: string;
+                        configured: boolean;
+                        displayName: string;
+                        enabled: boolean;
+                        hasInboundSharedSecret: boolean;
+                        publicBaseUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.ResolveForwardCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    forwardCredentialSetId: string;
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseUrl: string;
+                        password: string;
+                        skipTlsVerify: boolean;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.RunPathCommand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    credentials: components["schemas"]["teams.ForwardCredentials"];
+                    dstIp: string;
+                    dstPort: string;
+                    from: string;
+                    intent: string;
+                    ipProto: string;
+                    networkId: string;
+                    srcIp: string;
+                    srcPort: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        forwardingOutcome: string;
+                        queryUrl: string;
+                        securityOutcome: string;
+                        summaryLines: string[];
+                        /** Format: int64 */
+                        totalHits: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:teams.SendWebhookMessage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    lines: string[];
+                    text: string;
+                    webhookUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };

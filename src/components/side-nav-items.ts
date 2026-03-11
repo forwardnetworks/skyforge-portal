@@ -39,6 +39,7 @@ export type Features = {
 	yaadeEnabled?: boolean;
 	swaggerUIEnabled?: boolean;
 	forwardEnabled?: boolean;
+	teamsEnabled?: boolean;
 	netboxEnabled?: boolean;
 	nautobotEnabled?: boolean;
 	infobloxEnabled?: boolean;
@@ -112,6 +113,12 @@ function createNavItems(): NavItem[] {
 					label: "ServiceNow",
 					href: "/dashboard/servicenow",
 					icon: Workflow,
+				},
+				{
+					label: "Teams",
+					href: "/dashboard/teams",
+					icon: Workflow,
+					featureFlag: "teamsEnabled",
 				},
 			],
 		},

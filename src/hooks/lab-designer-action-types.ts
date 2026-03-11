@@ -1,6 +1,7 @@
 import { paletteMimeType } from "@/components/lab-designer-palette";
 import type {
 	CanvasMenuState,
+	DesignEdge,
 	DesignNode,
 	EdgeMenuState,
 	NodeMenuState,
@@ -8,16 +9,17 @@ import type {
 	SavedConfigRef,
 } from "@/components/lab-designer-types";
 import type { QueryClient } from "@tanstack/react-query";
-import type { Edge, ReactFlowInstance } from "@xyflow/react";
+import type { ReactFlowInstance } from "@xyflow/react";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 
 export type LabDesignerActionsOptions = {
 	queryClient: QueryClient;
 	rfRef: MutableRefObject<HTMLDivElement | null>;
-	rfInstance: ReactFlowInstance<DesignNode, Edge> | null;
+	rfInstance: ReactFlowInstance<DesignNode, DesignEdge> | null;
 	nodes: DesignNode[];
-	edges: Edge[];
+	edges: DesignEdge[];
 	labName: string;
+	defaultKind: string;
 	qsName: string;
 	qsSpines: number;
 	qsLeaves: number;
@@ -34,8 +36,9 @@ export type LabDesignerActionsOptions = {
 	effectiveTemplateFile: string;
 	lastSaved: SavedConfigRef | null;
 	setLabName: (value: string) => void;
+	setDefaultKind: (value: string) => void;
 	setNodes: React.Dispatch<React.SetStateAction<DesignNode[]>>;
-	setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
+	setEdges: React.Dispatch<React.SetStateAction<DesignEdge[]>>;
 	setSelectedNodeId: (value: string) => void;
 	setYamlMode: (value: "generated" | "custom") => void;
 	setCustomYaml: (value: string) => void;

@@ -1,8 +1,9 @@
 import type {
+	DesignEdge,
 	DesignNode,
 	DesignNodeData,
 } from "@/components/lab-designer-types";
-import type { Edge, Node } from "@xyflow/react";
+import type { Node } from "@xyflow/react";
 import type { KeyboardEvent } from "react";
 import { toast } from "sonner";
 import type { LabDesignerActionsOptions } from "./lab-designer-action-types";
@@ -26,7 +27,7 @@ export function createLabDesignerTopologyActions(
 		const next: Node<DesignNodeData> = {
 			id,
 			position: pos,
-			data: { label: id, kind: "linux", image: "" },
+			data: { label: id, kind: "linux", image: "", interfaces: [] },
 			type: "designerNode",
 		};
 		opts.setNodes((prev) => [...prev, next]);
@@ -62,12 +63,12 @@ export function createLabDesignerTopologyActions(
 		): DesignNode => ({
 			id,
 			position: { x, y },
-			data: { label: id, kind, image },
+			data: { label: id, kind, image, interfaces: [] },
 			type: "designerNode",
 		});
 
 		const nextNodes: DesignNode[] = [];
-		const nextEdges: Edge[] = [];
+		const nextEdges: DesignEdge[] = [];
 		const x0 = 120;
 		const dx = 260;
 		const ySpine = 120;
@@ -103,7 +104,13 @@ export function createLabDesignerTopologyActions(
 
 		for (const l of leafIds) {
 			for (const s of spineIds) {
-				nextEdges.push({ id: `e-${l}-${s}`, source: l, target: s });
+				nextEdges.push({
+					id: `e-${l}-${s}`,
+					source: l,
+					target: s,
+					label: `${l} ↔ ${s}`,
+					data: { label: `${l} ↔ ${s}` },
+				});
 			}
 		}
 
@@ -120,6 +127,8 @@ export function createLabDesignerTopologyActions(
 					id: `e-${hostId}-${leafId}`,
 					source: hostId,
 					target: leafId,
+					label: `${hostId} ↔ ${leafId}`,
+					data: { label: `${hostId} ↔ ${leafId}` },
 				});
 			}
 		}
@@ -203,10 +212,23 @@ export function createLabDesignerTopologyActions(
 				target: String(e.target) === nodeId ? nextId : e.target,
 				label:
 					String(e.source) === nodeId || String(e.target) === nodeId
-						? `${String(e.source) === nodeId ? nextId : e.source} ↔ ${
-								String(e.target) === nodeId ? nextId : e.target
+						? `${String(e.source) === nodeId ? nextId : e.source}:${
+								String(e.data?.sourceIf ?? "").trim() || "?"
+							} ↔ ${String(e.target) === nodeId ? nextId : e.target}:${
+								String(e.data?.targetIf ?? "").trim() || "?"
 							}`
 						: e.label,
+				data:
+					String(e.source) === nodeId || String(e.target) === nodeId
+						? {
+								...e.data,
+								label: `${String(e.source) === nodeId ? nextId : e.source}:${
+									String(e.data?.sourceIf ?? "").trim() || "?"
+								} ↔ ${String(e.target) === nodeId ? nextId : e.target}:${
+									String(e.data?.targetIf ?? "").trim() || "?"
+								}`,
+							}
+						: e.data,
 			})),
 		);
 		if (opts.selectedNodeId === nodeId) opts.setSelectedNodeId(nextId);
@@ -233,7 +255,7 @@ export function createLabDesignerTopologyActions(
 		);
 		const selectedEdgeIds = new Set(
 			opts.edges
-				.filter((e) => (e as Edge & { selected?: boolean }).selected)
+				.filter((e) => (e as DesignEdge & { selected?: boolean }).selected)
 				.map((e) => String(e.id)),
 		);
 		if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0) return;

@@ -303,6 +303,29 @@ export type SaveContainerlabTopologyYAMLRequest = {
 	template?: string;
 };
 
+export type ValidateContainerlabTopologyYAMLRequest = {
+	name?: string;
+	topologyYAML: string;
+};
+
+export type ValidateContainerlabTopologyYAMLResponse = {
+	userId?: string;
+	normalizedYAML: string;
+	warnings: string[];
+	errors: string[];
+	valid: boolean;
+};
+
+export async function validateContainerlabTopologyYAML(
+	userId: string,
+	body: ValidateContainerlabTopologyYAMLRequest,
+): Promise<ValidateContainerlabTopologyYAMLResponse> {
+	return apiFetch<ValidateContainerlabTopologyYAMLResponse>(
+		`/api/users/${encodeURIComponent(userId)}/containerlab/topologies/validate`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
 export type SaveContainerlabTopologyYAMLResponse = {
 	userId: string;
 	branch: string;

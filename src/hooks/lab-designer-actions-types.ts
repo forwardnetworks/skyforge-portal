@@ -1,5 +1,6 @@
 import type {
 	CanvasMenuState,
+	DesignEdge,
 	DesignNode,
 	DesignNodeData,
 	EdgeMenuState,
@@ -7,15 +8,15 @@ import type {
 	SavedConfigRef,
 } from "@/components/lab-designer-types";
 import type { QueryClient } from "@tanstack/react-query";
-import type { Edge, ReactFlowInstance } from "@xyflow/react";
+import type { ReactFlowInstance } from "@xyflow/react";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 
 export type LabDesignerActionsOptions = {
 	queryClient: QueryClient;
 	rfRef: MutableRefObject<HTMLDivElement | null>;
-	rfInstance: ReactFlowInstance<DesignNode, Edge> | null;
+	rfInstance: ReactFlowInstance<DesignNode, DesignEdge> | null;
 	nodes: DesignNode[];
-	edges: Edge[];
+	edges: DesignEdge[];
 	labName: string;
 	qsName: string;
 	qsSpines: number;
@@ -34,7 +35,7 @@ export type LabDesignerActionsOptions = {
 	lastSaved: SavedConfigRef | null;
 	setLabName: (value: string) => void;
 	setNodes: React.Dispatch<React.SetStateAction<DesignNode[]>>;
-	setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
+	setEdges: React.Dispatch<React.SetStateAction<DesignEdge[]>>;
 	setSelectedNodeId: (value: string) => void;
 	setYamlMode: (value: "generated" | "custom") => void;
 	setCustomYaml: (value: string) => void;
@@ -51,7 +52,10 @@ export type LabDesignerActionsOptions = {
 };
 
 export type LabDesignerNode = DesignNode;
-export type LabDesignerEdge = Edge;
-export type LabDesignerReactFlowInstance = ReactFlowInstance<DesignNode, Edge>;
+export type LabDesignerEdge = DesignEdge;
+export type LabDesignerReactFlowInstance = ReactFlowInstance<
+	DesignNode,
+	DesignEdge
+>;
 export type LabDesignerNodeData = DesignNodeData;
 export type { SavedConfigRef };

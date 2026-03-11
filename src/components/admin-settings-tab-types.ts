@@ -6,6 +6,7 @@ import type {
 	AdminImpersonateStatusResponse,
 	AdminOIDCSettingsResponse,
 	AdminServiceNowGlobalConfigResponse,
+	AdminTeamsGlobalConfigResponse,
 	AdminUserRoleRecord,
 	AdminWorkspacePodCleanupResponse,
 	QuickDeployTemplate,
@@ -88,6 +89,22 @@ export type AdminOverviewTabProps = {
 	onServiceNowBootstrapCredentialSetChange: (value: string) => void;
 	onSaveServiceNowGlobalConfig: () => void;
 	onPushServiceNowForwardConfig: () => void;
+	teamsGlobalConfig?: AdminTeamsGlobalConfigResponse;
+	teamsGlobalConfigLoading: boolean;
+	teamsEnabledDraft: boolean;
+	teamsDisplayNameDraft: string;
+	teamsPublicBaseURLDraft: string;
+	teamsInboundSecretDraft: string;
+	teamsTestWebhookURLDraft: string;
+	saveTeamsGlobalConfigPending: boolean;
+	testTeamsOutgoingPending: boolean;
+	onTeamsEnabledChange: (enabled: boolean) => void;
+	onTeamsDisplayNameChange: (value: string) => void;
+	onTeamsPublicBaseURLChange: (value: string) => void;
+	onTeamsInboundSecretChange: (value: string) => void;
+	onTeamsTestWebhookURLChange: (value: string) => void;
+	onSaveTeamsGlobalConfig: () => void;
+	onTestTeamsOutgoing: () => void;
 };
 
 export type AdminAuditTabProps = {

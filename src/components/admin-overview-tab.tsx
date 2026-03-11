@@ -4,6 +4,7 @@ import { AdminOverviewImpersonationCard } from "./admin-overview-impersonation-c
 import { AdminOverviewOIDCCard } from "./admin-overview-oidc-card";
 import { AdminOverviewQuickDeployCard } from "./admin-overview-quick-deploy-card";
 import { AdminOverviewServiceNowCard } from "./admin-overview-servicenow-card";
+import { AdminOverviewTeamsCard } from "./admin-overview-teams-card";
 import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
 import { TabsContent } from "./ui/tabs";
 
@@ -13,6 +14,7 @@ export function AdminOverviewTab(props: AdminOverviewTabProps) {
 			<AdminOverviewAuthCard {...props} />
 			<AdminOverviewOIDCCard {...props} />
 			<AdminOverviewServiceNowCard {...props} />
+			<AdminOverviewTeamsCard {...props} />
 			<AdminOverviewConfigCard {...props} />
 			<AdminOverviewImpersonationCard {...props} />
 			<AdminOverviewQuickDeployCard {...props} />

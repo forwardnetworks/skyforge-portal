@@ -21,6 +21,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as LoginLocalRouteImport } from './routes/login.local'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
+import { Route as DashboardTeamsRouteImport } from './routes/dashboard/teams'
 import { Route as DashboardSignalsRouteImport } from './routes/dashboard/signals'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
@@ -107,6 +108,11 @@ const LoginLocalRoute = LoginLocalRouteImport.update({
 const DocsSlugRoute = DocsSlugRouteImport.update({
   id: '/docs/$slug',
   path: '/docs/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardTeamsRoute = DashboardTeamsRouteImport.update({
+  id: '/dashboard/teams',
+  path: '/dashboard/teams',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardSignalsRoute = DashboardSignalsRouteImport.update({
@@ -270,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
   '/admin': typeof AdminIndexRoute
@@ -310,6 +317,7 @@ export interface FileRoutesByTo {
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
   '/admin': typeof AdminIndexRoute
@@ -352,6 +360,7 @@ export interface FileRoutesById {
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/signals': typeof DashboardSignalsRoute
+  '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
   '/admin/': typeof AdminIndexRoute
@@ -395,6 +404,7 @@ export interface FileRouteTypes {
     | '/dashboard/servicenow'
     | '/dashboard/settings'
     | '/dashboard/signals'
+    | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
     | '/admin'
@@ -435,6 +445,7 @@ export interface FileRouteTypes {
     | '/dashboard/servicenow'
     | '/dashboard/settings'
     | '/dashboard/signals'
+    | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
     | '/admin'
@@ -476,6 +487,7 @@ export interface FileRouteTypes {
     | '/dashboard/servicenow'
     | '/dashboard/settings'
     | '/dashboard/signals'
+    | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
     | '/admin/'
@@ -518,6 +530,7 @@ export interface RootRouteChildren {
   DashboardServicenowRoute: typeof DashboardServicenowRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSignalsRoute: typeof DashboardSignalsRoute
+  DashboardTeamsRoute: typeof DashboardTeamsRoute
   DocsSlugRoute: typeof DocsSlugRoute
   LoginLocalRoute: typeof LoginLocalRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -625,6 +638,13 @@ declare module '@tanstack/react-router' {
       path: '/docs/$slug'
       fullPath: '/docs/$slug'
       preLoaderRoute: typeof DocsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/teams': {
+      id: '/dashboard/teams'
+      path: '/dashboard/teams'
+      fullPath: '/dashboard/teams'
+      preLoaderRoute: typeof DashboardTeamsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/signals': {
@@ -850,6 +870,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardServicenowRoute: DashboardServicenowRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSignalsRoute: DashboardSignalsRoute,
+  DashboardTeamsRoute: DashboardTeamsRoute,
   DocsSlugRoute: DocsSlugRoute,
   LoginLocalRoute: LoginLocalRoute,
   AdminIndexRoute: AdminIndexRoute,

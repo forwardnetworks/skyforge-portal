@@ -1,4 +1,5 @@
 import type { SavedConfigRef } from "@/components/lab-designer-types";
+import type { DesignEdge, DesignNode } from "@/components/lab-designer-types";
 import {
 	createClabernetesDeploymentFromTemplate,
 	createContainerlabDeploymentFromTemplate,
@@ -8,9 +9,12 @@ import {
 	listUserContainerlabServers,
 	listUserScopes,
 	saveContainerlabTopologyYAML,
+	validateContainerlabTopologyYAML,
 } from "@/lib/api-client";
+import { containerlabYamlToDesign } from "@/lib/containerlab-yaml";
 import { queryKeys } from "@/lib/query-keys";
 import { type QueryClient, useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export function useLabDesignerData(opts: {
@@ -33,7 +37,20 @@ export function useLabDesignerData(opts: {
 	setYamlMode: (value: "generated" | "custom") => void;
 	setCustomYaml: (value: string) => void;
 	setImportOpen: (value: boolean) => void;
+	setLabName: (value: string) => void;
+	setDefaultKind: (value: string) => void;
+	setNodes: React.Dispatch<React.SetStateAction<DesignNode[]>>;
+	setEdges: React.Dispatch<React.SetStateAction<DesignEdge[]>>;
+	setSelectedNodeId: (value: string) => void;
+	setUseSavedConfig: (value: boolean) => void;
 }) {
+	const [lastValidation, setLastValidation] = useState<{
+		normalizedYAML: string;
+		warnings: string[];
+		errors: string[];
+		valid: boolean;
+	} | null>(null);
+
 	const toAPISource = (value: string) => (value === "user" ? "user" : value);
 	const USER_REPO_SOURCE = "user" as const;
 
@@ -103,13 +120,70 @@ export function useLabDesignerData(opts: {
 		staleTime: 30_000,
 	});
 
+	const validateTopology = useMutation({
+		mutationFn: async () => {
+			if (!opts.userId) throw new Error("Select a user");
+			return validateContainerlabTopologyYAML(opts.userId, {
+				name: opts.labName,
+				topologyYAML: opts.effectiveYaml,
+			});
+		},
+		onSuccess: (resp) => {
+			setLastValidation({
+				normalizedYAML: resp.normalizedYAML,
+				warnings: resp.warnings,
+				errors: resp.errors,
+				valid: resp.valid,
+			});
+			if (resp.normalizedYAML !== opts.effectiveYaml) {
+				opts.setYamlMode("custom");
+				opts.setCustomYaml(resp.normalizedYAML);
+				opts.setUseSavedConfig(false);
+			}
+			if (resp.errors.length > 0) {
+				toast.error("Validation failed", {
+					description: resp.errors[0],
+				});
+				return;
+			}
+			toast.success("Topology validated", {
+				description:
+					resp.warnings[0] ?? "Designer and deployment path now share this normalized topology.",
+			});
+		},
+		onError: (e) =>
+			toast.error("Validation failed", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const validateBeforePersist = async () => {
+		if (!opts.userId) throw new Error("Select a user");
+		const resp = await validateContainerlabTopologyYAML(opts.userId, {
+			name: opts.labName,
+			topologyYAML: opts.effectiveYaml,
+		});
+		setLastValidation({
+			normalizedYAML: resp.normalizedYAML,
+			warnings: resp.warnings,
+			errors: resp.errors,
+			valid: resp.valid,
+		});
+		if (resp.normalizedYAML !== opts.effectiveYaml) {
+			opts.setYamlMode("custom");
+			opts.setCustomYaml(resp.normalizedYAML);
+			opts.setUseSavedConfig(false);
+		}
+		if (!resp.valid) {
+			throw new Error(resp.errors[0] || "Topology validation failed");
+		}
+		return resp;
+	};
+
 	const createDeployment = useMutation({
 		mutationFn: async () => {
 			if (!opts.userId) throw new Error("Select a user");
-			if (!opts.effectiveYaml.trim()) throw new Error("YAML is empty");
-			if (!/^\s*topology\s*:/m.test(opts.effectiveYaml)) {
-				throw new Error("YAML must contain a top-level 'topology:' section");
-			}
+			const validation = await validateBeforePersist();
 			if (
 				opts.effectiveTemplatesDir !== "containerlab" &&
 				!opts.effectiveTemplatesDir.startsWith("containerlab/")
@@ -123,7 +197,7 @@ export function useLabDesignerData(opts: {
 				? opts.lastSaved
 				: await saveContainerlabTopologyYAML(opts.userId, {
 						name: opts.labName,
-						topologyYAML: opts.effectiveYaml,
+						topologyYAML: validation.normalizedYAML,
 						templatesDir: opts.effectiveTemplatesDir,
 						template: opts.effectiveTemplateFile,
 					}).then((resp) => {
@@ -186,10 +260,7 @@ export function useLabDesignerData(opts: {
 	const saveConfig = useMutation({
 		mutationFn: async () => {
 			if (!opts.userId) throw new Error("Select a user");
-			if (!opts.effectiveYaml.trim()) throw new Error("YAML is empty");
-			if (!/^\s*topology\s*:/m.test(opts.effectiveYaml)) {
-				throw new Error("YAML must contain a top-level 'topology:' section");
-			}
+			const validation = await validateBeforePersist();
 			if (
 				opts.effectiveTemplatesDir !== "containerlab" &&
 				!opts.effectiveTemplatesDir.startsWith("containerlab/")
@@ -198,7 +269,7 @@ export function useLabDesignerData(opts: {
 			}
 			return saveContainerlabTopologyYAML(opts.userId, {
 				name: opts.labName,
-				topologyYAML: opts.effectiveYaml,
+				topologyYAML: validation.normalizedYAML,
 				templatesDir: opts.effectiveTemplatesDir,
 				template: opts.effectiveTemplateFile,
 			});
@@ -231,8 +302,47 @@ export function useLabDesignerData(opts: {
 			});
 		},
 		onSuccess: (resp) => {
-			opts.setYamlMode("custom");
-			opts.setCustomYaml(resp.yaml);
+			const parsed = containerlabYamlToDesign(resp.yaml);
+			opts.setLabName(parsed.design.name);
+			opts.setDefaultKind(parsed.design.defaultKind ?? "");
+			opts.setNodes(
+				parsed.design.nodes.map((node: (typeof parsed.design.nodes)[number]) => ({
+					id: node.id,
+					position: node.position ?? { x: 120, y: 120 },
+					data: {
+						label: node.label ?? node.id,
+						kind: node.kind ?? "",
+						image: node.image ?? "",
+						mgmtIpv4: node.mgmtIpv4,
+						startupConfig: node.startupConfig,
+						env: node.env,
+						interfaces: node.interfaces,
+						notes: node.notes,
+						status: node.status,
+					},
+					type: "designerNode",
+				})),
+			);
+			opts.setEdges(
+				parsed.design.links.map((link: (typeof parsed.design.links)[number]) => ({
+					id: link.id,
+					source: link.source,
+					target: link.target,
+					label:
+						link.label ||
+						`${link.sourceIf || link.source} ↔ ${link.targetIf || link.target}`,
+					data: {
+						label: link.label,
+						sourceIf: link.sourceIf,
+						targetIf: link.targetIf,
+						mtu: link.mtu,
+						notes: link.notes,
+					},
+				})),
+			);
+			opts.setSelectedNodeId(parsed.design.nodes[0]?.id ?? "");
+			opts.setYamlMode("generated");
+			opts.setCustomYaml("");
 			opts.setImportOpen(false);
 			toast.success("Template imported", { description: resp.path });
 		},
@@ -246,6 +356,8 @@ export function useLabDesignerData(opts: {
 		containerlabServersQ,
 		templatesQ,
 		templatePreviewQ,
+		validateTopology,
+		lastValidation,
 		createDeployment,
 		saveConfig,
 		importTemplate,

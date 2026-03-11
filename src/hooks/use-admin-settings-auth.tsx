@@ -6,6 +6,7 @@ import {
 	getAdminQuickDeployCatalog,
 	getAdminQuickDeployTemplateOptions,
 	getAdminServiceNowGlobalConfig,
+	getAdminTeamsGlobalConfig,
 	getUserScopeNetlabTemplates,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
@@ -13,6 +14,7 @@ import { useAdminSettingsAuthLocal } from "./use-admin-settings-auth-local";
 import { useAdminSettingsAuthOIDC } from "./use-admin-settings-auth-oidc";
 import { useAdminSettingsAuthQuickDeploy } from "./use-admin-settings-auth-quick-deploy";
 import { useAdminSettingsAuthServiceNow } from "./use-admin-settings-auth-servicenow";
+import { useAdminSettingsAuthTeams } from "./use-admin-settings-auth-teams";
 
 export function useAdminSettingsAuth({
 	queryClient,
@@ -82,6 +84,13 @@ export function useAdminSettingsAuth({
 		staleTime: 15_000,
 		retry: false,
 	});
+	const teamsGlobalConfigQ = useQuery({
+		queryKey: queryKeys.adminTeamsGlobalConfig(),
+		queryFn: getAdminTeamsGlobalConfig,
+		enabled: isAdmin,
+		staleTime: 15_000,
+		retry: false,
+	});
 	const authLocal = useAdminSettingsAuthLocal({
 		queryClient,
 		authSettings: authSettingsQ.data,
@@ -104,6 +113,11 @@ export function useAdminSettingsAuth({
 		serviceNowGlobalConfig: serviceNowGlobalConfigQ.data,
 		refetchServiceNowGlobalConfig: serviceNowGlobalConfigQ.refetch,
 	});
+	const teams = useAdminSettingsAuthTeams({
+		queryClient,
+		teamsGlobalConfig: teamsGlobalConfigQ.data,
+		refetchTeamsGlobalConfig: teamsGlobalConfigQ.refetch,
+	});
 
 	return {
 		cfgQ,
@@ -117,5 +131,7 @@ export function useAdminSettingsAuth({
 		...quickDeploy,
 		serviceNowGlobalConfigQ,
 		...serviceNow,
+		teamsGlobalConfigQ,
+		...teams,
 	};
 }
