@@ -144,6 +144,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/integrations/servicenow/global-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetAdminServiceNowGlobalConfig returns global ServiceNow PDI settings (admin
+         *     only).
+         */
+        get: operations["GET:skyforge.GetAdminServiceNowGlobalConfig"];
+        /**
+         * PutAdminServiceNowGlobalConfig updates global ServiceNow PDI settings (admin
+         *     only).
+         */
+        put: operations["PUT:skyforge.PutAdminServiceNowGlobalConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/integrations/servicenow/push-forward-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * PushAdminServiceNowForwardConfig performs admin-driven app/bootstrap push (admin
+         *     only).
+         */
+        post: operations["POST:skyforge.PushAdminServiceNowForwardConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/node-metrics": {
         parameters: {
             query?: never;
@@ -2088,6 +2132,26 @@ export interface paths {
         get: operations["GET:skyforge.GetUserServiceNowSetupStatus"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/integrations/servicenow/tenant/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RotateUserServiceNowTenant rotates the current user's ServiceNow tenant password
+         *     and reprovisions linkage.
+         */
+        post: operations["POST:skyforge.RotateUserServiceNowTenant"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5344,6 +5408,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/cron/forward/collectors/idle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:skyforge.CronScaleIdleForwardCollectors"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/cron/observability/cleanup": {
         parameters: {
             query?: never;
@@ -5731,6 +5811,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/servicenow.EnsureTenantProvisioning": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.EnsureTenantProvisioning"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/servicenow.ForwardIntegrationSupported": {
         parameters: {
             query?: never;
@@ -5773,6 +5869,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["POST:servicenow.GetConfigRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.GetGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.GetGlobalConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.GetGlobalConfigRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.GetGlobalConfigRecord"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5875,6 +6003,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/servicenow.PutGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.PutGlobalConfig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/servicenow.ResolveForwardCredentials": {
         parameters: {
             query?: never;
@@ -5885,6 +6029,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["POST:servicenow.ResolveForwardCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servicenow.RotateTenantCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:servicenow.RotateTenantCredentials"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7466,6 +7626,21 @@ export interface components {
                 [key: string]: string;
             };
         };
+        "skyforge.UserServiceNowConfigResponse": {
+            adminUsername: string;
+            configured: boolean;
+            forwardCredentialSetId: string;
+            globalConfigured: boolean;
+            hasAdminPassword: boolean;
+            instanceUrl: string;
+            lastInstallError: string;
+            lastInstallFinishedAt: string;
+            lastInstallStartedAt: string;
+            lastInstallStatus: string;
+            tenantProvisioned: boolean;
+            tenantUsername: string;
+            updatedAt: string;
+        };
         "skyforge.WebhookEvent": {
             body: string;
             /** Format: int64 */
@@ -7956,6 +8131,96 @@ export interface operations {
                         effectiveUsername: string;
                         impersonating: boolean;
                         status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminServiceNowGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminUsername: string;
+                        bootstrapCredentialSet: string;
+                        configured: boolean;
+                        hasAdminPassword: boolean;
+                        instanceUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutAdminServiceNowGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminPassword: string;
+                    adminUsername: string;
+                    bootstrapCredentialSet: string;
+                    instanceUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminUsername: string;
+                        bootstrapCredentialSet: string;
+                        configured: boolean;
+                        hasAdminPassword: boolean;
+                        instanceUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.PushAdminServiceNowForwardConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        message: string;
+                        updatedAt: string;
                     };
                 };
             };
@@ -11537,12 +11802,15 @@ export interface operations {
                         adminUsername: string;
                         configured: boolean;
                         forwardCredentialSetId: string;
+                        globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
                         lastInstallError: string;
                         lastInstallFinishedAt: string;
                         lastInstallStartedAt: string;
                         lastInstallStatus: string;
+                        tenantProvisioned: boolean;
+                        tenantUsername: string;
                         updatedAt: string;
                     };
                 };
@@ -11560,10 +11828,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    adminPassword: string;
-                    adminUsername: string;
                     forwardCredentialSetId: string;
-                    instanceUrl: string;
                 };
             };
         };
@@ -11578,12 +11843,15 @@ export interface operations {
                         adminUsername: string;
                         configured: boolean;
                         forwardCredentialSetId: string;
+                        globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
                         lastInstallError: string;
                         lastInstallFinishedAt: string;
                         lastInstallStartedAt: string;
                         lastInstallStatus: string;
+                        tenantProvisioned: boolean;
+                        tenantUsername: string;
                         updatedAt: string;
                     };
                 };
@@ -11782,6 +12050,29 @@ export interface operations {
                         ticketingCheckedAt: string;
                         ticketingIntegrationSupported: boolean;
                         updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RotateUserServiceNowTenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        config: components["schemas"]["skyforge.UserServiceNowConfigResponse"];
                     };
                 };
             };
@@ -18133,6 +18424,25 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:skyforge.CronScaleIdleForwardCollectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.CronCleanupObservability": {
         parameters: {
             query?: never;
@@ -18642,6 +18952,53 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:servicenow.EnsureTenantProvisioning": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminPassword: string;
+                        adminUsername: string;
+                        decryptionFailed: boolean;
+                        forwardBaseUrl: string;
+                        forwardCredentialSetId: string;
+                        instanceUrl: string;
+                        lastInstallError: string;
+                        /** Format: date-time */
+                        lastInstallFinishedAt: string;
+                        /** Format: date-time */
+                        lastInstallStartedAt: string;
+                        lastInstallStatus: string;
+                        tenantPassword: string;
+                        tenantSysId: string;
+                        tenantUsername: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:servicenow.ForwardIntegrationSupported": {
         parameters: {
             query?: never;
@@ -18697,12 +19054,15 @@ export interface operations {
                         adminUsername: string;
                         configured: boolean;
                         forwardCredentialSetId: string;
+                        globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
                         lastInstallError: string;
                         lastInstallFinishedAt: string;
                         lastInstallStartedAt: string;
                         lastInstallStatus: string;
+                        tenantProvisioned: boolean;
+                        tenantUsername: string;
                         updatedAt: string;
                     };
                 };
@@ -18745,9 +19105,78 @@ export interface operations {
                         /** Format: date-time */
                         lastInstallStartedAt: string;
                         lastInstallStatus: string;
+                        tenantPassword: string;
+                        tenantSysId: string;
+                        tenantUsername: string;
                         /** Format: date-time */
                         updatedAt: string;
                         username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.GetGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminUsername: string;
+                        bootstrapCredentialSet: string;
+                        configured: boolean;
+                        hasAdminPassword: boolean;
+                        instanceUrl: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.GetGlobalConfigRecord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminPassword: string;
+                        adminUsername: string;
+                        bootstrapCredentialSet: string;
+                        instanceUrl: string;
                     };
                 };
             };
@@ -18936,10 +19365,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    adminPassword: string;
-                    adminUsername: string;
                     forwardCredentialSetId: string;
-                    instanceUrl: string;
                     sessionSecret: string;
                     username: string;
                 };
@@ -18956,12 +19382,53 @@ export interface operations {
                         adminUsername: string;
                         configured: boolean;
                         forwardCredentialSetId: string;
+                        globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
                         lastInstallError: string;
                         lastInstallFinishedAt: string;
                         lastInstallStartedAt: string;
                         lastInstallStatus: string;
+                        tenantProvisioned: boolean;
+                        tenantUsername: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.PutGlobalConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminPassword: string;
+                    adminUsername: string;
+                    bootstrapCredentialSet: string;
+                    instanceUrl: string;
+                    sessionSecret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminUsername: string;
+                        bootstrapCredentialSet: string;
+                        configured: boolean;
+                        hasAdminPassword: boolean;
+                        instanceUrl: string;
                         updatedAt: string;
                     };
                 };
@@ -18997,6 +19464,48 @@ export interface operations {
                         password: string;
                         skipTlsVerify: boolean;
                         username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:servicenow.RotateTenantCredentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    sessionSecret: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminUsername: string;
+                        configured: boolean;
+                        forwardCredentialSetId: string;
+                        globalConfigured: boolean;
+                        hasAdminPassword: boolean;
+                        instanceUrl: string;
+                        lastInstallError: string;
+                        lastInstallFinishedAt: string;
+                        lastInstallStartedAt: string;
+                        lastInstallStatus: string;
+                        tenantProvisioned: boolean;
+                        tenantUsername: string;
+                        updatedAt: string;
                     };
                 };
             };
