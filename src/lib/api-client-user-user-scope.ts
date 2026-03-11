@@ -22,10 +22,13 @@ export type NotificationRecord =
 
 export type UserServiceNowConfigResponse = {
 	configured: boolean;
+	globalConfigured: boolean;
 	instanceUrl?: string;
 	adminUsername?: string;
 	hasAdminPassword: boolean;
 	forwardCredentialSetId?: string;
+	tenantUsername?: string;
+	tenantProvisioned: boolean;
 	updatedAt?: ISO8601;
 	lastInstallStatus?: string;
 	lastInstallError?: string;
@@ -34,10 +37,11 @@ export type UserServiceNowConfigResponse = {
 };
 
 export type PutUserServiceNowConfigRequest = {
-	instanceUrl: string;
-	adminUsername: string;
-	adminPassword: string;
 	forwardCredentialSetId?: string;
+};
+
+export type RotateUserServiceNowTenantResponse = {
+	config?: UserServiceNowConfigResponse;
 };
 
 export type InstallUserServiceNowDemoResponse = {
@@ -650,6 +654,16 @@ export async function cancelUserServiceNowSetup(): Promise<{
 	return apiFetch<{ canceled: boolean }>(
 		"/api/integrations/servicenow/setup/cancel",
 		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function rotateUserServiceNowTenant(): Promise<RotateUserServiceNowTenantResponse> {
+	return apiFetch<RotateUserServiceNowTenantResponse>(
+		"/api/integrations/servicenow/tenant/reset",
+		{
+			method: "POST",
+			body: "{}",
+		},
 	);
 }
 

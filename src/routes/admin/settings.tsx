@@ -132,6 +132,38 @@ export function AdminSettingsPage() {
 						onSaveQuickDeployCatalog={() =>
 							page.saveQuickDeployCatalog.mutate()
 						}
+						serviceNowGlobalConfig={page.serviceNowGlobalConfigQ.data}
+						serviceNowGlobalConfigLoading={
+							page.serviceNowGlobalConfigQ.isLoading
+						}
+						serviceNowInstanceURLDraft={page.serviceNowInstanceURLDraft}
+						serviceNowAdminUsernameDraft={page.serviceNowAdminUsernameDraft}
+						serviceNowAdminPasswordDraft={page.serviceNowAdminPasswordDraft}
+						serviceNowBootstrapCredentialSetDraft={
+							page.serviceNowBootstrapCredentialSetDraft
+						}
+						saveServiceNowGlobalConfigPending={
+							page.saveServiceNowGlobalConfig.isPending
+						}
+						pushServiceNowForwardConfigPending={
+							page.pushServiceNowForwardConfig.isPending
+						}
+						onServiceNowInstanceURLChange={page.setServiceNowInstanceURLDraft}
+						onServiceNowAdminUsernameChange={
+							page.setServiceNowAdminUsernameDraft
+						}
+						onServiceNowAdminPasswordChange={
+							page.setServiceNowAdminPasswordDraft
+						}
+						onServiceNowBootstrapCredentialSetChange={
+							page.setServiceNowBootstrapCredentialSetDraft
+						}
+						onSaveServiceNowGlobalConfig={() =>
+							page.saveServiceNowGlobalConfig.mutate()
+						}
+						onPushServiceNowForwardConfig={() =>
+							page.pushServiceNowForwardConfig.mutate()
+						}
 					/>
 
 					<AdminAuditTab

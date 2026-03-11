@@ -11,6 +11,7 @@ import {
 	installUserServiceNowDemo,
 	listUserForwardCollectorConfigs,
 	putUserServiceNowConfig,
+	rotateUserServiceNowTenant,
 	startUserServiceNowSetup,
 	wakeUserServiceNowPdi,
 } from "../lib/api-client";
@@ -51,14 +52,11 @@ export function useServiceNowPage() {
 	);
 
 	const [instanceUrl, setInstanceUrl] = useState("");
-	const [adminUsername, setAdminUsername] = useState("");
-	const [adminPassword, setAdminPassword] = useState("");
 	const [forwardCredentialSetId, setForwardCredentialSetId] = useState("");
 
 	useEffect(() => {
 		if (!cfg) return;
 		setInstanceUrl(cfg.instanceUrl ?? "");
-		setAdminUsername(cfg.adminUsername ?? "");
 		setForwardCredentialSetId(cfg.forwardCredentialSetId ?? "");
 	}, [cfg]);
 
@@ -72,45 +70,50 @@ export function useServiceNowPage() {
 	const pdiQ = useQuery({
 		queryKey: pdiKey,
 		queryFn: getUserServiceNowPdiStatus,
-		enabled: Boolean(cfg?.configured),
+		enabled: Boolean(cfg?.globalConfigured),
 		retry: false,
 	});
 
 	const schemaQ = useQuery({
 		queryKey: schemaKey,
 		queryFn: getUserServiceNowSchemaStatus,
-		enabled: Boolean(cfg?.configured),
+		enabled: Boolean(cfg?.globalConfigured),
 		retry: false,
 	});
 
 	const saveMutation = useMutation({
 		mutationFn: async () => {
-			if (!instanceUrl.trim()) {
-				throw new Error("ServiceNow instance URL is required");
-			}
-			if (!adminUsername.trim()) {
-				throw new Error("ServiceNow admin username is required");
-			}
 			if (!forwardCredentialSetId.trim()) {
 				throw new Error("Forward credential set is required");
 			}
 			return putUserServiceNowConfig({
-				instanceUrl: instanceUrl.trim(),
-				adminUsername: adminUsername.trim(),
-				adminPassword,
 				forwardCredentialSetId: forwardCredentialSetId.trim(),
 			});
 		},
 		onSuccess: async () => {
-			toast.success("Saved ServiceNow settings");
-			setAdminPassword("");
+			toast.success("Saved ServiceNow tenant binding");
 			await qc.invalidateQueries({ queryKey: cfgKey });
 			await qc.invalidateQueries({ queryKey: setupKey });
 			await qc.invalidateQueries({ queryKey: pdiKey });
 			await qc.invalidateQueries({ queryKey: schemaKey });
 		},
 		onError: (e) =>
-			toast.error("Failed to save ServiceNow settings", {
+			toast.error("Failed to save ServiceNow tenant binding", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const rotateTenantMutation = useMutation({
+		mutationFn: async () => rotateUserServiceNowTenant(),
+		onSuccess: async () => {
+			toast.success("Rotated ServiceNow tenant credentials");
+			await qc.invalidateQueries({ queryKey: cfgKey });
+			await qc.invalidateQueries({ queryKey: setupKey });
+			await qc.invalidateQueries({ queryKey: pdiKey });
+			await qc.invalidateQueries({ queryKey: schemaKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to rotate tenant credentials", {
 				description: (e as Error).message,
 			}),
 	});
@@ -207,13 +210,10 @@ export function useServiceNowPage() {
 		collectorOptions,
 		instanceUrl,
 		setInstanceUrl,
-		adminUsername,
-		setAdminUsername,
-		adminPassword,
-		setAdminPassword,
 		forwardCredentialSetId,
 		setForwardCredentialSetId,
 		saveMutation,
+		rotateTenantMutation,
 		setupMutation,
 		cancelSetupMutation,
 		wakeMutation,

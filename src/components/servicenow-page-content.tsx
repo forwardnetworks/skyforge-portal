@@ -7,7 +7,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "./ui/card";
-import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import {
 	Select,
@@ -30,14 +29,10 @@ export function ServiceNowPageContent({
 		schemaQ,
 		collectorOptions,
 		instanceUrl,
-		setInstanceUrl,
-		adminUsername,
-		setAdminUsername,
-		adminPassword,
-		setAdminPassword,
 		forwardCredentialSetId,
 		setForwardCredentialSetId,
 		saveMutation,
+		rotateTenantMutation,
 		setupMutation,
 		cancelSetupMutation,
 		wakeMutation,
@@ -54,15 +49,103 @@ export function ServiceNowPageContent({
 			<div>
 				<h1 className="text-2xl font-bold">ServiceNow</h1>
 				<p className="text-sm text-muted-foreground mt-1">
-					One-click near-zero-touch setup for the Forward connectivity demo app.
+					Global PDI is admin-managed. This page binds your tenant identity and
+					Forward credential set.
 				</p>
 			</div>
 
 			<Card>
 				<CardHeader>
+					<CardTitle>Tenant Binding</CardTitle>
+					<CardDescription>
+						Uses shared Forward credential sets from{" "}
+						<code>/dashboard/forward/credentials</code>.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="grid gap-4 md:grid-cols-2">
+						<div className="space-y-2">
+							<Label>Global ServiceNow instance</Label>
+							<div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+								{instanceUrl || "Not configured by admin"}
+							</div>
+						</div>
+						<div className="space-y-2">
+							<Label>Tenant user mapping</Label>
+							<div className="rounded-md border px-3 py-2 text-sm">
+								<div className="font-mono text-xs">
+									{cfg?.tenantUsername || "not assigned"}
+								</div>
+								<div className="text-xs text-muted-foreground">
+									Provisioned: {cfg?.tenantProvisioned ? "yes" : "no"}
+								</div>
+							</div>
+						</div>
+						<div className="space-y-2">
+							<Label>Forward credential set</Label>
+							<Select
+								value={forwardCredentialSetId || ""}
+								onValueChange={setForwardCredentialSetId}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Select saved credential set" />
+								</SelectTrigger>
+								<SelectContent>
+									{collectorOptions.map((collector) => (
+										<SelectItem key={collector.id} value={collector.id}>
+											{collector.name}
+											{collector.isDefault ? " (default)" : ""}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="space-y-2">
+							<Label>Global admin status</Label>
+							<div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+								{cfg?.globalConfigured
+									? "configured"
+									: "not configured by admin"}
+							</div>
+						</div>
+					</div>
+					{selectedCredential?.baseUrl ? (
+						<div className="text-xs text-muted-foreground">
+							Selected host: <code>{selectedCredential.baseUrl}</code>
+						</div>
+					) : null}
+					<div className="flex items-center gap-2 flex-wrap">
+						<Button
+							onClick={() => saveMutation.mutate()}
+							disabled={saveMutation.isPending}
+						>
+							Save tenant binding
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => rotateTenantMutation.mutate()}
+							disabled={
+								rotateTenantMutation.isPending || !cfg?.forwardCredentialSetId
+							}
+						>
+							Reset tenant password
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => void cfgQ.refetch()}
+							disabled={cfgQ.isFetching}
+						>
+							Reload
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
 					<CardTitle>Setup Workflow</CardTitle>
 					<CardDescription>
-						Primary path: save config, run setup, remediate only when required.
+						Primary path: save binding, run setup, remediate only when required.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -76,7 +159,10 @@ export function ServiceNowPageContent({
 						<Button
 							onClick={() => setupMutation.mutate(false)}
 							disabled={
-								setupMutation.isPending || isRunning || saveMutation.isPending
+								setupMutation.isPending ||
+								isRunning ||
+								saveMutation.isPending ||
+								!cfg?.globalConfigured
 							}
 						>
 							Run setup
@@ -109,7 +195,7 @@ export function ServiceNowPageContent({
 							{setupQ.data.steps.map((step) => (
 								<div key={step.step} className="font-mono">
 									{step.step}: {step.status}
-									{step.detail ? ` — ${step.detail}` : ""}
+									{step.detail ? ` - ${step.detail}` : ""}
 								</div>
 							))}
 						</div>
@@ -125,95 +211,6 @@ export function ServiceNowPageContent({
 							</ul>
 						</div>
 					) : null}
-
-					{typeof setupQ.data?.ticketingIntegrationSupported === "boolean" ? (
-						<div className="text-xs text-muted-foreground">
-							Forward ticketing API:{" "}
-							{setupQ.data.ticketingIntegrationSupported
-								? "supported"
-								: "unsupported"}
-						</div>
-					) : null}
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Configuration</CardTitle>
-					<CardDescription>
-						Uses shared Forward credential sets from{" "}
-						<code>/dashboard/forward/credentials</code>.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label>ServiceNow instance URL</Label>
-							<Input
-								value={instanceUrl}
-								onChange={(e) => setInstanceUrl(e.target.value)}
-								placeholder="https://dev12345.service-now.com"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>ServiceNow admin username</Label>
-							<Input
-								value={adminUsername}
-								onChange={(e) => setAdminUsername(e.target.value)}
-								placeholder="admin"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>ServiceNow admin password</Label>
-							<Input
-								type="password"
-								value={adminPassword}
-								onChange={(e) => setAdminPassword(e.target.value)}
-								placeholder={
-									cfg?.hasAdminPassword ? "(leave blank to keep stored)" : ""
-								}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Forward credential set</Label>
-							<Select
-								value={forwardCredentialSetId || ""}
-								onValueChange={setForwardCredentialSetId}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Select saved credential set" />
-								</SelectTrigger>
-								<SelectContent>
-									{collectorOptions.map((collector) => (
-										<SelectItem key={collector.id} value={collector.id}>
-											{collector.name}
-											{collector.isDefault ? " (default)" : ""}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-					{selectedCredential?.baseUrl ? (
-						<div className="text-xs text-muted-foreground">
-							Selected host: <code>{selectedCredential.baseUrl}</code>
-						</div>
-					) : null}
-					<div className="flex items-center gap-2">
-						<Button
-							onClick={() => saveMutation.mutate()}
-							disabled={saveMutation.isPending}
-						>
-							Save settings
-						</Button>
-						<Button
-							variant="outline"
-							onClick={() => void cfgQ.refetch()}
-							disabled={cfgQ.isFetching}
-						>
-							Reload
-						</Button>
-					</div>
 				</CardContent>
 			</Card>
 
@@ -230,7 +227,7 @@ export function ServiceNowPageContent({
 						<span className="font-medium">
 							{pdiQ.data?.status ?? "unknown"}
 						</span>
-						{pdiQ.data?.detail ? ` — ${pdiQ.data.detail}` : ""}
+						{pdiQ.data?.detail ? ` - ${pdiQ.data.detail}` : ""}
 					</div>
 					<div className="text-sm">
 						Schema status:{" "}
@@ -245,7 +242,7 @@ export function ServiceNowPageContent({
 						<Button
 							variant="secondary"
 							onClick={() => wakeMutation.mutate()}
-							disabled={wakeMutation.isPending || !cfg?.configured}
+							disabled={wakeMutation.isPending || !cfg?.globalConfigured}
 						>
 							Wake PDI
 						</Button>
@@ -266,18 +263,10 @@ export function ServiceNowPageContent({
 						<Button
 							variant="outline"
 							onClick={() => void schemaQ.refetch()}
-							disabled={schemaQ.isFetching || !cfg?.configured}
+							disabled={schemaQ.isFetching || !cfg?.globalConfigured}
 						>
 							Check schema
 						</Button>
-						<a
-							className="text-sm underline text-muted-foreground"
-							href="/dashboard/docs/servicenow"
-							target="_blank"
-							rel="noreferrer"
-						>
-							Docs
-						</a>
 					</div>
 				</CardContent>
 			</Card>

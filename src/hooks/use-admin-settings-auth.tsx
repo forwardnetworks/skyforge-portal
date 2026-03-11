@@ -5,12 +5,14 @@ import {
 	getAdminOIDCSettings,
 	getAdminQuickDeployCatalog,
 	getAdminQuickDeployTemplateOptions,
+	getAdminServiceNowGlobalConfig,
 	getUserScopeNetlabTemplates,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import { useAdminSettingsAuthLocal } from "./use-admin-settings-auth-local";
 import { useAdminSettingsAuthOIDC } from "./use-admin-settings-auth-oidc";
 import { useAdminSettingsAuthQuickDeploy } from "./use-admin-settings-auth-quick-deploy";
+import { useAdminSettingsAuthServiceNow } from "./use-admin-settings-auth-servicenow";
 
 export function useAdminSettingsAuth({
 	queryClient,
@@ -73,6 +75,13 @@ export function useAdminSettingsAuth({
 		staleTime: 15_000,
 		retry: false,
 	});
+	const serviceNowGlobalConfigQ = useQuery({
+		queryKey: queryKeys.adminServiceNowGlobalConfig(),
+		queryFn: getAdminServiceNowGlobalConfig,
+		enabled: isAdmin,
+		staleTime: 15_000,
+		retry: false,
+	});
 	const authLocal = useAdminSettingsAuthLocal({
 		queryClient,
 		authSettings: authSettingsQ.data,
@@ -90,6 +99,11 @@ export function useAdminSettingsAuth({
 		quickDeployTemplateOptions: quickDeployTemplateOptionsQ.data,
 		blueprintNetlabTemplates: blueprintNetlabTemplatesQ.data,
 	});
+	const serviceNow = useAdminSettingsAuthServiceNow({
+		queryClient,
+		serviceNowGlobalConfig: serviceNowGlobalConfigQ.data,
+		refetchServiceNowGlobalConfig: serviceNowGlobalConfigQ.refetch,
+	});
 
 	return {
 		cfgQ,
@@ -101,5 +115,7 @@ export function useAdminSettingsAuth({
 		quickDeployTemplateOptionsQ,
 		blueprintNetlabTemplatesQ,
 		...quickDeploy,
+		serviceNowGlobalConfigQ,
+		...serviceNow,
 	};
 }

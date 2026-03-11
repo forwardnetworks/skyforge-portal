@@ -147,6 +147,7 @@ export const queryKeys = {
 			limit ?? "",
 		] as const,
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
+	adminServiceNowGlobalConfig: () => ["adminServiceNowGlobalConfig"] as const,
 	adminRbacUsers: () => ["adminRbacUsers"] as const,
 	adminConfig: () => ["adminConfig"] as const,
 	adminAuthSettings: () => ["adminAuthSettings"] as const,

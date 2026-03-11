@@ -80,6 +80,56 @@ export async function putAdminOIDCSettings(
 	});
 }
 
+export type AdminServiceNowGlobalConfigResponse = {
+	configured: boolean;
+	instanceUrl?: string;
+	adminUsername?: string;
+	hasAdminPassword: boolean;
+	bootstrapCredentialSet?: string;
+	updatedAt?: string;
+};
+
+export type PutAdminServiceNowGlobalConfigRequest = {
+	instanceUrl: string;
+	adminUsername: string;
+	adminPassword?: string;
+	bootstrapCredentialSet?: string;
+};
+
+export type AdminServiceNowPushForwardConfigResponse = {
+	configured: boolean;
+	message?: string;
+	updatedAt?: string;
+};
+
+export async function getAdminServiceNowGlobalConfig(): Promise<AdminServiceNowGlobalConfigResponse> {
+	return apiFetch<AdminServiceNowGlobalConfigResponse>(
+		"/api/admin/integrations/servicenow/global-config",
+	);
+}
+
+export async function putAdminServiceNowGlobalConfig(
+	body: PutAdminServiceNowGlobalConfigRequest,
+): Promise<AdminServiceNowGlobalConfigResponse> {
+	return apiFetch<AdminServiceNowGlobalConfigResponse>(
+		"/api/admin/integrations/servicenow/global-config",
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function pushAdminServiceNowForwardConfig(): Promise<AdminServiceNowPushForwardConfigResponse> {
+	return apiFetch<AdminServiceNowPushForwardConfigResponse>(
+		"/api/admin/integrations/servicenow/push-forward-config",
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
 export type AdminAuditResponse =
 	operations["GET:authn.GetAdminAudit"]["responses"][200]["content"]["application/json"];
 export async function getAdminAudit(params?: {
