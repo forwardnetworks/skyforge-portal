@@ -3,7 +3,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { getSession, login } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
@@ -85,7 +91,9 @@ function LocalLoginPage() {
 					) : null}
 					<Button
 						className="w-full"
-						disabled={loginM.isPending || username.trim() === "" || password === ""}
+						disabled={
+							loginM.isPending || username.trim() === "" || password === ""
+						}
 						onClick={() => loginM.mutate()}
 					>
 						{loginM.isPending ? "Signing in..." : "Sign in"}

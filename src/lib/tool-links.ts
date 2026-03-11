@@ -1,4 +1,4 @@
-import { buildLoginUrl, type SkyforgeAuthMode } from "./skyforge-config";
+import { type SkyforgeAuthMode, buildLoginUrl } from "./skyforge-config";
 
 export const CODER_NEXT_PATH = "/coder/";
 

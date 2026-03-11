@@ -17,7 +17,9 @@ export function setRuntimeAuthMode(mode: string | null | undefined): void {
 	runtimeAuthProvider = null;
 }
 
-export function setRuntimeAuthProvider(provider: string | null | undefined): void {
+export function setRuntimeAuthProvider(
+	provider: string | null | undefined,
+): void {
 	if (provider === "local" || provider === "okta") {
 		runtimeAuthProvider = provider;
 		runtimeAuthMode = provider === "okta" ? "oidc" : "local";

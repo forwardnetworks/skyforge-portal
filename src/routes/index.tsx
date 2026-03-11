@@ -24,7 +24,7 @@ function LandingPage() {
 		if (session.data?.authenticated) {
 			void navigate({ to: "/dashboard/deployments/quick", replace: true });
 		} else {
-			void navigate({ to: "/status", replace: true });
+			void navigate({ to: "/dashboard", replace: true });
 		}
 	}, [session.data?.authenticated, session.isLoading, navigate]);
 

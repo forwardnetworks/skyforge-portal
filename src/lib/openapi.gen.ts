@@ -95,160 +95,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/governance/costs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ListGovernanceCosts lists cost snapshots (admin only). */
-        get: operations["GET:skyforge.ListGovernanceCosts"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/governance/costs/ingest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** IngestGovernanceCosts ingests cost snapshots (admin only). */
-        post: operations["POST:skyforge.IngestGovernanceCosts"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/governance/policy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GetGovernancePolicy returns the current governance policy (admin only). */
-        get: operations["GET:skyforge.GetGovernancePolicy"];
-        /** UpdateGovernancePolicy updates the governance policy (admin only). */
-        put: operations["PUT:skyforge.UpdateGovernancePolicy"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/governance/resources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ListGovernanceResources lists tracked resources (admin only). */
-        get: operations["GET:skyforge.ListGovernanceResources"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/governance/resources/ingest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** IngestGovernanceResources ingests resource inventory (admin only). */
-        post: operations["POST:skyforge.IngestGovernanceResources"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/governance/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GetGovernanceSummary returns governance summary metrics (admin only). */
-        get: operations["GET:skyforge.GetGovernanceSummary"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/governance/sync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** SyncGovernanceSources refreshes inventory from known sources (admin only). */
-        post: operations["POST:skyforge.SyncGovernanceSources"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/governance/usage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ListGovernanceUsage lists usage snapshots (admin only). */
-        get: operations["GET:skyforge.ListGovernanceUsage"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/governance/usage/ingest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** IngestGovernanceUsage ingests usage snapshots (admin only). */
-        post: operations["POST:skyforge.IngestGovernanceUsage"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/impersonate/start": {
         parameters: {
             query?: never;
@@ -1264,7 +1110,7 @@ export interface paths {
         /**
          * NetlabConnect executes `netlab connect` on the Netlab runner host and returns
          *     its output.
-         * @description This is an alternative to local SSH ProxyJump when clients can't reach the lab network.
+         * @description This is an alternative to local SSH ProxyJump when clients cannot reach the lab network.
          */
         post: operations["POST:skyforge.NetlabConnect"];
         delete?: never;
@@ -2307,6 +2153,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/observability/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetUserObservabilitySeries returns role-scoped observability time series. */
+        get: operations["GET:skyforge.GetUserObservabilitySeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/observability/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetUserObservabilitySummary returns role-scoped observability signals for all
+         *     authenticated users.
+         */
+        get: operations["GET:skyforge.GetUserObservabilitySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/public/config": {
         parameters: {
             query?: never;
@@ -3183,26 +3066,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/deployments/{deploymentID}/capacity/perf/interface-metrics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GetUserScopeDeploymentCapacityInterfaceMetrics proxies Forward's
-         *     interface-metrics endpoint.
-         */
-        get: operations["GET:skyforge.GetUserScopeDeploymentCapacityInterfaceMetrics"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/users/{id}/deployments/{deploymentID}/capacity/perf/interface-metrics-history": {
         parameters: {
             query?: never;
@@ -3697,7 +3560,7 @@ export interface paths {
         /**
          * GetUserScopeDeploymentTopology returns a lightweight, provider-derived topology
          *     view.
-         * @description For containerlab, the topology is sourced from the containerlab API after deploy so we can reflect the resolved management IPs.
+         * @description Topology is sourced from generated deployment topology artifacts.
          */
         get: operations["GET:skyforge.GetUserScopeDeploymentTopology"];
         put?: never;
@@ -5481,38 +5344,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/internal/cron/governance/usage/cleanup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["POST:skyforge.CronCleanupGovernanceUsage"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/cron/governance/usage/snapshot": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["POST:skyforge.CronSnapshotGovernanceUsage"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/internal/cron/observability/cleanup": {
         parameters: {
             query?: never;
@@ -6543,6 +6374,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/taskruns.ReconcileQueuedTasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ReconcileQueuedTasks republishes queue events for tasks stuck in queued state. */
+        post: operations["POST:taskruns.ReconcileQueuedTasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/taskruns.ReconcileRunningTasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ReconcileRunningTasks marks apparently stuck running tasks as failed. */
+        post: operations["POST:taskruns.ReconcileRunningTasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/taskruns.TaskQueueDiag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** TaskQueueDiag returns queue diagnostics from task storage. */
+        post: operations["POST:taskruns.TaskQueueDiag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/assignable": {
         parameters: {
             query?: never;
@@ -7128,185 +7010,17 @@ export interface components {
             name: string;
             username: string;
         };
-        "skyforge.GovernanceCostInput": {
-            amount: number;
-            currency: string;
-            metadata: {
-                [key: string]: string;
-            };
-            periodEnd: string;
-            periodStart: string;
-            provider: string;
-            resourceId: string;
-            source: string;
-            userId: string;
-        };
-        "skyforge.GovernanceCostSnapshot": {
-            amount: number;
-            /** Format: date-time */
-            createdAt: string;
-            currency: string;
-            id: string;
-            metadata: Record<string, never>;
-            periodEnd: string;
-            periodStart: string;
-            provider: string;
-            resourceId: string;
-            source: string;
-            userId: string;
-            userScopeName: string;
-        };
-        /**
-         * GovernancePolicy is a lightweight guardrail layer (admin-configurable).
-         * @description All limits are optional. A value of 0 means "unlimited/disabled".
-         */
-        "skyforge.GovernancePolicy": {
-            /**
-             * AdvisoryLatencyCritMs marks p95 latency as critical level for observability
-             *     advisories.
-             * Format: int64
-             */
-            advisoryLatencyCritMs: number;
-            /**
-             * AdvisoryLatencyWarnMs marks p95 latency as warning level for observability
-             *     advisories.
-             * Format: int64
-             */
-            advisoryLatencyWarnMs: number;
-            /**
-             * AdvisoryNodeCPUCritPct marks node CPU p95 percentage as critical level.
-             * Format: int64
-             */
-            advisoryNodeCpuCritPct: number;
-            /**
-             * AdvisoryNodeCPUWarnPct marks node CPU p95 percentage as warning level.
-             * Format: int64
-             */
-            advisoryNodeCpuWarnPct: number;
-            /**
-             * AdvisoryNodeMemCritPct marks node memory p95 percentage as critical level.
-             * Format: int64
-             */
-            advisoryNodeMemCritPct: number;
-            /**
-             * AdvisoryNodeMemWarnPct marks node memory p95 percentage as warning level.
-             * Format: int64
-             */
-            advisoryNodeMemWarnPct: number;
-            /**
-             * AdvisoryQueueOldestCritSec marks queued oldest-age as critical level.
-             * Format: int64
-             */
-            advisoryQueueOldestCritSec: number;
-            /**
-             * AdvisoryQueueOldestWarnSec marks queued oldest-age as warning level.
-             * Format: int64
-             */
-            advisoryQueueOldestWarnSec: number;
-            /**
-             * AllowCustomTemplateRepos controls whether non-admin users may use template
-             *     source = custom.
-             * @description This is distinct from "external" because "custom" can reference arbitrary repos and is therefore riskier.
-             */
-            allowCustomTemplateRepos: boolean;
-            /**
-             * AllowUserByosContainerlabServers controls whether non-admin users may use
-             *     user-scoped Containerlab BYOS servers (user:... refs).
-             */
-            allowUserByosContainerlabServers: boolean;
-            /**
-             * AllowUserByosNetlabServers controls whether non-admin users may use user-scoped
-             *     Netlab BYOS servers (user:... refs).
-             */
-            allowUserByosNetlabServers: boolean;
-            /**
-             * AllowUserExternalTemplateRepos controls whether non-admin users may use template
-             *     source = external (user-scoped external repos).
-             */
-            allowUserExternalTemplateRepos: boolean;
-            /**
-             * BlockedForwardOrgIDs denies Forward collector credential setup for these Forward
-             *     org IDs.
-             * @description This is primarily used to protect shared/demo orgs from accidental Skyforge collector installs.
-             */
-            blockedForwardOrgIds: string[];
-            /**
-             * MaxCollectorsPerUser caps the number of in-cluster Forward collectors a user can
-             *     create.
-             * Format: int64
-             */
-            maxCollectorsPerUser: number;
-            /**
-             * MaxDeploymentsPerUser caps the number of deployment definitions a user can
-             *     create across all user scopes.
-             * Format: int64
-             */
-            maxDeploymentsPerUser: number;
-        };
-        "skyforge.GovernanceResource": {
-            accountId: string;
-            /** Format: date-time */
-            firstSeen: string;
-            id: string;
-            /** Format: date-time */
-            lastSeen: string;
-            metadata: Record<string, never>;
-            name: string;
-            owner: string;
-            provider: string;
-            region: string;
-            resourceId: string;
-            resourceType: string;
-            status: string;
-            tags: Record<string, never>;
-            /** Format: date-time */
-            updatedAt: string;
-            userId: string;
-            userScopeName: string;
-        };
-        "skyforge.GovernanceResourceInput": {
-            accountId: string;
-            eventType: string;
-            metadata: {
-                [key: string]: string;
-            };
-            name: string;
-            owner: string;
-            provider: string;
-            region: string;
-            resourceId: string;
-            resourceType: string;
-            status: string;
-            tags: {
-                [key: string]: string;
-            };
-            userId: string;
-        };
-        "skyforge.GovernanceUsageInput": {
-            metadata: {
-                [key: string]: string;
-            };
-            metric: string;
-            provider: string;
-            scopeId: string;
-            scopeType: string;
-            unit: string;
-            userId: string;
-            value: number;
-        };
-        "skyforge.GovernanceUsageSnapshot": {
-            /** Format: date-time */
-            collectedAt: string;
-            id: string;
-            metadata: Record<string, never>;
-            metric: string;
-            provider: string;
-            scopeId: string;
-            scopeType: string;
-            unit: string;
-            userId: string;
-            userScopeName: string;
-            value: number;
+        "skyforge.ForwardObservabilitySummary": {
+            checkedAt: string;
+            error: string;
+            grafanaService: boolean;
+            namespace: string;
+            prometheusReachable: boolean;
+            prometheusService: boolean;
+            prometheusTargetCount: number;
+            prometheusUpSum: number;
+            /** ok|degraded|missing */
+            sourceStatus: string;
         };
         "skyforge.JSONMap": {
             [key: string]: Record<string, never>;
@@ -7423,6 +7137,21 @@ export interface components {
             /** Format: int64 */
             workerHeartbeatSec: number;
         };
+        "skyforge.ObservabilitySummaryResponse": {
+            advisories: components["schemas"]["skyforge.ObservabilityAdvisory"][];
+            endpoints: components["schemas"]["skyforge.observabilityEndpointSummary"][];
+            generatedAt: string;
+            nodeCpuActiveP95: number;
+            nodeMemUsedP95: number;
+            /** Format: int64 */
+            queueOldestSec: number;
+            /** Format: int64 */
+            queueQueued: number;
+            /** Format: int64 */
+            queueRunning: number;
+            /** Format: int64 */
+            workerHeartbeatSec: number;
+        };
         "skyforge.PolicyReportForwardNetwork": {
             collectorConfigId: string;
             /** Format: date-time */
@@ -7435,13 +7164,6 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             userId: string;
-        };
-        "skyforge.ProviderCostBreakdown": {
-            cost: number;
-            currency: string;
-            provider: string;
-            /** Format: int64 */
-            resourceCount: number;
         };
         "skyforge.ResourceEstimateSummary": {
             /** Format: int64 */
@@ -7835,7 +7557,10 @@ export interface components {
         "skyforgecore.FeaturesConfig": {
             coderEnabled: boolean;
             dnsEnabled: boolean;
+            elkEnabled: boolean;
             forwardEnabled: boolean;
+            forwardGrafanaEnabled: boolean;
+            forwardPrometheusEnabled: boolean;
             giteaEnabled: boolean;
             infobloxEnabled: boolean;
             jiraEnabled: boolean;
@@ -8128,6 +7853,7 @@ export interface operations {
                             pullPolicy: string;
                         };
                         integrations: {
+                            elkBaseUrl: string;
                             giteaBaseUrl: string;
                             infobloxBaseUrl: string;
                             jiraBaseUrl: string;
@@ -8147,296 +7873,6 @@ export interface operations {
                             useSsl: boolean;
                         };
                         publicUrl: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListGovernanceCosts": {
-        parameters: {
-            query?: {
-                user_id?: string;
-                provider?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        costs: components["schemas"]["skyforge.GovernanceCostSnapshot"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.IngestGovernanceCosts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    snapshots: components["schemas"]["skyforge.GovernanceCostInput"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        costs: components["schemas"]["skyforge.GovernanceCostSnapshot"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetGovernancePolicy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        policy: components["schemas"]["skyforge.GovernancePolicy"];
-                        retrievedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "PUT:skyforge.UpdateGovernancePolicy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    policy: components["schemas"]["skyforge.GovernancePolicy"];
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        policy: components["schemas"]["skyforge.GovernancePolicy"];
-                        status: string;
-                        updatedAt: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListGovernanceResources": {
-        parameters: {
-            query?: {
-                user_id?: string;
-                provider?: string;
-                status?: string;
-                owner?: string;
-                type?: string;
-                q?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        resources: components["schemas"]["skyforge.GovernanceResource"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.IngestGovernanceResources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    observedAt: string;
-                    resources: components["schemas"]["skyforge.GovernanceResourceInput"][];
-                    source: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        resources: components["schemas"]["skyforge.GovernanceResource"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetGovernanceSummary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int64 */
-                        activeResources: number;
-                        costCurrency: string;
-                        costLast30Days: number;
-                        lastCostPeriodEnd: string;
-                        performanceAdvisories: components["schemas"]["skyforge.ObservabilityAdvisory"][];
-                        providerBreakdown: components["schemas"]["skyforge.ProviderCostBreakdown"][];
-                        /** Format: int64 */
-                        resourceCount: number;
-                        /** Format: int64 */
-                        userScopesTracked: number;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.SyncGovernanceSources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: int64 */
-                        resourceCount: number;
-                        /** Format: int64 */
-                        usageCount: number;
-                        warnings: string[];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListGovernanceUsage": {
-        parameters: {
-            query?: {
-                user_id?: string;
-                provider?: string;
-                metric?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        usage: components["schemas"]["skyforge.GovernanceUsageSnapshot"][];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.IngestGovernanceUsage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    snapshots: components["schemas"]["skyforge.GovernanceUsageInput"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        usage: components["schemas"]["skyforge.GovernanceUsageSnapshot"][];
                     };
                 };
             };
@@ -12426,6 +11862,62 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetUserObservabilitySeries": {
+        parameters: {
+            query: {
+                metric: string;
+                window?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        metric: string;
+                        points: components["schemas"]["skyforge.ObservabilitySeriesPoint"][];
+                        scope: string;
+                        window: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserObservabilitySummary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        forward: components["schemas"]["skyforge.ForwardObservabilitySummary"];
+                        generatedAt: string;
+                        /** user|admin */
+                        scope: string;
+                        skyforge: components["schemas"]["skyforge.ObservabilitySummaryResponse"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:platform.PublicConfig": {
         parameters: {
             query?: never;
@@ -13111,6 +12603,7 @@ export interface operations {
                     "application/json": {
                         auth: components["schemas"]["authn.UIAuthConfig"];
                         authMode: string;
+                        elkBaseUrl: string;
                         externalUrl: string;
                         features: components["schemas"]["skyforgecore.FeaturesConfig"];
                         headerBackground: string;
@@ -14376,40 +13869,6 @@ export interface operations {
                 };
             };
         };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        body: Record<string, never>;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GetUserScopeDeploymentCapacityInterfaceMetrics": {
-        parameters: {
-            query: {
-                type: string;
-                days: number;
-                direction?: string;
-                interface?: string;
-                interfaceFilter?: string;
-                snapshotId?: string;
-                endTime?: string;
-            };
-            header?: never;
-            path: {
-                id: string;
-                deploymentID: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description Success response */
             200: {
@@ -18674,44 +18133,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.CronCleanupGovernanceUsage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.CronSnapshotGovernanceUsage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "POST:skyforge.CronCleanupObservability": {
         parameters: {
             query?: never;
@@ -20392,6 +19813,133 @@ export interface operations {
                 content: {
                     "application/json": {
                         runs: components["schemas"]["taskruns.Run"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:taskruns.ReconcileQueuedTasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * Limit caps the number of queued tasks to republish.
+                     * Format: int64
+                     */
+                    limit: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        consideredTasks: number;
+                        /** Format: int64 */
+                        publishErrors: number;
+                        /** Format: int64 */
+                        republished: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:taskruns.ReconcileRunningTasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    hardMaxRuntimeMinutes: number;
+                    /** Format: int64 */
+                    limit: number;
+                    /** Format: int64 */
+                    maxIdleMinutes: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        consideredTasks: number;
+                        /** Format: int64 */
+                        finishErrors: number;
+                        /** Format: int64 */
+                        markedFailed: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:taskruns.TaskQueueDiag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    oldestQueuedSec: number;
+                    /** Format: int64 */
+                    staleHeartbeatSec: number;
+                    /** Format: int64 */
+                    stuckQueuedBatch: number;
+                    /** Format: int64 */
+                    stuckQueuedMinAgeMs: number;
+                    workerEnabled: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        oldestQueuedAgeSec: number;
+                        /** Format: int64 */
+                        publishFailures10m: number;
+                        publishFailuresLatest: string;
+                        /** Format: int64 */
+                        queued: number;
+                        /** Format: int64 */
+                        running: number;
+                        status: string;
+                        /** Format: int64 */
+                        stuckQueuedCandidates: number;
+                        /** Format: int64 */
+                        workerHeartbeatAgeSec: number;
                     };
                 };
             };

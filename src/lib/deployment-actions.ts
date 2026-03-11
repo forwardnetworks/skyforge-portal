@@ -56,7 +56,10 @@ export async function runDeploymentActionWithRetry(
 	deploymentId: string,
 	action: DeploymentActionKind,
 ): Promise<DeploymentActionRunResult> {
-	const retryableNoOpReasons = new Set(["in_flight_duplicate", "cooldown_suppressed"]);
+	const retryableNoOpReasons = new Set([
+		"in_flight_duplicate",
+		"cooldown_suppressed",
+	]);
 	let lastError: Error | null = null;
 	let lastResponse: Record<string, unknown> = {};
 	let lastMeta: DeploymentActionMeta = { noOp: false, reason: "" };
@@ -71,10 +74,20 @@ export async function runDeploymentActionWithRetry(
 			lastResponse = response;
 			lastMeta = meta;
 			if (!meta.noOp) {
-				return { response, meta, queued: true, queue: readDeploymentActionQueue(response) };
+				return {
+					response,
+					meta,
+					queued: true,
+					queue: readDeploymentActionQueue(response),
+				};
 			}
 			if (!retryableNoOpReasons.has(meta.reason)) {
-				return { response, meta, queued: false, queue: readDeploymentActionQueue(response) };
+				return {
+					response,
+					meta,
+					queued: false,
+					queue: readDeploymentActionQueue(response),
+				};
 			}
 		} catch (err) {
 			lastError = err as Error;

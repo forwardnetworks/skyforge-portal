@@ -129,18 +129,17 @@ export const queryKeys = {
 	) => ["userTemplates", userId, kind, source, repo ?? "", dir ?? ""] as const,
 	webhookEvents: (limit?: string) => ["webhookEvents", limit ?? ""] as const,
 	notificationSettings: () => ["notificationSettings"] as const,
-	governanceSummary: () => ["governanceSummary"] as const,
-	governanceResources: (limit?: string) =>
-		["governanceResources", limit ?? ""] as const,
-	governanceCosts: (limit?: string) =>
-		["governanceCosts", limit ?? ""] as const,
-	governanceUsage: (limit?: string) =>
-		["governanceUsage", limit ?? ""] as const,
-	governancePolicy: () => ["governancePolicy"] as const,
+	userObservabilitySummary: () => ["userObservabilitySummary"] as const,
+	userObservabilitySeries: (metric: string, window?: string) =>
+		["userObservabilitySeries", metric, window ?? ""] as const,
 	observabilitySummary: () => ["observabilitySummary"] as const,
 	observabilitySeries: (metric: string, window?: string) =>
 		["observabilitySeries", metric, window ?? ""] as const,
-	observabilitySlowRequests: (window?: string, endpoint?: string, limit?: string) =>
+	observabilitySlowRequests: (
+		window?: string,
+		endpoint?: string,
+		limit?: string,
+	) =>
 		[
 			"observabilitySlowRequests",
 			window ?? "",

@@ -112,7 +112,9 @@ export function WebsocketTerminal({
 		};
 		ws.onerror = () => {
 			setStatus("error");
-			term.writeln("\r\n[error] websocket error (check browser console/network)");
+			term.writeln(
+				"\r\n[error] websocket error (check browser console/network)",
+			);
 		};
 
 		const input = term.onData((data) => {
@@ -176,4 +178,3 @@ export function WebsocketTerminal({
 		</div>
 	);
 }
-

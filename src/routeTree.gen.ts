@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WebhooksRouteImport } from './routes/webhooks'
 import { Route as SyslogRouteImport } from './routes/syslog'
-import { Route as StatusRouteImport } from './routes/status'
 import { Route as SnmpRouteImport } from './routes/snmp'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -22,14 +21,14 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as LoginLocalRouteImport } from './routes/login.local'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
+import { Route as DashboardSignalsRouteImport } from './routes/dashboard/signals'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
 import { Route as DashboardPolicyReportsRouteImport } from './routes/dashboard/policy-reports'
-import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
+import { Route as DashboardInfobloxRouteImport } from './routes/dashboard/infoblox'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
-import { Route as AdminGovernanceRouteImport } from './routes/admin/governance'
 import { Route as DashboardRunsIndexRouteImport } from './routes/dashboard/runs/index'
 import { Route as DashboardForwardIndexRouteImport } from './routes/dashboard/forward.index'
 import { Route as DashboardForwardNetworksIndexRouteImport } from './routes/dashboard/forward-networks/index'
@@ -39,14 +38,13 @@ import { Route as DashboardToolsToolRouteImport } from './routes/dashboard/tools
 import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/$runId'
 import { Route as DashboardLabsMapRouteImport } from './routes/dashboard/labs/map'
 import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/labs/designer'
-import { Route as DashboardIntegrationsInfobloxRouteImport } from './routes/dashboard/integrations.infoblox'
 import { Route as DashboardForwardCredentialsRouteImport } from './routes/dashboard/forward.credentials'
 import { Route as DashboardForwardCollectorsRouteImport } from './routes/dashboard/forward.collectors'
 import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$slug'
 import { Route as DashboardDeploymentsQuickRouteImport } from './routes/dashboard/deployments/quick'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
+import { Route as AdminInfobloxConsoleRouteImport } from './routes/admin/infoblox.console'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
-import { Route as DashboardIntegrationsInfobloxConsoleRouteImport } from './routes/dashboard/integrations.infoblox.console'
 import { Route as DashboardForwardNetworksNetworkRefCapacityRouteImport } from './routes/dashboard/forward-networks/$networkRef.capacity'
 import { Route as DashboardDeploymentsDeploymentIdMapRouteImport } from './routes/dashboard/deployments/$deploymentId.map'
 import { Route as DashboardDeploymentsDeploymentIdCapacityRouteImport } from './routes/dashboard/deployments/$deploymentId.capacity'
@@ -59,11 +57,6 @@ const WebhooksRoute = WebhooksRouteImport.update({
 const SyslogRoute = SyslogRouteImport.update({
   id: '/syslog',
   path: '/syslog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StatusRoute = StatusRouteImport.update({
-  id: '/status',
-  path: '/status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SnmpRoute = SnmpRouteImport.update({
@@ -116,6 +109,11 @@ const DocsSlugRoute = DocsSlugRouteImport.update({
   path: '/docs/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardSignalsRoute = DashboardSignalsRouteImport.update({
+  id: '/dashboard/signals',
+  path: '/dashboard/signals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/dashboard/settings',
   path: '/dashboard/settings',
@@ -136,9 +134,9 @@ const DashboardPolicyReportsRoute = DashboardPolicyReportsRouteImport.update({
   path: '/dashboard/policy-reports',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
-  id: '/dashboard/integrations',
-  path: '/dashboard/integrations',
+const DashboardInfobloxRoute = DashboardInfobloxRouteImport.update({
+  id: '/dashboard/infoblox',
+  path: '/dashboard/infoblox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardForwardRoute = DashboardForwardRouteImport.update({
@@ -149,11 +147,6 @@ const DashboardForwardRoute = DashboardForwardRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminGovernanceRoute = AdminGovernanceRouteImport.update({
-  id: '/admin/governance',
-  path: '/admin/governance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRunsIndexRoute = DashboardRunsIndexRouteImport.update({
@@ -203,12 +196,6 @@ const DashboardLabsDesignerRoute = DashboardLabsDesignerRouteImport.update({
   path: '/dashboard/labs/designer',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIntegrationsInfobloxRoute =
-  DashboardIntegrationsInfobloxRouteImport.update({
-    id: '/infoblox',
-    path: '/infoblox',
-    getParentRoute: () => DashboardIntegrationsRoute,
-  } as any)
 const DashboardForwardCredentialsRoute =
   DashboardForwardCredentialsRouteImport.update({
     id: '/credentials',
@@ -237,17 +224,16 @@ const DashboardDeploymentsNewRoute = DashboardDeploymentsNewRouteImport.update({
   path: '/dashboard/deployments/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminInfobloxConsoleRoute = AdminInfobloxConsoleRouteImport.update({
+  id: '/admin/infoblox/console',
+  path: '/admin/infoblox/console',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardDeploymentsDeploymentIdIndexRoute =
   DashboardDeploymentsDeploymentIdIndexRouteImport.update({
     id: '/dashboard/deployments/$deploymentId/',
     path: '/dashboard/deployments/$deploymentId/',
     getParentRoute: () => rootRouteImport,
-  } as any)
-const DashboardIntegrationsInfobloxConsoleRoute =
-  DashboardIntegrationsInfobloxConsoleRouteImport.update({
-    id: '/console',
-    path: '/console',
-    getParentRoute: () => DashboardIntegrationsInfobloxRoute,
   } as any)
 const DashboardForwardNetworksNetworkRefCapacityRoute =
   DashboardForwardNetworksNetworkRefCapacityRouteImport.update({
@@ -274,28 +260,27 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/snmp': typeof SnmpRoute
-  '/status': typeof StatusRoute
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
-  '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
-  '/dashboard/integrations': typeof DashboardIntegrationsRouteWithChildren
+  '/dashboard/infoblox': typeof DashboardInfobloxRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/signals': typeof DashboardSignalsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/admin/infoblox/console': typeof AdminInfobloxConsoleRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
-  '/dashboard/integrations/infoblox': typeof DashboardIntegrationsInfobloxRouteWithChildren
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -308,7 +293,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
-  '/dashboard/integrations/infoblox/console': typeof DashboardIntegrationsInfobloxConsoleRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -317,27 +301,26 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/snmp': typeof SnmpRoute
-  '/status': typeof StatusRoute
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
-  '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/dashboard/integrations': typeof DashboardIntegrationsRouteWithChildren
+  '/dashboard/infoblox': typeof DashboardInfobloxRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/signals': typeof DashboardSignalsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/admin/infoblox/console': typeof AdminInfobloxConsoleRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
-  '/dashboard/integrations/infoblox': typeof DashboardIntegrationsInfobloxRouteWithChildren
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -350,7 +333,6 @@ export interface FileRoutesByTo {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
-  '/dashboard/integrations/infoblox/console': typeof DashboardIntegrationsInfobloxConsoleRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesById {
@@ -360,28 +342,27 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/settings': typeof SettingsRoute
   '/snmp': typeof SnmpRoute
-  '/status': typeof StatusRoute
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
-  '/admin/governance': typeof AdminGovernanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
-  '/dashboard/integrations': typeof DashboardIntegrationsRouteWithChildren
+  '/dashboard/infoblox': typeof DashboardInfobloxRoute
   '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/signals': typeof DashboardSignalsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/admin/infoblox/console': typeof AdminInfobloxConsoleRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
-  '/dashboard/integrations/infoblox': typeof DashboardIntegrationsInfobloxRouteWithChildren
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -394,7 +375,6 @@ export interface FileRoutesById {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
-  '/dashboard/integrations/infoblox/console': typeof DashboardIntegrationsInfobloxConsoleRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -405,28 +385,27 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/settings'
     | '/snmp'
-    | '/status'
     | '/syslog'
     | '/webhooks'
-    | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/forward'
-    | '/dashboard/integrations'
+    | '/dashboard/infoblox'
     | '/dashboard/policy-reports'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
+    | '/dashboard/signals'
     | '/docs/$slug'
     | '/login/local'
     | '/admin'
     | '/dashboard'
     | '/docs'
+    | '/admin/infoblox/console'
     | '/dashboard/deployments/new'
     | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
-    | '/dashboard/integrations/infoblox'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -439,7 +418,6 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-networks/$networkRef/capacity'
-    | '/dashboard/integrations/infoblox/console'
     | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -448,27 +426,26 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/settings'
     | '/snmp'
-    | '/status'
     | '/syslog'
     | '/webhooks'
-    | '/admin/governance'
     | '/admin/settings'
-    | '/dashboard/integrations'
+    | '/dashboard/infoblox'
     | '/dashboard/policy-reports'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
+    | '/dashboard/signals'
     | '/docs/$slug'
     | '/login/local'
     | '/admin'
     | '/dashboard'
     | '/docs'
+    | '/admin/infoblox/console'
     | '/dashboard/deployments/new'
     | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
-    | '/dashboard/integrations/infoblox'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -481,7 +458,6 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-networks/$networkRef/capacity'
-    | '/dashboard/integrations/infoblox/console'
     | '/dashboard/deployments/$deploymentId'
   id:
     | '__root__'
@@ -490,28 +466,27 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/settings'
     | '/snmp'
-    | '/status'
     | '/syslog'
     | '/webhooks'
-    | '/admin/governance'
     | '/admin/settings'
     | '/dashboard/forward'
-    | '/dashboard/integrations'
+    | '/dashboard/infoblox'
     | '/dashboard/policy-reports'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
+    | '/dashboard/signals'
     | '/docs/$slug'
     | '/login/local'
     | '/admin/'
     | '/dashboard/'
     | '/docs/'
+    | '/admin/infoblox/console'
     | '/dashboard/deployments/new'
     | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
-    | '/dashboard/integrations/infoblox'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -524,7 +499,6 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-networks/$networkRef/capacity'
-    | '/dashboard/integrations/infoblox/console'
     | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
 }
@@ -534,22 +508,22 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   SettingsRoute: typeof SettingsRoute
   SnmpRoute: typeof SnmpRoute
-  StatusRoute: typeof StatusRoute
   SyslogRoute: typeof SyslogRoute
   WebhooksRoute: typeof WebhooksRoute
-  AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardForwardRoute: typeof DashboardForwardRouteWithChildren
-  DashboardIntegrationsRoute: typeof DashboardIntegrationsRouteWithChildren
+  DashboardInfobloxRoute: typeof DashboardInfobloxRoute
   DashboardPolicyReportsRoute: typeof DashboardPolicyReportsRoute
   DashboardS3Route: typeof DashboardS3Route
   DashboardServicenowRoute: typeof DashboardServicenowRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardSignalsRoute: typeof DashboardSignalsRoute
   DocsSlugRoute: typeof DocsSlugRoute
   LoginLocalRoute: typeof LoginLocalRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
+  AdminInfobloxConsoleRoute: typeof AdminInfobloxConsoleRoute
   DashboardDeploymentsNewRoute: typeof DashboardDeploymentsNewRoute
   DashboardDeploymentsQuickRoute: typeof DashboardDeploymentsQuickRoute
   DashboardDocsSlugRoute: typeof DashboardDocsSlugRoute
@@ -581,13 +555,6 @@ declare module '@tanstack/react-router' {
       path: '/syslog'
       fullPath: '/syslog'
       preLoaderRoute: typeof SyslogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/status': {
-      id: '/status'
-      path: '/status'
-      fullPath: '/status'
-      preLoaderRoute: typeof StatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/snmp': {
@@ -660,6 +627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/signals': {
+      id: '/dashboard/signals'
+      path: '/dashboard/signals'
+      fullPath: '/dashboard/signals'
+      preLoaderRoute: typeof DashboardSignalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/settings': {
       id: '/dashboard/settings'
       path: '/dashboard/settings'
@@ -688,11 +662,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPolicyReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/integrations': {
-      id: '/dashboard/integrations'
-      path: '/dashboard/integrations'
-      fullPath: '/dashboard/integrations'
-      preLoaderRoute: typeof DashboardIntegrationsRouteImport
+    '/dashboard/infoblox': {
+      id: '/dashboard/infoblox'
+      path: '/dashboard/infoblox'
+      fullPath: '/dashboard/infoblox'
+      preLoaderRoute: typeof DashboardInfobloxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/forward': {
@@ -707,13 +681,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/governance': {
-      id: '/admin/governance'
-      path: '/admin/governance'
-      fullPath: '/admin/governance'
-      preLoaderRoute: typeof AdminGovernanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/runs/': {
@@ -779,13 +746,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLabsDesignerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/integrations/infoblox': {
-      id: '/dashboard/integrations/infoblox'
-      path: '/infoblox'
-      fullPath: '/dashboard/integrations/infoblox'
-      preLoaderRoute: typeof DashboardIntegrationsInfobloxRouteImport
-      parentRoute: typeof DashboardIntegrationsRoute
-    }
     '/dashboard/forward/credentials': {
       id: '/dashboard/forward/credentials'
       path: '/credentials'
@@ -821,19 +781,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/infoblox/console': {
+      id: '/admin/infoblox/console'
+      path: '/admin/infoblox/console'
+      fullPath: '/admin/infoblox/console'
+      preLoaderRoute: typeof AdminInfobloxConsoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/deployments/$deploymentId/': {
       id: '/dashboard/deployments/$deploymentId/'
       path: '/dashboard/deployments/$deploymentId'
       fullPath: '/dashboard/deployments/$deploymentId'
       preLoaderRoute: typeof DashboardDeploymentsDeploymentIdIndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/integrations/infoblox/console': {
-      id: '/dashboard/integrations/infoblox/console'
-      path: '/console'
-      fullPath: '/dashboard/integrations/infoblox/console'
-      preLoaderRoute: typeof DashboardIntegrationsInfobloxConsoleRouteImport
-      parentRoute: typeof DashboardIntegrationsInfobloxRoute
     }
     '/dashboard/forward-networks/$networkRef/capacity': {
       id: '/dashboard/forward-networks/$networkRef/capacity'
@@ -874,57 +834,28 @@ const DashboardForwardRouteChildren: DashboardForwardRouteChildren = {
 const DashboardForwardRouteWithChildren =
   DashboardForwardRoute._addFileChildren(DashboardForwardRouteChildren)
 
-interface DashboardIntegrationsInfobloxRouteChildren {
-  DashboardIntegrationsInfobloxConsoleRoute: typeof DashboardIntegrationsInfobloxConsoleRoute
-}
-
-const DashboardIntegrationsInfobloxRouteChildren: DashboardIntegrationsInfobloxRouteChildren =
-  {
-    DashboardIntegrationsInfobloxConsoleRoute:
-      DashboardIntegrationsInfobloxConsoleRoute,
-  }
-
-const DashboardIntegrationsInfobloxRouteWithChildren =
-  DashboardIntegrationsInfobloxRoute._addFileChildren(
-    DashboardIntegrationsInfobloxRouteChildren,
-  )
-
-interface DashboardIntegrationsRouteChildren {
-  DashboardIntegrationsInfobloxRoute: typeof DashboardIntegrationsInfobloxRouteWithChildren
-}
-
-const DashboardIntegrationsRouteChildren: DashboardIntegrationsRouteChildren = {
-  DashboardIntegrationsInfobloxRoute:
-    DashboardIntegrationsInfobloxRouteWithChildren,
-}
-
-const DashboardIntegrationsRouteWithChildren =
-  DashboardIntegrationsRoute._addFileChildren(
-    DashboardIntegrationsRouteChildren,
-  )
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DesignRoute: DesignRoute,
   NotificationsRoute: NotificationsRoute,
   SettingsRoute: SettingsRoute,
   SnmpRoute: SnmpRoute,
-  StatusRoute: StatusRoute,
   SyslogRoute: SyslogRoute,
   WebhooksRoute: WebhooksRoute,
-  AdminGovernanceRoute: AdminGovernanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   DashboardForwardRoute: DashboardForwardRouteWithChildren,
-  DashboardIntegrationsRoute: DashboardIntegrationsRouteWithChildren,
+  DashboardInfobloxRoute: DashboardInfobloxRoute,
   DashboardPolicyReportsRoute: DashboardPolicyReportsRoute,
   DashboardS3Route: DashboardS3Route,
   DashboardServicenowRoute: DashboardServicenowRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardSignalsRoute: DashboardSignalsRoute,
   DocsSlugRoute: DocsSlugRoute,
   LoginLocalRoute: LoginLocalRoute,
   AdminIndexRoute: AdminIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
+  AdminInfobloxConsoleRoute: AdminInfobloxConsoleRoute,
   DashboardDeploymentsNewRoute: DashboardDeploymentsNewRoute,
   DashboardDeploymentsQuickRoute: DashboardDeploymentsQuickRoute,
   DashboardDocsSlugRoute: DashboardDocsSlugRoute,

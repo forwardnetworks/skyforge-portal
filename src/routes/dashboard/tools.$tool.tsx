@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { ExternalLink, Maximize2, RefreshCw } from "lucide-react";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { ExternalLink, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { getUIConfig } from "@/lib/api-client";
-import {
-	EMBEDDED_TOOL_DEFS,
-	type EmbeddedToolId,
-} from "@/lib/embedded-tools";
+import { EMBEDDED_TOOL_DEFS, type EmbeddedToolId } from "@/lib/embedded-tools";
 import { queryKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/tools/$tool")({
@@ -90,7 +87,9 @@ function EmbeddedToolPage() {
 	}
 
 	if (uiConfigQ.isLoading) {
-		return <div className="p-6 text-sm text-muted-foreground">Loading tool...</div>;
+		return (
+			<div className="p-6 text-sm text-muted-foreground">Loading tool...</div>
+		);
 	}
 
 	if (!enabled) {
@@ -99,7 +98,9 @@ function EmbeddedToolPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle>{toolDef.title}</CardTitle>
-						<CardDescription>This tool is disabled in the current environment.</CardDescription>
+						<CardDescription>
+							This tool is disabled in the current environment.
+						</CardDescription>
 					</CardHeader>
 				</Card>
 			</div>
@@ -112,7 +113,9 @@ function EmbeddedToolPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle>{toolDef.title}</CardTitle>
-						<CardDescription>No launch URL is configured for this tool.</CardDescription>
+						<CardDescription>
+							No launch URL is configured for this tool.
+						</CardDescription>
 					</CardHeader>
 				</Card>
 			</div>
@@ -127,8 +130,12 @@ function EmbeddedToolPage() {
 						<div className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
 							Embedded Workspace
 						</div>
-						<h1 className="truncate text-lg font-semibold tracking-tight">{toolDef.title}</h1>
-						<p className="truncate text-sm text-muted-foreground">{toolDef.description}</p>
+						<h1 className="truncate text-lg font-semibold tracking-tight">
+							{toolDef.title}
+						</h1>
+						<p className="truncate text-sm text-muted-foreground">
+							{toolDef.description}
+						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
 						<Button
@@ -140,18 +147,6 @@ function EmbeddedToolPage() {
 						>
 							<RefreshCw className="mr-2 h-4 w-4" />
 							Refresh
-						</Button>
-						<Button asChild variant="secondary" size="sm">
-							<a href={src} target="_blank" rel="noreferrer noopener">
-								<ExternalLink className="mr-2 h-4 w-4" />
-								Open in new tab
-							</a>
-						</Button>
-						<Button asChild variant="ghost" size="sm">
-							<Link to="/dashboard/integrations">
-								<Maximize2 className="mr-2 h-4 w-4" />
-								Back to integrations
-							</Link>
 						</Button>
 					</div>
 				</div>
@@ -170,7 +165,8 @@ function EmbeddedToolPage() {
 							<CardHeader>
 								<CardTitle>Embedded View Unavailable</CardTitle>
 								<CardDescription>
-									{toolDef.title} did not finish loading in-frame. This usually means the app blocks iframe embedding.
+									{toolDef.title} did not finish loading in-frame. This usually
+									means the app blocks iframe embedding.
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="flex flex-wrap gap-2">

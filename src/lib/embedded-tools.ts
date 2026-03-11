@@ -3,10 +3,14 @@ import { SKYFORGE_API } from "./skyforge-config";
 
 export type EmbeddedToolId =
 	| "forward-cluster"
+	| "forward-grafana"
+	| "forward-prometheus"
 	| "netbox"
 	| "nautobot"
 	| "jira"
 	| "rapid7"
+	| "elk"
+	| "infoblox"
 	| "git"
 	| "artifacts"
 	| "dns"
@@ -23,7 +27,10 @@ export type EmbeddedToolDefinition = {
 
 const FORWARD_CLUSTER_URL = "https://skyforge-fwd.local.forwardnetworks.com";
 
-export const EMBEDDED_TOOL_DEFS: Record<EmbeddedToolId, EmbeddedToolDefinition> = {
+export const EMBEDDED_TOOL_DEFS: Record<
+	EmbeddedToolId,
+	EmbeddedToolDefinition
+> = {
 	"forward-cluster": {
 		id: "forward-cluster",
 		title: "Forward Cluster",
@@ -31,38 +38,66 @@ export const EMBEDDED_TOOL_DEFS: Record<EmbeddedToolId, EmbeddedToolDefinition> 
 		featureFlag: "forwardEnabled",
 		resolveUrl: () => FORWARD_CLUSTER_URL,
 	},
+	"forward-grafana": {
+		id: "forward-grafana",
+		title: "Forward Grafana",
+		description: "Embedded Forward Grafana observability UI.",
+		featureFlag: "forwardEnabled",
+		resolveUrl: () => "/grafana",
+	},
+	"forward-prometheus": {
+		id: "forward-prometheus",
+		title: "Forward Prometheus",
+		description: "Embedded Forward Prometheus observability UI.",
+		featureFlag: "forwardEnabled",
+		resolveUrl: () => "/prometheus",
+	},
 	netbox: {
 		id: "netbox",
 		title: "NetBox",
-		description: "Embedded NetBox workspace.",
+		description: "Embedded NetBox interface.",
 		featureFlag: "netboxEnabled",
 		resolveUrl: (uiConfig) => uiConfig.netboxBaseUrl || "/netbox/",
 	},
 	nautobot: {
 		id: "nautobot",
 		title: "Nautobot",
-		description: "Embedded Nautobot workspace.",
+		description: "Embedded Nautobot interface.",
 		featureFlag: "nautobotEnabled",
 		resolveUrl: (uiConfig) => uiConfig.nautobotBaseUrl || "/nautobot/",
 	},
 	jira: {
 		id: "jira",
 		title: "Jira",
-		description: "Embedded Jira workspace.",
+		description: "Embedded Jira interface.",
 		featureFlag: "jiraEnabled",
 		resolveUrl: (uiConfig) => uiConfig.jiraBaseUrl || "/jira",
 	},
 	rapid7: {
 		id: "rapid7",
 		title: "Rapid7",
-		description: "Embedded Rapid7 workspace.",
+		description: "Embedded Rapid7 interface.",
 		featureFlag: "rapid7Enabled",
 		resolveUrl: (uiConfig) => uiConfig.rapid7BaseUrl || "/rapid7",
+	},
+	elk: {
+		id: "elk",
+		title: "ELK",
+		description: "Embedded ELK interface.",
+		featureFlag: "elkEnabled",
+		resolveUrl: (uiConfig) => uiConfig.elkBaseUrl || "/elk",
+	},
+	infoblox: {
+		id: "infoblox",
+		title: "Infoblox",
+		description: "Embedded Infoblox UI.",
+		featureFlag: "infobloxEnabled",
+		resolveUrl: (uiConfig) => uiConfig.infobloxBaseUrl || "/infoblox",
 	},
 	git: {
 		id: "git",
 		title: "Git",
-		description: "Embedded Gitea workspace.",
+		description: "Embedded Gitea interface.",
 		featureFlag: "giteaEnabled",
 		resolveUrl: () => "/api/gitea/public",
 	},
@@ -82,14 +117,14 @@ export const EMBEDDED_TOOL_DEFS: Record<EmbeddedToolId, EmbeddedToolDefinition> 
 	coder: {
 		id: "coder",
 		title: "Coder",
-		description: "Embedded Coder workspace.",
+		description: "Embedded Coder interface.",
 		featureFlag: "coderEnabled",
 		resolveUrl: () => "/coder/",
 	},
 	"api-testing": {
 		id: "api-testing",
 		title: "API Testing",
-		description: "Embedded API testing workspace.",
+		description: "Embedded API testing interface.",
 		featureFlag: "yaadeEnabled",
 		resolveUrl: () => `${SKYFORGE_API}/yaade/sso`,
 	},

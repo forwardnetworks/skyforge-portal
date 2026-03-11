@@ -28,9 +28,9 @@ const DOC_PAGES: DocPage[] = [
 				<ol className="list-decimal pl-5 space-y-2">
 					<li>
 						Go to{" "}
-							<Link className="underline" to="/settings">
-								Settings
-							</Link>{" "}
+						<Link className="underline" to="/settings">
+							Settings
+						</Link>{" "}
 						and configure:
 						<ul className="list-disc pl-5 mt-2 space-y-1">
 							<li>External template repos (optional)</li>

@@ -48,7 +48,7 @@ export function CommandMenu() {
 				<CommandEmpty>No results found.</CommandEmpty>
 				<CommandGroup heading="Suggestions">
 					<CommandItem
-						onSelect={() => runCommand(() => navigate({ to: "/status" }))}
+						onSelect={() => runCommand(() => navigate({ to: "/dashboard" }))}
 					>
 						<LayoutDashboard className="mr-2 h-4 w-4" />
 						<span>Dashboard</span>
@@ -62,7 +62,9 @@ export function CommandMenu() {
 						<span>Deployments</span>
 					</CommandItem>
 					<CommandItem
-						onSelect={() => runCommand(() => navigate({ to: "/status" }))}
+						onSelect={() =>
+							runCommand(() => navigate({ to: "/dashboard/signals" }))
+						}
 					>
 						<Activity className="mr-2 h-4 w-4" />
 						<span>Platform Status</span>

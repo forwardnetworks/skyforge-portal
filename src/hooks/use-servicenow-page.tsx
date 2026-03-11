@@ -1,0 +1,229 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+	cancelUserServiceNowSetup,
+	configureForwardServiceNowTicketing,
+	getUserServiceNowConfig,
+	getUserServiceNowPdiStatus,
+	getUserServiceNowSchemaStatus,
+	getUserServiceNowSetupStatus,
+	installUserServiceNowDemo,
+	listUserForwardCollectorConfigs,
+	putUserServiceNowConfig,
+	startUserServiceNowSetup,
+	wakeUserServiceNowPdi,
+} from "../lib/api-client";
+import { queryKeys } from "../lib/query-keys";
+
+export function useServiceNowPage() {
+	const qc = useQueryClient();
+	const cfgKey = queryKeys.userServiceNowConfig();
+	const setupKey = queryKeys.userServiceNowSetupStatus();
+	const pdiKey = queryKeys.userServiceNowPdiStatus();
+	const schemaKey = queryKeys.userServiceNowSchemaStatus();
+	const collectorsKey = queryKeys.userForwardCollectorConfigs();
+
+	const cfgQ = useQuery({
+		queryKey: cfgKey,
+		queryFn: getUserServiceNowConfig,
+		retry: false,
+	});
+	const cfg = cfgQ.data;
+
+	const setupQ = useQuery({
+		queryKey: setupKey,
+		queryFn: getUserServiceNowSetupStatus,
+		retry: false,
+		refetchInterval: (query) =>
+			query.state.data?.status === "running" ? 4_000 : 30_000,
+	});
+
+	const collectorsQ = useQuery({
+		queryKey: collectorsKey,
+		queryFn: listUserForwardCollectorConfigs,
+		retry: false,
+		staleTime: 30_000,
+	});
+	const collectorOptions = useMemo(
+		() => collectorsQ.data?.collectors ?? [],
+		[collectorsQ.data],
+	);
+
+	const [instanceUrl, setInstanceUrl] = useState("");
+	const [adminUsername, setAdminUsername] = useState("");
+	const [adminPassword, setAdminPassword] = useState("");
+	const [forwardCredentialSetId, setForwardCredentialSetId] = useState("");
+
+	useEffect(() => {
+		if (!cfg) return;
+		setInstanceUrl(cfg.instanceUrl ?? "");
+		setAdminUsername(cfg.adminUsername ?? "");
+		setForwardCredentialSetId(cfg.forwardCredentialSetId ?? "");
+	}, [cfg]);
+
+	useEffect(() => {
+		if (forwardCredentialSetId) return;
+		const preferred =
+			collectorOptions.find((c) => c.isDefault) ?? collectorOptions[0];
+		if (preferred?.id) setForwardCredentialSetId(preferred.id);
+	}, [collectorOptions, forwardCredentialSetId]);
+
+	const pdiQ = useQuery({
+		queryKey: pdiKey,
+		queryFn: getUserServiceNowPdiStatus,
+		enabled: Boolean(cfg?.configured),
+		retry: false,
+	});
+
+	const schemaQ = useQuery({
+		queryKey: schemaKey,
+		queryFn: getUserServiceNowSchemaStatus,
+		enabled: Boolean(cfg?.configured),
+		retry: false,
+	});
+
+	const saveMutation = useMutation({
+		mutationFn: async () => {
+			if (!instanceUrl.trim()) {
+				throw new Error("ServiceNow instance URL is required");
+			}
+			if (!adminUsername.trim()) {
+				throw new Error("ServiceNow admin username is required");
+			}
+			if (!forwardCredentialSetId.trim()) {
+				throw new Error("Forward credential set is required");
+			}
+			return putUserServiceNowConfig({
+				instanceUrl: instanceUrl.trim(),
+				adminUsername: adminUsername.trim(),
+				adminPassword,
+				forwardCredentialSetId: forwardCredentialSetId.trim(),
+			});
+		},
+		onSuccess: async () => {
+			toast.success("Saved ServiceNow settings");
+			setAdminPassword("");
+			await qc.invalidateQueries({ queryKey: cfgKey });
+			await qc.invalidateQueries({ queryKey: setupKey });
+			await qc.invalidateQueries({ queryKey: pdiKey });
+			await qc.invalidateQueries({ queryKey: schemaKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to save ServiceNow settings", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const setupMutation = useMutation({
+		mutationFn: async (resume: boolean) => startUserServiceNowSetup({ resume }),
+		onSuccess: async (resp) => {
+			if (resp.status === "completed") {
+				toast.success("ServiceNow setup completed");
+			} else if (resp.status === "needs_manual_step") {
+				toast.warning("ServiceNow setup needs manual remediation");
+			} else if (resp.status === "running") {
+				toast.success("ServiceNow setup started");
+			}
+			await qc.invalidateQueries({ queryKey: setupKey });
+			await qc.invalidateQueries({ queryKey: cfgKey });
+			await qc.invalidateQueries({ queryKey: schemaKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to run setup", { description: (e as Error).message }),
+	});
+
+	const cancelSetupMutation = useMutation({
+		mutationFn: async () => cancelUserServiceNowSetup(),
+		onSuccess: async (resp) => {
+			if (resp.canceled) {
+				toast.success("Setup canceled");
+			}
+			await qc.invalidateQueries({ queryKey: setupKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to cancel setup", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const wakeMutation = useMutation({
+		mutationFn: async () => wakeUserServiceNowPdi(),
+		onSuccess: async () => {
+			toast.success("Wake requested");
+			await qc.invalidateQueries({ queryKey: pdiKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to wake PDI", { description: (e as Error).message }),
+	});
+
+	const installMutation = useMutation({
+		mutationFn: async () => installUserServiceNowDemo(),
+		onSuccess: async (resp) => {
+			if (resp.installed) {
+				toast.success("Demo app installed");
+			} else {
+				toast.error("Install failed", { description: resp.message });
+			}
+			await qc.invalidateQueries({ queryKey: cfgKey });
+			await qc.invalidateQueries({ queryKey: schemaKey });
+		},
+		onError: (e) =>
+			toast.error("Failed to install demo app", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const configureMutation = useMutation({
+		mutationFn: async () => configureForwardServiceNowTicketing(),
+		onSuccess: (resp) => {
+			if (resp.configured) {
+				toast.success("Forward ticketing configured");
+			} else {
+				toast.error("Failed to configure Forward", {
+					description: resp.message,
+				});
+			}
+		},
+		onError: (e) =>
+			toast.error("Failed to configure Forward", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const setupStatus = setupQ.data?.status ?? "idle";
+	const canResume = setupStatus === "needs_manual_step";
+	const isRunning = setupStatus === "running";
+	const selectedCredential = collectorOptions.find(
+		(c) => c.id === forwardCredentialSetId,
+	);
+
+	return {
+		cfg,
+		cfgQ,
+		setupQ,
+		pdiQ,
+		schemaQ,
+		collectorOptions,
+		instanceUrl,
+		setInstanceUrl,
+		adminUsername,
+		setAdminUsername,
+		adminPassword,
+		setAdminPassword,
+		forwardCredentialSetId,
+		setForwardCredentialSetId,
+		saveMutation,
+		setupMutation,
+		cancelSetupMutation,
+		wakeMutation,
+		installMutation,
+		configureMutation,
+		setupStatus,
+		canResume,
+		isRunning,
+		selectedCredential,
+	};
+}
+
+export type ServiceNowPageData = ReturnType<typeof useServiceNowPage>;

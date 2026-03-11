@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { SKYFORGE_PROXY_ROOT } from "@/lib/api-client";
 import { WebsocketTerminal } from "@/components/websocket-terminal";
+import { SKYFORGE_PROXY_ROOT } from "@/lib/api-client";
+import { useMemo } from "react";
 
 type Props = {
 	userId: string;

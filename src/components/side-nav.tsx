@@ -1,442 +1,98 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import {
-	BookOpen,
-	ChevronDown,
-	ChevronRight,
-	Cloud,
-	FolderKanban,
-	GitBranch,
-	Hammer,
-	Inbox,
-	LayoutDashboard,
-	Network,
-	PanelTop,
-	Radio,
-	Server,
-	Settings,
-	ShieldCheck,
-	Webhook,
-	Workflow,
-} from "lucide-react";
+import { useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
-import { embeddedToolHref } from "../lib/embedded-tools";
-import { sessionHasRole } from "../lib/rbac";
-import { type SkyforgeAuthMode } from "../lib/skyforge-config";
-import { cn } from "../lib/utils";
+import type { SkyforgeAuthMode } from "../lib/skyforge-config";
+import { type Features, buildSideNavItems } from "./side-nav-items";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+	CollapsedNavGroup,
+	ExpandedNavGroup,
+	SideNavLeafItem,
+	hasChildren,
+} from "./side-nav-renderers";
 
-type NavItem = {
-	label: string;
-	href: string;
-	icon: React.ComponentType<{ className?: string }>;
-	external?: boolean;
-	newTab?: boolean;
-	adminOnly?: boolean;
-	featureFlag?: keyof Features;
-	children?: NavItem[];
+const DEFAULT_EXPANDED_GROUPS: Record<string, boolean> = {
+	Forward: true,
+	Integrations: true,
+	Platform: true,
 };
 
-export type Features = {
-	giteaEnabled?: boolean;
-	coderEnabled?: boolean;
-	yaadeEnabled?: boolean;
-	swaggerUIEnabled?: boolean;
-	forwardEnabled?: boolean;
-	netboxEnabled?: boolean;
-	nautobotEnabled?: boolean;
-	infobloxEnabled?: boolean;
-	jiraEnabled?: boolean;
-	rapid7Enabled?: boolean;
-	dnsEnabled?: boolean;
-};
+export { buildSideNavItems } from "./side-nav-items";
+export type { Features } from "./side-nav-items";
 
-function createNavItems(): NavItem[] {
-	return [
-		{ label: "Dashboard", href: "/status", icon: LayoutDashboard },
-		{ label: "Deployments", href: "/dashboard/deployments", icon: FolderKanban },
-		{
-			label: "Quick Deploy",
-			href: "/dashboard/deployments/quick",
-			icon: Workflow,
-			featureFlag: "forwardEnabled",
-		},
-		{
-			label: "Designer",
-			href: "/dashboard/labs/designer",
-			icon: Hammer,
-			newTab: true,
-		},
-		{
-			label: "Forward",
-			href: "",
-			icon: Network,
-			featureFlag: "forwardEnabled",
-			children: [
-				{
-					label: "Credentials",
-					href: "/dashboard/forward/credentials",
-					icon: Settings,
-				},
-				{
-					label: "Collector",
-					href: "/dashboard/forward/collectors",
-					icon: Radio,
-				},
-				{
-					label: "Cluster",
-					href: embeddedToolHref("forward-cluster"),
-					icon: Network,
-				},
-				{
-					label: "Analytics",
-					href: "/dashboard/forward-networks",
-					icon: ShieldCheck,
-				},
-			],
-		},
-		{
-			label: "Integrations",
-			href: "",
-			icon: Workflow,
-			children: [
-				{
-					label: "Overview",
-					href: "/dashboard/integrations",
-					icon: Workflow,
-				},
-				{
-					label: "ServiceNow",
-					href: "/dashboard/servicenow",
-					icon: Workflow,
-				},
-				{
-					label: "NetBox",
-					href: embeddedToolHref("netbox"),
-					icon: Network,
-					featureFlag: "netboxEnabled",
-				},
-				{
-					label: "Nautobot",
-					href: embeddedToolHref("nautobot"),
-					icon: Network,
-					featureFlag: "nautobotEnabled",
-				},
-				{
-					label: "Jira",
-					href: embeddedToolHref("jira"),
-					icon: Workflow,
-					featureFlag: "jiraEnabled",
-				},
-				{
-					label: "Rapid7",
-					href: embeddedToolHref("rapid7"),
-					icon: Workflow,
-					featureFlag: "rapid7Enabled",
-				},
-				{
-					label: "Infoblox",
-					icon: Server,
-					href: "/dashboard/integrations/infoblox",
-					featureFlag: "infobloxEnabled",
-				},
-				{
-					label: "Infoblox Console",
-					href: "/dashboard/integrations/infoblox/console",
-					icon: Server,
-					featureFlag: "infobloxEnabled",
-				},
-			],
-		},
-		{
-			label: "Platform",
-			href: "",
-			icon: Cloud,
-			children: [
-				{
-					label: "Git",
-					href: embeddedToolHref("git"),
-					icon: GitBranch,
-					featureFlag: "giteaEnabled",
-				},
-				{
-					label: "Artifacts",
-					href: embeddedToolHref("artifacts"),
-					icon: Inbox,
-				},
-				{
-					label: "DNS",
-					href: embeddedToolHref("dns"),
-					icon: Network,
-					featureFlag: "dnsEnabled",
-				},
-				{
-					label: "Coder",
-					href: embeddedToolHref("coder"),
-					icon: Cloud,
-					featureFlag: "coderEnabled",
-				},
-				{
-					label: "API Testing",
-					href: embeddedToolHref("api-testing"),
-					icon: PanelTop,
-					featureFlag: "yaadeEnabled",
-				},
-				{ label: "Webhooks", href: "/webhooks", icon: Webhook },
-				{ label: "Syslog", href: "/syslog", icon: Inbox },
-				{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
-			],
-		},
-		{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
-		{
-			label: "Settings",
-			href: "/settings",
-			icon: Settings,
-		},
-	];
-}
-
-export function buildSideNavItems(
-	sessionOrAdmin?: unknown,
-	features?: Features,
-	_authMode?: SkyforgeAuthMode | null,
-): NavItem[] {
-	const session =
-		typeof sessionOrAdmin === "boolean"
-			? { isAdmin: sessionOrAdmin }
-			: sessionOrAdmin;
-	const isAdmin = sessionHasRole(session, "ADMIN");
-	const items = createNavItems();
-	const filterItems = (input: NavItem[]): NavItem[] =>
-		input.flatMap((item) => {
-			if (item.adminOnly && !isAdmin) return [];
-			if (item.featureFlag && features && !features[item.featureFlag]) {
-				return [];
-			}
-			if (!item.children) return [item];
-			const children = filterItems(item.children);
-			if (children.length === 0) return [];
-			return [{ ...item, children }];
-		});
-
-	return filterItems(items);
-}
-
-export function SideNav(props: {
+export function SideNav({
+	collapsed = false,
+	session,
+	isAdmin,
+	features,
+	authMode,
+}: {
 	collapsed?: boolean;
 	session?: unknown;
 	isAdmin?: boolean;
 	features?: Features;
 	authMode?: SkyforgeAuthMode | null;
 }) {
-	const pathname = useRouterState({ select: (s) => s.location.pathname });
-	const [expanded, setExpanded] = useState<Record<string, boolean>>({
-		Forward: true,
-		Integrations: true,
-		Platform: true,
+	const pathname = useRouterState({
+		select: (state) => state.location.pathname,
 	});
+	const [expanded, setExpanded] = useState(DEFAULT_EXPANDED_GROUPS);
+	const items = buildSideNavItems(
+		session ?? { isAdmin: !!isAdmin },
+		features,
+		authMode ?? null,
+	);
 
-	const relForExternal = "noreferrer noopener";
-	const targetForItem = (item: NavItem) => (item.newTab ? "_blank" : undefined);
-	const relForItem = (item: NavItem) => (item.newTab ? relForExternal : undefined);
 	const isActiveHref = (href: string) => {
-		if (!href) return false;
-		if (href === "/") return pathname === "/";
-		if (href.endsWith("/")) return pathname.startsWith(href);
+		if (!href) {
+			return false;
+		}
+		if (href === "/") {
+			return pathname === "/";
+		}
+		if (href.endsWith("/")) {
+			return pathname.startsWith(href);
+		}
 		return pathname === href || pathname.startsWith(`${href}/`);
 	};
 
 	const toggleExpand = (label: string) => {
-		setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
+		setExpanded((previous) => ({ ...previous, [label]: !previous[label] }));
 	};
 
 	return (
 		<nav className="grid items-start gap-2">
 			<div className="space-y-2">
 				<div className="grid gap-1">
-					{buildSideNavItems(
-						props.session ?? { isAdmin: !!props.isAdmin },
-						props.features,
-						props.authMode ?? null,
-					).map((item) => {
-						const Icon = item.icon;
-
-						if (item.children) {
-							// Check if any child is active to highlight parent
+					{items.map((item) => {
+						if (hasChildren(item)) {
 							const isChildActive = item.children.some((child) =>
 								isActiveHref(child.href),
 							);
-							const isOpen = expanded[item.label];
 
-							// Collapsed Mode: Dropdown
-							if (props.collapsed) {
-								return (
-									<DropdownMenu key={item.label}>
-										<DropdownMenuTrigger asChild>
-											<button
-												className={cn(
-													"group flex items-center justify-center rounded-md px-2 py-2 text-sm font-medium transition-colors w-full",
-													"hover:bg-accent hover:text-accent-foreground",
-													isChildActive
-														? "bg-accent text-accent-foreground"
-														: "transparent",
-												)}
-												title={item.label}
-											>
-												<Icon className="h-5 w-5" />
-											</button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent
-											side="right"
-											align="start"
-											sideOffset={10}
-										>
-											<DropdownMenuLabel>{item.label}</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-											{item.children.map((child) => (
-												<DropdownMenuItem key={child.href} asChild>
-													{child.external ? (
-														<a
-															href={child.href}
-															target={targetForItem(child)}
-															rel={relForItem(child)}
-															className="flex items-center gap-2 cursor-pointer w-full"
-														>
-															<child.icon className="h-4 w-4 mr-2" />
-															{child.label}
-														</a>
-													) : (
-														<Link
-															to={child.href}
-															className="flex items-center gap-2 cursor-pointer w-full"
-														>
-															<child.icon className="h-4 w-4 mr-2" />
-															{child.label}
-														</Link>
-													)}
-												</DropdownMenuItem>
-											))}
-										</DropdownMenuContent>
-									</DropdownMenu>
-								);
-							}
-
-							// Expanded Mode: Accordion
-							return (
-								<div key={item.label} className="space-y-1">
-									<button
-										onClick={() => toggleExpand(item.label)}
-										className={cn(
-											"group flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors",
-											"hover:bg-accent hover:text-accent-foreground",
-											isChildActive
-												? "text-foreground font-semibold"
-												: "text-muted-foreground",
-										)}
-									>
-										<div className="flex items-center">
-											<Icon className="mr-2 h-4 w-4" />
-											<span>{item.label}</span>
-										</div>
-										{isOpen ? (
-											<ChevronDown className="h-4 w-4 opacity-50" />
-										) : (
-											<ChevronRight className="h-4 w-4 opacity-50" />
-										)}
-									</button>
-									{isOpen && (
-										<div className="grid gap-1 pl-4 border-l ml-4 border-border/50">
-											{item.children.map((child) => {
-												const active = isActiveHref(child.href);
-												const ChildIcon = child.icon;
-												const childClass = cn(
-													"group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
-													"hover:bg-accent hover:text-accent-foreground",
-													active
-														? "bg-accent text-accent-foreground"
-														: "text-muted-foreground",
-												);
-
-												if (child.external) {
-													return (
-														<a
-															key={child.href}
-															href={child.href}
-															target={targetForItem(child)}
-															rel={relForItem(child)}
-															className={childClass}
-														>
-															<ChildIcon className="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" />
-															<span>{child.label}</span>
-														</a>
-													);
-												}
-
-												return (
-													<Link
-														key={child.href}
-														to={child.href}
-														className={childClass}
-													>
-														<ChildIcon className="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" />
-														<span>{child.label}</span>
-													</Link>
-												);
-											})}
-										</div>
-									)}
-								</div>
-							);
-						}
-
-						// Standard Item
-						const active = isActiveHref(item.href);
-						const baseClass = cn(
-							"group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
-							"hover:bg-accent hover:text-accent-foreground",
-							active ? "bg-accent" : "transparent",
-							props.collapsed && "justify-center px-2",
-						);
-
-						const iconClass = cn(
-							"transition-transform duration-200 group-hover:scale-110 group-hover:text-primary",
-							props.collapsed ? "h-5 w-5" : "mr-2 h-4 w-4",
-						);
-
-						if (item.external) {
-							return (
-								<a
-									key={item.href}
-									href={item.href}
-									target={targetForItem(item)}
-									rel={relForItem(item)}
-									className={baseClass}
-									title={props.collapsed ? item.label : undefined}
-								>
-									<Icon className={iconClass} />
-									{!props.collapsed ? <span>{item.label}</span> : null}
-								</a>
+							return collapsed ? (
+								<CollapsedNavGroup
+									key={item.label}
+									item={item}
+									isChildActive={isChildActive}
+								/>
+							) : (
+								<ExpandedNavGroup
+									key={item.label}
+									item={item}
+									isChildActive={isChildActive}
+									isOpen={!!expanded[item.label]}
+									onToggle={toggleExpand}
+									isActiveHref={isActiveHref}
+								/>
 							);
 						}
 
 						return (
-							<Link
+							<SideNavLeafItem
 								key={item.href}
-								to={item.href}
-								className={baseClass}
-								title={props.collapsed ? item.label : undefined}
-								target={targetForItem(item)}
-								rel={relForItem(item)}
-							>
-								<Icon className={iconClass} />
-								{!props.collapsed ? <span>{item.label}</span> : null}
-							</Link>
+								item={item}
+								active={isActiveHref(item.href)}
+								collapsed={collapsed}
+							/>
 						);
 					})}
 				</div>

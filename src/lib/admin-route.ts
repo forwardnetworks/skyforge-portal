@@ -14,7 +14,7 @@ export async function requireAdminRouteAccess(context: RouteContext) {
 		retry: false,
 	});
 	if (!sessionHasRole(session, "ADMIN")) {
-		throw redirect({ to: "/status" });
+		throw redirect({ to: "/dashboard" });
 	}
 	return session;
 }

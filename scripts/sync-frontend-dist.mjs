@@ -12,17 +12,11 @@ function copyDir(src, dest) {
 
 // Canonical output (vite.config.ts outDir).
 const root = process.cwd();
-const canonicalOutDir = path.resolve(
-	root,
-	"../skyforge-server/frontend/frontend_dist",
-);
+const canonicalOutDir = path.resolve(root, "../server/frontend/frontend_dist");
 
-// Keep alternate code layouts in sync so local builds always work,
-// regardless of which server tree is used to build images.
-const targets = [
-	path.resolve(root, "../skyforge/components/server/frontend/frontend_dist"),
-	path.resolve(root, "../server/frontend/frontend_dist"),
-];
+// This repo's canonical server tree lives at ../server.
+// Do not mirror build output into legacy/accidental sibling paths.
+const targets = [];
 
 for (const dest of targets) {
 	try {
