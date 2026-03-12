@@ -5,6 +5,7 @@ import {
 	approveAdminConfigChangeRun,
 	createCurrentConfigChangeRun,
 	executeAdminConfigChangeRun,
+	rollbackAdminConfigChangeRun,
 	getAdminConfigChangeRunLifecycle,
 	getAdminConfigChangeRunReview,
 	listAdminConfigChangeRuns,
@@ -16,6 +17,9 @@ import {
 	renderCurrentConfigChangeRun,
 	type ConfigChangeRunRecord,
 } from "../lib/api-client";
+import {
+	defaultConfigChangeSpecJson,
+} from "../components/config-changes-shared";
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
 
@@ -75,16 +79,18 @@ export function useConfigChangesPage() {
 		retry: false,
 	});
 
-	const [targetType, setTargetType] = useState("snapshot");
+	const [targetType, setTargetType] = useState("deployment");
 	const [targetRef, setTargetRef] = useState("");
 	const [targetName, setTargetName] = useState("");
-	const [sourceKind, setSourceKind] = useState("config-snippet");
+	const [sourceKind, setSourceKind] = useState("structured-patch");
 	const [executionMode, setExecutionMode] = useState("dry-run");
 	const [summary, setSummary] = useState("");
 	const [ticketRef, setTicketRef] = useState("");
-	const [specJson, setSpecJson] = useState(
-		'{\n  "devices": ["leaf-1"],\n  "snippet": "ip access-list demo\\npermit ip any any"\n}',
-	);
+	const [specJson, setSpecJson] = useState(defaultConfigChangeSpecJson("structured-patch"));
+
+	useEffect(() => {
+		setSpecJson(defaultConfigChangeSpecJson(sourceKind));
+	}, [sourceKind]);
 
 	const createMutation = useMutation({
 		mutationFn: async () =>
@@ -174,6 +180,22 @@ export function useConfigChangesPage() {
 			}),
 	});
 
+	const rollbackMutation = useMutation({
+		mutationFn: async (id: string) => rollbackAdminConfigChangeRun(id),
+		onSuccess: async (run) => {
+			toast.success("Queued change run rollback");
+			await Promise.all([
+				qc.invalidateQueries({ queryKey: queryKeys.configChangeRuns() }),
+				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunLifecycle(run.id) }),
+				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunReview(run.id) }),
+			]);
+		},
+		onError: (error) =>
+			toast.error("Failed to queue rollback", {
+				description: (error as Error).message,
+			}),
+	});
+
 	return {
 		sessionQ,
 		isAdmin,
@@ -205,10 +227,12 @@ export function useConfigChangesPage() {
 		approveMutation,
 		rejectMutation,
 		executeMutation,
+		rollbackMutation,
 		canRenderRun: canRenderRun(selectedRun),
 		canApproveRun: canApproveRun(selectedRun),
 		canRejectRun: canRejectRun(selectedRun),
 		canExecuteRun: canExecuteRun(selectedRun),
+		canRollbackRun: canRollbackRun(selectedRun),
 	};
 }
 
@@ -236,12 +260,45 @@ function canRejectRun(run: ConfigChangeRunRecord | null): boolean {
 
 function canExecuteRun(run: ConfigChangeRunRecord | null): boolean {
 	if (!run) return false;
+	const targetType = String(run.targetType || "").trim().toLowerCase();
+	const sourceKind = String(run.sourceKind || "").trim().toLowerCase();
+	if (targetType !== "deployment") return false;
+	if (
+		sourceKind !== "netlab-model" &&
+		sourceKind !== "structured-patch" &&
+		sourceKind !== "config-snippet" &&
+		sourceKind !== "ansible-playbook" &&
+		sourceKind !== "shell-script"
+	) {
+		return false;
+	}
 	const status = String(run.status || "").trim().toLowerCase();
 	const mode = String(run.executionMode || "").trim().toLowerCase();
 	if (mode === "dry-run") {
 		return status === "rendered" || status === "approved";
 	}
 	return status === "approved";
+}
+
+function canRollbackRun(run: ConfigChangeRunRecord | null): boolean {
+	if (!run) return false;
+	const targetType = String(run.targetType || "").trim().toLowerCase();
+	const sourceKind = String(run.sourceKind || "").trim().toLowerCase();
+	if (targetType !== "deployment") return false;
+	if (
+		sourceKind !== "netlab-model" &&
+		sourceKind !== "structured-patch" &&
+		sourceKind !== "config-snippet" &&
+		sourceKind !== "ansible-playbook" &&
+		sourceKind !== "shell-script"
+	) {
+		return false;
+	}
+	const status = String(run.status || "").trim().toLowerCase();
+	if (status === "queued" || status === "applying" || status === "verifying" || status === "rolled-back") {
+		return false;
+	}
+	return Boolean(run.rollbackSummary?.previousDeploymentConfigJson);
 }
 
 export type ConfigChangesPageData = ReturnType<typeof useConfigChangesPage>;

@@ -22,6 +22,7 @@ export type ConfigChangeRunRecord = {
 		previousTopologyArtifactKey?: string;
 		previousNodeStatusCount?: number;
 		previousNodeStatusUpdatedAt?: string;
+		previousDeploymentConfigJson?: string;
 	};
 	executionSummary?: {
 		taskId?: number;
@@ -31,6 +32,19 @@ export type ConfigChangeRunRecord = {
 		plannedExecutionTaskType?: string;
 		topologyArtifactKey?: string;
 		nodeStatusCount?: number;
+		deviceResults?: Array<{
+			name: string;
+			deviceKey?: string;
+			forwardType?: string;
+			kind?: string;
+			image?: string;
+			mgmtHost?: string;
+			mgmtIp?: string;
+			pingIp?: string;
+			nodeStatus?: string;
+			taskId?: number;
+			updatedAt?: string;
+		}>;
 		artifactRefs?: Array<{
 			kind?: string;
 			name?: string;
@@ -215,6 +229,19 @@ export async function executeAdminConfigChangeRun(
 ): Promise<ConfigChangeRunRecord> {
 	return apiFetch<ConfigChangeRunRecord>(
 		`/api/admin/config-changes/${encodeURIComponent(id)}/execute`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function rollbackAdminConfigChangeRun(
+	id: string,
+	body: ConfigChangeRunActionBody = {},
+): Promise<ConfigChangeRunRecord> {
+	return apiFetch<ConfigChangeRunRecord>(
+		`/api/admin/config-changes/${encodeURIComponent(id)}/rollback`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),

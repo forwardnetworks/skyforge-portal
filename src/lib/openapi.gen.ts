@@ -226,6 +226,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/config-changes/{id}/rollback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RollbackAdminConfigChangeRun queues rollback for a previously executed change
+         *     run.
+         */
+        post: operations["POST:skyforge.RollbackAdminConfigChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/config-changes/{id}/status": {
         parameters: {
             query?: never;
@@ -5591,6 +5611,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/configchanges.QueueChangeRunRollback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.QueueChangeRunRollback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/configchanges.RenderChangeRun": {
         parameters: {
             query?: never;
@@ -8128,9 +8164,24 @@ export interface components {
             runId: string;
             status: string;
         };
+        "configchanges.ChangeRunExecutionDeviceResult": {
+            deviceKey: string;
+            forwardType: string;
+            image: string;
+            kind: string;
+            mgmtHost: string;
+            mgmtIp: string;
+            name: string;
+            nodeStatus: string;
+            pingIp: string;
+            /** Format: int64 */
+            taskId: number;
+            updatedAt: string;
+        };
         "configchanges.ChangeRunExecutionSummary": {
             artifactRefs: components["schemas"]["configchanges.ChangeRunArtifactRef"][];
             deploymentId: string;
+            deviceResults: components["schemas"]["configchanges.ChangeRunExecutionDeviceResult"][];
             executionPath: string;
             /** Format: int64 */
             nodeStatusCount: number;
@@ -8204,6 +8255,7 @@ export interface components {
             title: string;
         };
         "configchanges.ChangeRunRollbackSummary": {
+            previousDeploymentConfigJson: string;
             /** Format: int64 */
             previousNodeStatusCount: number;
             previousNodeStatusUpdatedAt: string;
@@ -10084,6 +10136,70 @@ export interface operations {
                 content: {
                     "application/json": {
                         review: components["schemas"]["configchanges.ChangeRunReview"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RollbackAdminConfigChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    details: {
+                        [key: string]: string;
+                    };
+                    message: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
                     };
                 };
             };
@@ -20958,6 +21074,68 @@ export interface operations {
         };
     };
     "POST:configchanges.QueueChangeRunExecution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    id: string;
+                    queuedBy: string;
+                    /** Format: int64 */
+                    taskId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.QueueChangeRunRollback": {
         parameters: {
             query?: never;
             header?: never;

@@ -1,0 +1,126 @@
+import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
+import { Button } from "./ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "./ui/card";
+import { ConfigField, statusVariant } from "./config-changes-shared";
+
+export function ConfigChangesSelectedRunCard({
+	page,
+}: {
+	page: ConfigChangesPageData;
+}) {
+	const {
+		isAdmin,
+		selectedRun,
+		renderMutation,
+		approveMutation,
+		rejectMutation,
+		executeMutation,
+		rollbackMutation,
+		canRenderRun,
+		canApproveRun,
+		canRejectRun,
+		canExecuteRun,
+		canRollbackRun,
+	} = page;
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>Selected Run</CardTitle>
+				<CardDescription>
+					Render, review, and lifecycle state for the selected change run.
+				</CardDescription>
+			</CardHeader>
+			<CardContent className="space-y-4">
+				{selectedRun ? (
+					<>
+						<div className="grid gap-3 md:grid-cols-2">
+							<ConfigField label="Run ID" value={selectedRun.id} mono />
+							<ConfigField
+								label="Target"
+								value={`${selectedRun.targetType}/${selectedRun.targetRef}`}
+							/>
+							<ConfigField
+								label="Status"
+								value={selectedRun.status}
+								badgeVariant={statusVariant(selectedRun.status)}
+							/>
+							<ConfigField
+								label="Approval"
+								value={selectedRun.approvalState}
+								badgeVariant="outline"
+							/>
+							<ConfigField label="Source" value={selectedRun.sourceKind} />
+							<ConfigField label="Mode" value={selectedRun.executionMode} />
+							<ConfigField label="Requested by" value={selectedRun.requestedBy} />
+							<ConfigField
+								label="Execution task"
+								value={
+									selectedRun.executionTaskId
+										? String(selectedRun.executionTaskId)
+										: "n/a"
+								}
+								mono={Boolean(selectedRun.executionTaskId)}
+							/>
+						</div>
+						<div className="flex flex-wrap items-center gap-2">
+							<Button
+								onClick={() => renderMutation.mutate(selectedRun.id)}
+								disabled={!canRenderRun || renderMutation.isPending}
+							>
+								Render review
+							</Button>
+							{isAdmin ? (
+								<>
+									<Button
+										variant="secondary"
+										onClick={() => approveMutation.mutate(selectedRun.id)}
+										disabled={!canApproveRun || approveMutation.isPending}
+									>
+										Approve
+									</Button>
+									<Button
+										variant="outline"
+										onClick={() => rejectMutation.mutate(selectedRun.id)}
+										disabled={!canRejectRun || rejectMutation.isPending}
+									>
+										Reject
+									</Button>
+									<Button
+										variant="default"
+										onClick={() => executeMutation.mutate(selectedRun.id)}
+										disabled={!canExecuteRun || executeMutation.isPending}
+									>
+										Execute
+									</Button>
+									<Button
+										variant="destructive"
+										onClick={() => rollbackMutation.mutate(selectedRun.id)}
+										disabled={!canRollbackRun || rollbackMutation.isPending}
+									>
+										Rollback
+									</Button>
+								</>
+							) : null}
+							<div className="text-xs text-muted-foreground">
+								{isAdmin
+									? "Operators can approve, reject, execute, and replay rollback after review. Only deployment-targeted netlab-model, structured-patch, config-snippet, ansible-playbook, and shell-script runs are executable."
+									: "Only requested or validating runs can be rendered."}
+							</div>
+						</div>
+					</>
+				) : (
+					<div className="text-sm text-muted-foreground">
+						Select a change run to inspect it.
+					</div>
+				)}
+			</CardContent>
+		</Card>
+	);
+}
