@@ -1,9 +1,10 @@
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
+import { DashboardLaunchpadCard } from "./dashboard-launchpad-card";
+import { DashboardSystemStatusCard } from "./dashboard-system-status-card";
 import { PlatformWarningsCard } from "./platform-warnings-card";
 import { DashboardAdminSummaryCard } from "./dashboard-admin-summary-card";
 import { DashboardAvailabilityCard } from "./dashboard-availability-card";
 import { DashboardGuidanceCard } from "./dashboard-guidance-card";
-import { DashboardHeroCard } from "./dashboard-hero-card";
 import { DashboardNextStepsCard } from "./dashboard-next-steps-card";
 import { DashboardPolicySummaryCard } from "./dashboard-policy-summary-card";
 import { DashboardReservationsCard } from "./dashboard-reservations-card";
@@ -22,7 +23,10 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 
 	return (
 		<div className="space-y-6 p-6">
-			<DashboardHeroCard page={page} />
+			<div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+				<DashboardLaunchpadCard page={page} />
+				<DashboardSystemStatusCard page={page} />
+			</div>
 
 			<PlatformWarningsCard
 				title="Platform conditions"
@@ -67,12 +71,12 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 
 			<DashboardGuidanceCard page={page} />
 
-			<div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+			<div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
 				<DashboardAvailabilityCard page={page} />
 				<DashboardPolicySummaryCard page={page} />
 			</div>
 
-			<div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+			<div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
 				<DashboardReservationsCard page={page} />
 				{page.isAdmin ? (
 					<DashboardAdminSummaryCard page={page} />

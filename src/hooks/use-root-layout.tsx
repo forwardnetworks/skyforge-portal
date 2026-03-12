@@ -127,6 +127,15 @@ export function useRootLayout() {
 	const showLoginGate =
 		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
 
+	useEffect(() => {
+		if (!showLoginGate) return;
+		void navigate({
+			to: "/",
+			search: { next },
+			replace: true,
+		});
+	}, [navigate, next, showLoginGate]);
+
 	const username = session.data?.username ?? "";
 	const notificationsLimit = "20";
 	useNotificationsEvents(!!username, false, notificationsLimit);
@@ -233,7 +242,7 @@ export function useRootLayout() {
 		try {
 			setLoggingOut(true);
 			await logout();
-			window.location.href = "/dashboard";
+			window.location.href = "/";
 		} finally {
 			setLoggingOut(false);
 		}

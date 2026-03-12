@@ -1,21 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
-import { Button } from "../components/ui/button";
+import { LoginLocalPageContent } from "../components/login-local-page-content";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { getSession, login } from "../lib/api-client";
+	getPublicStatusSummary,
+	getSession,
+	getUIConfig,
+	login,
+} from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
+import { useStatusSummaryEvents } from "../lib/status-events";
 
 const localLoginSearchSchema = z.object({
-	next: z.string().optional().catch("/"),
+	next: z.string().optional().catch("/dashboard"),
 });
 
 export const Route = createFileRoute("/login/local")({
@@ -25,7 +23,7 @@ export const Route = createFileRoute("/login/local")({
 
 function normalizeNext(nextRaw: string | undefined): string {
 	const next = String(nextRaw ?? "").trim();
-	if (!next.startsWith("/")) return "/";
+	if (!next.startsWith("/")) return "/dashboard";
 	return next;
 }
 
@@ -37,12 +35,35 @@ function LocalLoginPage() {
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
 
-	useQuery({
+	const session = useQuery({
 		queryKey: queryKeys.session(),
 		queryFn: getSession,
 		staleTime: 10_000,
 		retry: false,
 	});
+
+	const uiConfig = useQuery({
+		queryKey: queryKeys.uiConfig(),
+		queryFn: getUIConfig,
+		staleTime: 5 * 60_000,
+		retry: false,
+	});
+	const statusSummary = useQuery({
+		queryKey: queryKeys.statusSummary(),
+		queryFn: getPublicStatusSummary,
+		staleTime: 15_000,
+		retry: false,
+		refetchOnWindowFocus: false,
+	});
+
+	useStatusSummaryEvents(true);
+
+	useEffect(() => {
+		if (session.isLoading) return;
+		if (session.data?.authenticated) {
+			void navigate({ to: normalizeNext(search.next), replace: true });
+		}
+	}, [navigate, search.next, session.data?.authenticated, session.isLoading]);
 
 	const loginM = useMutation({
 		mutationFn: async () => {
@@ -59,47 +80,16 @@ function LocalLoginPage() {
 	});
 
 	return (
-		<div className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-md items-center px-4">
-			<Card className="w-full">
-				<CardHeader>
-					<CardTitle>Local Sign In</CardTitle>
-					<CardDescription>
-						Sign in with your Skyforge local account.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-3">
-					<Input
-						placeholder="Username"
-						value={username}
-						onChange={(e) => setUsername(e.target.value)}
-						disabled={loginM.isPending}
-					/>
-					<Input
-						type="password"
-						placeholder="Password"
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-						disabled={loginM.isPending}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") {
-								loginM.mutate();
-							}
-						}}
-					/>
-					{error ? (
-						<div className="text-sm text-destructive">{error}</div>
-					) : null}
-					<Button
-						className="w-full"
-						disabled={
-							loginM.isPending || username.trim() === "" || password === ""
-						}
-						onClick={() => loginM.mutate()}
-					>
-						{loginM.isPending ? "Signing in..." : "Sign in"}
-					</Button>
-				</CardContent>
-			</Card>
-		</div>
+		<LoginLocalPageContent
+			uiConfig={uiConfig.data}
+			statusSummary={statusSummary.data}
+			username={username}
+			password={password}
+			error={error}
+			signingIn={loginM.isPending}
+			onUsernameChange={setUsername}
+			onPasswordChange={setPassword}
+			onSubmit={() => loginM.mutate()}
+		/>
 	);
 }

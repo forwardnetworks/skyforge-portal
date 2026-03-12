@@ -6,6 +6,14 @@ import {
 	type AdminPlatformOverviewResponseWithCapacity,
 } from "../lib/api-client-admin";
 import {
+	getUserObservabilitySummary,
+	type UserObservabilitySummaryResponse,
+} from "../lib/api-client-forward-observability";
+import {
+	getPublicStatusSummary,
+	type PublicStatusSummaryResponse,
+} from "../lib/api-client-public-status";
+import {
 	getCurrentPlatformAvailability,
 	type CurrentPlatformAvailabilityResponse,
 	getCurrentPlatformReservations,
@@ -13,6 +21,7 @@ import {
 } from "../lib/api-client-platform";
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
+import { useStatusSummaryEvents } from "../lib/status-events";
 
 export type ReservationTotals = {
 	status: string;
@@ -26,6 +35,8 @@ export type DashboardPageState = {
 	reservationTotals: ReservationTotals[];
 	isAdmin: boolean;
 	adminOverview: AdminPlatformOverviewResponseWithCapacity | undefined;
+	statusSummary: PublicStatusSummaryResponse | undefined;
+	observabilitySummary: UserObservabilitySummaryResponse | undefined;
 };
 
 export function useDashboardPage(): DashboardPageState {
@@ -55,12 +66,28 @@ export function useDashboardPage(): DashboardPageState {
 	const session = sessionQ.data;
 	const isAdmin = sessionIsAdmin(session);
 
+	useStatusSummaryEvents(sessionQ.data?.authenticated === true);
+
 	const overviewQ = useQuery({
 		queryKey: queryKeys.adminPlatformOverview(),
 		queryFn: getAdminPlatformOverview,
 		staleTime: 30_000,
 		retry: false,
 		enabled: isAdmin,
+	});
+	const statusSummaryQ = useQuery({
+		queryKey: queryKeys.statusSummary(),
+		queryFn: getPublicStatusSummary,
+		staleTime: 15_000,
+		retry: false,
+		enabled: sessionQ.data?.authenticated === true,
+	});
+	const observabilityQ = useQuery({
+		queryKey: queryKeys.userObservabilitySummary(),
+		queryFn: getUserObservabilitySummary,
+		staleTime: 30_000,
+		retry: false,
+		enabled: sessionQ.data?.authenticated === true,
 	});
 
 	const reservations = useMemo(() => {
@@ -88,5 +115,7 @@ export function useDashboardPage(): DashboardPageState {
 		reservationTotals,
 		isAdmin,
 		adminOverview: overviewQ.data,
+		statusSummary: statusSummaryQ.data,
+		observabilitySummary: observabilityQ.data,
 	};
 }

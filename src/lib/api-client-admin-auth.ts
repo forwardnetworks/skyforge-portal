@@ -107,12 +107,3 @@ export async function getUIConfig(): Promise<UIConfigResponse> {
 	setRuntimeAuthMode(config.authMode);
 	return config;
 }
-
-export type StatusSummaryResponse =
-	operations["GET:skyforge.StatusSummary"]["responses"][200]["content"]["application/json"] & {
-		deploymentsTotal?: number;
-		deploymentsActive?: number;
-	};
-export async function getStatusSummary(): Promise<StatusSummaryResponse> {
-	return apiFetch<StatusSummaryResponse>("/status/summary");
-}
