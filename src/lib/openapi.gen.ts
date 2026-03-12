@@ -95,6 +95,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/config-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListAdminConfigChangeRuns returns config changes across all users. */
+        get: operations["GET:skyforge.ListAdminConfigChangeRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/config-changes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetAdminConfigChangeRun returns one config change run for operators. */
+        get: operations["GET:skyforge.GetAdminConfigChangeRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/config-changes/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ApproveAdminConfigChangeRun marks a rendered change run approved for protected
+         *     execution.
+         */
+        post: operations["POST:skyforge.ApproveAdminConfigChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/config-changes/{id}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ExecuteAdminConfigChangeRun queues an approved change run onto the existing task
+         *     engine seam.
+         */
+        post: operations["POST:skyforge.ExecuteAdminConfigChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/config-changes/{id}/lifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetAdminConfigChangeRunLifecycle returns lifecycle details for operators. */
+        get: operations["GET:skyforge.GetAdminConfigChangeRunLifecycle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/config-changes/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RejectAdminConfigChangeRun rejects a protected config change run before
+         *     execution.
+         */
+        post: operations["POST:skyforge.RejectAdminConfigChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/config-changes/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetAdminConfigChangeRunReview returns the persisted review payload for
+         *     operators.
+         */
+        get: operations["GET:skyforge.GetAdminConfigChangeRunReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/config-changes/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * UpdateAdminConfigChangeRunStatus updates status or approval state for a config
+         *     change run.
+         */
+        post: operations["POST:skyforge.UpdateAdminConfigChangeRunStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/forward/tenants/{username}/rebuild": {
         parameters: {
             query?: never;
@@ -1710,6 +1861,104 @@ export interface paths {
          *     authenticated user.
          */
         delete: operations["DELETE:cloudcredentials.DeleteCurrentUserIBMCredentials"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListCurrentConfigChangeRuns returns config changes for the current user. */
+        get: operations["GET:skyforge.ListCurrentConfigChangeRuns"];
+        put?: never;
+        /** CreateCurrentConfigChangeRun creates a new durable config change run. */
+        post: operations["POST:skyforge.CreateCurrentConfigChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config-changes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentConfigChangeRun returns one config change run owned by the current
+         *     user.
+         */
+        get: operations["GET:skyforge.GetCurrentConfigChangeRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config-changes/{id}/lifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentConfigChangeRunLifecycle returns lifecycle details for one config
+         *     change run.
+         */
+        get: operations["GET:skyforge.GetCurrentConfigChangeRunLifecycle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config-changes/{id}/render": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RenderCurrentConfigChangeRun validates and normalizes a config change run into a
+         *     review payload.
+         */
+        post: operations["POST:skyforge.RenderCurrentConfigChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config-changes/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentConfigChangeRunReview returns the persisted review payload for one
+         *     config change run.
+         */
+        get: operations["GET:skyforge.GetCurrentConfigChangeRunReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5246,6 +5495,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/configchanges.CreateChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.CreateChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/configchanges.GetChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.GetChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/configchanges.GetChangeRunLifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.GetChangeRunLifecycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/configchanges.GetChangeRunReview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.GetChangeRunReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/configchanges.ListChangeRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.ListChangeRuns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/configchanges.QueueChangeRunExecution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.QueueChangeRunExecution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/configchanges.RenderChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.RenderChangeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/configchanges.UpdateChangeRunStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:configchanges.UpdateChangeRunStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dashboard/{path}": {
         parameters: {
             query?: never;
@@ -5867,10 +6244,6 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Deployment lease sweeper
-         * @description Stops expired managed deployment leases.
-         */
         post: operations["POST:skyforge.CronSweepDeploymentLeases"];
         delete?: never;
         options?: never;
@@ -7737,6 +8110,105 @@ export interface components {
             name: string;
             projectId: string;
         };
+        "configchanges.ChangeRunArtifactRef": {
+            key: string;
+            kind: string;
+            name: string;
+        };
+        "configchanges.ChangeRunEvent": {
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            details: {
+                [key: string]: string;
+            };
+            eventType: string;
+            id: string;
+            message: string;
+            runId: string;
+            status: string;
+        };
+        "configchanges.ChangeRunExecutionSummary": {
+            artifactRefs: components["schemas"]["configchanges.ChangeRunArtifactRef"][];
+            deploymentId: string;
+            executionPath: string;
+            /** Format: int64 */
+            nodeStatusCount: number;
+            plannedExecutionTaskType: string;
+            /** Format: int64 */
+            taskId: number;
+            topologyArtifactKey: string;
+            userScopeId: string;
+            verificationWarnings: string[];
+            verified: boolean;
+            /** Format: date-time */
+            verifiedAt: string;
+        };
+        "configchanges.ChangeRunRecord": {
+            approvalState: string;
+            approvedBy: string;
+            /** Format: date-time */
+            createdAt: string;
+            executionMode: string;
+            executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+            /** Format: int64 */
+            executionTaskId: number;
+            id: string;
+            metadata: {
+                [key: string]: string;
+            };
+            normalizedSpecJson: string;
+            /** Format: date-time */
+            queuedAt: string;
+            /** Format: date-time */
+            renderedAt: string;
+            requestedBy: string;
+            reviewJson: string;
+            rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+            sourceKind: string;
+            specJson: string;
+            status: string;
+            summary: string;
+            targetName: string;
+            targetRef: string;
+            targetType: string;
+            ticketRef: string;
+            /** Format: date-time */
+            updatedAt: string;
+            username: string;
+        };
+        "configchanges.ChangeRunReview": {
+            artifactRefs: components["schemas"]["configchanges.ChangeRunArtifactRef"][];
+            /** Format: int64 */
+            changeCount: number;
+            controlPlaneTaskType: string;
+            /** Format: int64 */
+            deviceCount: number;
+            devices: components["schemas"]["configchanges.ChangeRunReviewDevice"][];
+            diffs: components["schemas"]["configchanges.ChangeRunReviewDiff"][];
+            executionPath: string;
+            plannedExecutionTaskType: string;
+            warnings: string[];
+        };
+        "configchanges.ChangeRunReviewDevice": {
+            /** Format: int64 */
+            changeCount: number;
+            name: string;
+            summary: string;
+        };
+        "configchanges.ChangeRunReviewDiff": {
+            after: string;
+            before: string;
+            device: string;
+            summary: string;
+            title: string;
+        };
+        "configchanges.ChangeRunRollbackSummary": {
+            /** Format: int64 */
+            previousNodeStatusCount: number;
+            previousNodeStatusUpdatedAt: string;
+            previousTopologyArtifactKey: string;
+        };
         "deploycore.Action": string;
         "deploycore.Reason": string;
         "deploymentruntime.ForwardState": {
@@ -9291,6 +9763,393 @@ export interface operations {
                             useSsl: boolean;
                         };
                         publicUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListAdminConfigChangeRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs: components["schemas"]["configchanges.ChangeRunRecord"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminConfigChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ApproveAdminConfigChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    details: {
+                        [key: string]: string;
+                    };
+                    message: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ExecuteAdminConfigChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    details: {
+                        [key: string]: string;
+                    };
+                    message: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminConfigChangeRunLifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        events: components["schemas"]["configchanges.ChangeRunEvent"][];
+                        run: components["schemas"]["configchanges.ChangeRunRecord"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RejectAdminConfigChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    details: {
+                        [key: string]: string;
+                    };
+                    message: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminConfigChangeRunReview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        review: components["schemas"]["configchanges.ChangeRunReview"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.UpdateAdminConfigChangeRunStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    approvalState: string;
+                    details: {
+                        [key: string]: string;
+                    };
+                    message: string;
+                    status: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
                     };
                 };
             };
@@ -12771,6 +13630,259 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListCurrentConfigChangeRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs: components["schemas"]["configchanges.ChangeRunRecord"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateCurrentConfigChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    executionMode: string;
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    sourceKind: string;
+                    specJson: string;
+                    summary: string;
+                    targetName: string;
+                    targetRef: string;
+                    targetType: string;
+                    ticketRef: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetCurrentConfigChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetCurrentConfigChangeRunLifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        events: components["schemas"]["configchanges.ChangeRunEvent"][];
+                        run: components["schemas"]["configchanges.ChangeRunRecord"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RenderCurrentConfigChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetCurrentConfigChangeRunReview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        review: components["schemas"]["configchanges.ChangeRunReview"];
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };
@@ -19609,6 +20721,425 @@ export interface operations {
                         region: string;
                         resourceGroupId: string;
                         updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.CreateChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    approvedBy: string;
+                    executionMode: string;
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    requestedBy: string;
+                    sourceKind: string;
+                    specJson: string;
+                    summary: string;
+                    targetName: string;
+                    targetRef: string;
+                    targetType: string;
+                    ticketRef: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.GetChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.GetChangeRunLifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        events: components["schemas"]["configchanges.ChangeRunEvent"][];
+                        run: components["schemas"]["configchanges.ChangeRunRecord"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.GetChangeRunReview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        artifactRefs: components["schemas"]["configchanges.ChangeRunArtifactRef"][];
+                        /** Format: int64 */
+                        changeCount: number;
+                        controlPlaneTaskType: string;
+                        /** Format: int64 */
+                        deviceCount: number;
+                        devices: components["schemas"]["configchanges.ChangeRunReviewDevice"][];
+                        diffs: components["schemas"]["configchanges.ChangeRunReviewDiff"][];
+                        executionPath: string;
+                        plannedExecutionTaskType: string;
+                        warnings: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.ListChangeRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    includeAll: boolean;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs: components["schemas"]["configchanges.ChangeRunRecord"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.QueueChangeRunExecution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    id: string;
+                    queuedBy: string;
+                    /** Format: int64 */
+                    taskId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.RenderChangeRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    id: string;
+                    renderedBy: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:configchanges.UpdateChangeRunStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    approvalState: string;
+                    approvedBy: string;
+                    createdBy: string;
+                    details: {
+                        [key: string]: string;
+                    };
+                    id: string;
+                    message: string;
+                    status: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvalState: string;
+                        approvedBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        executionMode: string;
+                        executionSummary: components["schemas"]["configchanges.ChangeRunExecutionSummary"];
+                        /** Format: int64 */
+                        executionTaskId: number;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        normalizedSpecJson: string;
+                        /** Format: date-time */
+                        queuedAt: string;
+                        /** Format: date-time */
+                        renderedAt: string;
+                        requestedBy: string;
+                        reviewJson: string;
+                        rollbackSummary: components["schemas"]["configchanges.ChangeRunRollbackSummary"];
+                        sourceKind: string;
+                        specJson: string;
+                        status: string;
+                        summary: string;
+                        targetName: string;
+                        targetRef: string;
+                        targetType: string;
+                        ticketRef: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        username: string;
                     };
                 };
             };

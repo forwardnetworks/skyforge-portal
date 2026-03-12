@@ -93,6 +93,12 @@ export const queryKeys = {
 			endAt,
 		] as const,
 	currentPlatformAvailability: () => ["currentPlatformAvailability"] as const,
+	configChangeRuns: () => ["configChangeRuns"] as const,
+	configChangeRun: (id: string) => ["configChangeRun", id] as const,
+	configChangeRunReview: (id: string) =>
+		["configChangeRunReview", id] as const,
+	configChangeRunLifecycle: (id: string) =>
+		["configChangeRunLifecycle", id] as const,
 	userForwardConfig: (userId: string) => ["userForwardConfig", userId] as const,
 	userForwardCollectors: (userId: string) =>
 		["userForwardCollectors", userId] as const,

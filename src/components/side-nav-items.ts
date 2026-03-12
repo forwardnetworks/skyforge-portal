@@ -199,6 +199,11 @@ function createNavItems(): NavItem[] {
 					icon: Activity,
 				},
 				{
+					label: "Config Changes",
+					href: "/dashboard/config-changes",
+					icon: Workflow,
+				},
+				{
 					label: "Capacity",
 					href: "/dashboard/platform",
 					icon: Activity,

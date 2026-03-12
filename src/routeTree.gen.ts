@@ -30,6 +30,7 @@ import { Route as DashboardPlatformRouteImport } from './routes/dashboard/platfo
 import { Route as DashboardObservabilityRouteImport } from './routes/dashboard/observability'
 import { Route as DashboardInfobloxRouteImport } from './routes/dashboard/infoblox'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
+import { Route as DashboardConfigChangesRouteImport } from './routes/dashboard/config-changes'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as DashboardRunsIndexRouteImport } from './routes/dashboard/runs/index'
 import { Route as DashboardForwardIndexRouteImport } from './routes/dashboard/forward.index'
@@ -156,6 +157,11 @@ const DashboardForwardRoute = DashboardForwardRouteImport.update({
   path: '/dashboard/forward',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardConfigChangesRoute = DashboardConfigChangesRouteImport.update({
+  id: '/dashboard/config-changes',
+  path: '/dashboard/config-changes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/config-changes': typeof DashboardConfigChangesRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
   '/dashboard/observability': typeof DashboardObservabilityRoute
@@ -318,6 +325,7 @@ export interface FileRoutesByTo {
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/config-changes': typeof DashboardConfigChangesRoute
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
   '/dashboard/observability': typeof DashboardObservabilityRoute
   '/dashboard/platform': typeof DashboardPlatformRoute
@@ -361,6 +369,7 @@ export interface FileRoutesById {
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/dashboard/config-changes': typeof DashboardConfigChangesRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
   '/dashboard/observability': typeof DashboardObservabilityRoute
@@ -406,6 +415,7 @@ export interface FileRouteTypes {
     | '/syslog'
     | '/webhooks'
     | '/admin/settings'
+    | '/dashboard/config-changes'
     | '/dashboard/forward'
     | '/dashboard/infoblox'
     | '/dashboard/observability'
@@ -449,6 +459,7 @@ export interface FileRouteTypes {
     | '/syslog'
     | '/webhooks'
     | '/admin/settings'
+    | '/dashboard/config-changes'
     | '/dashboard/infoblox'
     | '/dashboard/observability'
     | '/dashboard/platform'
@@ -491,6 +502,7 @@ export interface FileRouteTypes {
     | '/syslog'
     | '/webhooks'
     | '/admin/settings'
+    | '/dashboard/config-changes'
     | '/dashboard/forward'
     | '/dashboard/infoblox'
     | '/dashboard/observability'
@@ -535,6 +547,7 @@ export interface RootRouteChildren {
   SyslogRoute: typeof SyslogRoute
   WebhooksRoute: typeof WebhooksRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  DashboardConfigChangesRoute: typeof DashboardConfigChangesRoute
   DashboardForwardRoute: typeof DashboardForwardRouteWithChildren
   DashboardInfobloxRoute: typeof DashboardInfobloxRoute
   DashboardObservabilityRoute: typeof DashboardObservabilityRoute
@@ -716,6 +729,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardForwardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/config-changes': {
+      id: '/dashboard/config-changes'
+      path: '/dashboard/config-changes'
+      fullPath: '/dashboard/config-changes'
+      preLoaderRoute: typeof DashboardConfigChangesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/admin/settings'
@@ -883,6 +903,7 @@ const rootRouteChildren: RootRouteChildren = {
   SyslogRoute: SyslogRoute,
   WebhooksRoute: WebhooksRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  DashboardConfigChangesRoute: DashboardConfigChangesRoute,
   DashboardForwardRoute: DashboardForwardRouteWithChildren,
   DashboardInfobloxRoute: DashboardInfobloxRoute,
   DashboardObservabilityRoute: DashboardObservabilityRoute,
