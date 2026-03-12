@@ -13,7 +13,6 @@ import {
 	listUserScopes,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
-import { sessionIsAdmin } from "../lib/rbac";
 import {
 	type DeploymentKind,
 	deploymentKindToSpec,
@@ -92,7 +91,6 @@ export function useCreateDeploymentSettings(args: {
 		});
 		return mine.length > 0 ? mine : allUserScopes;
 	}, [allUserScopes, effectiveUsername]);
-	const isAdmin = sessionIsAdmin(sessionQ.data);
 	const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 	const watchSpec = useMemo(() => deploymentKindToSpec(watchKind), [watchKind]);
 	const managedFamilies = useMemo(
@@ -120,8 +118,8 @@ export function useCreateDeploymentSettings(args: {
 			.trim()
 			.toLowerCase(),
 	);
-	const allowNoExpiry = Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? false);
-	const lifetimeCanEdit = isAdmin && lifetimeManaged;
+	const allowDisable = Boolean(lifetimePolicyQ.data?.allowDisable ?? false);
+	const lifetimeCanEdit = lifetimeManaged;
 	const expiryAction = String(
 		lifetimePolicyQ.data?.expiryActions?.[watchSpec.family] ?? "stop",
 	)
@@ -133,11 +131,11 @@ export function useCreateDeploymentSettings(args: {
 			value: String(h),
 			label: `${h} hours`,
 		}));
-		if (allowNoExpiry) {
+		if (allowDisable) {
 			options.unshift({ value: "never", label: "Never auto-stop" });
 		}
 		return options;
-	}, [allowNoExpiry, lifetimeAllowedHours, lifetimeManaged]);
+	}, [allowDisable, lifetimeAllowedHours, lifetimeManaged]);
 	const driverSummary =
 		watchSpec.family === "c9s"
 			? "In-cluster (c9s)"
@@ -195,7 +193,7 @@ export function useCreateDeploymentSettings(args: {
 			}
 			return;
 		}
-		const defaultSelection = allowNoExpiry
+		const defaultSelection = allowDisable
 			? "never"
 			: String(lifetimeDefaultHours);
 		const isValidSelection = lifetimeOptions.some(
@@ -209,7 +207,7 @@ export function useCreateDeploymentSettings(args: {
 			});
 		}
 	}, [
-		allowNoExpiry,
+		allowDisable,
 		lifetimeDefaultHours,
 		lifetimeManaged,
 		lifetimeOptions,
@@ -227,12 +225,12 @@ export function useCreateDeploymentSettings(args: {
 		setValue("name", `${base}-${ts}`);
 	}, [setValue, watchKind, watchTemplate]);
 
-	return {
+		return {
 		dash,
 		driverSummary,
 		effectiveUsername,
 		expiryAction,
-		isAdmin,
+		allowNoExpiry: allowDisable,
 		lifetimeAllowedHours,
 		lifetimeCanEdit,
 		lifetimeDefaultHours,

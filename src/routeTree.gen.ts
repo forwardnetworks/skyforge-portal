@@ -22,17 +22,18 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as LoginLocalRouteImport } from './routes/login.local'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DashboardTeamsRouteImport } from './routes/dashboard/teams'
-import { Route as DashboardSignalsRouteImport } from './routes/dashboard/signals'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
-import { Route as DashboardPolicyReportsRouteImport } from './routes/dashboard/policy-reports'
+import { Route as DashboardReservationsRouteImport } from './routes/dashboard/reservations'
+import { Route as DashboardPlatformRouteImport } from './routes/dashboard/platform'
+import { Route as DashboardObservabilityRouteImport } from './routes/dashboard/observability'
 import { Route as DashboardInfobloxRouteImport } from './routes/dashboard/infoblox'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as DashboardRunsIndexRouteImport } from './routes/dashboard/runs/index'
 import { Route as DashboardForwardIndexRouteImport } from './routes/dashboard/forward.index'
-import { Route as DashboardForwardNetworksIndexRouteImport } from './routes/dashboard/forward-networks/index'
+import { Route as DashboardForwardAnalyticsIndexRouteImport } from './routes/dashboard/forward-analytics/index'
 import { Route as DashboardDocsIndexRouteImport } from './routes/dashboard/docs/index'
 import { Route as DashboardDeploymentsIndexRouteImport } from './routes/dashboard/deployments/index'
 import { Route as DashboardToolsToolRouteImport } from './routes/dashboard/tools.$tool'
@@ -46,7 +47,7 @@ import { Route as DashboardDeploymentsQuickRouteImport } from './routes/dashboar
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
 import { Route as AdminInfobloxConsoleRouteImport } from './routes/admin/infoblox.console'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
-import { Route as DashboardForwardNetworksNetworkRefCapacityRouteImport } from './routes/dashboard/forward-networks/$networkRef.capacity'
+import { Route as DashboardForwardAnalyticsNetworkRefCapacityRouteImport } from './routes/dashboard/forward-analytics/$networkRef.capacity'
 import { Route as DashboardDeploymentsDeploymentIdMapRouteImport } from './routes/dashboard/deployments/$deploymentId.map'
 import { Route as DashboardDeploymentsDeploymentIdCapacityRouteImport } from './routes/dashboard/deployments/$deploymentId.capacity'
 
@@ -115,11 +116,6 @@ const DashboardTeamsRoute = DashboardTeamsRouteImport.update({
   path: '/dashboard/teams',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardSignalsRoute = DashboardSignalsRouteImport.update({
-  id: '/dashboard/signals',
-  path: '/dashboard/signals',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/dashboard/settings',
   path: '/dashboard/settings',
@@ -135,9 +131,19 @@ const DashboardS3Route = DashboardS3RouteImport.update({
   path: '/dashboard/s3',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardPolicyReportsRoute = DashboardPolicyReportsRouteImport.update({
-  id: '/dashboard/policy-reports',
-  path: '/dashboard/policy-reports',
+const DashboardReservationsRoute = DashboardReservationsRouteImport.update({
+  id: '/dashboard/reservations',
+  path: '/dashboard/reservations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardPlatformRoute = DashboardPlatformRouteImport.update({
+  id: '/dashboard/platform',
+  path: '/dashboard/platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardObservabilityRoute = DashboardObservabilityRouteImport.update({
+  id: '/dashboard/observability',
+  path: '/dashboard/observability',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardInfobloxRoute = DashboardInfobloxRouteImport.update({
@@ -165,10 +171,10 @@ const DashboardForwardIndexRoute = DashboardForwardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardForwardRoute,
 } as any)
-const DashboardForwardNetworksIndexRoute =
-  DashboardForwardNetworksIndexRouteImport.update({
-    id: '/dashboard/forward-networks/',
-    path: '/dashboard/forward-networks/',
+const DashboardForwardAnalyticsIndexRoute =
+  DashboardForwardAnalyticsIndexRouteImport.update({
+    id: '/dashboard/forward-analytics/',
+    path: '/dashboard/forward-analytics/',
     getParentRoute: () => rootRouteImport,
   } as any)
 const DashboardDocsIndexRoute = DashboardDocsIndexRouteImport.update({
@@ -241,10 +247,10 @@ const DashboardDeploymentsDeploymentIdIndexRoute =
     path: '/dashboard/deployments/$deploymentId/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const DashboardForwardNetworksNetworkRefCapacityRoute =
-  DashboardForwardNetworksNetworkRefCapacityRouteImport.update({
-    id: '/dashboard/forward-networks/$networkRef/capacity',
-    path: '/dashboard/forward-networks/$networkRef/capacity',
+const DashboardForwardAnalyticsNetworkRefCapacityRoute =
+  DashboardForwardAnalyticsNetworkRefCapacityRouteImport.update({
+    id: '/dashboard/forward-analytics/$networkRef/capacity',
+    path: '/dashboard/forward-analytics/$networkRef/capacity',
     getParentRoute: () => rootRouteImport,
   } as any)
 const DashboardDeploymentsDeploymentIdMapRoute =
@@ -271,11 +277,12 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
-  '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
+  '/dashboard/observability': typeof DashboardObservabilityRoute
+  '/dashboard/platform': typeof DashboardPlatformRoute
+  '/dashboard/reservations': typeof DashboardReservationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/signals': typeof DashboardSignalsRoute
   '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
@@ -294,12 +301,12 @@ export interface FileRoutesByFullPath {
   '/dashboard/tools/$tool': typeof DashboardToolsToolRoute
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
-  '/dashboard/forward-networks': typeof DashboardForwardNetworksIndexRoute
+  '/dashboard/forward-analytics': typeof DashboardForwardAnalyticsIndexRoute
   '/dashboard/forward/': typeof DashboardForwardIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
-  '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/forward-analytics/$networkRef/capacity': typeof DashboardForwardAnalyticsNetworkRefCapacityRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -312,11 +319,12 @@ export interface FileRoutesByTo {
   '/webhooks': typeof WebhooksRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
-  '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
+  '/dashboard/observability': typeof DashboardObservabilityRoute
+  '/dashboard/platform': typeof DashboardPlatformRoute
+  '/dashboard/reservations': typeof DashboardReservationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/signals': typeof DashboardSignalsRoute
   '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
@@ -335,12 +343,12 @@ export interface FileRoutesByTo {
   '/dashboard/tools/$tool': typeof DashboardToolsToolRoute
   '/dashboard/deployments': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs': typeof DashboardDocsIndexRoute
-  '/dashboard/forward-networks': typeof DashboardForwardNetworksIndexRoute
+  '/dashboard/forward-analytics': typeof DashboardForwardAnalyticsIndexRoute
   '/dashboard/forward': typeof DashboardForwardIndexRoute
   '/dashboard/runs': typeof DashboardRunsIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
-  '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/forward-analytics/$networkRef/capacity': typeof DashboardForwardAnalyticsNetworkRefCapacityRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesById {
@@ -355,11 +363,12 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
-  '/dashboard/policy-reports': typeof DashboardPolicyReportsRoute
+  '/dashboard/observability': typeof DashboardObservabilityRoute
+  '/dashboard/platform': typeof DashboardPlatformRoute
+  '/dashboard/reservations': typeof DashboardReservationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/signals': typeof DashboardSignalsRoute
   '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
@@ -378,12 +387,12 @@ export interface FileRoutesById {
   '/dashboard/tools/$tool': typeof DashboardToolsToolRoute
   '/dashboard/deployments/': typeof DashboardDeploymentsIndexRoute
   '/dashboard/docs/': typeof DashboardDocsIndexRoute
-  '/dashboard/forward-networks/': typeof DashboardForwardNetworksIndexRoute
+  '/dashboard/forward-analytics/': typeof DashboardForwardAnalyticsIndexRoute
   '/dashboard/forward/': typeof DashboardForwardIndexRoute
   '/dashboard/runs/': typeof DashboardRunsIndexRoute
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
-  '/dashboard/forward-networks/$networkRef/capacity': typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  '/dashboard/forward-analytics/$networkRef/capacity': typeof DashboardForwardAnalyticsNetworkRefCapacityRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -399,11 +408,12 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/dashboard/forward'
     | '/dashboard/infoblox'
-    | '/dashboard/policy-reports'
+    | '/dashboard/observability'
+    | '/dashboard/platform'
+    | '/dashboard/reservations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
-    | '/dashboard/signals'
     | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
@@ -422,12 +432,12 @@ export interface FileRouteTypes {
     | '/dashboard/tools/$tool'
     | '/dashboard/deployments'
     | '/dashboard/docs'
-    | '/dashboard/forward-networks'
+    | '/dashboard/forward-analytics'
     | '/dashboard/forward/'
     | '/dashboard/runs'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
-    | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/forward-analytics/$networkRef/capacity'
     | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -440,11 +450,12 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/admin/settings'
     | '/dashboard/infoblox'
-    | '/dashboard/policy-reports'
+    | '/dashboard/observability'
+    | '/dashboard/platform'
+    | '/dashboard/reservations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
-    | '/dashboard/signals'
     | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
@@ -463,12 +474,12 @@ export interface FileRouteTypes {
     | '/dashboard/tools/$tool'
     | '/dashboard/deployments'
     | '/dashboard/docs'
-    | '/dashboard/forward-networks'
+    | '/dashboard/forward-analytics'
     | '/dashboard/forward'
     | '/dashboard/runs'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
-    | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/forward-analytics/$networkRef/capacity'
     | '/dashboard/deployments/$deploymentId'
   id:
     | '__root__'
@@ -482,11 +493,12 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/dashboard/forward'
     | '/dashboard/infoblox'
-    | '/dashboard/policy-reports'
+    | '/dashboard/observability'
+    | '/dashboard/platform'
+    | '/dashboard/reservations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
     | '/dashboard/settings'
-    | '/dashboard/signals'
     | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
@@ -505,12 +517,12 @@ export interface FileRouteTypes {
     | '/dashboard/tools/$tool'
     | '/dashboard/deployments/'
     | '/dashboard/docs/'
-    | '/dashboard/forward-networks/'
+    | '/dashboard/forward-analytics/'
     | '/dashboard/forward/'
     | '/dashboard/runs/'
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
-    | '/dashboard/forward-networks/$networkRef/capacity'
+    | '/dashboard/forward-analytics/$networkRef/capacity'
     | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
 }
@@ -525,11 +537,12 @@ export interface RootRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardForwardRoute: typeof DashboardForwardRouteWithChildren
   DashboardInfobloxRoute: typeof DashboardInfobloxRoute
-  DashboardPolicyReportsRoute: typeof DashboardPolicyReportsRoute
+  DashboardObservabilityRoute: typeof DashboardObservabilityRoute
+  DashboardPlatformRoute: typeof DashboardPlatformRoute
+  DashboardReservationsRoute: typeof DashboardReservationsRoute
   DashboardS3Route: typeof DashboardS3Route
   DashboardServicenowRoute: typeof DashboardServicenowRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
-  DashboardSignalsRoute: typeof DashboardSignalsRoute
   DashboardTeamsRoute: typeof DashboardTeamsRoute
   DocsSlugRoute: typeof DocsSlugRoute
   LoginLocalRoute: typeof LoginLocalRoute
@@ -546,11 +559,11 @@ export interface RootRouteChildren {
   DashboardToolsToolRoute: typeof DashboardToolsToolRoute
   DashboardDeploymentsIndexRoute: typeof DashboardDeploymentsIndexRoute
   DashboardDocsIndexRoute: typeof DashboardDocsIndexRoute
-  DashboardForwardNetworksIndexRoute: typeof DashboardForwardNetworksIndexRoute
+  DashboardForwardAnalyticsIndexRoute: typeof DashboardForwardAnalyticsIndexRoute
   DashboardRunsIndexRoute: typeof DashboardRunsIndexRoute
   DashboardDeploymentsDeploymentIdCapacityRoute: typeof DashboardDeploymentsDeploymentIdCapacityRoute
   DashboardDeploymentsDeploymentIdMapRoute: typeof DashboardDeploymentsDeploymentIdMapRoute
-  DashboardForwardNetworksNetworkRefCapacityRoute: typeof DashboardForwardNetworksNetworkRefCapacityRoute
+  DashboardForwardAnalyticsNetworkRefCapacityRoute: typeof DashboardForwardAnalyticsNetworkRefCapacityRoute
   DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 
@@ -647,13 +660,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTeamsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/signals': {
-      id: '/dashboard/signals'
-      path: '/dashboard/signals'
-      fullPath: '/dashboard/signals'
-      preLoaderRoute: typeof DashboardSignalsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/settings': {
       id: '/dashboard/settings'
       path: '/dashboard/settings'
@@ -675,11 +681,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardS3RouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/policy-reports': {
-      id: '/dashboard/policy-reports'
-      path: '/dashboard/policy-reports'
-      fullPath: '/dashboard/policy-reports'
-      preLoaderRoute: typeof DashboardPolicyReportsRouteImport
+    '/dashboard/reservations': {
+      id: '/dashboard/reservations'
+      path: '/dashboard/reservations'
+      fullPath: '/dashboard/reservations'
+      preLoaderRoute: typeof DashboardReservationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/platform': {
+      id: '/dashboard/platform'
+      path: '/dashboard/platform'
+      fullPath: '/dashboard/platform'
+      preLoaderRoute: typeof DashboardPlatformRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/observability': {
+      id: '/dashboard/observability'
+      path: '/dashboard/observability'
+      fullPath: '/dashboard/observability'
+      preLoaderRoute: typeof DashboardObservabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/infoblox': {
@@ -717,11 +737,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardForwardIndexRouteImport
       parentRoute: typeof DashboardForwardRoute
     }
-    '/dashboard/forward-networks/': {
-      id: '/dashboard/forward-networks/'
-      path: '/dashboard/forward-networks'
-      fullPath: '/dashboard/forward-networks'
-      preLoaderRoute: typeof DashboardForwardNetworksIndexRouteImport
+    '/dashboard/forward-analytics/': {
+      id: '/dashboard/forward-analytics/'
+      path: '/dashboard/forward-analytics'
+      fullPath: '/dashboard/forward-analytics'
+      preLoaderRoute: typeof DashboardForwardAnalyticsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/docs/': {
@@ -815,11 +835,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsDeploymentIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/forward-networks/$networkRef/capacity': {
-      id: '/dashboard/forward-networks/$networkRef/capacity'
-      path: '/dashboard/forward-networks/$networkRef/capacity'
-      fullPath: '/dashboard/forward-networks/$networkRef/capacity'
-      preLoaderRoute: typeof DashboardForwardNetworksNetworkRefCapacityRouteImport
+    '/dashboard/forward-analytics/$networkRef/capacity': {
+      id: '/dashboard/forward-analytics/$networkRef/capacity'
+      path: '/dashboard/forward-analytics/$networkRef/capacity'
+      fullPath: '/dashboard/forward-analytics/$networkRef/capacity'
+      preLoaderRoute: typeof DashboardForwardAnalyticsNetworkRefCapacityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/deployments/$deploymentId/map': {
@@ -865,11 +885,12 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   DashboardForwardRoute: DashboardForwardRouteWithChildren,
   DashboardInfobloxRoute: DashboardInfobloxRoute,
-  DashboardPolicyReportsRoute: DashboardPolicyReportsRoute,
+  DashboardObservabilityRoute: DashboardObservabilityRoute,
+  DashboardPlatformRoute: DashboardPlatformRoute,
+  DashboardReservationsRoute: DashboardReservationsRoute,
   DashboardS3Route: DashboardS3Route,
   DashboardServicenowRoute: DashboardServicenowRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
-  DashboardSignalsRoute: DashboardSignalsRoute,
   DashboardTeamsRoute: DashboardTeamsRoute,
   DocsSlugRoute: DocsSlugRoute,
   LoginLocalRoute: LoginLocalRoute,
@@ -886,14 +907,14 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardToolsToolRoute: DashboardToolsToolRoute,
   DashboardDeploymentsIndexRoute: DashboardDeploymentsIndexRoute,
   DashboardDocsIndexRoute: DashboardDocsIndexRoute,
-  DashboardForwardNetworksIndexRoute: DashboardForwardNetworksIndexRoute,
+  DashboardForwardAnalyticsIndexRoute: DashboardForwardAnalyticsIndexRoute,
   DashboardRunsIndexRoute: DashboardRunsIndexRoute,
   DashboardDeploymentsDeploymentIdCapacityRoute:
     DashboardDeploymentsDeploymentIdCapacityRoute,
   DashboardDeploymentsDeploymentIdMapRoute:
     DashboardDeploymentsDeploymentIdMapRoute,
-  DashboardForwardNetworksNetworkRefCapacityRoute:
-    DashboardForwardNetworksNetworkRefCapacityRoute,
+  DashboardForwardAnalyticsNetworkRefCapacityRoute:
+    DashboardForwardAnalyticsNetworkRefCapacityRoute,
   DashboardDeploymentsDeploymentIdIndexRoute:
     DashboardDeploymentsDeploymentIdIndexRoute,
 }

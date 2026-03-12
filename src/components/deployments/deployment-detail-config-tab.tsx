@@ -41,7 +41,7 @@ export function DeploymentDetailConfigTab({
 		<TabsContent value="config" className="space-y-6 animate-in fade-in-50">
 			<Card>
 				<CardHeader>
-					<CardTitle>Forward Networks</CardTitle>
+					<CardTitle>Forward Analytics</CardTitle>
 					<CardDescription>
 						Optional: sync device IPs into Forward for collection.
 					</CardDescription>

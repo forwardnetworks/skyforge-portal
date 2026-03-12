@@ -120,7 +120,7 @@ export function useCreateDeploymentPage(userId?: string) {
 			watchTemplateRepoId,
 			effectiveSource: data.effectiveSource,
 			templatesDir: data.templatesQ.data?.dir,
-			isAdmin: data.isAdmin,
+			allowNoExpiry: data.allowNoExpiry,
 			managedFamilies: data.managedFamilies,
 			lifetimeAllowedHours: data.lifetimeAllowedHours,
 			variableGroups: data.variableGroups,

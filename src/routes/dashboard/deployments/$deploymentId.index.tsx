@@ -2,6 +2,7 @@ import { DeploymentDetailConfigTab } from "@/components/deployments/deployment-d
 import { DeploymentDetailDeleteDialog } from "@/components/deployments/deployment-detail-delete-dialog";
 import { DeploymentDetailHeader } from "@/components/deployments/deployment-detail-header";
 import { DeploymentDetailLogsTab } from "@/components/deployments/deployment-detail-logs-tab";
+import { DeploymentDetailPlacementCard } from "@/components/deployments/deployment-detail-placement-card";
 import { DeploymentDetailStandaloneView } from "@/components/deployments/deployment-detail-standalone-view";
 import { DeploymentDetailTopologyTab } from "@/components/deployments/deployment-detail-topology-tab";
 import {
@@ -102,6 +103,7 @@ function DeploymentDetailPage() {
 					) : null}
 				</CardContent>
 			</Card>
+			<DeploymentDetailPlacementCard page={page} />
 			<Tabs
 				value={page.activeTab}
 				onValueChange={(v) =>

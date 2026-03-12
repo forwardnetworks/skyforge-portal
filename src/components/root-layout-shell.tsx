@@ -67,7 +67,7 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 								<div className="h-8 w-px bg-border hidden md:block" />
 								<img
 									src="/assets/skyforge/FN-logo.svg"
-									alt="Forward Networks"
+									alt="Forward Analytics"
 									className="h-6 w-auto hidden sm:block"
 								/>
 							</div>

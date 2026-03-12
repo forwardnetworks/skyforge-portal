@@ -1,18 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { Badge } from "../components/ui/badge";
-import type { DataTableColumn } from "../components/ui/data-table";
-import {
-	type AdminAuditResponse,
-	getAdminAudit,
-	getAdminUserRoles,
-	getSession,
-	listUserScopes,
-} from "../lib/api-client";
+import { useMemo } from "react";
+import { getAdminUserRoles, getSession, listUserScopes } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
 import { useAdminSettingsAuth } from "./use-admin-settings-auth";
+import { useAdminSettingsAudit } from "./use-admin-settings-audit";
 import { useAdminSettingsOperations } from "./use-admin-settings-operations";
+import { useAdminSettingsPlatformPolicyDrafts } from "./use-admin-settings-platform-policy-drafts";
+import { useAdminSettingsPlatformPolicyUserSelection } from "./use-admin-settings-platform-policy-selection";
 import { useAdminSettingsUsersAccess } from "./use-admin-settings-users-access";
 
 function collectKnownUsers(
@@ -73,23 +68,13 @@ export function useAdminSettingsPage() {
 		if (allUserScopes.length === 0) return "";
 		if (!effectiveUsername) return allUserScopes[0]?.id ?? "";
 		const mine = allUserScopes.filter((scope) => {
-			if (String(scope.createdBy ?? "").trim() === effectiveUsername)
-				return true;
+			if (String(scope.createdBy ?? "").trim() === effectiveUsername) return true;
 			if ((scope.owners ?? []).includes(effectiveUsername)) return true;
 			if (String(scope.slug ?? "").trim() === effectiveUsername) return true;
 			return false;
 		});
 		return (mine[0]?.id ?? allUserScopes[0]?.id ?? "").trim();
 	}, [allUserScopes, effectiveUsername]);
-
-	const [auditLimit, setAuditLimit] = useState("200");
-	const auditQ = useQuery({
-		queryKey: queryKeys.adminAudit(auditLimit),
-		queryFn: () => getAdminAudit({ limit: auditLimit }),
-		enabled: isAdmin,
-		staleTime: 15_000,
-		retry: false,
-	});
 
 	const adminAuth = useAdminSettingsAuth({
 		queryClient,
@@ -112,67 +97,26 @@ export function useAdminSettingsPage() {
 		userScopesQ,
 		sessionQ,
 	});
-
-	const auditColumns = useMemo<
-		DataTableColumn<AdminAuditResponse["events"][number]>[]
-	>(
-		() => [
-			{
-				id: "createdAt",
-				header: "Time",
-				cell: (row) => (
-					<span className="font-mono text-xs text-muted-foreground">
-						{row.createdAt}
-					</span>
-				),
-				width: 220,
-			},
-			{
-				id: "actor",
-				header: "Actor",
-				cell: (row) => (
-					<div className="flex items-center gap-2">
-						<span className="font-medium">{row.actorUsername}</span>
-						{row.actorIsAdmin ? <Badge variant="secondary">admin</Badge> : null}
-						{row.impersonatedUsername ? (
-							<Badge variant="outline">as {row.impersonatedUsername}</Badge>
-						) : null}
-					</div>
-				),
-				width: 260,
-			},
-			{ id: "action", header: "Action", cell: (row) => row.action, width: 260 },
-			{
-				id: "userId",
-				header: "User Scope",
-				cell: (row) => (
-					<span className="font-mono text-xs text-muted-foreground">
-						{row.userId}
-					</span>
-				),
-				width: 220,
-			},
-			{
-				id: "details",
-				header: "Details",
-				cell: (row) => (
-					<span className="text-xs text-muted-foreground">{row.details}</span>
-				),
-			},
-		],
-		[],
-	);
+	const platformPolicyUserSelection = useAdminSettingsPlatformPolicyUserSelection({
+		userOptions: adminUsersAccess.rbacKnownUsers,
+	});
+	const platformPolicyDrafts = useAdminSettingsPlatformPolicyDrafts({
+		platformPolicyTargetUser: platformPolicyUserSelection.platformPolicyTargetUser,
+		isAdmin,
+	});
+	const auditState = useAdminSettingsAudit({ isAdmin });
 
 	return {
 		sessionQ,
 		isAdmin,
 		allUserScopes,
-		auditLimit,
-		setAuditLimit,
-		auditQ,
+		...auditState,
 		...adminAuth,
 		...adminOps,
 		...adminUsersAccess,
-		auditColumns,
+		...platformPolicyUserSelection,
+		...platformPolicyDrafts,
 	};
 }
+
+export type AdminSettingsPageState = ReturnType<typeof useAdminSettingsPage>;

@@ -64,6 +64,16 @@ export function useAdminSettingsAuthQuickDeploy({
 				name: item.name,
 				description: item.description,
 				template: item.template,
+				owner: item.owner ?? "skyforge-platform",
+				operatingModes: item.operatingModes ?? ["curated-demo", "training"],
+				resourceClass: item.resourceClass,
+				allowedProfiles: item.allowedProfiles ?? [],
+				resetBaselineMode: item.resetBaselineMode ?? "curated-reset",
+				integrationDependencies: item.integrationDependencies ?? [
+					"forward",
+					"managed-collector",
+				],
+				placementHints: item.placementHints ?? ["lab"],
 			})),
 		);
 	}, [quickDeployCatalog?.templates]);
@@ -84,14 +94,27 @@ export function useAdminSettingsAuthQuickDeploy({
 		},
 	});
 
+	const parseCommaList = (value: string) =>
+		value
+			.split(",")
+			.map((entry) => entry.trim())
+			.filter((entry) => entry.length > 0);
+
 	const upsertQuickDeployTemplateField = (
 		index: number,
 		field: keyof QuickDeployTemplate,
 		value: string,
 	) => {
+		const nextValue =
+			field === "allowedProfiles" ||
+			field === "operatingModes" ||
+			field === "integrationDependencies" ||
+			field === "placementHints"
+				? parseCommaList(value)
+				: value;
 		setQuickDeployTemplates((prev) =>
 			prev.map((item, itemIndex) =>
-				itemIndex === index ? { ...item, [field]: value } : item,
+				itemIndex === index ? { ...item, [field]: nextValue } : item,
 			),
 		);
 	};
@@ -105,24 +128,36 @@ export function useAdminSettingsAuthQuickDeploy({
 	const addQuickDeployTemplate = () => {
 		setQuickDeployTemplates((prev) => [
 			...prev,
-			{ id: "", name: "", description: "", template: "" },
+			{
+				id: "",
+				name: "",
+				description: "",
+				template: "",
+				owner: "skyforge-platform",
+				operatingModes: ["curated-demo", "training"],
+				resourceClass: "standard",
+				allowedProfiles: [],
+				resetBaselineMode: "curated-reset",
+				integrationDependencies: ["forward", "managed-collector"],
+				placementHints: ["lab"],
+			},
 		]);
 	};
 
-	const availableQuickDeployTemplates = useMemo(() => {
-		const fromAdminOptions = quickDeployTemplateOptions?.templates ?? [];
-		const fromScopeCatalog = blueprintNetlabTemplates?.templates ?? [];
-		const merged = new Set<string>();
-		for (const item of [...fromAdminOptions, ...fromScopeCatalog]) {
-			const path = String(item ?? "").trim();
-			if (!path) continue;
-			merged.add(path);
+	const inferResourceClassFromTemplate = (template: string): string => {
+		const normalized = template.trim().toLowerCase();
+		if (
+			normalized.includes("evpn") ||
+			normalized.includes("mpls") ||
+			normalized.includes("vxlan")
+		) {
+			return "heavy";
 		}
-		return Array.from(merged).sort((a, b) => a.localeCompare(b));
-	}, [
-		quickDeployTemplateOptions?.templates,
-		blueprintNetlabTemplates?.templates,
-	]);
+		if (normalized.includes("vrf") || normalized.includes("bgp")) {
+			return "standard";
+		}
+		return "small";
+	};
 
 	const addQuickDeployTemplateFromOption = () => {
 		const template = selectedQuickDeployOption.trim();
@@ -143,10 +178,32 @@ export function useAdminSettingsAuthQuickDeploy({
 				name,
 				description: `Blueprint topology: ${template}`,
 				template,
+				owner: "skyforge-platform",
+				operatingModes: ["curated-demo", "training"],
+				resourceClass: inferResourceClassFromTemplate(template),
+				allowedProfiles: [],
+				resetBaselineMode: "curated-reset",
+				integrationDependencies: ["forward", "managed-collector"],
+				placementHints: ["lab"],
 			},
 		]);
 		setSelectedQuickDeployOption("");
 	};
+
+	const availableQuickDeployTemplates = useMemo(() => {
+		const fromAdminOptions = quickDeployTemplateOptions?.templates ?? [];
+		const fromScopeCatalog = blueprintNetlabTemplates?.templates ?? [];
+		const merged = new Set<string>();
+		for (const item of [...fromAdminOptions, ...fromScopeCatalog]) {
+			const path = String(item ?? "").trim();
+			if (!path) continue;
+			merged.add(path);
+		}
+		return Array.from(merged).sort((a, b) => a.localeCompare(b));
+	}, [
+		quickDeployTemplateOptions?.templates,
+		blueprintNetlabTemplates?.templates,
+	]);
 
 	const hasQuickDeployTemplateRows =
 		quickDeployTemplates.filter((item) => item.template.trim().length > 0)

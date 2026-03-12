@@ -98,6 +98,7 @@ describe("side nav model", () => {
 				"Artifacts",
 				"DNS",
 				"Coder",
+				"Reservations",
 				"Infoblox Console",
 				"API Testing",
 				"Webhooks",

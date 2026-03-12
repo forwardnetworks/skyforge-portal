@@ -1,0 +1,88 @@
+import {
+	getUserScopeContainerlabTemplate,
+	getUserScopeContainerlabTemplates,
+	listRegistryRepositories,
+	listUserContainerlabServers,
+	listUserScopes,
+} from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
+import { useQuery } from "@tanstack/react-query";
+import type { UseLabDesignerDataOptions } from "./use-lab-designer-data-types";
+
+export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
+	const toAPISource = (value: string) => (value === "user" ? "user" : value);
+
+	const userScopesQ = useQuery({
+		queryKey: queryKeys.userScopes(),
+		queryFn: listUserScopes,
+		retry: false,
+		staleTime: 30_000,
+	});
+
+	const registryReposQ = useQuery({
+		queryKey: queryKeys.registryRepos(""),
+		queryFn: async () => listRegistryRepositories({ q: "", n: 2000 }),
+		retry: false,
+		staleTime: 60_000,
+	});
+
+	const containerlabServersQ = useQuery({
+		queryKey: queryKeys.userContainerlabServers(),
+		queryFn: listUserContainerlabServers,
+		enabled: opts.runtime === "containerlab",
+		retry: false,
+		staleTime: 30_000,
+	});
+
+	const templatesQ = useQuery({
+		queryKey: opts.userId
+			? [
+					"containerlabTemplates",
+					opts.userId,
+					opts.importSource,
+					opts.importDir,
+				]
+			: ["containerlabTemplates", "none"],
+		queryFn: async () =>
+			getUserScopeContainerlabTemplates(opts.userId, {
+				source: toAPISource(opts.importSource),
+				dir: opts.importDir,
+			}),
+		enabled: Boolean(opts.userId) && opts.importOpen,
+		retry: false,
+		staleTime: 30_000,
+	});
+
+	const templatePreviewQ = useQuery({
+		queryKey: opts.userId
+			? [
+					"containerlabTemplate",
+					opts.userId,
+					opts.importSource,
+					opts.importDir,
+					opts.importFile,
+				]
+			: ["containerlabTemplate", "none"],
+		queryFn: async () => {
+			if (!opts.userId) throw new Error("missing user");
+			if (!opts.importFile) return null;
+			return getUserScopeContainerlabTemplate(opts.userId, {
+				source: toAPISource(opts.importSource),
+				dir: opts.importDir,
+				file: opts.importFile,
+			});
+		},
+		enabled:
+			Boolean(opts.userId) && opts.importOpen && Boolean(opts.importFile),
+		retry: false,
+		staleTime: 30_000,
+	});
+
+	return {
+		userScopesQ,
+		registryReposQ,
+		containerlabServersQ,
+		templatesQ,
+		templatePreviewQ,
+	};
+}

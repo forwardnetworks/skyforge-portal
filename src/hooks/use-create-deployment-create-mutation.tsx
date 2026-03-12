@@ -31,7 +31,7 @@ export function useCreateDeploymentCreateMutation(
 		queryClient,
 		effectiveSource,
 		templatesDir,
-		isAdmin,
+		allowNoExpiry,
 		managedFamilies,
 		lifetimeAllowedHours,
 	} = args;
@@ -118,9 +118,11 @@ export function useCreateDeploymentCreateMutation(
 			}
 			const { family, engine } = deploymentKindToSpec(normalizedKind);
 			config.engine = engine;
-			if (isAdmin && managedFamilies.has(String(family).trim().toLowerCase())) {
+			if (
+				managedFamilies.has(String(family).trim().toLowerCase())
+			) {
 				const selectedLifetime = String(values.labLifetime ?? "").trim();
-				if (selectedLifetime === "never") {
+				if (allowNoExpiry && selectedLifetime === "never") {
 					config.leaseEnabled = false;
 				} else {
 					const selectedHours = Number.parseInt(selectedLifetime, 10);

@@ -1,6 +1,8 @@
 import type { useQuickDeployPage } from "@/hooks/use-quick-deploy-page";
 import { formatQuickDeployEstimate } from "@/hooks/use-quick-deploy-page";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -28,8 +30,37 @@ import { Textarea } from "./ui/textarea";
 
 type QuickDeployPageState = ReturnType<typeof useQuickDeployPage>;
 
+function formatMode(value: string | undefined): string {
+	if (!value) return "unreported";
+	return value.replace(/[-_]/g, " ");
+}
+
+function describeMode(value: string | undefined): string {
+	switch (value) {
+		case "training":
+			return "Training mode prioritizes repeatable labs and reserved capacity for enablement sessions.";
+		case "sandbox":
+			return "Sandbox mode keeps curated labs available while allowing broader experimentation elsewhere in the platform.";
+		case "persistent-integration":
+			return "Persistent integration mode emphasizes labs that pair with Forward and external integrations over longer workflows.";
+		case "admin-advanced":
+			return "Admin mode includes curated launchers plus the platform controls needed to support other users.";
+		case "curated-demo":
+		default:
+			return "Curated demo mode keeps the catalog focused on repeatable GTM launchers with known-good reset behavior.";
+	}
+}
+
 export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 	const { page } = props;
+	const modeOptions = [
+		"all",
+		"curated-demo",
+		"training",
+		"sandbox",
+		"persistent-integration",
+		"admin-advanced",
+	];
 	return (
 		<div className="w-full space-y-5 p-4 lg:p-5">
 			<div className="space-y-1">
@@ -40,6 +71,76 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 					Forward only after post-deploy sync completes.
 				</p>
 			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Mode-aware launchpad</CardTitle>
+					<CardDescription>
+						Curated launchers adapt to your current operating mode and template intent.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="flex flex-wrap items-center gap-2">
+						<Badge>{formatMode(page.primaryOperatingMode || page.selectedMode)}</Badge>
+						{page.primaryOperatingMode &&
+						page.selectedMode !== page.primaryOperatingMode ? (
+							<Badge variant="outline">
+								filtered to {formatMode(page.selectedMode)}
+							</Badge>
+						) : null}
+					</div>
+					<p className="text-sm text-muted-foreground">
+						{describeMode(page.primaryOperatingMode || page.selectedMode)}
+					</p>
+					<div className="grid gap-3 md:grid-cols-[240px_1fr]">
+						<div className="space-y-2">
+							<Label>Launch mode</Label>
+							<Select value={page.selectedMode} onValueChange={page.setSelectedMode}>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{modeOptions.map((mode) => (
+										<SelectItem key={mode} value={mode}>
+											{formatMode(mode)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="rounded-lg border border-border/60 bg-background/60 p-3 text-sm">
+							<div className="font-medium">Recommended for this mode</div>
+							<div className="mt-2 flex flex-wrap gap-2">
+								{page.recommendedTemplates.slice(0, 4).map((entry) => (
+									<Button
+										key={entry.id}
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() => page.deployMutation.mutate(entry.template)}
+										disabled={page.catalogQ.isLoading || page.deployMutation.isPending}
+									>
+										{entry.name}
+									</Button>
+								))}
+								{page.recommendedTemplates.length === 0 ? (
+									<span className="text-muted-foreground">
+										No templates are marked for the current operating mode.
+									</span>
+								) : null}
+							</div>
+							{page.primaryOperatingMode === "training" ? (
+								<div className="mt-3 text-xs text-muted-foreground">
+									Training users should pair these launchers with reservations for scheduled sessions.
+									<Link className="ml-1 underline" to="/dashboard/reservations">
+										Open reservations
+									</Link>
+								</div>
+							) : null}
+						</div>
+					</div>
+				</CardContent>
+			</Card>
 
 			<Card>
 				<CardHeader>
@@ -83,8 +184,21 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 				{page.templates.map((entry) => (
 					<Card key={entry.id} className="flex h-full flex-col">
 						<CardHeader>
-							<CardTitle>{entry.name}</CardTitle>
+							<div className="flex items-center justify-between gap-2">
+								<CardTitle>{entry.name}</CardTitle>
+								<Badge variant="outline">{entry.resourceClass}</Badge>
+							</div>
 							<CardDescription>{entry.description}</CardDescription>
+							<div className="flex flex-wrap gap-2 pt-2">
+								{entry.operatingModes?.map((mode) => (
+									<Badge key={mode} variant="secondary">
+										{formatMode(mode)}
+									</Badge>
+								))}
+								{entry.owner ? (
+									<Badge variant="outline">{entry.owner}</Badge>
+								) : null}
+							</div>
 						</CardHeader>
 						<CardContent className="mt-auto space-y-3">
 							<div className="text-xs">
@@ -98,6 +212,11 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 								) : null}
 							</div>
 							<p className="text-xs text-muted-foreground">{entry.template}</p>
+							{entry.integrationDependencies?.length ? (
+								<div className="text-xs text-muted-foreground">
+									Requires: {entry.integrationDependencies.join(", ")}
+								</div>
+							) : null}
 							<div className="flex items-center gap-2">
 								<Button
 									type="button"

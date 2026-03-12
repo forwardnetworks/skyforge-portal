@@ -13,7 +13,7 @@ export type CreateDeploymentMutationsArgs = {
 	watchTemplateRepoId: string | undefined;
 	effectiveSource: z.infer<typeof formSchema>["source"];
 	templatesDir?: string;
-	isAdmin: boolean;
+	allowNoExpiry: boolean;
 	managedFamilies: Set<string>;
 	lifetimeAllowedHours: number[];
 	variableGroups: UserVariableGroup[];

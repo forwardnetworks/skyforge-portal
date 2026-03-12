@@ -110,7 +110,7 @@ async function run() {
 			.waitFor({ state: "visible", timeout: timeoutMs });
 		console.log("[smoke] Left sidebar is visible.");
 
-		await clickSidebarLink(page, "Signals", "/dashboard/signals", timeoutMs);
+		await clickSidebarLink(page, "Observability", "/dashboard/observability", timeoutMs);
 		await clickSidebarLink(page, "Dashboard", "/dashboard", timeoutMs);
 
 		const embeddedLinks = page.locator(

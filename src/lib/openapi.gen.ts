@@ -95,6 +95,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/forward/tenants/{username}/rebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RequestAdminForwardTenantRebuild requests a platform-managed Forward tenant
+         *     rebuild for another user.
+         */
+        post: operations["POST:skyforge.RequestAdminForwardTenantRebuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/forward/tenants/{username}/rebuild/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListAdminForwardTenantRebuildRuns returns reset runs for another user. */
+        get: operations["GET:skyforge.ListAdminForwardTenantRebuildRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/impersonate/start": {
         parameters: {
             query?: never;
@@ -296,6 +333,138 @@ export interface paths {
          */
         get: operations["GET:skyforge.GetObservabilitySummary"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/platform/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetAdminPlatformOverview returns reservation/reset/profile counts for platform
+         *     planning.
+         */
+        get: operations["GET:skyforge.GetAdminPlatformOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/platform/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListAdminPlatformReservations returns reservation requests across the platform. */
+        get: operations["GET:skyforge.ListAdminPlatformReservations"];
+        put?: never;
+        /**
+         * CreateAdminPlatformReservation creates an override or reserved-block reservation
+         *     for platform operations.
+         */
+        post: operations["POST:skyforge.CreateAdminPlatformReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/platform/reservations/{id}/lifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetAdminPlatformReservationLifecycle returns lifecycle details for any
+         *     reservation.
+         */
+        get: operations["GET:skyforge.GetAdminPlatformReservationLifecycle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/platform/reservations/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * UpdateAdminPlatformReservationStatus approves, rejects, or cancels a
+         *     reservation.
+         */
+        post: operations["POST:skyforge.UpdateAdminPlatformReservationStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/platform/users/{username}/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetAdminPlatformUserPolicy returns the effective platform policy for a user. */
+        get: operations["GET:skyforge.GetAdminPlatformUserPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/platform/users/{username}/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** PutAdminPlatformUserProfiles replaces the role profile set for a user. */
+        put: operations["PUT:skyforge.PutAdminPlatformUserProfiles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/platform/users/{username}/quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** PutAdminPlatformUserQuota replaces the quota override for a user. */
+        put: operations["PUT:skyforge.PutAdminPlatformUserQuota"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1871,6 +2040,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forward/tenant/rebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RequestCurrentUserForwardTenantRebuild requests a platform-managed Forward
+         *     tenant rebuild for the current user.
+         */
+        post: operations["POST:skyforge.RequestCurrentUserForwardTenantRebuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/tenant/rebuild/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListCurrentUserForwardTenantRebuildRuns returns reset runs for the current user. */
+        get: operations["GET:skyforge.ListCurrentUserForwardTenantRebuildRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gcp/console": {
         parameters: {
             query?: never;
@@ -2339,10 +2545,131 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * GetUserObservabilitySummary returns role-scoped observability signals for all
+         * GetUserObservabilitySummary returns role-scoped observability summaries for all
          *     authenticated users.
          */
         get: operations["GET:skyforge.GetUserObservabilitySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentPlatformAvailability returns the current user's effective platform
+         *     policy, quota usage, and class availability.
+         */
+        get: operations["GET:skyforge.GetCurrentPlatformAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetCurrentPlatformPolicy returns the current user's effective platform policy. */
+        get: operations["GET:skyforge.GetCurrentPlatformPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/reservation-preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * PreflightCurrentPlatformReservation evaluates reservation admission for the
+         *     current user without creating a reservation.
+         */
+        post: operations["POST:skyforge.PreflightCurrentPlatformReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListCurrentPlatformReservations returns reservation requests for the current
+         *     user.
+         */
+        get: operations["GET:skyforge.ListCurrentPlatformReservations"];
+        put?: never;
+        /**
+         * CreateCurrentPlatformReservation creates a reservation request for the current
+         *     user.
+         */
+        post: operations["POST:skyforge.CreateCurrentPlatformReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/reservations/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CancelCurrentPlatformReservation cancels a reservation owned by the current
+         *     user.
+         */
+        post: operations["POST:skyforge.CancelCurrentPlatformReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/reservations/{id}/lifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentPlatformReservationLifecycle returns lifecycle details for a
+         *     reservation owned by the current user.
+         */
+        get: operations["GET:skyforge.GetCurrentPlatformReservationLifecycle"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4011,13 +4338,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GetUserScopeForwardConfig returns Forward Networks credentials for a user scope. */
+        /**
+         * GetUserScopeForwardConfig returns Forward integration credentials for a user
+         *     scope.
+         */
         get: operations["GET:skyforge.GetUserScopeForwardConfig"];
-        /** PutUserScopeForwardConfig stores Forward Networks credentials for a user scope. */
+        /**
+         * PutUserScopeForwardConfig stores Forward integration credentials for a user
+         *     scope.
+         */
         put: operations["PUT:skyforge.PutUserScopeForwardConfig"];
         post?: never;
         /**
-         * DeleteUserScopeForwardConfig removes Forward Networks credentials for a user
+         * DeleteUserScopeForwardConfig removes Forward integration credentials for a user
          *     scope.
          */
         delete: operations["DELETE:skyforge.DeleteUserScopeForwardConfig"];
@@ -5190,6 +5523,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/forwardtenant.DeleteTenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * DeleteTenant tears down the stored Forward tenant and, for hard/curated
+         * @description modes, deletes the backing Forward org so a subsequent bootstrap recreates it from scratch.
+         */
+        post: operations["POST:forwardtenant.DeleteTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/forwardtenant.EnsureTenantCredential": {
         parameters: {
             query?: never;
@@ -5641,6 +5994,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/worker/platform/usage-snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CronRefreshDeploymentUsageSnapshots records current deployment resource requests
+         * @description into the platform snapshot store for estimate-vs-actual reporting.
+         */
+        post: operations["POST:worker.CronRefreshDeploymentUsageSnapshots"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/worker/tasks/reconcile": {
         parameters: {
             query?: never;
@@ -5889,6 +6262,278 @@ export interface paths {
         /** MarkNotificationAsRead marks a notification as read. */
         put: operations["PUT:skyforge.MarkNotificationAsRead"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.CreateReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.CreateReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.GetDeploymentPlacementSummary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.GetDeploymentPlacementSummary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.GetForwardTenantResetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.GetForwardTenantResetRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.GetOverview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:platform.GetOverview"];
+        put?: never;
+        post: operations["POST:platform.GetOverview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.GetReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.GetReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.GetReservationLifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.GetReservationLifecycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.GetUserOverview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.GetUserOverview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.GetUserPolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.GetUserPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.ListForwardTenantResetRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.ListForwardTenantResetRuns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.ListReservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.ListReservations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.PreflightReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.PreflightReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.PutUserProfiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.PutUserProfiles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.PutUserQuotaOverride": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.PutUserQuotaOverride"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.RefreshDeploymentUsageSnapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:platform.RefreshDeploymentUsageSnapshots"];
+        put?: never;
+        post: operations["POST:platform.RefreshDeploymentUsageSnapshots"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.RequestForwardTenantResetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.RequestForwardTenantResetRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.UpdateForwardTenantResetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.UpdateForwardTenantResetRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform.UpdateReservationStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:platform.UpdateReservationStatus"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6314,6 +6959,26 @@ export interface paths {
          * @description collector deployment reconciliation.
          */
         post: operations["POST:skyforge.EnsureManagedCollectorDeployment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/skyforge.ExecuteForwardTenantResetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ExecuteForwardTenantResetRun is a worker-facing private API for queued
+         * @description Forward tenant reset orchestration.
+         */
+        post: operations["POST:skyforge.ExecuteForwardTenantResetRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7125,6 +7790,233 @@ export interface components {
             updatedAt: string;
             userId: string;
         };
+        "platform.ForwardTenantResetBaseline": {
+            capturedAt: string;
+            deployments: components["schemas"]["platform.ForwardTenantResetBaselineDeployment"][];
+            source: string;
+        };
+        "platform.ForwardTenantResetBaselineDeployment": {
+            deploymentId: string;
+            deploymentName: string;
+            userScopeId: string;
+        };
+        "platform.ForwardTenantResetRun": {
+            baseline: components["schemas"]["platform.ForwardTenantResetBaseline"];
+            createdAt: string;
+            id: string;
+            metadata: {
+                [key: string]: string;
+            };
+            mode: string;
+            reason: string;
+            requestedBy: string;
+            status: string;
+            updatedAt: string;
+            username: string;
+        };
+        "platform.PlatformAvailabilityByClass": {
+            /** Format: int64 */
+            approvedReservations: number;
+            /** Format: int64 */
+            estimatedCapacityUnits: number;
+            /** Format: int64 */
+            immediateAvailability: number;
+            /** Format: int64 */
+            requestedReservations: number;
+            /** Format: int64 */
+            reservedBlocks: number;
+            resourceClass: string;
+        };
+        "platform.PlatformCapacityPool": {
+            /** Format: int64 */
+            allocatableMemoryBytes: number;
+            /** Format: int64 */
+            allocatableMilliCpu: number;
+            /** Format: int64 */
+            availableMemoryBytes: number;
+            /** Format: int64 */
+            availableMilliCpu: number;
+            name: string;
+            /** Format: int64 */
+            nodeCount: number;
+            poolClass: string;
+            /** Format: int64 */
+            readyNodeCount: number;
+            /** Format: int64 */
+            requestedMemoryBytes: number;
+            /** Format: int64 */
+            requestedMilliCpu: number;
+        };
+        "platform.PlatformDemandByClass": {
+            /** Format: int64 */
+            activeDeployments: number;
+            /** Format: int64 */
+            approvedReservations: number;
+            /** Format: int64 */
+            persistentLabs: number;
+            /** Format: int64 */
+            queuedTasks: number;
+            /** Format: int64 */
+            requestedReservations: number;
+            resourceClass: string;
+            /** Format: int64 */
+            runningTasks: number;
+        };
+        "platform.PlatformEstimateActualByClass": {
+            /** Format: int64 */
+            activeDeployments: number;
+            /** Format: int64 */
+            actualRequestedMemoryBytes: number;
+            /** Format: int64 */
+            actualRequestedMilliCpu: number;
+            /** Format: int64 */
+            driftMemoryBytes: number;
+            /** Format: int64 */
+            driftMilliCpu: number;
+            /** Format: int64 */
+            estimatedMemoryBytes: number;
+            /** Format: int64 */
+            estimatedMilliCpu: number;
+            /** Format: int64 */
+            measuredDeployments: number;
+            resourceClass: string;
+        };
+        "platform.PlatformInfraComparison": {
+            cloud: components["schemas"]["platform.PlatformInfraSlice"];
+            onPrem: components["schemas"]["platform.PlatformInfraSlice"];
+            recommended: string;
+            summary: string;
+            total: components["schemas"]["platform.PlatformInfraSlice"];
+        };
+        "platform.PlatformInfraSlice": {
+            /** Format: int64 */
+            allocatableMemoryBytes: number;
+            /** Format: int64 */
+            allocatableMilliCpu: number;
+            /** Format: int64 */
+            availableMemoryBytes: number;
+            /** Format: int64 */
+            availableMilliCpu: number;
+            /** Format: int64 */
+            estimatedMonthlyCostCents: number;
+            mode: string;
+            /** Format: int64 */
+            nodeCount: number;
+            /** Format: int64 */
+            providerCount: number;
+            /** Format: int64 */
+            readyNodeCount: number;
+        };
+        "platform.PlatformMarginalCostByClass": {
+            /** Format: int64 */
+            blendedCapacityUnits: number;
+            /** Format: int64 */
+            blendedMonthlyCostCents: number;
+            /** Format: int64 */
+            blendedUnitCostCents: number;
+            /** Format: int64 */
+            cloudCapacityUnits: number;
+            /** Format: int64 */
+            cloudMonthlyCostCents: number;
+            /** Format: int64 */
+            cloudUnitCostCents: number;
+            resourceClass: string;
+        };
+        "platform.PlatformPoolCostInput": {
+            /** Format: int64 */
+            estimatedMonthlyCostCents: number;
+            instanceTypes: {
+                [key: string]: number;
+            };
+            /** Format: int64 */
+            monthlyNodeCostCents: number;
+            name: string;
+            /** Format: int64 */
+            nodeCount: number;
+            poolClass: string;
+            provider: string;
+            /** Format: int64 */
+            readyNodeCount: number;
+        };
+        "platform.PlatformReservationGuidance": {
+            immediateAvailable: boolean;
+            quotaAllowed: boolean;
+            reason: string;
+            recommendedAction: string;
+            requiresReservation: boolean;
+            resourceClass: string;
+            suggestedPriority: string;
+        };
+        "platform.PlatformUserUsage": {
+            /** Format: int64 */
+            activeDeployments: number;
+            /** Format: int64 */
+            approvedReservations: number;
+            /** Format: int64 */
+            persistentLabs: number;
+            /** Format: int64 */
+            remainingConcurrentLabs: number;
+            /** Format: int64 */
+            remainingPersistentLabs: number;
+            /** Format: int64 */
+            requestedReservations: number;
+        };
+        "platform.PlatformWarning": {
+            code: string;
+            recommendedAction: string;
+            severity: string;
+            summary: string;
+        };
+        "platform.ReservationEventRecord": {
+            actor: string;
+            createdAt: string;
+            eventType: string;
+            id: string;
+            metadata: {
+                [key: string]: string;
+            };
+            summary: string;
+        };
+        "platform.ReservationRecord": {
+            adminOverride: boolean;
+            approvedBy: string;
+            createdAt: string;
+            endAt: string;
+            id: string;
+            metadata: {
+                [key: string]: string;
+            };
+            notes: string;
+            priorityTier: string;
+            requestedBy: string;
+            resourceClass: string;
+            startAt: string;
+            status: string;
+            templateRef: string;
+            type: string;
+            updatedAt: string;
+            userScopeId: string;
+            username: string;
+        };
+        "platform.ResourceClass": string;
+        "platform.UserPolicy": {
+            capabilities: string[];
+            directRoles: string[];
+            operatingModes: string[];
+            primaryOperatingMode: string;
+            profiles: string[];
+            quota: components["schemas"]["platform.UserQuota"];
+            username: string;
+        };
+        "platform.UserQuota": {
+            /** Format: int64 */
+            maxConcurrentLabs: number;
+            /** Format: int64 */
+            maxPersistentHours: number;
+            /** Format: int64 */
+            maxPersistentLabs: number;
+            maxResourceClass: components["schemas"]["platform.ResourceClass"];
+        };
         "servicenow.ForwardCredentials": {
             baseUrl: string;
             password: string;
@@ -7338,8 +8230,10 @@ export interface components {
             configMaps: number;
             labName: string;
             namespace: string;
+            placementSummary: components["schemas"]["skyforge.DeploymentPlacementInfoSummary"];
             ready: boolean;
             topologyName: string;
+            warnings: string[];
         };
         "skyforge.ContainerlabInfo": {
             apiUrl: string;
@@ -7394,6 +8288,29 @@ export interface components {
             /** Format: int64 */
             txPackets: number;
         };
+        "skyforge.DeploymentPlacementInfoSummary": {
+            /** Format: int64 */
+            actualNodeCount: number;
+            actualNodes: string[];
+            actualPoolClasses: string[];
+            availablePoolClasses: string[];
+            /** Format: int64 */
+            candidateNodeCount: number;
+            degraded: boolean;
+            generatedAt: string;
+            metadata: {
+                [key: string]: string;
+            };
+            placementHints: string[];
+            placementOk: boolean;
+            preferredPoolClasses: string[];
+            /** Format: int64 */
+            readyPodCount: number;
+            resourceClass: string;
+            schedulingMode: string;
+            status: string;
+            warnings: string[];
+        };
         "skyforge.DeploymentPresenceState": string;
         "skyforge.DeploymentUIEvent": {
             createdAt: string;
@@ -7426,6 +8343,19 @@ export interface components {
             name: string;
             /** gitea owner/repo */
             repo: string;
+        };
+        "skyforge.ForwardAnalyticsNetwork": {
+            collectorConfigId: string;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            description: string;
+            forwardNetwork: string;
+            id: string;
+            name: string;
+            /** Format: date-time */
+            updatedAt: string;
+            userScopeId: string;
         };
         "skyforge.ForwardCollectorInfo": {
             connected: boolean;
@@ -7589,18 +8519,37 @@ export interface components {
             /** Format: int64 */
             workerHeartbeatSec: number;
         };
-        "skyforge.PolicyReportForwardNetwork": {
-            collectorConfigId: string;
-            /** Format: date-time */
-            createdAt: string;
-            createdBy: string;
-            description: string;
-            forwardNetworkId: string;
-            id: string;
-            name: string;
-            /** Format: date-time */
-            updatedAt: string;
-            userId: string;
+        "skyforge.PlatformPolicyResponse": {
+            capabilities: string[];
+            directRoles: string[];
+            operatingModes: string[];
+            primaryOperatingMode: string;
+            profiles: string[];
+            quota: components["schemas"]["skyforge.PlatformQuotaPolicy"];
+            username: string;
+        };
+        "skyforge.PlatformQuotaPolicy": {
+            /** Format: int64 */
+            maxConcurrentLabs: number;
+            /** Format: int64 */
+            maxPersistentHours: number;
+            /** Format: int64 */
+            maxPersistentLabs: number;
+            maxResourceClass: string;
+        };
+        "skyforge.PlatformUserUsageResponse": {
+            /** Format: int64 */
+            activeDeployments: number;
+            /** Format: int64 */
+            approvedReservations: number;
+            /** Format: int64 */
+            persistentLabs: number;
+            /** Format: int64 */
+            remainingConcurrentLabs: number;
+            /** Format: int64 */
+            remainingPersistentLabs: number;
+            /** Format: int64 */
+            requestedReservations: number;
         };
         "skyforge.ResourceEstimateSummary": {
             /** Format: int64 */
@@ -7613,6 +8562,9 @@ export interface components {
             profiledNodeCount: number;
             ramGiB: number;
             reason: string;
+            /** Format: int64 */
+            storageBytes: number;
+            storageGiB: number;
             supported: boolean;
             vcpu: number;
         };
@@ -7973,10 +8925,17 @@ export interface components {
             topCause: string;
         };
         "skyforge.quickDeployTemplate": {
+            allowedProfiles: string[];
             description: string;
             estimate: components["schemas"]["skyforge.ResourceEstimateSummary"];
             id: string;
+            integrationDependencies: string[];
             name: string;
+            operatingModes: string[];
+            owner: string;
+            placementHints: string[];
+            resetBaselineMode: string;
+            resourceClass: string;
             template: string;
         };
         "skyforge.serviceNowSetupStepResult": {
@@ -8332,6 +9291,77 @@ export interface operations {
                             useSsl: boolean;
                         };
                         publicUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RequestAdminForwardTenantRebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    mode: string;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseline: components["schemas"]["platform.ForwardTenantResetBaseline"];
+                        createdAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        mode: string;
+                        reason: string;
+                        requestedBy: string;
+                        status: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListAdminForwardTenantRebuildRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs: components["schemas"]["platform.ForwardTenantResetRun"][];
                     };
                 };
             };
@@ -8717,6 +9747,332 @@ export interface operations {
                         queueRunning: number;
                         /** Format: int64 */
                         workerHeartbeatSec: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminPlatformOverview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        availabilityByClass: components["schemas"]["platform.PlatformAvailabilityByClass"][];
+                        /** Format: int64 */
+                        baselineMonthlyCostCents: number;
+                        capacityPools: components["schemas"]["platform.PlatformCapacityPool"][];
+                        demandByClass: components["schemas"]["platform.PlatformDemandByClass"][];
+                        estimateActualByClass: components["schemas"]["platform.PlatformEstimateActualByClass"][];
+                        /** Format: int64 */
+                        forwardResetRunCount: number;
+                        forwardResetRunsByStatus: {
+                            [key: string]: number;
+                        };
+                        generatedAt: string;
+                        infraComparison: components["schemas"]["platform.PlatformInfraComparison"];
+                        marginalCostByClass: components["schemas"]["platform.PlatformMarginalCostByClass"][];
+                        poolCostInputs: components["schemas"]["platform.PlatformPoolCostInput"][];
+                        /** Format: int64 */
+                        quotaOverrideCount: number;
+                        /** Format: int64 */
+                        reservationCount: number;
+                        reservationsByClass: {
+                            [key: string]: number;
+                        };
+                        reservationsByPriority: {
+                            [key: string]: number;
+                        };
+                        reservationsByStatus: {
+                            [key: string]: number;
+                        };
+                        reservedBlocksByClass: {
+                            [key: string]: number;
+                        };
+                        userProfilesByName: {
+                            [key: string]: number;
+                        };
+                        warnings: components["schemas"]["platform.PlatformWarning"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListAdminPlatformReservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reservations: components["schemas"]["platform.ReservationRecord"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateAdminPlatformReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminOverride: boolean;
+                    endAt: string;
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    notes: string;
+                    priorityTier: string;
+                    resourceClass: string;
+                    startAt: string;
+                    templateRef: string;
+                    type: string;
+                    userScopeId: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        approvedBy: string;
+                        createdAt: string;
+                        endAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        notes: string;
+                        priorityTier: string;
+                        requestedBy: string;
+                        resourceClass: string;
+                        startAt: string;
+                        status: string;
+                        templateRef: string;
+                        type: string;
+                        updatedAt: string;
+                        userScopeId: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminPlatformReservationLifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allowedActions: string[];
+                        events: components["schemas"]["platform.ReservationEventRecord"][];
+                        reservation: components["schemas"]["platform.ReservationRecord"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.UpdateAdminPlatformReservationStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    status: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        approvedBy: string;
+                        createdAt: string;
+                        endAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        notes: string;
+                        priorityTier: string;
+                        requestedBy: string;
+                        resourceClass: string;
+                        startAt: string;
+                        status: string;
+                        templateRef: string;
+                        type: string;
+                        updatedAt: string;
+                        userScopeId: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminPlatformUserPolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        capabilities: string[];
+                        directRoles: string[];
+                        operatingModes: string[];
+                        primaryOperatingMode: string;
+                        profiles: string[];
+                        quota: components["schemas"]["skyforge.PlatformQuotaPolicy"];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutAdminPlatformUserProfiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    profiles: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        capabilities: string[];
+                        directRoles: string[];
+                        operatingModes: string[];
+                        primaryOperatingMode: string;
+                        profiles: string[];
+                        quota: components["schemas"]["skyforge.PlatformQuotaPolicy"];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutAdminPlatformUserQuota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    maxConcurrentLabs: number;
+                    /** Format: int64 */
+                    maxPersistentHours: number;
+                    /** Format: int64 */
+                    maxPersistentLabs: number;
+                    maxResourceClass: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        capabilities: string[];
+                        directRoles: string[];
+                        operatingModes: string[];
+                        primaryOperatingMode: string;
+                        profiles: string[];
+                        quota: components["schemas"]["skyforge.PlatformQuotaPolicy"];
+                        username: string;
                     };
                 };
             };
@@ -11482,7 +12838,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        allowNoExpiry: boolean;
+                        allowDisable: boolean;
                         allowedHours: number[];
                         /** Format: int64 */
                         defaultHours: number;
@@ -11491,7 +12847,7 @@ export interface operations {
                         };
                         managedFamilies: string[];
                         /** Format: int64 */
-                        maxHoursNonAdmin: number;
+                        maxHours: number;
                     };
                 };
             };
@@ -11924,6 +13280,73 @@ export interface operations {
                         source: string;
                         updatedAt: string;
                         username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RequestCurrentUserForwardTenantRebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    mode: string;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseline: components["schemas"]["platform.ForwardTenantResetBaseline"];
+                        createdAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        mode: string;
+                        reason: string;
+                        requestedBy: string;
+                        status: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListCurrentUserForwardTenantRebuildRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs: components["schemas"]["platform.ForwardTenantResetRun"][];
                     };
                 };
             };
@@ -12708,6 +14131,269 @@ export interface operations {
                         /** user|admin */
                         scope: string;
                         skyforge: components["schemas"]["skyforge.ObservabilitySummaryResponse"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetCurrentPlatformAvailability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        availabilityByClass: components["schemas"]["platform.PlatformAvailabilityByClass"][];
+                        generatedAt: string;
+                        infraComparison: components["schemas"]["platform.PlatformInfraComparison"];
+                        policy: components["schemas"]["skyforge.PlatformPolicyResponse"];
+                        reservationGuidance: components["schemas"]["platform.PlatformReservationGuidance"][];
+                        usage: components["schemas"]["skyforge.PlatformUserUsageResponse"];
+                        warnings: components["schemas"]["platform.PlatformWarning"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetCurrentPlatformPolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        capabilities: string[];
+                        directRoles: string[];
+                        operatingModes: string[];
+                        primaryOperatingMode: string;
+                        profiles: string[];
+                        quota: components["schemas"]["skyforge.PlatformQuotaPolicy"];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.PreflightCurrentPlatformReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    endAt: string;
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    notes: string;
+                    priorityTier: string;
+                    resourceClass: string;
+                    startAt: string;
+                    templateRef: string;
+                    type: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        allowed: boolean;
+                        endAt: string;
+                        /** Format: int64 */
+                        overlappingReservations: number;
+                        /** Format: int64 */
+                        persistentReservations: number;
+                        priorityTier: string;
+                        /** Format: int64 */
+                        protectedCuratedBlocks: number;
+                        quota: components["schemas"]["platform.UserQuota"];
+                        reason: string;
+                        resourceClass: string;
+                        startAt: string;
+                        templateRef: string;
+                        type: string;
+                        warnings: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListCurrentPlatformReservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reservations: components["schemas"]["platform.ReservationRecord"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateCurrentPlatformReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    endAt: string;
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    notes: string;
+                    priorityTier: string;
+                    resourceClass: string;
+                    startAt: string;
+                    templateRef: string;
+                    type: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        approvedBy: string;
+                        createdAt: string;
+                        endAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        notes: string;
+                        priorityTier: string;
+                        requestedBy: string;
+                        resourceClass: string;
+                        startAt: string;
+                        status: string;
+                        templateRef: string;
+                        type: string;
+                        updatedAt: string;
+                        userScopeId: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CancelCurrentPlatformReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        approvedBy: string;
+                        createdAt: string;
+                        endAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        notes: string;
+                        priorityTier: string;
+                        requestedBy: string;
+                        resourceClass: string;
+                        startAt: string;
+                        status: string;
+                        templateRef: string;
+                        type: string;
+                        updatedAt: string;
+                        userScopeId: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetCurrentPlatformReservationLifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allowedActions: string[];
+                        events: components["schemas"]["platform.ReservationEventRecord"][];
+                        reservation: components["schemas"]["platform.ReservationRecord"];
                     };
                 };
             };
@@ -15688,7 +17374,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        networks: components["schemas"]["skyforge.PolicyReportForwardNetwork"][];
+                        networks: components["schemas"]["skyforge.ForwardAnalyticsNetwork"][];
                     };
                 };
             };
@@ -15709,7 +17395,7 @@ export interface operations {
                 "application/json": {
                     collectorConfigId: string;
                     description: string;
-                    forwardNetworkId: string;
+                    forwardNetwork: string;
                     name: string;
                 };
             };
@@ -15727,12 +17413,12 @@ export interface operations {
                         createdAt: string;
                         createdBy: string;
                         description: string;
-                        forwardNetworkId: string;
+                        forwardNetwork: string;
                         id: string;
                         name: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        userId: string;
+                        userScopeId: string;
                     };
                 };
             };
@@ -18428,6 +20114,38 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:forwardtenant.DeleteTenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    baseUrl: string;
+                    forwardEnabled: boolean;
+                    mode: string;
+                    sessionSecret: string;
+                    skipTlsVerify: boolean;
+                    supportPassword: string;
+                    supportUsername: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:forwardtenant.EnsureTenantCredential": {
         parameters: {
             query?: never;
@@ -19099,6 +20817,25 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:worker.CronRefreshDeploymentUsageSnapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:worker.CronReconcileQueuedTasks": {
         parameters: {
             query?: never;
@@ -19428,6 +21165,811 @@ export interface operations {
                 content: {
                     "application/json": {
                         status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.CreateReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminOverride: boolean;
+                    approvedBy: string;
+                    endAt: string;
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    notes: string;
+                    priorityTier: string;
+                    requestedBy: string;
+                    resourceClass: string;
+                    startAt: string;
+                    templateRef: string;
+                    type: string;
+                    userScopeId: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        approvedBy: string;
+                        createdAt: string;
+                        endAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        notes: string;
+                        priorityTier: string;
+                        requestedBy: string;
+                        resourceClass: string;
+                        startAt: string;
+                        status: string;
+                        templateRef: string;
+                        type: string;
+                        updatedAt: string;
+                        userScopeId: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.GetDeploymentPlacementSummary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    userScopeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        actualNodeCount: number;
+                        actualNodes: string[];
+                        actualPoolClasses: string[];
+                        availablePoolClasses: string[];
+                        /** Format: int64 */
+                        candidateNodeCount: number;
+                        degraded: boolean;
+                        deploymentId: string;
+                        generatedAt: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        namespace: string;
+                        placementHints: string[];
+                        placementOk: boolean;
+                        preferredPoolClasses: string[];
+                        /** Format: int64 */
+                        readyPodCount: number;
+                        resourceClass: string;
+                        schedulingMode: string;
+                        status: string;
+                        topologyName: string;
+                        userScopeId: string;
+                        warnings: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.GetForwardTenantResetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    runId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseline: components["schemas"]["platform.ForwardTenantResetBaseline"];
+                        createdAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        mode: string;
+                        reason: string;
+                        requestedBy: string;
+                        status: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:platform.GetOverview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        availabilityByClass: components["schemas"]["platform.PlatformAvailabilityByClass"][];
+                        /** Format: int64 */
+                        baselineMonthlyCostCents: number;
+                        capacityPools: components["schemas"]["platform.PlatformCapacityPool"][];
+                        demandByClass: components["schemas"]["platform.PlatformDemandByClass"][];
+                        estimateActualByClass: components["schemas"]["platform.PlatformEstimateActualByClass"][];
+                        /** Format: int64 */
+                        forwardResetRunCount: number;
+                        forwardResetRunsByStatus: {
+                            [key: string]: number;
+                        };
+                        generatedAt: string;
+                        infraComparison: components["schemas"]["platform.PlatformInfraComparison"];
+                        marginalCostByClass: components["schemas"]["platform.PlatformMarginalCostByClass"][];
+                        poolCostInputs: components["schemas"]["platform.PlatformPoolCostInput"][];
+                        /** Format: int64 */
+                        quotaOverrideCount: number;
+                        /** Format: int64 */
+                        reservationCount: number;
+                        reservationsByClass: {
+                            [key: string]: number;
+                        };
+                        reservationsByPriority: {
+                            [key: string]: number;
+                        };
+                        reservationsByStatus: {
+                            [key: string]: number;
+                        };
+                        reservedBlocksByClass: {
+                            [key: string]: number;
+                        };
+                        userProfilesByName: {
+                            [key: string]: number;
+                        };
+                        warnings: components["schemas"]["platform.PlatformWarning"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.GetOverview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        availabilityByClass: components["schemas"]["platform.PlatformAvailabilityByClass"][];
+                        /** Format: int64 */
+                        baselineMonthlyCostCents: number;
+                        capacityPools: components["schemas"]["platform.PlatformCapacityPool"][];
+                        demandByClass: components["schemas"]["platform.PlatformDemandByClass"][];
+                        estimateActualByClass: components["schemas"]["platform.PlatformEstimateActualByClass"][];
+                        /** Format: int64 */
+                        forwardResetRunCount: number;
+                        forwardResetRunsByStatus: {
+                            [key: string]: number;
+                        };
+                        generatedAt: string;
+                        infraComparison: components["schemas"]["platform.PlatformInfraComparison"];
+                        marginalCostByClass: components["schemas"]["platform.PlatformMarginalCostByClass"][];
+                        poolCostInputs: components["schemas"]["platform.PlatformPoolCostInput"][];
+                        /** Format: int64 */
+                        quotaOverrideCount: number;
+                        /** Format: int64 */
+                        reservationCount: number;
+                        reservationsByClass: {
+                            [key: string]: number;
+                        };
+                        reservationsByPriority: {
+                            [key: string]: number;
+                        };
+                        reservationsByStatus: {
+                            [key: string]: number;
+                        };
+                        reservedBlocksByClass: {
+                            [key: string]: number;
+                        };
+                        userProfilesByName: {
+                            [key: string]: number;
+                        };
+                        warnings: components["schemas"]["platform.PlatformWarning"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.GetReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        approvedBy: string;
+                        createdAt: string;
+                        endAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        notes: string;
+                        priorityTier: string;
+                        requestedBy: string;
+                        resourceClass: string;
+                        startAt: string;
+                        status: string;
+                        templateRef: string;
+                        type: string;
+                        updatedAt: string;
+                        userScopeId: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.GetReservationLifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        allowedActions: string[];
+                        events: components["schemas"]["platform.ReservationEventRecord"][];
+                        reservation: components["schemas"]["platform.ReservationRecord"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.GetUserOverview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        availabilityByClass: components["schemas"]["platform.PlatformAvailabilityByClass"][];
+                        generatedAt: string;
+                        infraComparison: components["schemas"]["platform.PlatformInfraComparison"];
+                        policy: components["schemas"]["platform.UserPolicy"];
+                        reservationGuidance: components["schemas"]["platform.PlatformReservationGuidance"][];
+                        usage: components["schemas"]["platform.PlatformUserUsage"];
+                        warnings: components["schemas"]["platform.PlatformWarning"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.GetUserPolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        capabilities: string[];
+                        directRoles: string[];
+                        operatingModes: string[];
+                        primaryOperatingMode: string;
+                        profiles: string[];
+                        quota: components["schemas"]["platform.UserQuota"];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.ListForwardTenantResetRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    includeAll: boolean;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs: components["schemas"]["platform.ForwardTenantResetRun"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.ListReservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    includeAll: boolean;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reservations: components["schemas"]["platform.ReservationRecord"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.PreflightReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    adminOverride: boolean;
+                    endAt: string;
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    notes: string;
+                    priorityTier: string;
+                    requestedBy: string;
+                    resourceClass: string;
+                    startAt: string;
+                    templateRef: string;
+                    type: string;
+                    userScopeId: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        allowed: boolean;
+                        endAt: string;
+                        /** Format: int64 */
+                        overlappingReservations: number;
+                        /** Format: int64 */
+                        persistentReservations: number;
+                        priorityTier: string;
+                        /** Format: int64 */
+                        protectedCuratedBlocks: number;
+                        quota: components["schemas"]["platform.UserQuota"];
+                        reason: string;
+                        resourceClass: string;
+                        startAt: string;
+                        templateRef: string;
+                        type: string;
+                        warnings: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.PutUserProfiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    assignedBy: string;
+                    profiles: string[];
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        capabilities: string[];
+                        directRoles: string[];
+                        operatingModes: string[];
+                        primaryOperatingMode: string;
+                        profiles: string[];
+                        quota: components["schemas"]["platform.UserQuota"];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.PutUserQuotaOverride": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    assignedBy: string;
+                    /** Format: int64 */
+                    maxConcurrentLabs: number;
+                    /** Format: int64 */
+                    maxPersistentHours: number;
+                    /** Format: int64 */
+                    maxPersistentLabs: number;
+                    maxResourceClass: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        capabilities: string[];
+                        directRoles: string[];
+                        operatingModes: string[];
+                        primaryOperatingMode: string;
+                        profiles: string[];
+                        quota: components["schemas"]["platform.UserQuota"];
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:platform.RefreshDeploymentUsageSnapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recordedAt: string;
+                        /** Format: int64 */
+                        snapshots: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.RefreshDeploymentUsageSnapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recordedAt: string;
+                        /** Format: int64 */
+                        snapshots: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.RequestForwardTenantResetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    baseline: components["schemas"]["platform.ForwardTenantResetBaseline"];
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    mode: string;
+                    reason: string;
+                    requestedBy: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseline: components["schemas"]["platform.ForwardTenantResetBaseline"];
+                        createdAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        mode: string;
+                        reason: string;
+                        requestedBy: string;
+                        status: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.UpdateForwardTenantResetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    runId: string;
+                    status: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseline: components["schemas"]["platform.ForwardTenantResetBaseline"];
+                        createdAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        mode: string;
+                        reason: string;
+                        requestedBy: string;
+                        status: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:platform.UpdateReservationStatus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    approvedBy: string;
+                    id: string;
+                    status: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        adminOverride: boolean;
+                        approvedBy: string;
+                        createdAt: string;
+                        endAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        notes: string;
+                        priorityTier: string;
+                        requestedBy: string;
+                        resourceClass: string;
+                        startAt: string;
+                        status: string;
+                        templateRef: string;
+                        type: string;
+                        updatedAt: string;
+                        userScopeId: string;
+                        username: string;
                     };
                 };
             };
@@ -20297,6 +22839,34 @@ export interface operations {
                     forwardBaseUrl: string;
                     skipTlsVerify: boolean;
                     token: string;
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ExecuteForwardTenantResetRun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    mode: string;
+                    requestedBy: string;
+                    runId: string;
                     username: string;
                 };
             };

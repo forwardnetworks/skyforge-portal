@@ -1,14 +1,5 @@
-import { DesignerNode } from "@/components/lab-designer-node";
-import type {
-	CanvasMenuState,
-	DesignEdge,
-	DesignNode,
-	EdgeMenuState,
-	LabDesignerSearch,
-	NodeMenuState,
-	SavedConfigRef,
-} from "@/components/lab-designer-types";
-import { createLabDesignerActions } from "@/hooks/use-lab-designer-actions";
+import { useLabDesignerPageModel } from "@/hooks/use-lab-designer-page-model";
+import { useLabDesignerPageState } from "@/hooks/use-lab-designer-page-state";
 import { useLabDesignerData } from "@/hooks/use-lab-designer-data";
 import { useLabDesignerDerived } from "@/hooks/use-lab-designer-derived";
 import {
@@ -16,189 +7,65 @@ import {
 	useLabDesignerImportPrefsEffect,
 	useLabDesignerImportedDeploymentSyncEffect,
 } from "@/hooks/use-lab-designer-effects";
-import {
-	type LabDesign,
-	designToContainerlabYaml,
-} from "@/lib/containerlab-yaml";
-import { useQueryClient } from "@tanstack/react-query";
-import type { ReactFlowInstance } from "@xyflow/react";
-import { useEdgesState, useNodesState } from "@xyflow/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { createLabDesignerActions } from "./use-lab-designer-actions";
+import type { LabDesignerSearch } from "@/components/lab-designer-types";
 
 export function useLabDesignerPage(search: LabDesignerSearch) {
-	const USER_REPO_SOURCE = "user" as const;
-	const storageKey = "skyforge.labDesigner.v1";
+	const state = useLabDesignerPageState();
 	const importDeploymentId = String(search.importDeploymentId ?? "").trim();
-	const rfRef = useRef<HTMLDivElement | null>(null);
-	const queryClient = useQueryClient();
 
-	const [labName, setLabName] = useState("lab");
-	const [defaultKind, setDefaultKind] = useState("");
-	const [userId, setUserScopeId] = useState("");
-	const [runtime, setRuntime] = useState<"clabernetes" | "containerlab">(
-		"clabernetes",
-	);
-	const [containerlabServer, setContainerlabServer] = useState("");
-	const [useSavedConfig, setUseSavedConfig] = useState(true);
-	const [lastSaved, setLastSaved] = useState<SavedConfigRef | null>(null);
-	const [templatesDir, setTemplatesDir] = useState("containerlab/designer");
-	const [templateFile, setTemplateFile] = useState("");
-	const [snapToGrid, setSnapToGrid] = useState(true);
-	const [paletteSearch, setPaletteSearch] = useState("");
-	const [paletteVendor, setPaletteVendor] = useState<string>("all");
-	const [paletteRole, setPaletteRole] = useState<string>("all");
-	const [rfInstance, setRfInstance] = useState<ReactFlowInstance<
-		DesignNode,
-		DesignEdge
-	> | null>(null);
-	const [selectedNodeId, setSelectedNodeId] = useState<string>("");
-	const [linkMode, setLinkMode] = useState(false);
-	const [pendingLinkSource, setPendingLinkSource] = useState<string>("");
-	const [yamlMode, setYamlMode] = useState<"generated" | "custom">("generated");
-	const [customYaml, setCustomYaml] = useState<string>("");
-	const [importOpen, setImportOpen] = useState(false);
-	const [importSource, setImportSource] = useState<"user" | "blueprints">(
-		"blueprints",
-	);
-	const [importDir, setImportDir] = useState("containerlab");
-	const [importFile, setImportFile] = useState("");
-	const [quickstartOpen, setQuickstartOpen] = useState(false);
-	const [qsName, setQsName] = useState("clos");
-	const [qsSpines, setQsSpines] = useState(2);
-	const [qsLeaves, setQsLeaves] = useState(4);
-	const [qsHostsPerLeaf, setQsHostsPerLeaf] = useState(1);
-	const [qsSwitchKind, setQsSwitchKind] = useState("ceos");
-	const [qsSwitchImage, setQsSwitchImage] = useState("");
-	const [qsHostKind, setQsHostKind] = useState("linux");
-	const [qsHostImage, setQsHostImage] = useState("");
-	const [openDeploymentOnCreate, setOpenDeploymentOnCreate] = useState(true);
-	const [nodeMenu, setNodeMenu] = useState<NodeMenuState | null>(null);
-	const [edgeMenu, setEdgeMenu] = useState<EdgeMenuState | null>(null);
-	const [canvasMenu, setCanvasMenu] = useState<CanvasMenuState | null>(null);
-	const [showWarnings, setShowWarnings] = useState(false);
-
-	const [nodes, setNodes, onNodesChange] = useNodesState<DesignNode>([
-		{
-			id: "r1",
-			position: { x: 80, y: 80 },
-			data: { label: "r1", kind: "linux", image: "", interfaces: [] },
-			type: "designerNode",
-		},
-	]);
-	const [edges, setEdges, onEdgesChange] = useEdgesState<DesignEdge>([]);
-
-	const design: LabDesign = useMemo(
-		() => ({
-			name: labName,
-			defaultKind: defaultKind || undefined,
-			nodes: nodes.map((n) => ({
-				id: String(n.id),
-				label: String(n.data?.label ?? n.id),
-				kind: String((n.data as any)?.kind ?? ""),
-				image: String((n.data as any)?.image ?? ""),
-				mgmtIpv4: String((n.data as any)?.mgmtIpv4 ?? "").trim() || undefined,
-				startupConfig:
-					String((n.data as any)?.startupConfig ?? "").trim() || undefined,
-				env: (n.data as any)?.env,
-				interfaces: (n.data as any)?.interfaces,
-				notes: String((n.data as any)?.notes ?? "").trim() || undefined,
-				status: String((n.data as any)?.status ?? "").trim() || undefined,
-				position: { x: n.position.x, y: n.position.y },
-			})),
-			links: edges.map((e) => ({
-				id: String(e.id),
-				source: String(e.source),
-				target: String(e.target),
-				sourceIf: String(e.data?.sourceIf ?? "").trim() || undefined,
-				targetIf: String(e.data?.targetIf ?? "").trim() || undefined,
-				label: String(e.data?.label ?? e.label ?? "").trim() || undefined,
-				mtu: Number.isFinite(Number(e.data?.mtu))
-					? Number(e.data?.mtu)
-					: undefined,
-				notes: String(e.data?.notes ?? "").trim() || undefined,
-			})),
-		}),
-		[defaultKind, edges, labName, nodes],
-	);
-	const { yaml } = useMemo(() => designToContainerlabYaml(design), [design]);
-	const effectiveYaml = useMemo(() => {
-		if (yamlMode === "custom") return String(customYaml ?? "");
-		return yaml;
-	}, [customYaml, yaml, yamlMode]);
-	const effectiveTemplatesDir = useMemo(() => {
-		const d = String(templatesDir ?? "")
-			.trim()
-			.replace(/^\/+|\/+$/g, "");
-		return d || "containerlab/designer";
-	}, [templatesDir]);
-	const effectiveTemplateFile = useMemo(() => {
-		const raw = String(templateFile ?? "").trim();
-		const base = raw || `${labName || "lab"}.clab.yml`;
-		if (base.endsWith(".yml") || base.endsWith(".yaml")) return base;
-		return `${base}.yml`;
-	}, [labName, templateFile]);
-
-	const markWarningsVisible = useCallback(() => {
-		setShowWarnings(true);
-	}, []);
-
-	const onNodesChangeWithWarnings = useCallback(
-		(changes: any[]) => {
-			if (changes.some((c) => c.type !== "select")) markWarningsVisible();
-			onNodesChange(changes);
-		},
-		[markWarningsVisible, onNodesChange],
-	);
-
-	const onEdgesChangeWithWarnings = useCallback(
-		(changes: any[]) => {
-			if (changes.some((c) => c.type !== "select")) markWarningsVisible();
-			onEdgesChange(changes);
-		},
-		[markWarningsVisible, onEdgesChange],
-	);
+	const model = useLabDesignerPageModel({
+		nodes: state.nodes,
+		edges: state.edges,
+		labName: state.labName,
+		defaultKind: state.defaultKind,
+		yamlMode: state.yamlMode,
+		customYaml: state.customYaml,
+		templatesDir: state.templatesDir,
+		templateFile: state.templateFile,
+	});
 
 	const data = useLabDesignerData({
-		queryClient,
-		userId,
-		runtime,
-		importOpen,
-		importSource,
-		importDir,
-		importFile,
-		containerlabServer,
-		labName,
-		effectiveYaml,
-		effectiveTemplatesDir,
-		effectiveTemplateFile,
-		useSavedConfig,
-		lastSaved,
-		openDeploymentOnCreate,
-		setLastSaved,
-		setYamlMode,
-		setCustomYaml,
-		setImportOpen,
-		setLabName,
-		setDefaultKind,
-		setNodes,
-		setEdges,
-		setSelectedNodeId,
-		setUseSavedConfig,
+		queryClient: state.queryClient,
+		userId: state.userId,
+		runtime: state.runtime,
+		importOpen: state.importOpen,
+		importSource: state.importSource,
+		importDir: state.importDir,
+		importFile: state.importFile,
+		containerlabServer: state.containerlabServer,
+		labName: state.labName,
+		effectiveYaml: model.effectiveYaml,
+		effectiveTemplatesDir: model.effectiveTemplatesDir,
+		effectiveTemplateFile: model.effectiveTemplateFile,
+		useSavedConfig: state.useSavedConfig,
+		lastSaved: state.lastSaved,
+		openDeploymentOnCreate: state.openDeploymentOnCreate,
+		setLastSaved: state.setLastSaved,
+		setYamlMode: state.setYamlMode,
+		setCustomYaml: state.setCustomYaml,
+		setImportOpen: state.setImportOpen,
+		setLabName: state.setLabName,
+		setDefaultKind: state.setDefaultKind,
+		setNodes: state.setNodes,
+		setEdges: state.setEdges,
+		setSelectedNodeId: state.setSelectedNodeId,
+		setUseSavedConfig: state.setUseSavedConfig,
 	});
 
 	const derived = useLabDesignerDerived({
-		nodes,
-		edges,
-		labName,
-		defaultKind,
-		selectedNodeId,
-		yamlMode,
-		customYaml,
-		templatesDir,
-		templateFile,
-		paletteSearch,
-		paletteVendor,
-		paletteRole,
+		nodes: state.nodes,
+		edges: state.edges,
+		labName: state.labName,
+		defaultKind: state.defaultKind,
+		selectedNodeId: state.selectedNodeId,
+		yamlMode: state.yamlMode,
+		customYaml: state.customYaml,
+		templatesDir: state.templatesDir,
+		templateFile: state.templateFile,
+		paletteSearch: state.paletteSearch,
+		paletteVendor: state.paletteVendor,
+		paletteRole: state.paletteRole,
 		registryRepos: Array.isArray(data.registryReposQ.data?.repositories)
 			? data.registryReposQ.data.repositories
 			: [],
@@ -210,55 +77,55 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 	});
 
 	const actions = createLabDesignerActions({
-		queryClient,
-		rfRef,
-		rfInstance,
-		nodes,
-		edges,
-		labName,
-		defaultKind,
-		qsName,
-		qsSpines,
-		qsLeaves,
-		qsHostsPerLeaf,
-		qsSwitchKind,
-		qsSwitchImage,
-		qsHostKind,
-		qsHostImage,
-		selectedNodeId,
+		queryClient: state.queryClient,
+		rfRef: state.rfRef,
+		rfInstance: state.rfInstance,
+		nodes: state.nodes,
+		edges: state.edges,
+		labName: state.labName,
+		defaultKind: state.defaultKind,
+		qsName: state.qsName,
+		qsSpines: state.qsSpines,
+		qsLeaves: state.qsLeaves,
+		qsHostsPerLeaf: state.qsHostsPerLeaf,
+		qsSwitchKind: state.qsSwitchKind,
+		qsSwitchImage: state.qsSwitchImage,
+		qsHostKind: state.qsHostKind,
+		qsHostImage: state.qsHostImage,
+		selectedNodeId: state.selectedNodeId,
 		importDeploymentId,
-		userId,
-		effectiveYaml: derived.effectiveYaml,
-		effectiveTemplatesDir: derived.effectiveTemplatesDir,
-		effectiveTemplateFile: derived.effectiveTemplateFile,
-		lastSaved,
-		setLabName,
-		setDefaultKind,
-		setNodes,
-		setEdges,
-		setSelectedNodeId,
-		setYamlMode,
-		setCustomYaml,
-		setQuickstartOpen,
-		setNodeMenu,
-		setEdgeMenu,
-		setCanvasMenu,
-		setUseSavedConfig,
-		setLastSaved,
-		setUserScopeId,
-		setContainerlabServer,
-		setRuntime,
-		markWarningsVisible,
+		userId: state.userId,
+		effectiveYaml: model.effectiveYaml,
+		effectiveTemplatesDir: model.effectiveTemplatesDir,
+		effectiveTemplateFile: model.effectiveTemplateFile,
+		lastSaved: state.lastSaved,
+		setLabName: state.setLabName,
+		setDefaultKind: state.setDefaultKind,
+		setNodes: state.setNodes,
+		setEdges: state.setEdges,
+		setSelectedNodeId: state.setSelectedNodeId,
+		setYamlMode: state.setYamlMode,
+		setCustomYaml: state.setCustomYaml,
+		setQuickstartOpen: state.setQuickstartOpen,
+		setNodeMenu: state.setNodeMenu,
+		setEdgeMenu: state.setEdgeMenu,
+		setCanvasMenu: state.setCanvasMenu,
+		setUseSavedConfig: state.setUseSavedConfig,
+		setLastSaved: state.setLastSaved,
+		setUserScopeId: state.setUserScopeId,
+		setContainerlabServer: state.setContainerlabServer,
+		setRuntime: state.setRuntime,
+		markWarningsVisible: state.markWarningsVisible,
 	});
 
 	useLabDesignerImportPrefsEffect({
-		importOpen,
-		userId,
-		importSource,
-		importDir,
-		setImportSource,
-		setImportDir,
-		userRepoSource: USER_REPO_SOURCE,
+		importOpen: state.importOpen,
+		userId: state.userId,
+		importSource: state.importSource,
+		importDir: state.importDir,
+		setImportSource: state.setImportSource,
+		setImportDir: state.setImportDir,
+		userRepoSource: state.USER_REPO_SOURCE,
 	});
 
 	useLabDesignerEscapeKeyEffect(actions.closeMenus);
@@ -268,95 +135,11 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		syncImportedDeployment: actions.syncImportedDeployment,
 	});
 
-	const nodeTypes = useMemo(() => ({ designerNode: DesignerNode }), []);
-
 	return {
-		USER_REPO_SOURCE,
-		storageKey,
-		importDeploymentId,
-		rfRef,
-		labName,
-		setLabName,
-		defaultKind,
-		setDefaultKind,
-		userId,
-		setUserScopeId,
-		runtime,
-		setRuntime,
-		containerlabServer,
-		setContainerlabServer,
-		useSavedConfig,
-		setUseSavedConfig,
-		lastSaved,
-		templatesDir,
-		setTemplatesDir,
-		templateFile,
-		setTemplateFile,
-		snapToGrid,
-		setSnapToGrid,
-		paletteSearch,
-		setPaletteSearch,
-		paletteVendor,
-		setPaletteVendor,
-		paletteRole,
-		setPaletteRole,
-		rfInstance,
-		setRfInstance,
-		selectedNodeId,
-		setSelectedNodeId,
-		linkMode,
-		setLinkMode,
-		pendingLinkSource,
-		setPendingLinkSource,
-		yamlMode,
-		setYamlMode,
-		customYaml,
-		setCustomYaml,
-		importOpen,
-		setImportOpen,
-		importSource,
-		setImportSource,
-		importDir,
-		setImportDir,
-		importFile,
-		setImportFile,
-		quickstartOpen,
-		setQuickstartOpen,
-		qsName,
-		setQsName,
-		qsSpines,
-		setQsSpines,
-		qsLeaves,
-		setQsLeaves,
-		qsHostsPerLeaf,
-		setQsHostsPerLeaf,
-		qsSwitchKind,
-		setQsSwitchKind,
-		qsSwitchImage,
-		setQsSwitchImage,
-		qsHostKind,
-		setQsHostKind,
-		qsHostImage,
-		setQsHostImage,
-		openDeploymentOnCreate,
-		setOpenDeploymentOnCreate,
-		nodeMenu,
-		setNodeMenu,
-		edgeMenu,
-		setEdgeMenu,
-		canvasMenu,
-		setCanvasMenu,
-		showWarnings,
-		nodes,
-		setNodes,
-		edges,
-		setEdges,
-		onNodesChangeWithWarnings,
-		onEdgesChangeWithWarnings,
-		nodeTypes,
-		markWarningsVisible,
+		...state,
 		...derived,
 		...data,
 		...actions,
+		importDeploymentId,
 	};
 }

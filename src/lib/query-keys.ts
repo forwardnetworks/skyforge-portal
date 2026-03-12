@@ -72,6 +72,27 @@ export const queryKeys = {
 			objectType,
 		] as const,
 	userScopes: () => ["userScopes"] as const,
+	userPlatformReservations: () => ["userPlatformReservations"] as const,
+	currentPlatformReservationLifecycle: (id: string) =>
+		["currentPlatformReservationLifecycle", id] as const,
+	currentPlatformReservationPreflight: (
+		resourceClass: string,
+		type: string,
+		priorityTier: string,
+		templateRef: string,
+		startAt: string,
+		endAt: string,
+	) =>
+		[
+			"currentPlatformReservationPreflight",
+			resourceClass,
+			type,
+			priorityTier,
+			templateRef,
+			startAt,
+			endAt,
+		] as const,
+	currentPlatformAvailability: () => ["currentPlatformAvailability"] as const,
 	userForwardConfig: (userId: string) => ["userForwardConfig", userId] as const,
 	userForwardCollectors: (userId: string) =>
 		["userForwardCollectors", userId] as const,
@@ -96,6 +117,7 @@ export const queryKeys = {
 	userGcpCredentials: () => ["userGcpCredentials"] as const,
 	userIbmCredentials: () => ["userIbmCredentials"] as const,
 	userForwardCollectorConfigs: () => ["userForwardCollectorConfigs"] as const,
+	userForwardTenantRebuildRuns: () => ["userForwardTenantRebuildRuns"] as const,
 	userForwardCollectorConfigRuntime: (id: string) =>
 		["userForwardCollectorConfigRuntime", id] as const,
 	userForwardCollectorConfigLogs: (id: string) =>
@@ -150,6 +172,12 @@ export const queryKeys = {
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
 	adminServiceNowGlobalConfig: () => ["adminServiceNowGlobalConfig"] as const,
 	adminTeamsGlobalConfig: () => ["adminTeamsGlobalConfig"] as const,
+	adminPlatformOverview: () => ["adminPlatformOverview"] as const,
+	adminPlatformReservations: () => ["adminPlatformReservations"] as const,
+	adminPlatformUserPolicy: (username: string) =>
+		["adminPlatformUserPolicy", username] as const,
+	adminForwardTenantRebuildRuns: (username: string) =>
+		["adminForwardTenantRebuildRuns", username] as const,
 	adminRbacUsers: () => ["adminRbacUsers"] as const,
 	adminConfig: () => ["adminConfig"] as const,
 	adminAuthSettings: () => ["adminAuthSettings"] as const,
@@ -161,67 +189,71 @@ export const queryKeys = {
 	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,
 	registryRepos: (q: string) => ["registryRepos", q] as const,
 	registryTags: (repo: string, q: string) => ["registryTags", repo, q] as const,
-	policyReportsChecks: (userId: string) =>
-		["policyReportsChecks", userId] as const,
-	policyReportsPacks: (userId: string) =>
-		["policyReportsPacks", userId] as const,
-	policyReportsSnapshots: (userId: string, networkId: string) =>
-		["policyReportsSnapshots", userId, networkId] as const,
-	policyReportsRecertCampaigns: (userId: string, status?: string) =>
-		["policyReportsRecertCampaigns", userId, status ?? ""] as const,
-	policyReportsRecertCampaign: (userId: string, campaignId: string) =>
-		["policyReportsRecertCampaign", userId, campaignId] as const,
-	policyReportsRecertAssignments: (
+	forwardAnalyticsChecks: (userId: string) =>
+		["forwardAnalyticsChecks", userId] as const,
+	forwardAnalyticsPacks: (userId: string) =>
+		["forwardAnalyticsPacks", userId] as const,
+	forwardAnalyticsSnapshots: (userId: string, networkId: string) =>
+		["forwardAnalyticsSnapshots", userId, networkId] as const,
+	forwardAnalyticsRecertCampaigns: (userId: string, status?: string) =>
+		["forwardAnalyticsRecertCampaigns", userId, status ?? ""] as const,
+	forwardAnalyticsRecertCampaign: (userId: string, campaignId: string) =>
+		["forwardAnalyticsRecertCampaign", userId, campaignId] as const,
+	forwardAnalyticsRecertAssignments: (
 		userId: string,
 		campaignId?: string,
 		status?: string,
 		assignee?: string,
 	) =>
 		[
-			"policyReportsRecertAssignments",
+			"forwardAnalyticsRecertAssignments",
 			userId,
 			campaignId ?? "",
 			status ?? "",
 			assignee ?? "",
 		] as const,
-	policyReportsExceptions: (
+	currentPlatformPolicy: () => ["currentPlatformPolicy"] as const,
+	forwardAnalyticsExceptions: (
 		userId: string,
 		forwardNetworkId?: string,
 		status?: string,
 	) =>
 		[
-			"policyReportsExceptions",
+			"forwardAnalyticsExceptions",
 			userId,
 			forwardNetworkId ?? "",
 			status ?? "",
 		] as const,
-	policyReportsZones: (userId: string, forwardNetworkId: string) =>
-		["policyReportsZones", userId, forwardNetworkId] as const,
-	policyReportsRuns: (
+	forwardAnalyticsZones: (userId: string, forwardNetworkId: string) =>
+		["forwardAnalyticsZones", userId, forwardNetworkId] as const,
+	forwardAnalyticsRuns: (
 		userId: string,
 		forwardNetworkId?: string,
 		packId?: string,
 		status?: string,
 	) =>
 		[
-			"policyReportsRuns",
+			"forwardAnalyticsRuns",
 			userId,
 			forwardNetworkId ?? "",
 			packId ?? "",
 			status ?? "",
 		] as const,
-	policyReportsRun: (userId: string, runId: string) =>
-		["policyReportsRun", userId, runId] as const,
-	policyReportsRunFindings: (userId: string, runId: string, checkId?: string) =>
-		["policyReportsRunFindings", userId, runId, checkId ?? ""] as const,
-	policyReportsFindings: (
+	forwardAnalyticsRun: (userId: string, runId: string) =>
+		["forwardAnalyticsRun", userId, runId] as const,
+	forwardAnalyticsRunFindings: (
+		userId: string,
+		runId: string,
+		checkId?: string,
+	) => ["forwardAnalyticsRunFindings", userId, runId, checkId ?? ""] as const,
+	forwardAnalyticsFindings: (
 		userId: string,
 		forwardNetworkId?: string,
 		checkId?: string,
 		status?: string,
 	) =>
 		[
-			"policyReportsFindings",
+			"forwardAnalyticsFindings",
 			userId,
 			forwardNetworkId ?? "",
 			checkId ?? "",

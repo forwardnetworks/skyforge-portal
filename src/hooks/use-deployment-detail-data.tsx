@@ -1,7 +1,9 @@
 import {
+	type DeploymentInfoResponse,
 	type DashboardSnapshot,
 	type DeploymentResourceEstimateResponse,
 	type UserForwardCollectorConfigSummary,
+	getDeploymentInfo,
 	type UserScopeDeployment,
 	getDeploymentResourceEstimate,
 	getDeploymentTopology,
@@ -116,6 +118,18 @@ export function useDeploymentDetailData(args: {
 		staleTime: 10_000,
 	});
 
+	const deploymentInfoQ = useQuery<DeploymentInfoResponse>({
+		queryKey: ["deployment-info", userId, deploymentId],
+		queryFn: async () => {
+			if (!deployment) throw new Error("deployment not found");
+			return getDeploymentInfo(deployment.userId, deployment.id);
+		},
+		enabled: Boolean(deployment),
+		retry: false,
+		staleTime: 30_000,
+		refetchOnWindowFocus: false,
+	});
+
 	const resourceEstimateQ = useQuery<DeploymentResourceEstimateResponse>({
 		queryKey: ["deployment-resource-estimate", userId, deploymentId],
 		queryFn: async () => {
@@ -138,6 +152,8 @@ export function useDeploymentDetailData(args: {
 						ramGiB: 0,
 						milliCpu: 0,
 						memoryBytes: 0,
+						storageGiB: 0,
+						storageBytes: 0,
 						nodeCount: 0,
 						profiledNodeCount: 0,
 					},
@@ -173,6 +189,7 @@ export function useDeploymentDetailData(args: {
 		activeTab,
 		deployment,
 		deploymentEngine,
+		deploymentInfoQ,
 		deploymentId,
 		deploymentType,
 		destroyDialogOpen,

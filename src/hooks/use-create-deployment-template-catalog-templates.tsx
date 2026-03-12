@@ -221,6 +221,8 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 						ramGiB: 0,
 						milliCpu: 0,
 						memoryBytes: 0,
+						storageGiB: 0,
+						storageBytes: 0,
 						nodeCount: 0,
 						profiledNodeCount: 0,
 					},

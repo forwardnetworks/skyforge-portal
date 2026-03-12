@@ -77,13 +77,13 @@ test.describe("Playwright smoke coverage", () => {
 		});
 
 		const signalsLink = page
-			.locator("aside nav a", { hasText: "Signals" })
+			.locator("aside nav a", { hasText: "Observability" })
 			.first();
 		await Promise.all([
 			page.waitForURL(
 				(url) =>
-					url.pathname === "/dashboard/signals" ||
-					url.pathname.startsWith("/dashboard/signals/"),
+					url.pathname === "/dashboard/observability" ||
+					url.pathname.startsWith("/dashboard/observability/"),
 				{ timeout: smokeTimeoutMs },
 			),
 			signalsLink.click(),

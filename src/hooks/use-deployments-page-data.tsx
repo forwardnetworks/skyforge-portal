@@ -15,7 +15,6 @@ import {
 	listUserScopes,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
-import { sessionIsAdmin } from "../lib/rbac";
 import { getRuntimeAuthMode } from "../lib/skyforge-config";
 import {
 	filterDeployments,
@@ -126,7 +125,6 @@ export function useDeploymentsPageData(args: {
 		[allDeployments, searchQuery, statusFilter, typeFilter],
 	);
 
-	const isAdmin = sessionIsAdmin(session.data);
 	const managedFamilies = useMemo(
 		() =>
 			new Set(
@@ -146,8 +144,7 @@ export function useDeploymentsPageData(args: {
 	}, [lifetimePolicyQ.data?.allowedHours]);
 	const defaultLifetimeHours =
 		Number.parseInt(String(lifetimePolicyQ.data?.defaultHours ?? 24), 10) || 24;
-	const allowNoExpiry =
-		isAdmin && Boolean(lifetimePolicyQ.data?.allowNoExpiry ?? true);
+	const allowNoExpiry = Boolean(lifetimePolicyQ.data?.allowDisable ?? false);
 
 	const isManagedDeploymentFamily = useCallback(
 		(family: string) => isManagedDeploymentType(managedFamilies, family),

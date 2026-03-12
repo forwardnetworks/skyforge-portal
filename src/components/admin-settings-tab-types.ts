@@ -5,6 +5,7 @@ import type {
 	AdminEffectiveConfigResponse,
 	AdminImpersonateStatusResponse,
 	AdminOIDCSettingsResponse,
+	AdminForwardTenantResetRun,
 	AdminServiceNowGlobalConfigResponse,
 	AdminTeamsGlobalConfigResponse,
 	AdminUserRoleRecord,
@@ -74,6 +75,7 @@ export type AdminOverviewTabProps = {
 	) => void;
 	onRemoveQuickDeployTemplate: (index: number) => void;
 	onAddQuickDeployTemplate: () => void;
+	onAllowedProfilesChange: (index: number, value: string) => void;
 	onSaveQuickDeployCatalog: () => void;
 	serviceNowGlobalConfig?: AdminServiceNowGlobalConfigResponse;
 	serviceNowGlobalConfigLoading: boolean;
@@ -191,4 +193,60 @@ export type AdminUsersTabProps = {
 	onPurgeUserQueryChange: (value: string) => void;
 	onPurgeUsernameChange: (value: string) => void;
 	onPurgeUser: () => void;
+	platformPolicyUserQuery: string;
+	platformPolicyTargetUser: string;
+	filteredPlatformPolicyUsers: string[];
+	platformPolicySearchMatches: string[];
+	platformPolicySearchCount: number;
+	platformPolicyLoading: boolean;
+	platformPolicyProfiles: string[];
+	platformPolicyOperatingModes: string[];
+	platformPolicyPrimaryOperatingMode: string;
+	platformPolicyCapabilities: string[];
+	platformPolicyQuota: {
+		maxConcurrentLabs: number;
+		maxPersistentLabs: number;
+		maxPersistentHours: number;
+		maxResourceClass: string;
+	} | null;
+	platformProfileDraft: string[];
+	platformQuotaDraft: {
+		maxConcurrentLabs: string;
+		maxPersistentLabs: string;
+		maxPersistentHours: string;
+		maxResourceClass: string;
+	};
+	platformPolicyDerivedCapabilities: string[];
+	platformQuotaValidationErrors: Record<
+		| "maxConcurrentLabs"
+		|"maxPersistentLabs"
+		|"maxPersistentHours",
+		string
+	>;
+	platformQuotaHasErrors: boolean;
+	savePlatformProfilesPending: boolean;
+	savePlatformQuotaPending: boolean;
+	adminForwardTenantResetRunsLoading: boolean;
+	adminForwardTenantResetRuns: AdminForwardTenantResetRun[];
+	adminForwardTenantResetMode: "hard-reset" | "curated-reset";
+	adminForwardTenantResetConfirm: string;
+	requestAdminForwardTenantResetPending: boolean;
+	onPlatformPolicyUserQueryChange: (value: string) => void;
+	onPlatformPolicyTargetUserChange: (value: string) => void;
+	onPlatformProfileToggle: (profile: string, enabled: boolean) => void;
+	onPlatformQuotaDraftChange: (
+		field:
+			| "maxConcurrentLabs"
+			| "maxPersistentLabs"
+			| "maxPersistentHours"
+			| "maxResourceClass",
+		value: string,
+	) => void;
+	onSavePlatformProfiles: () => void;
+	onSavePlatformQuota: () => void;
+	onAdminForwardTenantResetModeChange: (
+		value: "hard-reset" | "curated-reset",
+	) => void;
+	onAdminForwardTenantResetConfirmChange: (value: string) => void;
+	onRequestAdminForwardTenantReset: () => void;
 };

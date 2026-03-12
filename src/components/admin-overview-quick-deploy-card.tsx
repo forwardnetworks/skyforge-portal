@@ -9,6 +9,7 @@ import {
 	CardTitle,
 } from "./ui/card";
 import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 import {
 	Select,
 	SelectContent,
@@ -17,7 +18,18 @@ import {
 	SelectValue,
 } from "./ui/select";
 
+const platformProfileOptions = [
+	"viewer",
+	"demo-user",
+	"sandbox-user",
+	"trainer",
+	"integration-user",
+	"admin",
+] as const;
+
 export function AdminOverviewQuickDeployCard(props: AdminOverviewTabProps) {
+	const { onAllowedProfilesChange } = props;
+
 	return (
 		<Card>
 			<CardHeader>
@@ -107,6 +119,30 @@ export function AdminOverviewQuickDeployCard(props: AdminOverviewTabProps) {
 										}
 									/>
 								</div>
+								<div className="mt-2 grid gap-2 md:grid-cols-2">
+									<Input
+										placeholder="Catalog owner"
+										value={item.owner ?? ""}
+										onChange={(e) =>
+											props.onQuickDeployTemplateFieldChange(
+												index,
+												"owner",
+												e.target.value,
+											)
+										}
+									/>
+									<Input
+										placeholder="Operating modes"
+										value={(item.operatingModes ?? []).join(", ")}
+										onChange={(e) =>
+											props.onQuickDeployTemplateFieldChange(
+												index,
+												"operatingModes",
+												e.target.value,
+											)
+										}
+									/>
+								</div>
 								<Select
 									value={item.template}
 									onValueChange={(value) =>
@@ -140,6 +176,95 @@ export function AdminOverviewQuickDeployCard(props: AdminOverviewTabProps) {
 										)
 									}
 								/>
+								<Select
+									value={item.resourceClass}
+									onValueChange={(value) =>
+										props.onQuickDeployTemplateFieldChange(
+											index,
+											"resourceClass",
+											value,
+										)
+									}
+								>
+									<SelectTrigger className="mt-2">
+										<SelectValue placeholder="Resource class" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="small">small</SelectItem>
+										<SelectItem value="standard">standard</SelectItem>
+										<SelectItem value="heavy">heavy</SelectItem>
+										<SelectItem value="demo-foundry">demo-foundry</SelectItem>
+									</SelectContent>
+								</Select>
+								<Select
+									value={item.resetBaselineMode || "curated-reset"}
+									onValueChange={(value) =>
+										props.onQuickDeployTemplateFieldChange(
+											index,
+											"resetBaselineMode",
+											value,
+										)
+									}
+								>
+									<SelectTrigger className="mt-2">
+										<SelectValue placeholder="Reset baseline mode" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="soft-reset">soft-reset</SelectItem>
+										<SelectItem value="hard-reset">hard-reset</SelectItem>
+										<SelectItem value="curated-reset">curated-reset</SelectItem>
+									</SelectContent>
+								</Select>
+								<div className="mt-2 space-y-1">
+									<Label>Integration dependencies</Label>
+									<Input
+										value={(item.integrationDependencies ?? []).join(", ")}
+										onChange={(event) =>
+											props.onQuickDeployTemplateFieldChange(
+												index,
+												"integrationDependencies",
+												event.target.value,
+											)
+										}
+										placeholder="ServiceNow, NetBox"
+									/>
+									<div className="text-xs text-muted-foreground">
+										Comma-separated list of required integrations, for example
+										`forward, managed-collector`.
+									</div>
+								</div>
+								<div className="mt-2 space-y-1">
+									<Label>Placement hints</Label>
+									<Input
+										value={(item.placementHints ?? []).join(", ")}
+										onChange={(event) =>
+											props.onQuickDeployTemplateFieldChange(
+												index,
+												"placementHints",
+												event.target.value,
+											)
+										}
+										placeholder="lab-pool, burst"
+									/>
+									<div className="text-xs text-muted-foreground">
+										Comma-separated scheduler hints, for example `lab`,
+										`burst`, or `onprem-lab`.
+									</div>
+								</div>
+								<div className="mt-2 space-y-1">
+									<Label>Allowed profiles</Label>
+									<Input
+										value={(item.allowedProfiles ?? []).join(", ")}
+										onChange={(event) =>
+											onAllowedProfilesChange(index, event.target.value)
+										}
+										placeholder="demo-user, trainer, admin"
+									/>
+									<div className="text-xs text-muted-foreground">
+										Leave blank for the default launch-capable profiles.
+										Available: {platformProfileOptions.join(", ")}.
+									</div>
+								</div>
 								<div className="mt-2 flex justify-end">
 									<Button
 										size="sm"

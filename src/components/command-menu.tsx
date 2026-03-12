@@ -63,11 +63,11 @@ export function CommandMenu() {
 					</CommandItem>
 					<CommandItem
 						onSelect={() =>
-							runCommand(() => navigate({ to: "/dashboard/signals" }))
+							runCommand(() => navigate({ to: "/dashboard/observability" }))
 						}
 					>
 						<Activity className="mr-2 h-4 w-4" />
-						<span>Platform Status</span>
+						<span>Observability</span>
 					</CommandItem>
 				</CommandGroup>
 				<CommandSeparator />

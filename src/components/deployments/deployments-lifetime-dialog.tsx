@@ -59,7 +59,7 @@ export function DeploymentsLifetimeDialog({
 						</SelectTrigger>
 						<SelectContent>
 							{allowNoExpiry && (
-								<SelectItem value="__none">No expiry (admin only)</SelectItem>
+								<SelectItem value="__none">No expiry</SelectItem>
 							)}
 							{lifetimeHoursOptions.map((hours) => (
 								<SelectItem key={String(hours)} value={String(hours)}>

@@ -120,9 +120,9 @@ export function TeamsPageContent({ page }: { page: TeamsPageData }) {
 									{networkOptions.map((network) => (
 										<SelectItem
 											key={network.id}
-											value={network.forwardNetworkId}
+											value={network.forwardNetwork}
 										>
-											{network.name} ({network.forwardNetworkId})
+											{network.name} ({network.forwardNetwork})
 										</SelectItem>
 									))}
 								</SelectContent>

@@ -1,14 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { DashboardPageContent } from "../../components/dashboard-page-content";
+import { useDashboardPage } from "../../hooks/use-dashboard-page";
 
 export const Route = createFileRoute("/dashboard/")({
-	component: DashboardIndex,
+	component: DashboardRoute,
 });
 
-function DashboardIndex() {
-	const navigate = useNavigate();
-	useEffect(() => {
-		void navigate({ to: "/dashboard/deployments/quick", replace: true });
-	}, [navigate]);
-	return null;
+function DashboardRoute() {
+	const page = useDashboardPage();
+	return <DashboardPageContent page={page} />;
 }

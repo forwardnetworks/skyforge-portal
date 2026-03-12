@@ -2,7 +2,9 @@ import {
 	createUserForwardCollectorConfig,
 	deleteUserForwardCollectorConfig,
 	getCurrentUserForwardTenantCredential,
+	listCurrentUserForwardTenantRebuildRuns,
 	listUserForwardCollectorConfigs,
+	requestCurrentUserForwardTenantRebuild,
 	resetCurrentUserForwardTenantCredential,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
@@ -41,6 +43,7 @@ export function useForwardCredentialsPage() {
 	const queryClient = useQueryClient();
 	const collectorsKey = queryKeys.userForwardCollectorConfigs();
 	const tenantCredentialKey = ["forward", "tenant-credential"] as const;
+	const tenantResetRunsKey = queryKeys.userForwardTenantRebuildRuns();
 
 	const collectorsQ = useQuery({
 		queryKey: collectorsKey,
@@ -52,12 +55,18 @@ export function useForwardCredentialsPage() {
 		queryFn: getCurrentUserForwardTenantCredential,
 		staleTime: 10_000,
 	});
+	const tenantResetRunsQ = useQuery({
+		queryKey: tenantResetRunsKey,
+		queryFn: listCurrentUserForwardTenantRebuildRuns,
+		staleTime: 5_000,
+	});
 
 	const [customHost, setCustomHost] = useState("");
 	const [skipTlsVerify, setSkipTlsVerify] = useState(false);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [showTenantPassword, setShowTenantPassword] = useState(false);
+	const [confirmHardReset, setConfirmHardReset] = useState(false);
 	const tlsCheckboxDisabled = false;
 	const effectiveSkipTlsVerify = skipTlsVerify;
 
@@ -123,9 +132,41 @@ export function useForwardCredentialsPage() {
 			}),
 	});
 
+	const requestTenantResetMutation = useMutation({
+		mutationFn: async (mode: "soft-reset" | "hard-reset") =>
+			requestCurrentUserForwardTenantRebuild({
+				mode,
+				reason: "",
+				metadata: {},
+			}),
+		onSuccess: async (_run, mode) => {
+			toast.success(
+				mode === "hard-reset"
+					? "Forward tenant rebuild queued"
+					: "Forward tenant resync queued",
+			);
+			if (mode === "hard-reset") {
+				setConfirmHardReset(false);
+			}
+			await queryClient.invalidateQueries({ queryKey: tenantResetRunsKey });
+			await queryClient.invalidateQueries({ queryKey: tenantCredentialKey });
+			await queryClient.invalidateQueries({ queryKey: collectorsKey });
+		},
+		onError: (err, mode) =>
+			toast.error(
+				mode === "hard-reset"
+					? "Failed to queue Forward tenant rebuild"
+					: "Failed to queue Forward tenant resync",
+				{
+					description: err instanceof Error ? err.message : String(err),
+				},
+			),
+	});
+
 	return {
 		collectorsQ,
 		tenantCredentialQ,
+		tenantResetRunsQ,
 		customHost,
 		setCustomHost,
 		skipTlsVerify,
@@ -136,11 +177,14 @@ export function useForwardCredentialsPage() {
 		setPassword,
 		showTenantPassword,
 		setShowTenantPassword,
+		confirmHardReset,
+		setConfirmHardReset,
 		tlsCheckboxDisabled,
 		effectiveSkipTlsVerify,
 		credentialSets,
 		createMutation,
 		deleteMutation,
 		resetTenantCredentialMutation,
+		requestTenantResetMutation,
 	};
 }

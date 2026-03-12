@@ -4,6 +4,7 @@ import type {
 	DeploymentTopology,
 	ISO8601,
 } from "./api-client-user-user-scope";
+import type { components, operations } from "./openapi.gen";
 import { apiFetch } from "./http";
 
 export async function getDeploymentNodeInterfaces(
@@ -191,5 +192,48 @@ export async function getDeploymentTopology(
 ): Promise<DeploymentTopology> {
 	return apiFetch<DeploymentTopology>(
 		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/topology`,
+	);
+}
+
+type DeploymentPlacementSummaryCompat = {
+	generatedAt?: string;
+	userScopeId?: string;
+	deploymentId?: string;
+	resourceClass?: string;
+	namespace?: string;
+	topologyName?: string;
+	schedulingMode?: string;
+	placementHints?: string[];
+	preferredPoolClasses?: string[];
+	availablePoolClasses?: string[];
+	actualPoolClasses?: string[];
+	actualNodes?: string[];
+	actualNodeCount?: number;
+	readyPodCount?: number;
+	candidateNodeCount?: number;
+	placementOK?: boolean;
+	status?: string;
+	degraded?: boolean;
+	warnings?: string[];
+	metadata?: Record<string, string>;
+};
+
+type DeploymentClabernetesInfoCompat =
+	components["schemas"]["skyforge.ClabernetesInfo"] & {
+		placementSummary?: DeploymentPlacementSummaryCompat;
+		warnings?: string[];
+	};
+
+export type DeploymentInfoResponse =
+	operations["GET:skyforge.GetUserScopeDeploymentInfo"]["responses"][200]["content"]["application/json"] & {
+		clabernetes?: DeploymentClabernetesInfoCompat;
+	};
+
+export async function getDeploymentInfo(
+	userId: string,
+	deploymentId: string,
+): Promise<DeploymentInfoResponse> {
+	return apiFetch<DeploymentInfoResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/info`,
 	);
 }

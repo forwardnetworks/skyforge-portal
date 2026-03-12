@@ -127,7 +127,10 @@ export function formatResourceEstimate(
 	const ram = Number.isFinite(estimate.ramGiB)
 		? estimate.ramGiB.toFixed(1)
 		: "0.0";
-	return `${cpu} vCPU • ${ram} GiB RAM`;
+	const storage = Number.isFinite(estimate.storageGiB)
+		? estimate.storageGiB.toFixed(1)
+		: "0.0";
+	return `${cpu} vCPU • ${ram} GiB RAM • ${storage} GiB storage`;
 }
 
 export function parsePositiveInt(value: unknown, fallback: number): number {

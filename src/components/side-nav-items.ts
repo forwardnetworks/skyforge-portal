@@ -54,7 +54,7 @@ export type Features = {
 function createNavItems(): NavItem[] {
 	return [
 		{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-		{ label: "Signals", href: "/dashboard/signals", icon: Activity },
+		{ label: "Observability", href: "/dashboard/observability", icon: Activity },
 		{
 			label: "Deployments",
 			href: "/dashboard/deployments",
@@ -106,7 +106,7 @@ function createNavItems(): NavItem[] {
 				},
 				{
 					label: "Analytics",
-					href: "/dashboard/forward-networks",
+					href: "/dashboard/forward-analytics",
 					icon: ShieldCheck,
 				},
 				{
@@ -192,6 +192,17 @@ function createNavItems(): NavItem[] {
 					href: embeddedToolHref("coder"),
 					icon: Cloud,
 					featureFlag: "coderEnabled",
+				},
+				{
+					label: "Reservations",
+					href: "/dashboard/reservations",
+					icon: Activity,
+				},
+				{
+					label: "Capacity",
+					href: "/dashboard/platform",
+					icon: Activity,
+					adminOnly: true,
 				},
 				{
 					label: "Infoblox Console",

@@ -167,7 +167,7 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 							{lifetimeManaged
 								? `Expiry action: ${expiryAction}. ${
 										lifetimeCanEdit
-											? "Admin can override before create."
+											? "Set lifetime before create."
 											: `Applied by policy (${lifetimeDefaultHours}h).`
 									}`
 								: "Lifetime policy does not apply to this provider family."}
