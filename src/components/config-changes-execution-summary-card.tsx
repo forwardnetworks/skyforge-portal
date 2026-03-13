@@ -1,4 +1,8 @@
 import type { ConfigChangeRunRecord } from "../lib/api-client-config-changes";
+import {
+	autoRollbackBadgeVariant,
+	extractAutoRollbackOutcomes,
+} from "./config-changes-auto-rollback";
 import { Badge } from "./ui/badge";
 import {
 	Card,
@@ -128,57 +132,6 @@ export function ConfigChangesExecutionSummaryCard({
 			</CardContent>
 		</Card>
 	);
-}
-
-type AutoRollbackOutcome = {
-	outcome: string;
-	reason: string;
-};
-
-function extractAutoRollbackOutcomes(
-	refs: Array<{ kind?: string; name?: string; key?: string }>,
-): AutoRollbackOutcome[] {
-	const out: AutoRollbackOutcome[] = [];
-	for (const ref of refs) {
-		const kind = String(ref.kind || "").trim().toLowerCase();
-		if (kind !== "forward-auto-rollback-status") continue;
-		const parts = parseArtifactKey(ref.key || "");
-		const outcome = String(parts.outcome || "").trim().toLowerCase();
-		if (!outcome) continue;
-		const reason = String(parts.reason || "").trim();
-		out.push({ outcome, reason });
-	}
-	return out;
-}
-
-function parseArtifactKey(raw: string): Record<string, string> {
-	const out: Record<string, string> = {};
-	for (const segment of String(raw).split(";")) {
-		const part = segment.trim();
-		if (!part) continue;
-		const idx = part.indexOf("=");
-		if (idx <= 0) continue;
-		const key = part.slice(0, idx).trim();
-		const value = part.slice(idx + 1).trim();
-		if (!key) continue;
-		out[key] = value;
-	}
-	return out;
-}
-
-function autoRollbackBadgeVariant(
-	outcome: string,
-): "default" | "secondary" | "destructive" | "outline" {
-	switch (String(outcome).trim().toLowerCase()) {
-		case "applied":
-			return "default";
-		case "unsupported":
-			return "outline";
-		case "failed":
-			return "destructive";
-		default:
-			return "secondary";
-	}
 }
 
 function ExecutionField({

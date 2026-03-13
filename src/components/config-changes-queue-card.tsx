@@ -1,4 +1,9 @@
 import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
+import { useMemo, useState } from "react";
+import {
+	autoRollbackBadgeVariant,
+	latestAutoRollbackOutcome,
+} from "./config-changes-auto-rollback";
 import { Badge } from "./ui/badge";
 import {
 	Card,
@@ -15,6 +20,21 @@ export function ConfigChangesQueueCard({
 	page: ConfigChangesPageData;
 }) {
 	const { isAdmin, listQ, runs, selectedRunId, setSelectedRunId } = page;
+	const [autoRollbackFilter, setAutoRollbackFilter] = useState<
+		"all" | "applied" | "unsupported" | "failed" | "none"
+	>("all");
+	const filteredRuns = useMemo(
+		() =>
+			runs.filter((run) => {
+				if (autoRollbackFilter === "all") return true;
+				const outcome = latestAutoRollbackOutcome(
+					run.executionSummary?.artifactRefs ?? [],
+				);
+				if (autoRollbackFilter === "none") return !outcome;
+				return String(outcome?.outcome || "").trim().toLowerCase() === autoRollbackFilter;
+			}),
+		[runs, autoRollbackFilter],
+	);
 
 	return (
 		<Card>
@@ -27,13 +47,35 @@ export function ConfigChangesQueueCard({
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">
+				<div className="flex flex-wrap gap-2">
+					{(["all", "applied", "unsupported", "failed", "none"] as const).map(
+						(filter) => (
+							<button
+								key={filter}
+								type="button"
+								onClick={() => setAutoRollbackFilter(filter)}
+								aria-label={`filter auto-rollback: ${filter}`}
+								className={`rounded-md border px-2 py-1 text-xs ${
+									autoRollbackFilter === filter
+										? "border-primary bg-primary/10 text-primary"
+										: "border-border text-muted-foreground hover:bg-muted/50"
+								}`}
+							>
+								{`auto-rollback: ${filter}`}
+							</button>
+						),
+					)}
+				</div>
 				{listQ.isLoading ? (
 					<div className="text-sm text-muted-foreground">Loading change runs…</div>
-				) : runs.length === 0 ? (
+				) : filteredRuns.length === 0 ? (
 					<div className="text-sm text-muted-foreground">No change runs yet.</div>
 				) : (
-					runs.map((run) => {
+					filteredRuns.map((run) => {
 						const selected = run.id === selectedRunId;
+						const autoRollback = latestAutoRollbackOutcome(
+							run.executionSummary?.artifactRefs ?? [],
+						);
 						return (
 							<button
 								key={run.id}
@@ -59,6 +101,13 @@ export function ConfigChangesQueueCard({
 											{run.status}
 										</Badge>
 										<Badge variant="outline">{run.executionMode}</Badge>
+										{autoRollback ? (
+											<Badge
+												variant={autoRollbackBadgeVariant(autoRollback.outcome)}
+											>
+												{`auto-rollback: ${autoRollback.outcome}`}
+											</Badge>
+										) : null}
 									</div>
 								</div>
 							</button>
