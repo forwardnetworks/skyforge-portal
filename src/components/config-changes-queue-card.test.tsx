@@ -71,6 +71,14 @@ function makePage(overrides: Record<string, unknown> = {}) {
 }
 
 describe("ConfigChangesQueueCard", () => {
+	it("shows auto-rollback filter counts", () => {
+		render(<ConfigChangesQueueCard page={makePage() as never} />);
+		expect(screen.getByText("auto-rollback: all (4)")).toBeInTheDocument();
+		expect(screen.getByText("auto-rollback: requested (2)")).toBeInTheDocument();
+		expect(screen.getByText("auto-rollback: failed (1)")).toBeInTheDocument();
+		expect(screen.getByText("auto-rollback: none (0)")).toBeInTheDocument();
+	});
+
 	it("shows auto-rollback badges in queue rows", () => {
 		render(<ConfigChangesQueueCard page={makePage() as never} />);
 		expect(screen.getAllByText("auto-rollback: failed").length).toBeGreaterThan(0);

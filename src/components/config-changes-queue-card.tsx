@@ -32,6 +32,36 @@ export function ConfigChangesQueueCard({
 		| "failed"
 		| "none"
 	>("all");
+	const autoRollbackFilters = [
+		"all",
+		"requested",
+		"requested-eligible",
+		"requested-unsupported",
+		"applied",
+		"unsupported",
+		"failed",
+		"none",
+	] as const;
+	const filterCounts = useMemo(() => {
+		const counts: Record<(typeof autoRollbackFilters)[number], number> = {
+			all: runs.length,
+			requested: 0,
+			"requested-eligible": 0,
+			"requested-unsupported": 0,
+			applied: 0,
+			unsupported: 0,
+			failed: 0,
+			none: 0,
+		};
+		for (const run of runs) {
+			const state = autoRollbackState(run);
+			counts[state] += 1;
+			if (state === "requested-eligible" || state === "requested-unsupported") {
+				counts.requested += 1;
+			}
+		}
+		return counts;
+	}, [runs]);
 	const filteredRuns = useMemo(
 		() =>
 			runs.filter((run) => {
@@ -57,16 +87,7 @@ export function ConfigChangesQueueCard({
 			</CardHeader>
 			<CardContent className="space-y-3">
 				<div className="flex flex-wrap gap-2">
-					{([
-						"all",
-						"requested",
-						"requested-eligible",
-						"requested-unsupported",
-						"applied",
-						"unsupported",
-						"failed",
-						"none",
-					] as const).map(
+					{autoRollbackFilters.map(
 						(filter) => (
 							<button
 								key={filter}
@@ -79,7 +100,7 @@ export function ConfigChangesQueueCard({
 										: "border-border text-muted-foreground hover:bg-muted/50"
 								}`}
 							>
-								{`auto-rollback: ${filter}`}
+								{`auto-rollback: ${filter} (${filterCounts[filter]})`}
 							</button>
 						),
 					)}
