@@ -1,4 +1,8 @@
 import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
+import {
+	autoRollbackBadgeVariant,
+	latestAutoRollbackOutcome,
+} from "./config-changes-auto-rollback";
 import { Badge } from "./ui/badge";
 import {
 	Card,
@@ -33,6 +37,12 @@ export function ConfigChangesLifecycleCard({
 }) {
 	const events = page.lifecycleQ.data?.events ?? [];
 	const phaseMap = new Map(events.map((event) => [event.eventType, event]));
+	const autoRollback = latestAutoRollbackOutcome(
+		page.selectedRun?.executionSummary?.artifactRefs ?? [],
+	);
+	const autoRollbackEvent = autoRollback
+		? findLatestAutoRollbackEvent(events, autoRollback.outcome)
+		: null;
 
 	return (
 		<Card>
@@ -52,6 +62,32 @@ export function ConfigChangesLifecycleCard({
 					</div>
 				) : (
 					<>
+						{autoRollback ? (
+							<div className="rounded-md border p-3 text-sm space-y-2">
+								<div className="font-medium">Auto-rollback summary</div>
+								<div className="flex flex-wrap items-center gap-2">
+									<Badge variant={autoRollbackBadgeVariant(autoRollback.outcome)}>
+										{`auto-rollback: ${autoRollback.outcome}`}
+									</Badge>
+									{autoRollback.reason ? (
+										<span className="text-xs text-muted-foreground">
+											Reason: {autoRollback.reason}
+										</span>
+									) : null}
+								</div>
+								{autoRollbackEvent ? (
+									<div className="text-xs text-muted-foreground">
+										{`Lifecycle event: ${autoRollbackEvent.eventType} at ${new Date(
+											autoRollbackEvent.createdAt,
+										).toLocaleString()}`}
+									</div>
+								) : (
+									<div className="text-xs text-muted-foreground">
+										No lifecycle event correlation yet.
+									</div>
+								)}
+							</div>
+						) : null}
 						<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
 							{lifecyclePhases.map((phase) => {
 								const event = phaseMap.get(phase.eventType);
@@ -109,4 +145,28 @@ export function ConfigChangesLifecycleCard({
 			</CardContent>
 		</Card>
 	);
+}
+
+function findLatestAutoRollbackEvent(
+	events: Array<{
+		eventType: string;
+		message?: string;
+		details?: Record<string, string>;
+		createdAt: string;
+	}>,
+	outcome: string,
+) {
+	const normalized = String(outcome).trim().toLowerCase();
+	if (!normalized) return null;
+	for (let i = events.length - 1; i >= 0; i -= 1) {
+		const event = events[i];
+		if (!event) continue;
+		const detailsOutcome = String(event.details?.autoRollback || "")
+			.trim()
+			.toLowerCase();
+		if (detailsOutcome && detailsOutcome === normalized) {
+			return event;
+		}
+	}
+	return null;
 }
