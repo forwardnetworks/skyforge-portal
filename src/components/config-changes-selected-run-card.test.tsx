@@ -158,4 +158,28 @@ describe("ConfigChangesSelectedRunCard", () => {
     render(<ConfigChangesSelectedRunCard page={page as never} />);
     expect(screen.getByText("ansible-push")).toBeInTheDocument();
   });
+
+  it("shows requested auto-rollback state before execution outcomes exist", () => {
+    const page = makePage({
+      selectedRun: {
+        id: "run-5",
+        targetType: "deployment",
+        targetRef: "dep-5",
+        status: "approved",
+        approvalState: "approved",
+        sourceKind: "change-plan",
+        executionMode: "apply",
+        requestedBy: "alice",
+        executionTaskId: null,
+        rollbackSummary: {
+          previousDeploymentConfigJson: '{"template":"demo/topology.yml"}',
+        },
+        reviewJson:
+          '{"artifactRefs":[{"kind":"forward-auto-rollback","key":"requested;eligibility=eligible"}]}',
+      },
+    });
+
+    render(<ConfigChangesSelectedRunCard page={page as never} />);
+    expect(screen.getByText("requested (eligible)")).toBeInTheDocument();
+  });
 });

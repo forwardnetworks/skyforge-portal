@@ -1,7 +1,11 @@
 import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
-import { reviewExecutionBackendFromJSON } from "../lib/config-change-review";
+import {
+	reviewArtifactRefsFromJSON,
+	reviewExecutionBackendFromJSON,
+} from "../lib/config-change-review";
 import {
 	autoRollbackBadgeVariant,
+	latestAutoRollbackRequest,
 	latestAutoRollbackOutcome,
 } from "./config-changes-auto-rollback";
 import { Badge } from "./ui/badge";
@@ -37,6 +41,9 @@ export function ConfigChangesSelectedRunCard({
 	} = page;
 	const autoRollback = selectedRun
 		? latestAutoRollbackOutcome(selectedRun.executionSummary?.artifactRefs ?? [])
+		: null;
+	const autoRollbackRequested = selectedRun
+		? latestAutoRollbackRequest(reviewArtifactRefsFromJSON(selectedRun.reviewJson))
 		: null;
 	const executionBackend = selectedRun
 		? String(selectedRun.executionSummary?.executionBackend || "").trim().toLowerCase() ||
@@ -99,6 +106,21 @@ export function ConfigChangesSelectedRunCard({
 											Reason: {autoRollback.reason}
 										</div>
 									) : null}
+								</div>
+							) : autoRollbackRequested ? (
+								<div className="space-y-1">
+									<div className="text-xs uppercase tracking-wide text-muted-foreground">
+										Auto-rollback
+									</div>
+									<Badge
+										variant={
+											autoRollbackRequested.eligibility === "eligible"
+												? "default"
+												: "outline"
+										}
+									>
+										{`requested (${autoRollbackRequested.eligibility || "unknown"})`}
+									</Badge>
 								</div>
 							) : null}
 						</div>
