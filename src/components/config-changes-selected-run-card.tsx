@@ -55,6 +55,7 @@ export function ConfigChangesSelectedRunCard({
 				.trim()
 				.toLowerCase() || reviewVerificationBackendFromJSON(selectedRun.reviewJson)
 		: "";
+	const verificationReady = verificationBackend === "forward";
 
 	return (
 		<Card>
@@ -91,6 +92,11 @@ export function ConfigChangesSelectedRunCard({
 							<ConfigField
 								label="Verification backend"
 								value={verificationBackend || "n/a"}
+							/>
+							<ConfigField
+								label="Verification readiness"
+								value={verificationReady ? "enabled" : "not-configured"}
+								badgeVariant={verificationReady ? "default" : "outline"}
 							/>
 							<ConfigField label="Mode" value={selectedRun.executionMode} />
 							<ConfigField label="Requested by" value={selectedRun.requestedBy} />

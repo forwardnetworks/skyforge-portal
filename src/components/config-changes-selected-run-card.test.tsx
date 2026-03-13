@@ -45,6 +45,8 @@ describe("ConfigChangesSelectedRunCard", () => {
 
     expect(screen.getByText("Execution backend")).toBeInTheDocument();
     expect(screen.getByText("Verification backend")).toBeInTheDocument();
+    expect(screen.getByText("Verification readiness")).toBeInTheDocument();
+    expect(screen.getByText("not-configured")).toBeInTheDocument();
     expect(screen.getAllByText("n/a").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /execute/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /rollback/i })).toBeEnabled();
@@ -163,6 +165,7 @@ describe("ConfigChangesSelectedRunCard", () => {
     render(<ConfigChangesSelectedRunCard page={page as never} />);
     expect(screen.getByText("ansible-push")).toBeInTheDocument();
     expect(screen.getByText("forward")).toBeInTheDocument();
+    expect(screen.getByText("enabled")).toBeInTheDocument();
   });
 
   it("shows requested auto-rollback state before execution outcomes exist", () => {
