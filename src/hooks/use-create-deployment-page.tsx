@@ -35,7 +35,7 @@ export function useCreateDeploymentPage(userId?: string) {
 		defaultValues: {
 			userId: userId || "",
 			name: "",
-			kind: "c9s_netlab",
+			kind: "kne_netlab",
 			source: "blueprints",
 			templateRepoId: "",
 			template: "",

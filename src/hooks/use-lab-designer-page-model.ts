@@ -4,8 +4,8 @@ import type {
 } from "@/components/lab-designer-types";
 import {
 	type LabDesign,
-	designToContainerlabYaml,
-} from "@/lib/containerlab-yaml";
+	designToKneYaml,
+} from "@/lib/kne-yaml";
 import { useMemo } from "react";
 
 export function useLabDesignerPageModel(opts: {
@@ -52,7 +52,7 @@ export function useLabDesignerPageModel(opts: {
 		[opts.defaultKind, opts.edges, opts.labName, opts.nodes],
 	);
 
-	const { yaml } = useMemo(() => designToContainerlabYaml(design), [design]);
+	const { yaml } = useMemo(() => designToKneYaml(design), [design]);
 
 	const effectiveYaml = useMemo(() => {
 		if (opts.yamlMode === "custom") return String(opts.customYaml ?? "");
@@ -63,12 +63,12 @@ export function useLabDesignerPageModel(opts: {
 		const d = String(opts.templatesDir ?? "")
 			.trim()
 			.replace(/^\/+|\/+$/g, "");
-		return d || "containerlab/designer";
+		return d || "kne/designer";
 	}, [opts.templatesDir]);
 
 	const effectiveTemplateFile = useMemo(() => {
 		const raw = String(opts.templateFile ?? "").trim();
-		const base = raw || `${opts.labName || "lab"}.clab.yml`;
+		const base = raw || `${opts.labName || "lab"}.kne.yml`;
 		if (base.endsWith(".yml") || base.endsWith(".yaml")) return base;
 		return `${base}.yml`;
 	}, [opts.labName, opts.templateFile]);

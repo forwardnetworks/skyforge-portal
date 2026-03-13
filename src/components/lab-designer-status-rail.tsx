@@ -56,9 +56,7 @@ export function LabDesignerStatusRail({
 					Deploy target
 				</div>
 				<div className="text-sm text-slate-900">
-					{page.runtime === "clabernetes"
-						? "Clabernetes in-cluster"
-						: page.containerlabServer || "Containerlab server required"}
+					KNE in-cluster
 				</div>
 			</div>
 		</div>

@@ -21,12 +21,12 @@ export function getEffectiveTemplateSource(
 	watchKind: DeploymentKind,
 	watchSource: string,
 ): TemplateSource {
-	if (watchKind === "netlab" || watchKind === "c9s_netlab") {
+	if (watchKind === "netlab" || watchKind === "kne_netlab") {
 		if (watchSource === USER_REPO_SOURCE) return USER_REPO_SOURCE;
 		if (watchSource === "custom") return "custom";
 		return "blueprints";
 	}
-	if (watchKind === "containerlab" || watchKind === "c9s_containerlab") {
+	if (watchKind === "containerlab" || watchKind === "kne_containerlab") {
 		return watchSource as TemplateSource;
 	}
 	if (watchKind === "terraform") return watchSource as TemplateSource;
@@ -71,9 +71,9 @@ export function getTerraformProviders(templates: string[]): string[] {
 export function getDeploymentModeOptions(watchKind: DeploymentKind) {
 	switch (watchKind) {
 		case "netlab":
-		case "c9s_netlab":
+		case "kne_netlab":
 		case "containerlab":
-		case "c9s_containerlab":
+		case "kne_containerlab":
 			return [
 				{ value: "in_cluster", label: "In cluster" },
 				{ value: "byos", label: "BYOS" },

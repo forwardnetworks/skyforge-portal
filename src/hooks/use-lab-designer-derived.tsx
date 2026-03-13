@@ -8,8 +8,8 @@ import type {
 import { hostLabelFromURL } from "@/hooks/lab-designer-utils";
 import {
 	type LabDesign,
-	designToContainerlabYaml,
-} from "@/lib/containerlab-yaml";
+	designToKneYaml,
+} from "@/lib/kne-yaml";
 import { useMemo } from "react";
 
 export function useLabDesignerDerived(opts: {
@@ -76,10 +76,7 @@ export function useLabDesignerDerived(opts: {
 		[opts.defaultKind, opts.edges, opts.labName, opts.nodes],
 	);
 
-	const { yaml, warnings } = useMemo(
-		() => designToContainerlabYaml(design),
-		[design],
-	);
+	const { yaml, warnings } = useMemo(() => designToKneYaml(design), [design]);
 	const missingImageWarnings = useMemo(
 		() => warnings.filter((w) => w.toLowerCase().includes("missing image")),
 		[warnings],
@@ -97,12 +94,12 @@ export function useLabDesignerDerived(opts: {
 		const d = String(opts.templatesDir ?? "")
 			.trim()
 			.replace(/^\/+|\/+$/g, "");
-		return d || "containerlab/designer";
+		return d || "kne/designer";
 	}, [opts.templatesDir]);
 
 	const effectiveTemplateFile = useMemo(() => {
 		const raw = String(opts.templateFile ?? "").trim();
-		const base = raw || `${opts.labName || "lab"}.clab.yml`;
+		const base = raw || `${opts.labName || "lab"}.kne.yml`;
 		if (base.endsWith(".yml") || base.endsWith(".yaml")) return base;
 		return `${base}.yml`;
 	}, [opts.labName, opts.templateFile]);

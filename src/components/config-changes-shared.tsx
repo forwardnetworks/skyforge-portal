@@ -14,7 +14,7 @@ export const configChangeSourceOptions: ConfigChangeSourceOption[] = [
 		label: "Structured Patch",
 		executable: true,
 		description:
-			"Safe executable lane. RFC 6902 JSON Patch over topology.yml, repackaged into the existing netlab-c9s bundle path.",
+			"Safe executable lane. RFC 6902 JSON Patch over topology.yml, repackaged into the existing netlab-kne bundle path.",
 		defaultSpecJson: '{\n  "devices": ["leaf-1"],\n  "operations": [\n    {\n      "op": "replace",\n      "path": "/nodes/leaf-1/config/0",\n      "value": "hostname leaf-1"\n    }\n  ]\n}',
 	},
 	{
@@ -22,7 +22,7 @@ export const configChangeSourceOptions: ConfigChangeSourceOption[] = [
 		label: "Netlab Model",
 		executable: true,
 		description:
-			"Safe executable lane. Model-backed change that reuses the existing template-backed netlab-c9s workflow.",
+			"Safe executable lane. Model-backed change that reuses the existing template-backed netlab-kne workflow.",
 		defaultSpecJson: '{\n  "templateSource": "blueprints",\n  "template": "BGP/Default-NH/topology.yml",\n  "environment": {\n    "DEVICE": "eos"\n  }\n}',
 	},
 	{
@@ -30,7 +30,7 @@ export const configChangeSourceOptions: ConfigChangeSourceOption[] = [
 		label: "Config Snippet",
 		executable: true,
 		description:
-			"Executable path. Compiles into generated per-device startup-config sidecars and a patched topology bundle for the same netlab-c9s seam.",
+			"Executable path. Compiles into generated per-device startup-config sidecars and a patched topology bundle for the same netlab-kne seam.",
 		defaultSpecJson: '{\n  "devices": ["leaf-1"],\n  "snippet": "ip access-list demo\\npermit ip any any"\n}',
 	},
 	{
@@ -38,7 +38,7 @@ export const configChangeSourceOptions: ConfigChangeSourceOption[] = [
 		label: "Ansible Playbook",
 		executable: true,
 		description:
-			"Executable path. Bundles a deterministic post-apply Ansible playbook hook into the same netlab-c9s seam.",
+			"Executable path. Bundles a deterministic post-apply Ansible playbook hook into the same netlab-kne seam.",
 		defaultSpecJson: '{\n  "devices": ["leaf-1"],\n  "playbook": "---\\n- hosts: all\\n  gather_facts: false\\n  tasks: []\\n"\n}',
 	},
 	{
@@ -46,7 +46,7 @@ export const configChangeSourceOptions: ConfigChangeSourceOption[] = [
 		label: "Shell Script",
 		executable: true,
 		description:
-			"Executable path. Bundles a bounded post-apply shell hook into the same topology/bundle-backed netlab-c9s runtime contract.",
+			"Executable path. Bundles a bounded post-apply shell hook into the same topology/bundle-backed netlab-kne runtime contract.",
 		defaultSpecJson: '{\n  "devices": ["leaf-1"],\n  "script": "#!/bin/sh\\necho hello\\n"\n}',
 	},
 ];

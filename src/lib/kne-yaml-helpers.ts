@@ -1,6 +1,6 @@
-import type { LabDesignNode, LabNodeInterface } from "./containerlab-yaml-types";
+import type { LabDesignNode, LabNodeInterface } from "./kne-yaml-types";
 
-export function sanitizeNodeName(raw: string): string {
+export function sanitizeKneNodeName(raw: string): string {
 	const s = String(raw ?? "").trim();
 	if (!s) return "node";
 	const out = s
@@ -16,7 +16,7 @@ export function uniqueNodeNames(nodes: LabDesignNode[]): Map<string, string> {
 	const out = new Map<string, string>();
 	for (const node of nodes) {
 		const rawName = String(node.id || node.label || "node");
-		const base = sanitizeNodeName(rawName);
+		const base = sanitizeKneNodeName(rawName);
 		let next = base;
 		let suffix = 2;
 		while (used.has(next)) {

@@ -124,8 +124,8 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 					page.setImportSource(value);
 					page.setImportDir(
 						value === page.USER_REPO_SOURCE
-							? "containerlab/designer"
-							: "containerlab",
+							? "kne/designer"
+							: "kne",
 					);
 					page.setImportFile("");
 				}}

@@ -63,7 +63,7 @@ export function AdminTasksTab(props: AdminTasksTabProps) {
 						<div>
 							<div className="font-medium">Workspace pod cleanup</div>
 							<div className="text-sm text-muted-foreground">
-								Force-clean clabernetes topology pods/resources when deployment
+								Force-clean kne topology pods/resources when deployment
 								deletion leaves stragglers.
 							</div>
 						</div>

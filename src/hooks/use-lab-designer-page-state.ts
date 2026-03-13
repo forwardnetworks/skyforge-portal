@@ -23,13 +23,11 @@ export function useLabDesignerPageState() {
 	const [labName, setLabName] = useState("lab");
 	const [defaultKind, setDefaultKind] = useState("");
 	const [userId, setUserScopeId] = useState("");
-	const [runtime, setRuntime] = useState<"clabernetes" | "containerlab">(
-		"clabernetes",
-	);
+	const [runtime, setRuntime] = useState<"kne">("kne");
 	const [containerlabServer, setContainerlabServer] = useState("");
 	const [useSavedConfig, setUseSavedConfig] = useState(true);
 	const [lastSaved, setLastSaved] = useState<SavedConfigRef | null>(null);
-	const [templatesDir, setTemplatesDir] = useState("containerlab/designer");
+	const [templatesDir, setTemplatesDir] = useState("kne/designer");
 	const [templateFile, setTemplateFile] = useState("");
 	const [snapToGrid, setSnapToGrid] = useState(true);
 	const [paletteSearch, setPaletteSearch] = useState("");
@@ -50,7 +48,7 @@ export function useLabDesignerPageState() {
 	const [importSource, setImportSource] = useState<"user" | "blueprints">(
 		"blueprints",
 	);
-	const [importDir, setImportDir] = useState("containerlab");
+	const [importDir, setImportDir] = useState("kne");
 	const [importFile, setImportFile] = useState("");
 	const [quickstartOpen, setQuickstartOpen] = useState(false);
 	const [qsName, setQsName] = useState("clos");

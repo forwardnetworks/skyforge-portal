@@ -218,15 +218,15 @@ type DeploymentPlacementSummaryCompat = {
 	metadata?: Record<string, string>;
 };
 
-type DeploymentClabernetesInfoCompat =
-	components["schemas"]["skyforge.ClabernetesInfo"] & {
+type DeploymentKneInfoCompat =
+	components["schemas"]["skyforge.KneInfo"] & {
 		placementSummary?: DeploymentPlacementSummaryCompat;
 		warnings?: string[];
 	};
 
 export type DeploymentInfoResponse =
 	operations["GET:skyforge.GetUserScopeDeploymentInfo"]["responses"][200]["content"]["application/json"] & {
-		clabernetes?: DeploymentClabernetesInfoCompat;
+		kne?: DeploymentKneInfoCompat;
 	};
 
 export async function getDeploymentInfo(

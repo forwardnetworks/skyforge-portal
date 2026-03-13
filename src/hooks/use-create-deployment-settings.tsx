@@ -137,8 +137,8 @@ export function useCreateDeploymentSettings(args: {
 		return options;
 	}, [allowDisable, lifetimeAllowedHours, lifetimeManaged]);
 	const driverSummary =
-		watchSpec.family === "c9s"
-			? "In-cluster (c9s)"
+		watchSpec.family === "kne"
+			? "In-cluster (kne)"
 			: watchSpec.family === "byos"
 				? "BYOS (external server)"
 				: "Terraform managed";

@@ -116,7 +116,7 @@ export function RunDetailPageContent(props: {
 				<CardHeader>
 					<CardTitle>Source Of Truth</CardTitle>
 					<CardDescription>
-						Netlab catalog {"->"} node resolution {"->"} clabernetes apply
+						Netlab catalog {"->"} node resolution {"->"} kne apply
 						policy
 					</CardDescription>
 				</CardHeader>

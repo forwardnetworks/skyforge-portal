@@ -32,12 +32,10 @@ export function LabDesignerCommandBar({
 						{validation.label}
 					</Badge>
 					<Badge variant="outline" className="bg-slate-500/5">
-						Containerlab workbench
+						KNE workbench
 					</Badge>
 					<Badge variant="outline" className="bg-slate-500/5">
-						{page.runtime === "clabernetes"
-							? "In-cluster runtime"
-							: "BYOS containerlab"}
+						In-cluster runtime
 					</Badge>
 				</div>
 				<div>
@@ -45,7 +43,7 @@ export function LabDesignerCommandBar({
 						Lab Designer
 					</div>
 					<div className="max-w-3xl text-sm text-slate-600">
-						Graph-first containerlab editing with one validation contract for
+						Graph-first KNE editing with one validation contract for
 						preview, save, and deploy. YAML remains available, but it is no
 						longer the primary editing surface.
 					</div>

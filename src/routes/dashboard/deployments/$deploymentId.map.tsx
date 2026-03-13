@@ -46,9 +46,9 @@ function DeploymentMapPage() {
 	const deploymentEngine = String(deployment?.engine ?? "")
 		.trim()
 		.toLowerCase();
-	const isC9SDeployment = deploymentFamily === "c9s";
+	const isKNEDeployment = deploymentFamily === "kne";
 	const hasTopologyView =
-		deploymentFamily === "c9s" || deploymentFamily === "byos";
+		deploymentFamily === "kne" || deploymentFamily === "byos";
 	const deploymentTypeLabel =
 		deploymentFamily && deploymentEngine
 			? `${deploymentFamily}/${deploymentEngine}`
@@ -152,7 +152,7 @@ function DeploymentMapPage() {
 						topology={topology.data}
 						userId={deployment.userId}
 						deploymentId={deployment.id}
-						enableTerminal={isC9SDeployment}
+						enableTerminal={isKNEDeployment}
 						fullHeight
 					/>
 				</div>

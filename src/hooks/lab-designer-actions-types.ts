@@ -47,7 +47,7 @@ export type LabDesignerActionsOptions = {
 	setLastSaved: Dispatch<SetStateAction<SavedConfigRef | null>>;
 	setUserScopeId: (value: string) => void;
 	setContainerlabServer: (value: string) => void;
-	setRuntime: (value: "clabernetes" | "containerlab") => void;
+	setRuntime: (value: "kne") => void;
 	markWarningsVisible: () => void;
 };
 

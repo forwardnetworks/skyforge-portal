@@ -1,13 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Copy, GitBranch } from "lucide-react";
 import { toast } from "sonner";
@@ -31,12 +25,12 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 					placeholder="ceos, linux, n9kv..."
 				/>
 				<div className="text-xs text-slate-500">
-					Writes `topology.defaults.kind` so you do not have to repeat the
-					same kind on every node.
+					Used as fallback node `device` when a node does not set one
+					explicitly.
 				</div>
 			</div>
 
-			<div className="grid gap-3 sm:grid-cols-2">
+			<div className="space-y-1">
 				<div className="space-y-1">
 					<Label>User</Label>
 					<Select value={page.userId} onValueChange={page.setUserScopeId}>
@@ -58,26 +52,6 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 						</SelectContent>
 					</Select>
 				</div>
-				<div className="space-y-1">
-					<Label>Runtime</Label>
-					<Select
-						value={page.runtime}
-						onValueChange={(value) =>
-							page.setRuntime(value as "clabernetes" | "containerlab")
-						}
-						disabled={!page.userId}
-					>
-						<SelectTrigger>
-							<SelectValue placeholder="Select runtime…" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="clabernetes">Clabernetes</SelectItem>
-							<SelectItem value="containerlab">
-								Containerlab BYOS
-							</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
 			</div>
 
 			<div className="space-y-1">
@@ -86,12 +60,12 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 					<Input
 						value={page.templatesDir}
 						onChange={(e) => page.setTemplatesDir(e.target.value)}
-						placeholder="containerlab/designer"
+						placeholder="kne/designer"
 					/>
 					<Input
 						value={page.templateFile}
 						onChange={(e) => page.setTemplateFile(e.target.value)}
-						placeholder={`${page.labName || "lab"}.clab.yml`}
+						placeholder={`${page.labName || "lab"}.kne.yml`}
 					/>
 				</div>
 				<div className="flex flex-wrap items-center gap-2 pt-1">
@@ -122,34 +96,6 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 					{page.effectiveTemplatesDir}/{page.effectiveTemplateFile}
 				</div>
 			</div>
-
-			{page.runtime === "containerlab" ? (
-				<div className="space-y-1">
-					<Label>Containerlab server</Label>
-					<Select
-						value={page.containerlabServer}
-						onValueChange={page.setContainerlabServer}
-						disabled={!page.userId}
-					>
-						<SelectTrigger>
-							<SelectValue
-								placeholder={
-									page.containerlabServersQ.isLoading
-										? "Loading…"
-										: "Select server…"
-								}
-							/>
-						</SelectTrigger>
-						<SelectContent>
-							{page.containerlabServerOptions.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-			) : null}
 
 			<div className="space-y-3 rounded-2xl border border-slate-200 p-3">
 				<div className="flex items-center justify-between gap-3">

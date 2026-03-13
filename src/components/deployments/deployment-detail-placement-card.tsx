@@ -16,9 +16,9 @@ function formatList(values?: string[] | null): string {
 export function DeploymentDetailPlacementCard({
 	page,
 }: { page: DeploymentDetailPageState }) {
-	const placement = page.deploymentInfoQ.data?.clabernetes?.placementSummary;
-	const warnings = page.deploymentInfoQ.data?.clabernetes?.warnings ?? [];
-	if (!page.deployment || page.deployment.family !== "c9s") {
+	const placement = page.deploymentInfoQ.data?.kne?.placementSummary;
+	const warnings = page.deploymentInfoQ.data?.kne?.warnings ?? [];
+	if (!page.deployment || page.deployment.family !== "kne") {
 		return null;
 	}
 	return (

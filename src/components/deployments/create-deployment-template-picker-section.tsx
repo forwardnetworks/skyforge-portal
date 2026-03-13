@@ -49,9 +49,9 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 						<div className="flex items-center justify-between gap-3">
 							<FormLabel>Template</FormLabel>
 							{(watchKind === "netlab" ||
-								watchKind === "c9s_netlab" ||
+								watchKind === "kne_netlab" ||
 								watchKind === "containerlab" ||
-								watchKind === "c9s_containerlab") && (
+								watchKind === "kne_containerlab") && (
 								<div className="flex items-center gap-2">
 									<Button
 										type="button"
@@ -62,7 +62,7 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 									>
 										View
 									</Button>
-									{watchKind === "netlab" || watchKind === "c9s_netlab" ? (
+									{watchKind === "netlab" || watchKind === "kne_netlab" ? (
 										<Button
 											type="button"
 											variant="outline"

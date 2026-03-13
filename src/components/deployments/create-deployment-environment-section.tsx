@@ -59,7 +59,7 @@ export function CreateDeploymentEnvironmentSection({ page }: Props) {
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-2">
-				{watchKind === "c9s_netlab" && (
+				{watchKind === "kne_netlab" && (
 					<FormField
 						control={form.control}
 						name="netlabInitialDebug"

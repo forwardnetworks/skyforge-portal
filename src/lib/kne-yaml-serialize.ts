@@ -2,17 +2,17 @@ import YAML from "yaml";
 
 import {
 	nextInterfaceName,
-	sanitizeNodeName,
+	sanitizeKneNodeName,
 	uniqueNodeNames,
-} from "./containerlab-yaml-helpers";
-import type { LabDesign } from "./containerlab-yaml-types";
+} from "./kne-yaml-helpers";
+import type { LabDesign } from "./kne-yaml-types";
 
-export function designToContainerlabYaml(design: LabDesign): {
+export function designToKneYaml(design: LabDesign): {
 	yaml: string;
 	warnings: string[];
 } {
 	const warnings: string[] = [];
-	const name = sanitizeNodeName(design.name || "lab");
+	const name = sanitizeKneNodeName(design.name || "lab");
 	const nameMap = uniqueNodeNames(design.nodes);
 	const interfaceCounters = new Map<string, number>();
 	const nodeLinkInterfaces = new Map<string, string[]>();
@@ -35,28 +35,33 @@ export function designToContainerlabYaml(design: LabDesign): {
 	}
 
 	const nodes: Record<string, Record<string, unknown>> = {};
+	const defaultDevice = String(design.defaultKind ?? "").trim();
 	for (const node of design.nodes) {
-		const nodeName = nameMap.get(node.id) || sanitizeNodeName(node.id);
+		const nodeName = nameMap.get(node.id) || sanitizeKneNodeName(node.id);
 		const rawName = String(node.id || node.label || "").trim();
-		if (rawName && sanitizeNodeName(rawName) !== rawName) {
-			warnings.push(`Node ${rawName}: name will be '${sanitizeNodeName(rawName)}'`);
+		if (rawName && sanitizeKneNodeName(rawName) !== rawName) {
+			warnings.push(`Node ${rawName}: name will be '${sanitizeKneNodeName(rawName)}'`);
 		}
-		if (rawName && nodeName !== sanitizeNodeName(rawName)) {
+		if (rawName && nodeName !== sanitizeKneNodeName(rawName)) {
 			warnings.push(`Node ${rawName}: name adjusted to '${nodeName}'`);
 		}
 		if (!String(node.image ?? "").trim()) {
 			warnings.push(`Node ${nodeName}: missing image`);
 		}
+		const device = String(node.kind ?? "").trim() || defaultDevice;
+		if (!device) {
+			warnings.push(`Node ${nodeName}: missing device`);
+		}
 
 		const env = node.env && Object.keys(node.env).length ? node.env : undefined;
 		nodes[nodeName] = {
-			...(node.kind ? { kind: node.kind.trim() } : {}),
+			...(device ? { device } : {}),
 			...(node.image ? { image: node.image.trim() } : {}),
-			...(node.mgmtIpv4 ? { mgmt_ipv4: node.mgmtIpv4.trim() } : {}),
-			...(node.startupConfig
-				? { "startup-config": node.startupConfig.trim() }
+			...(node.mgmtIpv4
+				? { mgmt: { ipv4: node.mgmtIpv4.trim() } }
 				: {}),
-			...(env ? { env } : {}),
+			...(node.startupConfig ? { config: node.startupConfig.trim() } : {}),
+			...(env ? { environment: env } : {}),
 		};
 	}
 
@@ -81,21 +86,18 @@ export function designToContainerlabYaml(design: LabDesign): {
 			warnings.push(`Link ${link.id}: target interface auto-assigned to '${targetIf}'`);
 		}
 		links.push({
-			endpoints: [`${sourceNode}:${sourceIf}`, `${targetNode}:${targetIf}`],
-			...(link.label ? { label: link.label.trim() } : {}),
+			[sourceNode]: { ifname: sourceIf },
+			[targetNode]: { ifname: targetIf },
+			...(link.label ? { name: link.label.trim() } : {}),
 			...(Number.isFinite(link.mtu) ? { mtu: link.mtu } : {}),
 		});
 	}
 
 	const doc = {
 		name,
-		topology: {
-			...(design.defaultKind
-				? { defaults: { kind: design.defaultKind.trim() } }
-				: {}),
-			nodes,
-			...(links.length ? { links } : {}),
-		},
+		provider: "clab",
+		nodes,
+		...(links.length ? { links } : {}),
 	};
 
 	return { yaml: YAML.stringify(doc), warnings };

@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
 	type DeploymentTopology,
-	getUserScopeContainerlabTemplate,
+	getUserScopeNetlabTemplate,
 	listUserScopes,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
@@ -22,12 +22,11 @@ export const Route = createFileRoute("/dashboard/labs/map")({
 	component: LabsMapPage,
 });
 
-function parseContainerlabYamlToTopology(yamlText: string): DeploymentTopology {
+function parseKneYamlToTopology(yamlText: string): DeploymentTopology {
 	const parsed = YAML.parse(String(yamlText ?? "")) as any;
-	const topology = parsed?.topology ?? {};
-	const nodesObj = topology?.nodes ?? {};
+	const nodesObj = parsed?.nodes ?? {};
 	const nodes = Object.entries(nodesObj).map(([id, cfg]) => {
-		const kind = String((cfg as any)?.kind ?? "");
+		const kind = String((cfg as any)?.device ?? "");
 		return {
 			id: String(id),
 			label: String(id),
@@ -38,21 +37,38 @@ function parseContainerlabYamlToTopology(yamlText: string): DeploymentTopology {
 	});
 
 	const edges: any[] = [];
-	const links = Array.isArray(topology?.links) ? topology.links : [];
+	const links = Array.isArray(parsed?.links) ? parsed.links : [];
 	for (let i = 0; i < links.length; i++) {
 		const l = links[i] as any;
+		let aNode = "";
+		let bNode = "";
+		let aIf = "";
+		let bIf = "";
 		const eps = Array.isArray(l?.endpoints) ? l.endpoints : [];
-		if (eps.length !== 2) continue;
-		const a = String(eps[0] ?? "");
-		const b = String(eps[1] ?? "");
-		const aNode = a.split(":")[0];
-		const bNode = b.split(":")[0];
+		if (eps.length === 2) {
+			const a = String(eps[0] ?? "");
+			const b = String(eps[1] ?? "");
+			aNode = a.split(":")[0];
+			bNode = b.split(":")[0];
+			aIf = a.split(":")[1] ?? "";
+			bIf = b.split(":")[1] ?? "";
+		} else {
+			const entries = Object.entries(l).filter(([k]) => !["name", "label", "mtu", "type", "bridge"].includes(String(k)));
+			if (entries.length >= 2) {
+				const [aKey, aCfg] = entries[0] as [string, any];
+				const [bKey, bCfg] = entries[1] as [string, any];
+				aNode = aKey;
+				bNode = bKey;
+				aIf = String(aCfg?.ifname ?? "");
+				bIf = String(bCfg?.ifname ?? "");
+			}
+		}
 		if (!aNode || !bNode) continue;
 		edges.push({
 			id: `e${i + 1}`,
 			source: aNode,
 			target: bNode,
-			label: `${a} ↔ ${b}`,
+			label: `${aIf || aNode} ↔ ${bIf || bNode}`,
 		});
 	}
 
@@ -69,7 +85,7 @@ function LabsMapPage() {
 	const search = Route.useSearch() as any;
 	const userId = String(search?.userId ?? "");
 	const source = String(search?.source ?? USER_REPO_SOURCE);
-	const dir = String(search?.dir ?? "containerlab/designer");
+	const dir = String(search?.dir ?? "kne/designer");
 	const file = String(search?.file ?? "");
 
 	const userScopesQ = useQuery({
@@ -86,10 +102,10 @@ function LabsMapPage() {
 		queryFn: async () => {
 			if (!userId) throw new Error("userId is required");
 			if (!file) throw new Error("file is required");
-			return getUserScopeContainerlabTemplate(userId, {
+			return getUserScopeNetlabTemplate(userId, {
 				source: toAPISource(source),
 				dir,
-				file,
+				template: file,
 			});
 		},
 		enabled: Boolean(userId) && Boolean(file),
@@ -100,7 +116,7 @@ function LabsMapPage() {
 	const topology = useMemo(() => {
 		if (!templateQ.data?.yaml) return null;
 		try {
-			return parseContainerlabYamlToTopology(templateQ.data.yaml);
+			return parseKneYamlToTopology(templateQ.data.yaml);
 		} catch {
 			return null;
 		}
@@ -137,7 +153,7 @@ function LabsMapPage() {
 							<div className="text-xs text-muted-foreground">
 								Example:{" "}
 								<span className="font-mono">
-									{`/dashboard/labs/map?userId=<id>&source=${USER_REPO_SOURCE}&dir=containerlab/designer&file=lab.clab.yml`}
+									{`/dashboard/labs/map?userId=<id>&source=${USER_REPO_SOURCE}&dir=kne/designer&file=lab.kne.yml`}
 								</span>
 							</div>
 						</CardContent>

@@ -4,7 +4,7 @@ import type { operations } from "./openapi.gen";
 
 export type CreateUserScopeDeploymentRequest = {
 	name: string;
-	family: "terraform" | "c9s" | "byos" | string;
+	family: "terraform" | "kne" | "byos" | string;
 	engine: "terraform" | "netlab" | "containerlab" | string;
 	config?: JSONMap;
 };

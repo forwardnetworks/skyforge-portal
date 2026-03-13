@@ -21,7 +21,7 @@ export type UserScopeDeployment = {
 	id: string;
 	userId: string;
 	name: string;
-	family: "terraform" | "c9s" | "byos" | string;
+	family: "terraform" | "kne" | "byos" | string;
 	engine: "terraform" | "netlab" | "containerlab" | string;
 	config: JSONMap;
 	lifecycleState?: string;

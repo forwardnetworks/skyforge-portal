@@ -6,7 +6,7 @@ import type {
 } from "@/components/lab-designer-types";
 import {
 	getDeploymentTopology,
-	saveContainerlabTopologyYAML,
+	saveKneTopologyYAML,
 } from "@/lib/api-client";
 import type { Edge, Node } from "@xyflow/react";
 import { toast } from "sonner";
@@ -31,7 +31,7 @@ export function createLabDesignerPersistenceActions(
 		const blob = new Blob([opts.effectiveYaml], { type: "text/yaml" });
 		const a = document.createElement("a");
 		a.href = URL.createObjectURL(blob);
-		a.download = `${opts.labName || "lab"}.clab.yml`;
+		a.download = `${opts.labName || "lab"}.kne.yml`;
 		document.body.appendChild(a);
 		a.click();
 		a.remove();
@@ -92,7 +92,7 @@ export function createLabDesignerPersistenceActions(
 
 	const saveDraft = (
 		storageKey: string,
-		runtime: "clabernetes" | "containerlab",
+		runtime: "kne",
 		containerlabServer: string,
 		useSavedConfig: boolean,
 	) => {
@@ -132,10 +132,7 @@ export function createLabDesignerPersistenceActions(
 			if (typeof parsed?.userId === "string") {
 				opts.setUserScopeId(parsed.userId);
 			}
-			if (
-				parsed?.runtime === "clabernetes" ||
-				parsed?.runtime === "containerlab"
-			) {
+			if (parsed?.runtime === "kne") {
 				opts.setRuntime(parsed.runtime);
 			}
 			if (typeof parsed?.containerlabServer === "string") {
@@ -165,7 +162,7 @@ export function createLabDesignerPersistenceActions(
 			const canUseSaved = opts.lastSaved?.userId === opts.userId;
 			const saved = canUseSaved
 				? opts.lastSaved
-				: await saveContainerlabTopologyYAML(opts.userId, {
+				: await saveKneTopologyYAML(opts.userId, {
 						name: opts.labName,
 						topologyYAML: opts.effectiveYaml,
 						templatesDir: opts.effectiveTemplatesDir,

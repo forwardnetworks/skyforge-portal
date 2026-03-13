@@ -123,11 +123,11 @@ export function formatDeploymentType(deployment: UserScopeDeployment): string {
 	const engine = String(deployment.engine ?? "")
 		.trim()
 		.toLowerCase();
-	if (family === "c9s" && engine === "netlab") return "Netlab (C9S)";
-	if (family === "c9s" && engine === "containerlab") {
-		return "Containerlab (C9S)";
+	if (family === "kne" && engine === "netlab") return "Netlab (KNE)";
+	if (family === "kne" && engine === "containerlab") {
+		return "Containerlab (KNE)";
 	}
-	if (family === "c9s") return "C9S";
+	if (family === "kne") return "KNE";
 	if (family === "byos" && engine === "netlab") return "Netlab (BYOS)";
 	if (family === "byos" && engine === "containerlab") {
 		return "Containerlab (BYOS)";
@@ -195,13 +195,13 @@ function matchesDeploymentTypeFilter(
 		.toLowerCase();
 	if (typeFilter === "netlab") {
 		return (
-			(family === "c9s" && engine === "netlab") ||
+			(family === "kne" && engine === "netlab") ||
 			(family === "byos" && engine === "netlab")
 		);
 	}
 	if (typeFilter === "containerlab") {
 		return (
-			(family === "c9s" && engine === "containerlab") ||
+			(family === "kne" && engine === "containerlab") ||
 			(family === "byos" && engine === "containerlab")
 		);
 	}

@@ -56,7 +56,7 @@ export function useDeploymentDetailData(args: {
 	const deploymentEngine = String(deployment?.engine ?? "")
 		.trim()
 		.toLowerCase();
-	const isC9SDeployment = deploymentType === "c9s";
+	const isKNEDeployment = deploymentType === "kne";
 
 	useEffect(() => {
 		const enabled = Boolean((deployment?.config ?? {})["forwardEnabled"]);
@@ -113,7 +113,7 @@ export function useDeploymentDetailData(args: {
 			if (!deployment) throw new Error("deployment not found");
 			return getDeploymentTopology(deployment.userId, deployment.id);
 		},
-		enabled: Boolean(deployment) && ["c9s", "byos"].includes(deploymentType),
+		enabled: Boolean(deployment) && ["kne", "byos"].includes(deploymentType),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -199,7 +199,7 @@ export function useDeploymentDetailData(args: {
 		forwardCollectorsQ,
 		forwardEnabled,
 		forwardNetworkID,
-		isC9SDeployment,
+		isKNEDeployment,
 		primaryAction,
 		resourceEstimate,
 		resourceEstimatePending,

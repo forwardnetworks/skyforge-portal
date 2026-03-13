@@ -7,10 +7,10 @@ import type {
 } from "../lib/api-client";
 
 export type DeploymentKind =
-	| "c9s_netlab"
+	| "kne_netlab"
 	| "netlab"
 	| "containerlab"
-	| "c9s_containerlab"
+	| "kne_containerlab"
 	| "terraform";
 export type TemplateSource = "user" | "blueprints" | "external" | "custom";
 export type DeploymentMode = "in_cluster" | "byos";
@@ -20,10 +20,10 @@ export function deploymentKindToSpec(kind: DeploymentKind): {
 	engine: CreateUserScopeDeploymentRequest["engine"];
 } {
 	switch (kind) {
-		case "c9s_netlab":
-			return { family: "c9s", engine: "netlab" };
-		case "c9s_containerlab":
-			return { family: "c9s", engine: "containerlab" };
+		case "kne_netlab":
+			return { family: "kne", engine: "netlab" };
+		case "kne_containerlab":
+			return { family: "kne", engine: "containerlab" };
 		case "netlab":
 			return { family: "byos", engine: "netlab" };
 		case "containerlab":
@@ -49,17 +49,17 @@ export function applyDeploymentModeToKind(
 ): DeploymentKind {
 	switch (kind) {
 		case "netlab":
-		case "c9s_netlab":
-			return mode === "byos" ? "netlab" : "c9s_netlab";
+		case "kne_netlab":
+			return mode === "byos" ? "netlab" : "kne_netlab";
 		case "containerlab":
-		case "c9s_containerlab":
-			return mode === "byos" ? "containerlab" : "c9s_containerlab";
+		case "kne_containerlab":
+			return mode === "byos" ? "containerlab" : "kne_containerlab";
 		default:
 			return kind;
 	}
 }
 
-export const fallbackManagedFamilies = ["c9s", "byos", "terraform"];
+export const fallbackManagedFamilies = ["kne", "byos", "terraform"];
 export const fallbackAllowedHours = [4, 8, 24, 72];
 export const USER_REPO_SOURCE = "user" as const;
 export const toAPITemplateSource = (source: TemplateSource): string =>
@@ -81,10 +81,10 @@ export const formSchema = z.object({
 	userId: z.string().min(1, "User is required"),
 	name: z.string().min(1, "Deployment name is required").max(100),
 	kind: z.enum([
-		"c9s_netlab",
+		"kne_netlab",
 		"netlab",
 		"containerlab",
-		"c9s_containerlab",
+		"kne_containerlab",
 		"terraform",
 	]),
 	source: z.enum([USER_REPO_SOURCE, "blueprints", "external", "custom"]),

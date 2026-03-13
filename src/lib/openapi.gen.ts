@@ -266,7 +266,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/forward/tenants/{username}/rebuild": {
+    "/api/admin/forward/orgs/{username}/rebuild": {
         parameters: {
             query?: never;
             header?: never;
@@ -276,8 +276,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * RequestAdminForwardTenantRebuild requests a platform-managed Forward tenant
-         *     rebuild for another user.
+         * RequestAdminForwardTenantRebuild requests a platform-managed Forward org rebuild
+         *     for another user.
          */
         post: operations["POST:skyforge.RequestAdminForwardTenantRebuild"];
         delete?: never;
@@ -286,7 +286,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/forward/tenants/{username}/rebuild/runs": {
+    "/api/admin/forward/orgs/{username}/rebuild/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -861,8 +861,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * CleanupWorkspacePods force-cleans clabernetes topology pods/resources from
-         *     workspace namespaces (admin only).
+         * CleanupWorkspacePods force-cleans kne topology pods/resources from workspace
+         *     namespaces (admin only).
          * @description This is a manual safety valve when deployment delete flows leave topology pods behind.
          */
         post: operations["POST:skyforge.CleanupWorkspacePods"];
@@ -1362,17 +1362,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/byos/me/eve/servers": {
+    "/api/byos/me/fixia/servers": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** ListUserEveServers returns the current user's configured EVE-NG API endpoints. */
-        get: operations["GET:skyforge.ListUserEveServers"];
-        /** UpsertUserEveServer creates or updates a user-scoped EVE-NG server. */
-        put: operations["PUT:skyforge.UpsertUserEveServer"];
+        /** ListUserFixiaServers returns the current user's configured Fixia API endpoints. */
+        get: operations["GET:skyforge.ListUserFixiaServers"];
+        /** UpsertUserFixiaServer creates or updates a user-scoped Fixia endpoint. */
+        put: operations["PUT:skyforge.UpsertUserFixiaServer"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1380,7 +1380,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/byos/me/eve/servers/{serverID}": {
+    "/api/byos/me/fixia/servers/{serverID}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1390,8 +1390,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** DeleteUserEveServer deletes a user-scoped EVE server. */
-        delete: operations["DELETE:skyforge.DeleteUserEveServer"];
+        /** DeleteUserFixiaServer deletes a user-scoped Fixia server. */
+        delete: operations["DELETE:skyforge.DeleteUserFixiaServer"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1430,71 +1430,6 @@ export interface paths {
         post?: never;
         /** DeleteUserNetlabServer deletes a user-scoped Netlab server. */
         delete: operations["DELETE:skyforge.DeleteUserNetlabServer"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/byos/users/{id}/containerlab/topologies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * SaveContainerlabTopologyYAML writes a containerlab topology YAML into the user's
-         *     user-scope repo so it can be
-         * @description deployed later (e.g. by creating a deployment referencing the file).
-         */
-        post: operations["POST:skyforge.SaveContainerlabTopologyYAML"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/byos/users/{id}/deployments-designer/containerlab/from-template": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * CreateContainerlabDeploymentFromTemplate creates a containerlab (BYOS)
-         *     deployment pointing at an existing user-scope template YAML
-         * @description (no YAML commit step).
-         */
-        post: operations["POST:skyforge.CreateContainerlabDeploymentFromTemplate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/byos/users/{id}/deployments-designer/containerlab/from-yaml": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * CreateContainerlabDeploymentFromYAML persists a containerlab topology YAML into
-         *     the user-scope repo,
-         * @description creates a "containerlab" deployment referencing that template, and (optionally) queues an initial deploy.
-         *
-         *     NOTE: containerlab is BYOS mode (requires a user-scope netlabServer selection).
-         */
-        post: operations["POST:skyforge.CreateContainerlabDeploymentFromYAML"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1541,57 +1476,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/byos/users/{id}/eve/convert": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** ConvertUserScopeEveLab exports an EVE-NG lab into a Containerlab template. */
-        post: operations["POST:skyforge.ConvertUserScopeEveLab"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/byos/users/{id}/eve/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** ImportUserScopeEveLab registers an existing EVE-NG lab as a deployment. */
-        post: operations["POST:skyforge.ImportUserScopeEveLab"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/byos/users/{id}/eve/labs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ListUserScopeEveLabs returns EVE-NG labs for import. */
-        get: operations["GET:skyforge.ListUserScopeEveLabs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/byos/users/{id}/netlab": {
         parameters: {
             query?: never;
@@ -1621,23 +1505,6 @@ export interface paths {
         put?: never;
         /** RunUserScopeContainerlab triggers a Containerlab run for a user scope. */
         post: operations["POST:skyforge.RunUserScopeContainerlab"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/byos/users/{id}/runs/eve-ng-run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** RunUserScopeEveNg triggers an EVE-NG lab run for a user scope. */
-        post: operations["POST:skyforge.RunUserScopeEveNg"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2269,7 +2136,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/forward/tenant-credential": {
+    "/api/forward/org-credential": {
         parameters: {
             query?: never;
             header?: never;
@@ -2277,7 +2144,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * GetCurrentUserForwardTenantCredential returns the current user's Forward tenant
+         * GetCurrentUserForwardTenantCredential returns the current user's Forward org
          *     credential.
          */
         get: operations["GET:skyforge.GetCurrentUserForwardTenantCredential"];
@@ -2289,7 +2156,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/forward/tenant-credential/reset": {
+    "/api/forward/org-credential/reset": {
         parameters: {
             query?: never;
             header?: never;
@@ -2299,7 +2166,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ResetCurrentUserForwardTenantPassword rotates the current user's Forward tenant
+         * ResetCurrentUserForwardTenantPassword rotates the current user's Forward org
          *     password.
          */
         post: operations["POST:skyforge.ResetCurrentUserForwardTenantPassword"];
@@ -2309,7 +2176,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/forward/tenant/rebuild": {
+    "/api/forward/org/rebuild": {
         parameters: {
             query?: never;
             header?: never;
@@ -2319,8 +2186,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * RequestCurrentUserForwardTenantRebuild requests a platform-managed Forward
-         *     tenant rebuild for the current user.
+         * RequestCurrentUserForwardTenantRebuild requests a platform-managed Forward org
+         *     rebuild for the current user.
          */
         post: operations["POST:skyforge.RequestCurrentUserForwardTenantRebuild"];
         delete?: never;
@@ -2329,7 +2196,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/forward/tenant/rebuild/runs": {
+    "/api/forward/org/rebuild/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -2994,7 +2861,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * RunQuickDeploy provisions a curated c9s deployment with managed in-cluster
+         * RunQuickDeploy provisions a curated kne deployment with managed in-cluster
          *     Forward sync.
          */
         post: operations["POST:skyforge.RunQuickDeploy"];
@@ -3584,6 +3451,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/composite/plan/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * PreviewUserScopeCompositePlan validates and normalizes a composite deployment
+         *     plan.
+         */
+        post: operations["POST:skyforge.PreviewUserScopeCompositePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/composite/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ListUserScopeCompositePlans lists persisted composite plans for a user scope. */
+        get: operations["GET:skyforge.ListUserScopeCompositePlans"];
+        put?: never;
+        /**
+         * CreateUserScopeCompositePlan validates and stores a composite plan for a user
+         *     scope.
+         */
+        post: operations["POST:skyforge.CreateUserScopeCompositePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/composite/plans/{planID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetUserScopeCompositePlan returns one persisted composite plan by id. */
+        get: operations["GET:skyforge.GetUserScopeCompositePlan"];
+        /** UpdateUserScopeCompositePlan validates and updates a persisted composite plan. */
+        put: operations["PUT:skyforge.UpdateUserScopeCompositePlan"];
+        post?: never;
+        /** DeleteUserScopeCompositePlan deletes a persisted composite plan. */
+        delete: operations["DELETE:skyforge.DeleteUserScopeCompositePlan"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/composite/plans/{planID}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RunUserScopeCompositePlan enqueues execution for a persisted composite plan. */
+        post: operations["POST:skyforge.RunUserScopeCompositePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}/containerlab/template": {
         parameters: {
             query?: never;
@@ -3616,26 +3560,6 @@ export interface paths {
         get: operations["GET:skyforge.GetUserScopeContainerlabTemplates"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/containerlab/topologies/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * ValidateContainerlabTopologyYAML validates and normalizes containerlab topology
-         *     YAML for the lab designer.
-         */
-        post: operations["POST:skyforge.ValidateContainerlabTopologyYAML"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3680,7 +3604,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/deployments-designer/clabernetes/from-template": {
+    "/api/users/{id}/deployments-designer/kne/from-template": {
         parameters: {
             query?: never;
             header?: never;
@@ -3690,18 +3614,18 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * CreateClabernetesDeploymentFromTemplate creates a clabernetes deployment
-         *     pointing at an existing user-scope template YAML
+         * CreateKneDeploymentFromTemplate creates a kne deployment pointing at an existing
+         *     user-scope template YAML
          * @description (no YAML commit step).
          */
-        post: operations["POST:skyforge.CreateClabernetesDeploymentFromTemplate"];
+        post: operations["POST:skyforge.CreateKneDeploymentFromTemplate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}/deployments-designer/clabernetes/from-yaml": {
+    "/api/users/{id}/deployments-designer/kne/from-yaml": {
         parameters: {
             query?: never;
             header?: never;
@@ -3711,13 +3635,13 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * CreateClabernetesDeploymentFromYAML persists a containerlab topology YAML into
-         *     the user-scope repo,
-         * @description creates a "clabernetes" deployment referencing that template, and (optionally) queues an initial deploy.
+         * CreateKneDeploymentFromYAML persists a netlab/KNE topology YAML into the
+         *     user-scope repo,
+         * @description creates a "kne" deployment referencing that template, and (optionally) queues an initial deploy.
          *
          *     This is the first-class in-cluster mode (no netlab server required).
          */
-        post: operations["POST:skyforge.CreateClabernetesDeploymentFromYAML"];
+        post: operations["POST:skyforge.CreateKneDeploymentFromYAML"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4093,7 +4017,7 @@ export interface paths {
         /**
          * SetUserScopeDeploymentLinkImpairment applies or clears traffic impairment
          *     settings for a single link.
-         * @description The impairment is applied "outside" of the network OS by executing \`tc\` in the clabernetes launcher container (or another non-NOS container in the same pod netns).
+         * @description The impairment is applied "outside" of the network OS by executing \`tc\` in the kne launcher container (or another non-NOS container in the same pod netns).
          */
         post: operations["POST:skyforge.SetUserScopeDeploymentLinkImpairment"];
         delete?: never;
@@ -4112,7 +4036,7 @@ export interface paths {
         /**
          * GetUserScopeDeploymentLinkStats returns a snapshot of interface counters for
          *     each topology edge.
-         * @description This is used to render live link utilization on the topology graph (similar to c9s VSCode extension).
+         * @description This is used to render live link utilization on the topology graph (similar to kne VSCode extension).
          */
         get: operations["GET:skyforge.GetUserScopeDeploymentLinkStats"];
         put?: never;
@@ -4169,8 +4093,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * GetUserScopeDeploymentNodeDescribe returns a lightweight summary of the
-         *     clabernetes node pod.
+         * GetUserScopeDeploymentNodeDescribe returns a lightweight summary of the kne node
+         *     pod.
          */
         get: operations["GET:skyforge.GetUserScopeDeploymentNodeDescribe"];
         put?: never;
@@ -4190,7 +4114,7 @@ export interface paths {
         };
         /**
          * GetUserScopeDeploymentNodeInterfaces returns interface stats (launcher
-         *     container) for a clabernetes node.
+         *     container) for a kne node.
          */
         get: operations["GET:skyforge.GetUserScopeDeploymentNodeInterfaces"];
         put?: never;
@@ -4209,9 +4133,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * GetUserScopeDeploymentNodeLogs returns recent log lines for a clabernetes node
-         *     pod.
-         * @description This powers the "View logs" action in the topology UI (similar to the c9s VSCode extension).
+         * GetUserScopeDeploymentNodeLogs returns recent log lines for a kne node pod.
+         * @description This powers the "View logs" action in the topology UI (similar to the kne VSCode extension).
          */
         get: operations["GET:skyforge.GetUserScopeDeploymentNodeLogs"];
         put?: never;
@@ -4312,11 +4235,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * TerminalExecWS provides an interactive in-browser terminal into
-         *     clabernetes-backed nodes
+         * TerminalExecWS provides an interactive in-browser terminal into kne-backed nodes
          * @description using Kubernetes \`pods/exec\` (SPDY) and a WebSocket transport to the browser.
          *
-         *     Query params: - node: required (clabernetes/topologyNode) - container: optional - command: optional (defaults to "sh"; for EOS nodes use "Cli")
+         *     Query params: - node: required (kne/topologyNode) - container: optional - command: optional (defaults to "sh"; for EOS nodes use "Cli")
          */
         get: operations["GET:skyforge.TerminalExecWS"];
         put?: never;
@@ -4643,6 +4565,44 @@ export interface paths {
         put?: never;
         /** CreateUserScopeForwardCollector creates a Forward collector for the user scope. */
         post: operations["POST:skyforge.CreateUserScopeForwardCollector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/kne/topologies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * SaveKneTopologyYAML writes a netlab/KNE topology YAML into the user's user-scope
+         *     repo so it can be
+         * @description deployed later (e.g. by creating a deployment referencing the file).
+         */
+        post: operations["POST:skyforge.SaveKneTopologyYAML"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/kne/topologies/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ValidateKneTopologyYAML validates netlab/KNE topology YAML for the lab designer. */
+        post: operations["POST:skyforge.ValidateKneTopologyYAML"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5888,6 +5848,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/fixia.ExtendReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:fixia.ExtendReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fixia.ListDevices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:fixia.ListDevices"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fixia.ListReservationLog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:fixia.ListReservationLog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fixia.ProbeConnection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:fixia.ProbeConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fixia.ReleaseAllReservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:fixia.ReleaseAllReservations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fixia.ReleaseReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:fixia.ReleaseReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fixia.ReserveDevices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["POST:fixia.ReserveDevices"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/forwardregistry.CreateNetwork": {
         parameters: {
             query?: never;
@@ -5946,7 +6018,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * DeleteTenant tears down the stored Forward tenant and, for hard/curated
+         * DeleteTenant tears down the stored Forward org and, for hard/curated
          * @description modes, deletes the backing Forward org so a subsequent bootstrap recreates it from scratch.
          */
         post: operations["POST:forwardtenant.DeleteTenant"];
@@ -5982,7 +6054,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** ResetTenantPassword rotates the user's Forward tenant password. */
+        /** ResetTenantPassword rotates the user's Forward org password. */
         post: operations["POST:forwardtenant.ResetTenantPassword"];
         delete?: never;
         options?: never;
@@ -7385,7 +7457,7 @@ export interface paths {
         put?: never;
         /**
          * ExecuteForwardTenantResetRun is a worker-facing private API for queued
-         * @description Forward tenant reset orchestration.
+         * @description Forward org reset orchestration.
          */
         post: operations["POST:skyforge.ExecuteForwardTenantResetRun"];
         delete?: never;
@@ -8295,6 +8367,57 @@ export interface components {
             stoppedAt: string;
             userScopeId: string;
         };
+        "fixia.ConnectionInput": {
+            baseUrl: string;
+            password: string;
+            skipTlsVerify: boolean;
+            username: string;
+        };
+        "fixia.Device": {
+            device: string;
+            ports: components["schemas"]["fixia.DevicePort"][];
+            reservation: components["schemas"]["fixia.Reservation"];
+        };
+        "fixia.DevicePort": {
+            device: string;
+            port: string;
+        };
+        "fixia.Link": {
+            devicePorts: components["schemas"]["fixia.DevicePort"][];
+        };
+        "fixia.LinkReservationResult": {
+            failedLinks: components["schemas"]["fixia.Link"][];
+            linkResult: string;
+        };
+        "fixia.Reservation": {
+            comment: string;
+            devices: string[];
+            /** Format: int64 */
+            endTimeMs: number;
+            links: components["schemas"]["fixia.Link"][];
+            /** Format: int64 */
+            reservationId: number;
+            /** Format: int64 */
+            startTimeMs: number;
+            user: string;
+        };
+        "fixia.ReservationError": {
+            conflicts: components["schemas"]["fixia.Reservation"][];
+            linkReservationResult: components["schemas"]["fixia.LinkReservationResult"];
+            linkResult: string;
+            reason: string;
+            unknownDevices: string[];
+        };
+        "fixia.ReservationLogEntry": {
+            /** Format: int64 */
+            previous: number;
+            reason: string;
+            reservation: components["schemas"]["fixia.Reservation"];
+        };
+        "fixia.ReservationResult": {
+            error: components["schemas"]["fixia.ReservationError"];
+            reservation: components["schemas"]["fixia.Reservation"];
+        };
         "forwardregistry.CreateRequest": {
             collectorConfigId: string;
             description: string;
@@ -8749,15 +8872,41 @@ export interface components {
             ipv6Routes: number;
             vrf: string;
         };
-        "skyforge.ClabernetesInfo": {
-            /** Format: int64 */
-            configMaps: number;
-            labName: string;
-            namespace: string;
-            placementSummary: components["schemas"]["skyforge.DeploymentPlacementInfoSummary"];
-            ready: boolean;
-            topologyName: string;
-            warnings: string[];
+        "skyforge.CompositePlanPreviewBinding": {
+            as: string;
+            fromOutput: string;
+            fromStageId: string;
+            sensitive: boolean;
+            toInput: string;
+            toStageId: string;
+        };
+        "skyforge.CompositePlanPreviewOutputRef": {
+            output: string;
+            stageId: string;
+        };
+        "skyforge.CompositePlanPreviewStage": {
+            action: string;
+            dependsOn: string[];
+            id: string;
+            inputs: {
+                [key: string]: string;
+            };
+            outputs: string[];
+            provider: string;
+        };
+        "skyforge.CompositePlanRecord": {
+            bindings: components["schemas"]["skyforge.CompositePlanPreviewBinding"][];
+            createdAt: string;
+            createdBy: string;
+            id: string;
+            inputs: {
+                [key: string]: string;
+            };
+            name: string;
+            outputs: components["schemas"]["skyforge.CompositePlanPreviewOutputRef"][];
+            stages: components["schemas"]["skyforge.CompositePlanPreviewStage"][];
+            updatedAt: string;
+            userId: string;
         };
         "skyforge.ContainerlabInfo": {
             apiUrl: string;
@@ -8835,6 +8984,11 @@ export interface components {
             status: string;
             warnings: string[];
         };
+        "skyforge.DeploymentPreflightError": {
+            category: string;
+            code: string;
+            message: string;
+        };
         "skyforge.DeploymentPresenceState": string;
         "skyforge.DeploymentUIEvent": {
             createdAt: string;
@@ -8844,22 +8998,6 @@ export interface components {
             /** Format: int64 */
             id: number;
             payload: Record<string, never>;
-        };
-        "skyforge.EveFolderInfo": {
-            mtime: string;
-            name: string;
-            path: string;
-        };
-        "skyforge.EveLabSummary": {
-            folder: string;
-            lock: boolean;
-            mtime: string;
-            name: string;
-            path: string;
-            /** Format: int64 */
-            shared: number;
-            /** Format: int64 */
-            umtime: number;
         };
         "skyforge.ExternalTemplateRepo": {
             defaultBranch: string;
@@ -8915,6 +9053,16 @@ export interface components {
         };
         "skyforge.JSONMap": {
             [key: string]: Record<string, never>;
+        };
+        "skyforge.KneInfo": {
+            /** Format: int64 */
+            configMaps: number;
+            labName: string;
+            namespace: string;
+            placementSummary: components["schemas"]["skyforge.DeploymentPlacementInfoSummary"];
+            ready: boolean;
+            topologyName: string;
+            warnings: string[];
         };
         "skyforge.LinkEdgeStats": {
             edgeId: string;
@@ -9211,19 +9359,15 @@ export interface components {
             id: string;
             name: string;
         };
-        "skyforge.UserEveServerConfig": {
+        "skyforge.UserFixiaServerConfig": {
+            apiInsecure: boolean;
             apiPassword: string;
+            apiToken: string;
             apiUrl: string;
             apiUser: string;
             hasPassword: boolean;
-            hasSshKey: boolean;
             id: string;
             name: string;
-            skipTlsVerify: boolean;
-            sshHost: string;
-            sshKey: string;
-            sshUser: string;
-            webUrl: string;
         };
         "skyforge.UserForwardCollectorConfigSummary": {
             baseUrl: string;
@@ -9256,11 +9400,6 @@ export interface components {
          */
         "skyforge.UserScope": {
             allowCustomContainerlabServers: boolean;
-            /**
-             * EVE-NG deployments require an endpoint. This flag enables configuring a
-             *     per-user-scope EVE server.
-             */
-            allowCustomEveServers: boolean;
             allowCustomNetlabServers: boolean;
             allowExternalTemplateRepos: boolean;
             /** Format: int64 */
@@ -9280,9 +9419,6 @@ export interface components {
             description: string;
             editorGroups: string[];
             editors: string[];
-            /** Format: int64 */
-            eveNgRunTemplateId: number;
-            eveServer: string;
             externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
             giteaOwner: string;
             giteaRepo: string;
@@ -12406,7 +12542,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "GET:skyforge.ListUserEveServers": {
+    "GET:skyforge.ListUserFixiaServers": {
         parameters: {
             query?: never;
             header?: never;
@@ -12422,14 +12558,14 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        servers: components["schemas"]["skyforge.UserEveServerConfig"][];
+                        servers: components["schemas"]["skyforge.UserFixiaServerConfig"][];
                     };
                 };
             };
             default: components["responses"]["APIError"];
         };
     };
-    "PUT:skyforge.UpsertUserEveServer": {
+    "PUT:skyforge.UpsertUserFixiaServer": {
         parameters: {
             query?: never;
             header?: never;
@@ -12439,18 +12575,14 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    apiInsecure: boolean;
                     apiPassword: string;
+                    apiToken: string;
                     apiUrl: string;
                     apiUser: string;
                     hasPassword: boolean;
-                    hasSshKey: boolean;
                     id: string;
                     name: string;
-                    skipTlsVerify: boolean;
-                    sshHost: string;
-                    sshKey: string;
-                    sshUser: string;
-                    webUrl: string;
                 };
             };
         };
@@ -12462,25 +12594,21 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        apiInsecure: boolean;
                         apiPassword: string;
+                        apiToken: string;
                         apiUrl: string;
                         apiUser: string;
                         hasPassword: boolean;
-                        hasSshKey: boolean;
                         id: string;
                         name: string;
-                        skipTlsVerify: boolean;
-                        sshHost: string;
-                        sshKey: string;
-                        sshUser: string;
-                        webUrl: string;
                     };
                 };
             };
             default: components["responses"]["APIError"];
         };
     };
-    "DELETE:skyforge.DeleteUserEveServer": {
+    "DELETE:skyforge.DeleteUserFixiaServer": {
         parameters: {
             query?: never;
             header?: never;
@@ -12588,154 +12716,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.SaveContainerlabTopologyYAML": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** Name drives the default filename. */
-                    name: string;
-                    /**
-                     * Template is the filename to write under TemplatesDir.
-                     * @description Default: "\<normalized-name>.clab.yml".
-                     */
-                    template: string;
-                    /**
-                     * TemplatesDir is where we store the YAML inside the user-scope repo.
-                     * @description Default: "containerlab/designer".
-                     *
-                     *     For this endpoint, TemplatesDir must be under "containerlab/".
-                     */
-                    templatesDir: string;
-                    /** TopologyYAML is the raw containerlab topology YAML. */
-                    topologyYAML: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        branch: string;
-                        filePath: string;
-                        template: string;
-                        templatesDir: string;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.CreateContainerlabDeploymentFromTemplate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /**
-                     * NetlabServer is a user netlab server ref (e.g. "user:<id>").
-                     * @description If omitted, we fall back to the user-scope default.
-                     */
-                    netlabServer: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        note: string;
-                        run: components["schemas"]["skyforge.JSONMap"];
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.CreateContainerlabDeploymentFromYAML": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /**
-                     * AutoDeploy queues an initial "create" action after creating the deployment.
-                     * @description Default: true.
-                     */
-                    autoDeploy: boolean;
-                    /**
-                     * Name becomes the Skyforge deployment name (and drives the containerlab lab
-                     *     name).
-                     */
-                    name: string;
-                    /**
-                     * NetlabServer is a user netlab server ref (e.g. "user:<id>").
-                     * @description If omitted, we fall back to the user-scope default.
-                     */
-                    netlabServer: string;
-                    /**
-                     * Template is the filename to write under TemplatesDir.
-                     * @description Default: "\<deployment-name>.clab.yml".
-                     */
-                    template: string;
-                    /**
-                     * TemplatesDir is where we store the YAML inside the user-scope repo.
-                     * @description Default: "containerlab/designer".
-                     */
-                    templatesDir: string;
-                    /** TopologyYAML is the raw containerlab topology YAML. */
-                    topologyYAML: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        note: string;
-                        run: components["schemas"]["skyforge.JSONMap"];
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "GET:skyforge.GetUserScopeDeploymentNetlabGraph": {
         parameters: {
             query?: never;
@@ -12797,138 +12777,6 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.ConvertUserScopeEveLab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    containerlabServer: string;
-                    createDeployment: boolean;
-                    labPath: string;
-                    outputDir: string;
-                    outputFile: string;
-                    server: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["skyforge.UserScopeDeployment"];
-                        path: string;
-                        userId: string;
-                        warnings: string[];
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.ImportUserScopeEveLab": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    deploymentName: string;
-                    labPath: string;
-                    server: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        actionReason: string;
-                        /** Format: int64 */
-                        activeTaskId: number;
-                        activeTaskStatus: string;
-                        autoSyncOnBringUp: boolean;
-                        config: components["schemas"]["skyforge.JSONMap"];
-                        createdAt: string;
-                        createdBy: string;
-                        engine: string;
-                        family: string;
-                        id: string;
-                        lastFinishedAt: string;
-                        lastStartedAt: string;
-                        lastStatus: string;
-                        lastSyncAt: string;
-                        lastSyncError: string;
-                        lastSyncStatus: string;
-                        /** Format: int64 */
-                        lastTaskId: number;
-                        /** Format: int64 */
-                        lastTaskUserScopeId: number;
-                        lifecycleState: string;
-                        name: string;
-                        primaryAction: string;
-                        /** Format: int64 */
-                        queueDepth: number;
-                        syncState: string;
-                        updatedAt: string;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.ListUserScopeEveLabs": {
-        parameters: {
-            query?: {
-                server?: string;
-                path?: string;
-                recursive?: boolean;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        folders: components["schemas"]["skyforge.EveFolderInfo"][];
-                        labs: components["schemas"]["skyforge.EveLabSummary"][];
-                        server: string;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
     "GET:skyforge.GetUserScopeNetlab": {
         parameters: {
             query?: never;
@@ -12981,11 +12829,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         allowCustomContainerlabServers: boolean;
-                        /**
-                         * EVE-NG deployments require an endpoint. This flag enables configuring a
-                         *     per-user-scope EVE server.
-                         */
-                        allowCustomEveServers: boolean;
                         allowCustomNetlabServers: boolean;
                         allowExternalTemplateRepos: boolean;
                         /** Format: int64 */
@@ -13005,9 +12848,6 @@ export interface operations {
                         description: string;
                         editorGroups: string[];
                         editors: string[];
-                        /** Format: int64 */
-                        eveNgRunTemplateId: number;
-                        eveServer: string;
                         externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
                         giteaOwner: string;
                         giteaRepo: string;
@@ -13065,55 +12905,6 @@ export interface operations {
                     /** user (default), blueprints, or custom */
                     templateSource: string;
                     /** repo-relative directory (default: blueprints/containerlab) */
-                    templatesDir: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        task: components["schemas"]["skyforge.JSONMap"];
-                        user: string;
-                        userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.RunUserScopeEveNg": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** create, start, stop, destroy */
-                    action: string;
-                    autoForwardSyncOnBringUp: boolean;
-                    /** deployment name for lab naming */
-                    deployment: string;
-                    deploymentId: string;
-                    eveServer: string;
-                    labPath: string;
-                    message: string;
-                    /** directory name under templates dir */
-                    template: string;
-                    /** owner/repo or URL (custom only) */
-                    templateRepo: string;
-                    /** user (default), blueprints, or custom */
-                    templateSource: string;
-                    /** repo-relative directory (default: blueprints/eve-ng) */
                     templatesDir: string;
                 };
             };
@@ -16396,11 +16187,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         allowCustomContainerlabServers: boolean;
-                        /**
-                         * EVE-NG deployments require an endpoint. This flag enables configuring a
-                         *     per-user-scope EVE server.
-                         */
-                        allowCustomEveServers: boolean;
                         allowCustomNetlabServers: boolean;
                         allowExternalTemplateRepos: boolean;
                         /** Format: int64 */
@@ -16420,9 +16206,6 @@ export interface operations {
                         description: string;
                         editorGroups: string[];
                         editors: string[];
-                        /** Format: int64 */
-                        eveNgRunTemplateId: number;
-                        eveServer: string;
                         externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
                         giteaOwner: string;
                         giteaRepo: string;
@@ -16999,6 +16782,272 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:skyforge.PreviewUserScopeCompositePlan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    bindings: components["schemas"]["skyforge.CompositePlanPreviewBinding"][];
+                    inputs: {
+                        [key: string]: string;
+                    };
+                    name: string;
+                    outputs: components["schemas"]["skyforge.CompositePlanPreviewOutputRef"][];
+                    stages: components["schemas"]["skyforge.CompositePlanPreviewStage"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        bindings: components["schemas"]["skyforge.CompositePlanPreviewBinding"][];
+                        name: string;
+                        outputs: components["schemas"]["skyforge.CompositePlanPreviewOutputRef"][];
+                        stages: components["schemas"]["skyforge.CompositePlanPreviewStage"][];
+                        warnings: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListUserScopeCompositePlans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        plans: components["schemas"]["skyforge.CompositePlanRecord"][];
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CreateUserScopeCompositePlan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    bindings: components["schemas"]["skyforge.CompositePlanPreviewBinding"][];
+                    inputs: {
+                        [key: string]: string;
+                    };
+                    name: string;
+                    outputs: components["schemas"]["skyforge.CompositePlanPreviewOutputRef"][];
+                    stages: components["schemas"]["skyforge.CompositePlanPreviewStage"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        bindings: components["schemas"]["skyforge.CompositePlanPreviewBinding"][];
+                        createdAt: string;
+                        createdBy: string;
+                        id: string;
+                        inputs: {
+                            [key: string]: string;
+                        };
+                        name: string;
+                        outputs: components["schemas"]["skyforge.CompositePlanPreviewOutputRef"][];
+                        stages: components["schemas"]["skyforge.CompositePlanPreviewStage"][];
+                        updatedAt: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetUserScopeCompositePlan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                planID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        bindings: components["schemas"]["skyforge.CompositePlanPreviewBinding"][];
+                        createdAt: string;
+                        createdBy: string;
+                        id: string;
+                        inputs: {
+                            [key: string]: string;
+                        };
+                        name: string;
+                        outputs: components["schemas"]["skyforge.CompositePlanPreviewOutputRef"][];
+                        stages: components["schemas"]["skyforge.CompositePlanPreviewStage"][];
+                        updatedAt: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.UpdateUserScopeCompositePlan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                planID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    bindings: components["schemas"]["skyforge.CompositePlanPreviewBinding"][];
+                    inputs: {
+                        [key: string]: string;
+                    };
+                    name: string;
+                    outputs: components["schemas"]["skyforge.CompositePlanPreviewOutputRef"][];
+                    stages: components["schemas"]["skyforge.CompositePlanPreviewStage"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        bindings: components["schemas"]["skyforge.CompositePlanPreviewBinding"][];
+                        createdAt: string;
+                        createdBy: string;
+                        id: string;
+                        inputs: {
+                            [key: string]: string;
+                        };
+                        name: string;
+                        outputs: components["schemas"]["skyforge.CompositePlanPreviewOutputRef"][];
+                        stages: components["schemas"]["skyforge.CompositePlanPreviewStage"][];
+                        updatedAt: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteUserScopeCompositePlan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                planID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        plans: components["schemas"]["skyforge.CompositePlanRecord"][];
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RunUserScopeCompositePlan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                planID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    deploymentId: string;
+                    inputs: {
+                        [key: string]: string;
+                    };
+                    message: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        task: components["schemas"]["skyforge.JSONMap"];
+                        user: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.GetUserScopeContainerlabTemplate": {
         parameters: {
             query?: {
@@ -17068,44 +17117,6 @@ export interface operations {
                         repo: string;
                         templates: string[];
                         userId: string;
-                    };
-                };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "POST:skyforge.ValidateContainerlabTopologyYAML": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** Name drives normalization defaults and preview metadata only. */
-                    name: string;
-                    /** TopologyYAML is the raw containerlab topology YAML. */
-                    topologyYAML: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        errors: string[];
-                        normalizedYAML: string;
-                        userId: string;
-                        valid: boolean;
-                        warnings: string[];
                     };
                 };
             };
@@ -17240,7 +17251,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.CreateClabernetesDeploymentFromTemplate": {
+    "POST:skyforge.CreateKneDeploymentFromTemplate": {
         parameters: {
             query?: never;
             header?: never;
@@ -17268,7 +17279,7 @@ export interface operations {
                     templateSource: string;
                     /**
                      * TemplatesDir is the repo-relative directory containing the YAML.
-                     * @description Default: "containerlab/designer".
+                     * @description Default: "kne/designer".
                      */
                     templatesDir: string;
                 };
@@ -17292,7 +17303,7 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
-    "POST:skyforge.CreateClabernetesDeploymentFromYAML": {
+    "POST:skyforge.CreateKneDeploymentFromYAML": {
         parameters: {
             query?: never;
             header?: never;
@@ -17309,19 +17320,19 @@ export interface operations {
                      * @description Default: true.
                      */
                     autoDeploy: boolean;
-                    /** Name becomes the Skyforge deployment name (and drives the clabernetes lab name). */
+                    /** Name becomes the Skyforge deployment name (and drives the kne lab name). */
                     name: string;
                     /**
                      * Template is the filename to write under TemplatesDir.
-                     * @description Default: "\<deployment-name>.clab.yml".
+                     * @description Default: "\<deployment-name>.kne.yml".
                      */
                     template: string;
                     /**
                      * TemplatesDir is where we store the YAML inside the user-scope repo.
-                     * @description Default: "containerlab/designer".
+                     * @description Default: "kne/designer".
                      */
                     templatesDir: string;
-                    /** TopologyYAML is the raw containerlab topology YAML. */
+                    /** TopologyYAML is the raw netlab/KNE topology YAML. */
                     topologyYAML: string;
                 };
             };
@@ -17892,11 +17903,11 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        clabernetes: components["schemas"]["skyforge.ClabernetesInfo"];
                         containerlab: components["schemas"]["skyforge.ContainerlabInfo"];
                         deployment: components["schemas"]["skyforge.UserScopeDeployment"];
                         forwardNetworkId: string;
                         forwardSnapshotUrl: string;
+                        kne: components["schemas"]["skyforge.KneInfo"];
                         log: string;
                         netlab: components["schemas"]["skyforge.NetlabInfo"];
                         note: string;
@@ -18439,6 +18450,7 @@ export interface operations {
                         noOp: boolean;
                         operationKey: string;
                         preflight: components["schemas"]["skyforge.deploymentPreflightSummary"];
+                        preflightError: components["schemas"]["skyforge.DeploymentPreflightError"];
                         reason: components["schemas"]["deploycore.Reason"];
                         state: components["schemas"]["skyforge.DeploymentActionState"];
                         userId: string;
@@ -19153,6 +19165,94 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "POST:skyforge.SaveKneTopologyYAML": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Name drives the default filename. */
+                    name: string;
+                    /**
+                     * Template is the filename to write under TemplatesDir.
+                     * @description Default: "\<normalized-name>.kne.yml".
+                     */
+                    template: string;
+                    /**
+                     * TemplatesDir is where we store the YAML inside the user-scope repo.
+                     * @description Default: "kne/designer".
+                     *
+                     *     For this endpoint, TemplatesDir must be under "kne/".
+                     */
+                    templatesDir: string;
+                    /** TopologyYAML is the raw netlab/KNE topology YAML. */
+                    topologyYAML: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        branch: string;
+                        filePath: string;
+                        template: string;
+                        templatesDir: string;
+                        userId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ValidateKneTopologyYAML": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Name drives normalization defaults and preview metadata only. */
+                    name: string;
+                    /** TopologyYAML is the raw netlab/KNE topology YAML. */
+                    topologyYAML: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        errors: string[];
+                        normalizedYAML: string;
+                        userId: string;
+                        valid: boolean;
+                        warnings: string[];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "PUT:skyforge.UpdateUserScopeMembers": {
         parameters: {
             query?: never;
@@ -19184,11 +19284,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         allowCustomContainerlabServers: boolean;
-                        /**
-                         * EVE-NG deployments require an endpoint. This flag enables configuring a
-                         *     per-user-scope EVE server.
-                         */
-                        allowCustomEveServers: boolean;
                         allowCustomNetlabServers: boolean;
                         allowExternalTemplateRepos: boolean;
                         /** Format: int64 */
@@ -19208,9 +19303,6 @@ export interface operations {
                         description: string;
                         editorGroups: string[];
                         editors: string[];
-                        /** Format: int64 */
-                        eveNgRunTemplateId: number;
-                        eveServer: string;
                         externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
                         giteaOwner: string;
                         giteaRepo: string;
@@ -19737,7 +19829,6 @@ export interface operations {
             content: {
                 "application/json": {
                     allowCustomContainerlabServers: boolean;
-                    allowCustomEveServers: boolean;
                     allowCustomNetlabServers: boolean;
                     allowExternalTemplateRepos: boolean;
                     externalTemplateRepos: components["schemas"]["skyforge.ExternalTemplateRepo"][];
@@ -21718,6 +21809,232 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:fixia.ExtendReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    comment: string;
+                    connection: components["schemas"]["fixia.ConnectionInput"];
+                    /** Format: int64 */
+                    durationSeconds: number;
+                    /** Format: int64 */
+                    reservationId: number;
+                    user: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        normalizedBaseUrl: string;
+                        result: components["schemas"]["fixia.ReservationResult"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:fixia.ListDevices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    connection: components["schemas"]["fixia.ConnectionInput"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        devices: components["schemas"]["fixia.Device"][];
+                        normalizedBaseUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:fixia.ListReservationLog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    connection: components["schemas"]["fixia.ConnectionInput"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        entries: components["schemas"]["fixia.ReservationLogEntry"][];
+                        normalizedBaseUrl: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:fixia.ProbeConnection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    connection: components["schemas"]["fixia.ConnectionInput"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        deviceCount: number;
+                        normalizedBaseUrl: string;
+                        reachable: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:fixia.ReleaseAllReservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    connection: components["schemas"]["fixia.ConnectionInput"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        normalizedBaseUrl: string;
+                        released: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:fixia.ReleaseReservation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    connection: components["schemas"]["fixia.ConnectionInput"];
+                    /** Format: int64 */
+                    reservationId: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        normalizedBaseUrl: string;
+                        released: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:fixia.ReserveDevices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    comment: string;
+                    connection: components["schemas"]["fixia.ConnectionInput"];
+                    devices: string[];
+                    /** Format: int64 */
+                    durationSeconds: number;
+                    links: components["schemas"]["fixia.Link"][];
+                    user: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        normalizedBaseUrl: string;
+                        result: components["schemas"]["fixia.ReservationResult"];
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };

@@ -25,7 +25,7 @@ import {
 } from "./deployments-page-utils";
 
 const LAST_USER_SCOPE_KEY = "skyforge.lastUserScopeId.deployments";
-const FALLBACK_MANAGED_FAMILIES = ["c9s", "byos", "terraform"];
+const FALLBACK_MANAGED_FAMILIES = ["kne", "byos", "terraform"];
 const FALLBACK_LIFETIME_HOURS = [4, 8, 24, 72];
 
 export function useDeploymentsPageData(args: {

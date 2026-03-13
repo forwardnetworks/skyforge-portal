@@ -11,8 +11,8 @@ import { queryKeys } from "../lib/query-keys";
 import type { DeploymentKind } from "./create-deployment-shared";
 
 const collectorKinds: DeploymentKind[] = [
-	"c9s_netlab",
-	"c9s_containerlab",
+	"kne_netlab",
+	"kne_containerlab",
 	"terraform",
 ];
 

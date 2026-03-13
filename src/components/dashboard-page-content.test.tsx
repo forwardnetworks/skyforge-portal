@@ -37,6 +37,8 @@ vi.mock("./dashboard-shared", () => ({
 	),
 	formatCount: (value: number | null | undefined) =>
 		value == null ? "0" : String(value),
+	formatMode: (value: string | null | undefined) => value ?? "",
+	describeOperatingMode: (value: string | null | undefined) => value ?? "",
 }));
 
 function makePage(overrides: Record<string, unknown> = {}) {
@@ -60,6 +62,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				approvedReservations: 1,
 			},
 		},
+		reservations: [],
 		...overrides,
 	};
 }

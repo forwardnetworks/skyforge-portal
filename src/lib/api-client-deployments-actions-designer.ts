@@ -1,33 +1,7 @@
 import type { JSONMap, UserScopeDeployment } from "./api-client-user-user-scope";
 import { apiFetch } from "./http";
 
-export type CreateContainerlabDeploymentFromYAMLRequest = {
-	name: string;
-	netlabServer?: string;
-	topologyYAML: string;
-	templatesDir?: string;
-	template?: string;
-	autoDeploy?: boolean;
-};
-
-export type CreateContainerlabDeploymentFromYAMLResponse = {
-	userId: string;
-	deployment?: UserScopeDeployment;
-	run?: JSONMap;
-	note?: string;
-};
-
-export async function createContainerlabDeploymentFromYAML(
-	userId: string,
-	body: CreateContainerlabDeploymentFromYAMLRequest,
-): Promise<CreateContainerlabDeploymentFromYAMLResponse> {
-	return apiFetch<CreateContainerlabDeploymentFromYAMLResponse>(
-		`/api/byos/users/${encodeURIComponent(userId)}/deployments-designer/containerlab/from-yaml`,
-		{ method: "POST", body: JSON.stringify(body) },
-	);
-}
-
-export type CreateClabernetesDeploymentFromYAMLRequest = {
+export type CreateKneDeploymentFromYAMLRequest = {
 	name: string;
 	topologyYAML: string;
 	templatesDir?: string;
@@ -35,36 +9,36 @@ export type CreateClabernetesDeploymentFromYAMLRequest = {
 	autoDeploy?: boolean;
 };
 
-export type CreateClabernetesDeploymentFromYAMLResponse = {
+export type CreateKneDeploymentFromYAMLResponse = {
 	userId: string;
 	deployment?: UserScopeDeployment;
 	run?: JSONMap;
 	note?: string;
 };
 
-export async function createClabernetesDeploymentFromYAML(
+export async function createKneDeploymentFromYAML(
 	userId: string,
-	body: CreateClabernetesDeploymentFromYAMLRequest,
-): Promise<CreateClabernetesDeploymentFromYAMLResponse> {
-	return apiFetch<CreateClabernetesDeploymentFromYAMLResponse>(
-		`/api/users/${encodeURIComponent(userId)}/deployments-designer/clabernetes/from-yaml`,
+	body: CreateKneDeploymentFromYAMLRequest,
+): Promise<CreateKneDeploymentFromYAMLResponse> {
+	return apiFetch<CreateKneDeploymentFromYAMLResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments-designer/kne/from-yaml`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
-export type SaveContainerlabTopologyYAMLRequest = {
+export type SaveKneTopologyYAMLRequest = {
 	name: string;
 	topologyYAML: string;
 	templatesDir?: string;
 	template?: string;
 };
 
-export type ValidateContainerlabTopologyYAMLRequest = {
+export type ValidateKneTopologyYAMLRequest = {
 	name?: string;
 	topologyYAML: string;
 };
 
-export type ValidateContainerlabTopologyYAMLResponse = {
+export type ValidateKneTopologyYAMLResponse = {
 	userId?: string;
 	normalizedYAML: string;
 	warnings: string[];
@@ -72,17 +46,17 @@ export type ValidateContainerlabTopologyYAMLResponse = {
 	valid: boolean;
 };
 
-export async function validateContainerlabTopologyYAML(
+export async function validateKneTopologyYAML(
 	userId: string,
-	body: ValidateContainerlabTopologyYAMLRequest,
-): Promise<ValidateContainerlabTopologyYAMLResponse> {
-	return apiFetch<ValidateContainerlabTopologyYAMLResponse>(
-		`/api/users/${encodeURIComponent(userId)}/containerlab/topologies/validate`,
+	body: ValidateKneTopologyYAMLRequest,
+): Promise<ValidateKneTopologyYAMLResponse> {
+	return apiFetch<ValidateKneTopologyYAMLResponse>(
+		`/api/users/${encodeURIComponent(userId)}/kne/topologies/validate`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
 
-export type SaveContainerlabTopologyYAMLResponse = {
+export type SaveKneTopologyYAMLResponse = {
 	userId: string;
 	branch: string;
 	templatesDir: string;
@@ -90,12 +64,12 @@ export type SaveContainerlabTopologyYAMLResponse = {
 	filePath: string;
 };
 
-export async function saveContainerlabTopologyYAML(
+export async function saveKneTopologyYAML(
 	userId: string,
-	body: SaveContainerlabTopologyYAMLRequest,
-): Promise<SaveContainerlabTopologyYAMLResponse> {
-	return apiFetch<SaveContainerlabTopologyYAMLResponse>(
-		`/api/byos/users/${encodeURIComponent(userId)}/containerlab/topologies`,
+	body: SaveKneTopologyYAMLRequest,
+): Promise<SaveKneTopologyYAMLResponse> {
+	return apiFetch<SaveKneTopologyYAMLResponse>(
+		`/api/users/${encodeURIComponent(userId)}/kne/topologies`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -115,27 +89,12 @@ export type CreateDeploymentFromTemplateResponse = {
 	note?: string;
 };
 
-export type CreateContainerlabDeploymentFromTemplateRequest =
-	CreateDeploymentFromTemplateRequest & {
-		netlabServer?: string;
-	};
-
-export async function createClabernetesDeploymentFromTemplate(
+export async function createKneDeploymentFromTemplate(
 	userId: string,
 	body: CreateDeploymentFromTemplateRequest,
 ): Promise<CreateDeploymentFromTemplateResponse> {
 	return apiFetch<CreateDeploymentFromTemplateResponse>(
-		`/api/users/${encodeURIComponent(userId)}/deployments-designer/clabernetes/from-template`,
-		{ method: "POST", body: JSON.stringify(body) },
-	);
-}
-
-export async function createContainerlabDeploymentFromTemplate(
-	userId: string,
-	body: CreateContainerlabDeploymentFromTemplateRequest,
-): Promise<CreateDeploymentFromTemplateResponse> {
-	return apiFetch<CreateDeploymentFromTemplateResponse>(
-		`/api/byos/users/${encodeURIComponent(userId)}/deployments-designer/containerlab/from-template`,
+		`/api/users/${encodeURIComponent(userId)}/deployments-designer/kne/from-template`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }

@@ -61,7 +61,7 @@ export function useRunDetailPage(args: { runId: string }) {
 	const lifecycleEntries = lifecycle.data?.entries ?? [];
 	const lifecycleRecent = lifecycleEntries.slice(-20).reverse();
 	const deployFailureCategories = useMemo(
-		() => summarizeClabernetesDeployFailures(lifecycleEntries),
+		() => summarizeKneDeployFailures(lifecycleEntries),
 		[lifecycleEntries],
 	);
 	const nodeSample = provenance.nodeResolutionSample.slice(0, 10);
@@ -173,9 +173,9 @@ export type RunProvenance = {
 function buildRunProvenance(run: JSONMap | undefined): RunProvenance {
 	const catalog = asRecord(run?.netlabCatalogProvenance) ?? {};
 	const nodeSummary = asRecord(run?.netlabNodeResolutionSummary) ?? {};
-	const applySummary = asRecord(run?.clabernetesApplySummary) ?? {};
+	const applySummary = asRecord(run?.kneApplySummary) ?? {};
 	const contract = asRecord(run?.netlabContract) ?? {};
-	const deployPolicy = asRecord(run?.clabernetesDeployPolicy) ?? {};
+	const deployPolicy = asRecord(run?.kneDeployPolicy) ?? {};
 
 	const sampleRaw = asArray(nodeSummary.sample);
 	const sample = sampleRaw
@@ -215,13 +215,13 @@ function buildRunProvenance(run: JSONMap | undefined): RunProvenance {
 	};
 }
 
-function summarizeClabernetesDeployFailures(
+function summarizeKneDeployFailures(
 	entries: TaskLifecycleEntry[],
 ): Array<{ category: string; count: number }> {
 	const counts = new Map<string, number>();
 
 	for (const entry of entries) {
-		if (entry.type !== "clabernetes.deploy.failure") continue;
+		if (entry.type !== "kne.deploy.failure") continue;
 		const payload = asRecord(entry.payload);
 		const raw = asString(payload?.category).toLowerCase();
 		const category = raw || "unknown";

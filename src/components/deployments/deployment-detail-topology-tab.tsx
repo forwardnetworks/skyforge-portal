@@ -20,7 +20,7 @@ export function DeploymentDetailTopologyTab({
 		deployment,
 		deploymentEngine,
 		topology,
-		isC9SDeployment,
+		isKNEDeployment,
 		saveConfig,
 		saveAllConfigs,
 	} = page;
@@ -33,11 +33,11 @@ export function DeploymentDetailTopologyTab({
 						<div>
 							<CardTitle>Network Topology</CardTitle>
 							<CardDescription>
-								{deployment.family === "c9s" && deploymentEngine === "netlab"
-									? "Derived from C9S/Netlab artifacts after deploy (includes resolved mgmt IPs)."
-									: deployment.family === "c9s" &&
+								{deployment.family === "kne" && deploymentEngine === "netlab"
+									? "Derived from KNE/Netlab artifacts after deploy (includes resolved mgmt IPs)."
+									: deployment.family === "kne" &&
 											deploymentEngine === "containerlab"
-										? "Derived from C9S/Containerlab artifacts after deploy (includes resolved mgmt IPs)."
+										? "Derived from KNE/Containerlab artifacts after deploy (includes resolved mgmt IPs)."
 										: deployment.family === "byos" &&
 												deploymentEngine === "containerlab"
 										? "Derived from containerlab BYOS artifacts after deploy."
@@ -67,7 +67,7 @@ export function DeploymentDetailTopologyTab({
 						topology={topology.data}
 						userId={deployment.userId}
 						deploymentId={deployment.id}
-						enableTerminal={isC9SDeployment}
+						enableTerminal={isKNEDeployment}
 					/>
 				</CardContent>
 			</Card>
@@ -126,7 +126,7 @@ export function DeploymentDetailTopologyTab({
 											<Button
 												size="sm"
 												variant="outline"
-												disabled={!isC9SDeployment}
+												disabled={!isKNEDeployment}
 												onClick={() =>
 													window.open(
 														`${baseUrl}&action=terminal`,

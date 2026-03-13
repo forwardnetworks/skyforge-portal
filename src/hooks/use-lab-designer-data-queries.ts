@@ -1,6 +1,6 @@
 import {
-	getUserScopeContainerlabTemplate,
-	getUserScopeContainerlabTemplates,
+	getUserScopeNetlabTemplate,
+	getUserScopeNetlabTemplates,
 	listRegistryRepositories,
 	listUserContainerlabServers,
 	listUserScopes,
@@ -29,7 +29,7 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 	const containerlabServersQ = useQuery({
 		queryKey: queryKeys.userContainerlabServers(),
 		queryFn: listUserContainerlabServers,
-		enabled: opts.runtime === "containerlab",
+		enabled: false,
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -44,7 +44,7 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 				]
 			: ["containerlabTemplates", "none"],
 		queryFn: async () =>
-			getUserScopeContainerlabTemplates(opts.userId, {
+			getUserScopeNetlabTemplates(opts.userId, {
 				source: toAPISource(opts.importSource),
 				dir: opts.importDir,
 			}),
@@ -66,10 +66,10 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 		queryFn: async () => {
 			if (!opts.userId) throw new Error("missing user");
 			if (!opts.importFile) return null;
-			return getUserScopeContainerlabTemplate(opts.userId, {
+			return getUserScopeNetlabTemplate(opts.userId, {
 				source: toAPISource(opts.importSource),
 				dir: opts.importDir,
-				file: opts.importFile,
+				template: opts.importFile,
 			});
 		},
 		enabled:

@@ -1,12 +1,11 @@
 import type { SavedConfigRef } from "@/components/lab-designer-types";
 import {
-	createClabernetesDeploymentFromTemplate,
-	createContainerlabDeploymentFromTemplate,
-	getUserScopeContainerlabTemplate,
-	saveContainerlabTopologyYAML,
-	validateContainerlabTopologyYAML,
+	createKneDeploymentFromTemplate,
+	getUserScopeNetlabTemplate,
+	saveKneTopologyYAML,
+	validateKneTopologyYAML,
 } from "@/lib/api-client";
-import { containerlabYamlToDesign } from "@/lib/containerlab-yaml";
+import { kneYamlToDesign } from "@/lib/kne-yaml";
 import { queryKeys } from "@/lib/query-keys";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -28,7 +27,7 @@ export function useLabDesignerDataMutations(args: {
 
 	const validateBeforePersist = async () => {
 		if (!opts.userId) throw new Error("Select a user");
-		const resp = await validateContainerlabTopologyYAML(opts.userId, {
+		const resp = await validateKneTopologyYAML(opts.userId, {
 			name: opts.labName,
 			topologyYAML: opts.effectiveYaml,
 		});
@@ -52,7 +51,7 @@ export function useLabDesignerDataMutations(args: {
 	const validateTopology = useMutation({
 		mutationFn: async () => {
 			if (!opts.userId) throw new Error("Select a user");
-			return validateContainerlabTopologyYAML(opts.userId, {
+			return validateKneTopologyYAML(opts.userId, {
 				name: opts.labName,
 				topologyYAML: opts.effectiveYaml,
 			});
@@ -92,17 +91,17 @@ export function useLabDesignerDataMutations(args: {
 			if (!opts.userId) throw new Error("Select a user");
 			const validation = await validateBeforePersist();
 			if (
-				opts.effectiveTemplatesDir !== "containerlab" &&
-				!opts.effectiveTemplatesDir.startsWith("containerlab/")
+				opts.effectiveTemplatesDir !== "kne" &&
+				!opts.effectiveTemplatesDir.startsWith("kne/")
 			) {
-				throw new Error("Repo path must be under containerlab/");
+				throw new Error("Repo path must be under kne/");
 			}
 
 			const canUseSaved =
 				opts.useSavedConfig && opts.lastSaved?.userId === opts.userId;
 			const saved = canUseSaved
 				? opts.lastSaved
-				: await saveContainerlabTopologyYAML(opts.userId, {
+				: await saveKneTopologyYAML(opts.userId, {
 						name: opts.labName,
 						topologyYAML: validation.normalizedYAML,
 						templatesDir: opts.effectiveTemplatesDir,
@@ -120,21 +119,7 @@ export function useLabDesignerDataMutations(args: {
 				  });
 			if (!saved) throw new Error("Failed to resolve saved topology reference");
 
-			if (opts.runtime === "containerlab") {
-				if (!opts.containerlabServer) {
-					throw new Error("Select a containerlab server");
-				}
-				return createContainerlabDeploymentFromTemplate(opts.userId, {
-					name: opts.labName,
-					netlabServer: opts.containerlabServer,
-					templateSource: USER_REPO_SOURCE,
-					templatesDir: saved.templatesDir,
-					template: saved.template,
-					autoDeploy: true,
-				});
-			}
-
-			return createClabernetesDeploymentFromTemplate(opts.userId, {
+			return createKneDeploymentFromTemplate(opts.userId, {
 				name: opts.labName,
 				templateSource: USER_REPO_SOURCE,
 				templatesDir: saved.templatesDir,
@@ -165,12 +150,12 @@ export function useLabDesignerDataMutations(args: {
 			if (!opts.userId) throw new Error("Select a user");
 			const validation = await validateBeforePersist();
 			if (
-				opts.effectiveTemplatesDir !== "containerlab" &&
-				!opts.effectiveTemplatesDir.startsWith("containerlab/")
+				opts.effectiveTemplatesDir !== "kne" &&
+				!opts.effectiveTemplatesDir.startsWith("kne/")
 			) {
-				throw new Error("Repo path must be under containerlab/");
+				throw new Error("Repo path must be under kne/");
 			}
-			return saveContainerlabTopologyYAML(opts.userId, {
+			return saveKneTopologyYAML(opts.userId, {
 				name: opts.labName,
 				topologyYAML: validation.normalizedYAML,
 				templatesDir: opts.effectiveTemplatesDir,
@@ -198,14 +183,14 @@ export function useLabDesignerDataMutations(args: {
 			if (!opts.userId) throw new Error("Select a user");
 			const file = opts.importFile.trim();
 			if (!file) throw new Error("Select a template");
-			return getUserScopeContainerlabTemplate(opts.userId, {
+			return getUserScopeNetlabTemplate(opts.userId, {
 				source: toAPISource(opts.importSource),
 				dir: opts.importDir,
-				file,
+				template: file,
 			});
 		},
 		onSuccess: (resp) => {
-			const parsed = containerlabYamlToDesign(resp.yaml);
+			const parsed = kneYamlToDesign(resp.yaml);
 			opts.setLabName(parsed.design.name);
 			opts.setDefaultKind(parsed.design.defaultKind ?? "");
 			opts.setNodes(

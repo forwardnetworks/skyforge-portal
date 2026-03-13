@@ -12,7 +12,7 @@ export type LabDesignerValidationState = {
 export type UseLabDesignerDataOptions = {
 	queryClient: QueryClient;
 	userId: string;
-	runtime: "clabernetes" | "containerlab";
+	runtime: "kne";
 	importOpen: boolean;
 	importSource: "user" | "blueprints";
 	importDir: string;

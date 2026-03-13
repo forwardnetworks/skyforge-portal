@@ -3,10 +3,10 @@ import YAML from "yaml";
 import {
 	normalizeInterfaceList,
 	splitEndpoint,
-} from "./containerlab-yaml-helpers";
-import type { LabDesign, LabDesignLink, LabDesignNode } from "./containerlab-yaml-types";
+} from "./kne-yaml-helpers";
+import type { LabDesign, LabDesignLink, LabDesignNode } from "./kne-yaml-types";
 
-export function containerlabYamlToDesign(yamlContent: string): {
+export function kneYamlToDesign(yamlContent: string): {
 	design: LabDesign;
 	warnings: string[];
 } {
@@ -16,19 +16,14 @@ export function containerlabYamlToDesign(yamlContent: string): {
 		| null
 		| undefined;
 	if (!parsed || typeof parsed !== "object") {
-		throw new Error("Invalid containerlab YAML");
+		throw new Error("Invalid KNE YAML");
 	}
-
-	const topology = parsed.topology as Record<string, unknown> | undefined;
-	if (!topology || typeof topology !== "object") {
-		throw new Error("YAML missing topology");
+	if (parsed.topology && typeof parsed.topology === "object") {
+		throw new Error("KNE YAML must use top-level nodes (not containerlab topology wrapper)");
 	}
-
-	const defaults = topology.defaults as Record<string, unknown> | undefined;
-	const defaultKind = String(defaults?.kind ?? "").trim();
-	const nodesRecord = topology.nodes as Record<string, unknown> | undefined;
+	const nodesRecord = parsed.nodes as Record<string, unknown> | undefined;
 	if (!nodesRecord || typeof nodesRecord !== "object") {
-		throw new Error("YAML missing topology.nodes");
+		throw new Error("YAML missing nodes");
 	}
 
 	const designNodes: LabDesignNode[] = [];
@@ -39,7 +34,7 @@ export function containerlabYamlToDesign(yamlContent: string): {
 			nodeConfigAny && typeof nodeConfigAny === "object"
 				? (nodeConfigAny as Record<string, unknown>)
 				: {};
-		const envAny = nodeConfig.env;
+		const envAny = nodeConfig.environment ?? nodeConfig.env;
 		const env =
 			envAny && typeof envAny === "object" && !Array.isArray(envAny)
 				? Object.fromEntries(
@@ -53,11 +48,13 @@ export function containerlabYamlToDesign(yamlContent: string): {
 		designNodes.push({
 			id: nodeName,
 			label: nodeName,
-			kind: String(nodeConfig.kind ?? defaultKind).trim(),
+			kind: String(nodeConfig.device ?? "").trim(),
 			image: String(nodeConfig.image ?? "").trim(),
-			mgmtIpv4: String(nodeConfig.mgmt_ipv4 ?? "").trim() || undefined,
-			startupConfig:
-				String(nodeConfig["startup-config"] ?? "").trim() || undefined,
+			mgmtIpv4:
+				String(
+					(nodeConfig.mgmt as Record<string, unknown> | undefined)?.ipv4 ?? "",
+				).trim() || undefined,
+			startupConfig: String(nodeConfig.config ?? "").trim() || undefined,
 			env: env && Object.keys(env).length ? env : undefined,
 			position: {
 				x: 120 + (idx % layoutCols) * 260,
@@ -68,14 +65,32 @@ export function containerlabYamlToDesign(yamlContent: string): {
 		idx += 1;
 	}
 
-	const linksArray = Array.isArray(topology.links)
-		? (topology.links as Array<Record<string, unknown>>)
+	const linksArray = Array.isArray(parsed.links)
+		? (parsed.links as Array<Record<string, unknown>>)
 		: [];
 	const nodeInterfaces = new Map<string, string[]>();
 	const designLinks: LabDesignLink[] = linksArray.map((link, linkIdx) => {
 		const endpoints = Array.isArray(link.endpoints) ? link.endpoints : [];
-		const source = splitEndpoint(endpoints[0]);
-		const target = splitEndpoint(endpoints[1]);
+		let source = splitEndpoint(endpoints[0]);
+		let target = splitEndpoint(endpoints[1]);
+		if (!source || !target) {
+			const endpointEntries = Object.entries(link).filter(([k]) => {
+				const key = String(k).trim().toLowerCase();
+				return key !== "name" && key !== "mtu" && key !== "bridge" && key !== "type";
+			});
+			if (endpointEntries.length >= 2) {
+				const [sourceNode, sourceCfg] = endpointEntries[0];
+				const [targetNode, targetCfg] = endpointEntries[1];
+				source = {
+					node: sourceNode,
+					iface: String((sourceCfg as Record<string, unknown> | undefined)?.ifname ?? "").trim(),
+				};
+				target = {
+					node: targetNode,
+					iface: String((targetCfg as Record<string, unknown> | undefined)?.ifname ?? "").trim(),
+				};
+			}
+		}
 		if (!source || !target) {
 			warnings.push(`Link ${linkIdx + 1}: missing endpoint(s)`);
 		}
@@ -98,7 +113,7 @@ export function containerlabYamlToDesign(yamlContent: string): {
 			target: target?.node ?? "",
 			sourceIf: source?.iface || undefined,
 			targetIf: target?.iface || undefined,
-			label: String(link.label ?? "").trim() || undefined,
+			label: String(link.name ?? link.label ?? "").trim() || undefined,
 			mtu: Number.isFinite(mtuRaw) ? mtuRaw : undefined,
 		};
 	});
@@ -113,7 +128,7 @@ export function containerlabYamlToDesign(yamlContent: string): {
 	return {
 		design: {
 			name: String(parsed.name ?? "lab").trim() || "lab",
-			defaultKind,
+			defaultKind: "",
 			nodes: designNodes,
 			links: designLinks.filter((link) => link.source && link.target),
 		},
