@@ -44,6 +44,7 @@ describe("ConfigChangesSelectedRunCard", () => {
     render(<ConfigChangesSelectedRunCard page={page as never} />);
 
     expect(screen.getByText("Execution backend")).toBeInTheDocument();
+    expect(screen.getByText("Verification backend")).toBeInTheDocument();
     expect(screen.getAllByText("n/a").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /execute/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /rollback/i })).toBeEnabled();
@@ -154,12 +155,14 @@ describe("ConfigChangesSelectedRunCard", () => {
         rollbackSummary: {
           previousDeploymentConfigJson: '{"template":"demo/topology.yml"}',
         },
-        reviewJson: '{"executionBackend":"ansible-push"}',
+        reviewJson:
+          '{"executionBackend":"ansible-push","verificationBackend":"forward"}',
       },
     });
 
     render(<ConfigChangesSelectedRunCard page={page as never} />);
     expect(screen.getByText("ansible-push")).toBeInTheDocument();
+    expect(screen.getByText("forward")).toBeInTheDocument();
   });
 
   it("shows requested auto-rollback state before execution outcomes exist", () => {

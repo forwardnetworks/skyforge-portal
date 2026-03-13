@@ -2,6 +2,7 @@ import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
 import {
 	reviewArtifactRefsFromJSON,
 	reviewExecutionBackendFromJSON,
+	reviewVerificationBackendFromJSON,
 } from "../lib/config-change-review";
 import {
 	autoRollbackBadgeVariant,
@@ -49,6 +50,11 @@ export function ConfigChangesSelectedRunCard({
 		? String(selectedRun.executionSummary?.executionBackend || "").trim().toLowerCase() ||
 			reviewExecutionBackendFromJSON(selectedRun.reviewJson)
 		: "";
+	const verificationBackend = selectedRun
+		? String(selectedRun.executionSummary?.verificationBackend || "")
+				.trim()
+				.toLowerCase() || reviewVerificationBackendFromJSON(selectedRun.reviewJson)
+		: "";
 
 	return (
 		<Card>
@@ -81,6 +87,10 @@ export function ConfigChangesSelectedRunCard({
 							<ConfigField
 								label="Execution backend"
 								value={executionBackend || "n/a"}
+							/>
+							<ConfigField
+								label="Verification backend"
+								value={verificationBackend || "n/a"}
 							/>
 							<ConfigField label="Mode" value={selectedRun.executionMode} />
 							<ConfigField label="Requested by" value={selectedRun.requestedBy} />

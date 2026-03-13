@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	reviewArtifactRefsFromJSON,
 	reviewExecutionBackendFromJSON,
+	reviewVerificationBackendFromJSON,
 } from "./config-change-review";
 
 describe("config-change-review helpers", () => {
@@ -21,5 +22,11 @@ describe("config-change-review helpers", () => {
 		expect(
 			reviewExecutionBackendFromJSON('{"executionBackend":"Ansible-Push"}'),
 		).toBe("ansible-push");
+	});
+
+	it("extracts normalized verification backend from review json", () => {
+		expect(
+			reviewVerificationBackendFromJSON('{"verificationBackend":"Forward"}'),
+		).toBe("forward");
 	});
 });

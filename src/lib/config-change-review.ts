@@ -20,11 +20,25 @@ export function reviewArtifactRefsFromJSON(
 }
 
 export function reviewExecutionBackendFromJSON(reviewJson?: string): string {
+	return reviewStringFieldFromJSON(reviewJson, "executionBackend");
+}
+
+export function reviewVerificationBackendFromJSON(reviewJson?: string): string {
+	return reviewStringFieldFromJSON(reviewJson, "verificationBackend");
+}
+
+function reviewStringFieldFromJSON(
+	reviewJson: string | undefined,
+	field: "executionBackend" | "verificationBackend",
+): string {
 	const raw = String(reviewJson || "").trim();
 	if (!raw) return "";
 	try {
-		const parsed = JSON.parse(raw) as { executionBackend?: unknown };
-		return String(parsed.executionBackend || "").trim().toLowerCase();
+		const parsed = JSON.parse(raw) as {
+			executionBackend?: unknown;
+			verificationBackend?: unknown;
+		};
+		return String(parsed[field] || "").trim().toLowerCase();
 	} catch {
 		return "";
 	}
