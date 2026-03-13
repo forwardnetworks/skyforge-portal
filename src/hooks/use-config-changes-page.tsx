@@ -82,11 +82,11 @@ export function useConfigChangesPage() {
 	const [targetType, setTargetType] = useState("deployment");
 	const [targetRef, setTargetRef] = useState("");
 	const [targetName, setTargetName] = useState("");
-	const [sourceKind, setSourceKind] = useState("structured-patch");
+	const [sourceKind, setSourceKind] = useState("change-plan");
 	const [executionMode, setExecutionMode] = useState("dry-run");
 	const [summary, setSummary] = useState("");
 	const [ticketRef, setTicketRef] = useState("");
-	const [specJson, setSpecJson] = useState(defaultConfigChangeSpecJson("structured-patch"));
+	const [specJson, setSpecJson] = useState(defaultConfigChangeSpecJson("change-plan"));
 
 	useEffect(() => {
 		setSpecJson(defaultConfigChangeSpecJson(sourceKind));
@@ -263,13 +263,7 @@ function canExecuteRun(run: ConfigChangeRunRecord | null): boolean {
 	const targetType = String(run.targetType || "").trim().toLowerCase();
 	const sourceKind = String(run.sourceKind || "").trim().toLowerCase();
 	if (targetType !== "deployment") return false;
-	if (
-		sourceKind !== "netlab-model" &&
-		sourceKind !== "structured-patch" &&
-		sourceKind !== "config-snippet" &&
-		sourceKind !== "ansible-playbook" &&
-		sourceKind !== "shell-script"
-	) {
+	if (sourceKind !== "change-plan") {
 		return false;
 	}
 	const status = String(run.status || "").trim().toLowerCase();
@@ -285,13 +279,7 @@ function canRollbackRun(run: ConfigChangeRunRecord | null): boolean {
 	const targetType = String(run.targetType || "").trim().toLowerCase();
 	const sourceKind = String(run.sourceKind || "").trim().toLowerCase();
 	if (targetType !== "deployment") return false;
-	if (
-		sourceKind !== "netlab-model" &&
-		sourceKind !== "structured-patch" &&
-		sourceKind !== "config-snippet" &&
-		sourceKind !== "ansible-playbook" &&
-		sourceKind !== "shell-script"
-	) {
+	if (sourceKind !== "change-plan") {
 		return false;
 	}
 	const status = String(run.status || "").trim().toLowerCase();

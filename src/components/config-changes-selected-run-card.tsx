@@ -110,7 +110,7 @@ export function ConfigChangesSelectedRunCard({
 							) : null}
 							<div className="text-xs text-muted-foreground">
 								{isAdmin
-									? "Operators can approve, reject, execute, and replay rollback after review. Only deployment-targeted netlab-model, structured-patch, config-snippet, ansible-playbook, and shell-script runs are executable."
+									? "Operators can approve, reject, execute, and replay rollback after review. Only deployment-targeted change-plan runs are executable in the new control model."
 									: "Only requested or validating runs can be rendered."}
 							</div>
 						</div>

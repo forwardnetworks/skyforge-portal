@@ -10,7 +10,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
 		setTargetRef: vi.fn(),
 		targetName: "",
 		setTargetName: vi.fn(),
-		sourceKind: "structured-patch",
+		sourceKind: "change-plan",
 		setSourceKind: vi.fn(),
 		executionMode: "dry-run",
 		setExecutionMode: vi.fn(),
@@ -19,7 +19,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
 		ticketRef: "",
 		setTicketRef: vi.fn(),
 		specJson:
-			'{\n  "devices": ["leaf-1"],\n  "operations": [{"op":"replace","path":"/nodes/leaf-1/config/0","value":"hostname leaf-1"}]\n}',
+			'{\n  "name": "edge-routing-change",\n  "deploy": {"backend":"netlab-kne","template":"BGP/Default-NH/topology.yml"},\n  "verify": {"backend":"forward"}\n}',
 		setSpecJson: vi.fn(),
 		createMutation: { mutate: vi.fn(), isPending: false },
 		...overrides,
@@ -30,7 +30,7 @@ describe("ConfigChangesNewRunCard", () => {
 	it("shows the supported executable path by default", () => {
 		render(<ConfigChangesNewRunCard page={makePage() as never} />);
 
-		expect(screen.getAllByRole("combobox")[1]).toHaveTextContent("Structured Patch");
+		expect(screen.getAllByRole("combobox")[1]).toHaveTextContent("Change Plan");
 		expect(screen.getByText("Executable Path")).toBeInTheDocument();
 		expect(screen.getByPlaceholderText("deployment-id")).toBeInTheDocument();
 	});
@@ -41,7 +41,7 @@ describe("ConfigChangesNewRunCard", () => {
 				page={
 					makePage({
 						targetType: "snapshot",
-						sourceKind: "config-snippet",
+						sourceKind: "change-plan",
 					}) as never
 				}
 			/>,
@@ -57,7 +57,7 @@ describe("ConfigChangesNewRunCard", () => {
 		const page = makePage();
 		render(<ConfigChangesNewRunCard page={page as never} />);
 
-		fireEvent.change(screen.getByPlaceholderText("Allow ACL for demo path"), {
+		fireEvent.change(screen.getByPlaceholderText("Promote validated edge routing intent"), {
 			target: { value: "Patch ACL" },
 		});
 		expect(page.setSummary).toHaveBeenCalledWith("Patch ACL");

@@ -54,8 +54,8 @@ export function ConfigChangesNewRunCard({
 			<CardHeader>
 				<CardTitle>New Change Run</CardTitle>
 				<CardDescription>
-					Create a durable change request using the same control-plane model
-					that hands off into the existing netlab apply seam.
+					Create a durable change plan that moves through render, approval,
+					execution, and Forward-backed verification.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -131,7 +131,7 @@ export function ConfigChangesNewRunCard({
 					<Input
 						value={summary}
 						onChange={(e) => setSummary(e.target.value)}
-						placeholder="Allow ACL for demo path"
+						placeholder="Promote validated edge routing intent"
 					/>
 				</div>
 				<div className="space-y-2">
@@ -167,8 +167,8 @@ export function ConfigChangesNewRunCard({
 						Create change run
 					</Button>
 					<div className="text-xs text-muted-foreground">
-						Render/review is live. Approval and apply stay behind the protected
-						operator flow.
+						Render/review is live. Approval, execution, and rollback stay
+						behind the protected operator flow.
 					</div>
 				</div>
 			</CardContent>

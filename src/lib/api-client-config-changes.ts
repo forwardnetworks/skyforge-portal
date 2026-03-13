@@ -29,6 +29,8 @@ export type ConfigChangeRunRecord = {
 		userScopeId?: string;
 		deploymentId?: string;
 		executionPath?: string;
+		executionBackend?: string;
+		verificationBackend?: string;
 		plannedExecutionTaskType?: string;
 		topologyArtifactKey?: string;
 		nodeStatusCount?: number;
@@ -81,6 +83,8 @@ export type ConfigChangeRunReview = {
 	controlPlaneTaskType?: string;
 	plannedExecutionTaskType?: string;
 	executionPath?: string;
+	executionBackend?: string;
+	verificationBackend?: string;
 	changeCount?: number;
 	deviceCount?: number;
 	devices?: Array<{

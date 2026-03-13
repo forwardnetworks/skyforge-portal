@@ -5,23 +5,19 @@ import {
 } from "./config-changes-shared";
 
 describe("config changes shared options", () => {
-	it("uses structured-patch as the first executable default lane", () => {
-		expect(configChangeSourceOptions[0]?.value).toBe("structured-patch");
+	it("uses change-plan as the default executable lane", () => {
+		expect(configChangeSourceOptions[0]?.value).toBe("change-plan");
 		expect(configChangeSourceOptions[0]?.executable).toBe(true);
 	});
 
-	it("marks ansible and shell as executable bundle-backed lanes", () => {
-		const ansible = configChangeSourceOptions.find((item) => item.value === "ansible-playbook");
-		const shell = configChangeSourceOptions.find((item) => item.value === "shell-script");
-		expect(ansible?.executable).toBe(true);
-		expect(shell?.executable).toBe(true);
-		expect(ansible?.description.toLowerCase()).toContain("executable path");
-		expect(shell?.description.toLowerCase()).toContain("executable path");
+	it("describes the change-plan lane as forward-backed change control", () => {
+		const plan = configChangeSourceOptions.find((item) => item.value === "change-plan");
+		expect(plan?.executable).toBe(true);
+		expect(plan?.description.toLowerCase()).toContain("forward-backed");
 	});
 
 	it("returns source-specific default spec json", () => {
-		expect(defaultConfigChangeSpecJson("structured-patch")).toContain(`"operations"`);
-		expect(defaultConfigChangeSpecJson("netlab-model")).toContain(`"template"`);
-		expect(defaultConfigChangeSpecJson("config-snippet")).toContain(`"snippet"`);
+		expect(defaultConfigChangeSpecJson("change-plan")).toContain(`"deploy"`);
+		expect(defaultConfigChangeSpecJson("change-plan")).toContain(`"verify"`);
 	});
 });

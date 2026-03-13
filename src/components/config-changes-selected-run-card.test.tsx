@@ -15,7 +15,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
       targetRef: "dep-1",
       status: "approved",
       approvalState: "approved",
-      sourceKind: "structured-patch",
+      sourceKind: "change-plan",
       executionMode: "apply",
       requestedBy: "alice",
       executionTaskId: null,
@@ -44,7 +44,7 @@ describe("ConfigChangesSelectedRunCard", () => {
 
     expect(screen.getByRole("button", { name: /execute/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /rollback/i })).toBeEnabled();
-    expect(screen.getByText(/Only deployment-targeted netlab-model, structured-patch, config-snippet, ansible-playbook, and shell-script runs are executable/i)).toBeInTheDocument();
+    expect(screen.getByText(/Only deployment-targeted change-plan runs are executable/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /execute/i }));
     expect(page.executeMutation.mutate).toHaveBeenCalledWith("run-1");
@@ -61,7 +61,7 @@ describe("ConfigChangesSelectedRunCard", () => {
         targetRef: "dep-2",
         status: "approved",
         approvalState: "approved",
-        sourceKind: "shell-script",
+        sourceKind: "change-plan",
         executionMode: "apply",
         requestedBy: "alice",
         executionTaskId: null,

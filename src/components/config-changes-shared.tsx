@@ -10,44 +10,13 @@ export type ConfigChangeSourceOption = {
 
 export const configChangeSourceOptions: ConfigChangeSourceOption[] = [
 	{
-		value: "structured-patch",
-		label: "Structured Patch",
+		value: "change-plan",
+		label: "Change Plan",
 		executable: true,
 		description:
-			"Safe executable lane. RFC 6902 JSON Patch over topology.yml, repackaged into the existing netlab-kne bundle path.",
-		defaultSpecJson: '{\n  "devices": ["leaf-1"],\n  "operations": [\n    {\n      "op": "replace",\n      "path": "/nodes/leaf-1/config/0",\n      "value": "hostname leaf-1"\n    }\n  ]\n}',
-	},
-	{
-		value: "netlab-model",
-		label: "Netlab Model",
-		executable: true,
-		description:
-			"Safe executable lane. Model-backed change that reuses the existing template-backed netlab-kne workflow.",
-		defaultSpecJson: '{\n  "templateSource": "blueprints",\n  "template": "BGP/Default-NH/topology.yml",\n  "environment": {\n    "DEVICE": "eos"\n  }\n}',
-	},
-	{
-		value: "config-snippet",
-		label: "Config Snippet",
-		executable: true,
-		description:
-			"Executable path. Compiles into generated per-device startup-config sidecars and a patched topology bundle for the same netlab-kne seam.",
-		defaultSpecJson: '{\n  "devices": ["leaf-1"],\n  "snippet": "ip access-list demo\\npermit ip any any"\n}',
-	},
-	{
-		value: "ansible-playbook",
-		label: "Ansible Playbook",
-		executable: true,
-		description:
-			"Executable path. Bundles a deterministic post-apply Ansible playbook hook into the same netlab-kne seam.",
-		defaultSpecJson: '{\n  "devices": ["leaf-1"],\n  "playbook": "---\\n- hosts: all\\n  gather_facts: false\\n  tasks: []\\n"\n}',
-	},
-	{
-		value: "shell-script",
-		label: "Shell Script",
-		executable: true,
-		description:
-			"Executable path. Bundles a bounded post-apply shell hook into the same topology/bundle-backed netlab-kne runtime contract.",
-		defaultSpecJson: '{\n  "devices": ["leaf-1"],\n  "script": "#!/bin/sh\\necho hello\\n"\n}',
+			"Forward-backed change control plan. Render, approve, execute, and verify through one durable workflow instead of direct push primitives.",
+		defaultSpecJson:
+			'{\n  "name": "edge-routing-change",\n  "description": "promote validated edge routing intent",\n  "deploy": {\n    "backend": "netlab-kne",\n    "templateSource": "blueprints",\n    "template": "BGP/Default-NH/topology.yml",\n    "environment": {\n      "DEVICE": "eos"\n    }\n  },\n  "verify": {\n    "backend": "forward",\n    "networkId": "network-123",\n    "checks": ["Critical reachability"],\n    "diffCategories": ["devices", "checks"]\n  }\n}',
 	},
 ];
 
