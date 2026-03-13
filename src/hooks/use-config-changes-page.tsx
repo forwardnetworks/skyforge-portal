@@ -233,6 +233,7 @@ export function useConfigChangesPage() {
 		canRejectRun: canRejectRun(selectedRun),
 		canExecuteRun: canExecuteRun(selectedRun),
 		canRollbackRun: canRollbackRun(selectedRun),
+		rollbackBlockedReason: rollbackBlockedReason(selectedRun),
 	};
 }
 
@@ -275,22 +276,44 @@ function canExecuteRun(run: ConfigChangeRunRecord | null): boolean {
 }
 
 function canRollbackRun(run: ConfigChangeRunRecord | null): boolean {
-	if (!run) return false;
+	return rollbackBlockedReason(run) === "";
+}
+
+function rollbackBlockedReason(run: ConfigChangeRunRecord | null): string {
+	if (!run) return "No run selected.";
 	const targetType = String(run.targetType || "").trim().toLowerCase();
 	const sourceKind = String(run.sourceKind || "").trim().toLowerCase();
-	if (targetType !== "deployment") return false;
+	if (targetType !== "deployment") return "Rollback is only available for deployment targets.";
 	if (sourceKind !== "change-plan") {
-		return false;
+		return "Rollback is only available for change-plan runs.";
 	}
 	const status = String(run.status || "").trim().toLowerCase();
 	if (status === "queued" || status === "applying" || status === "verifying" || status === "rolled-back") {
-		return false;
+		return `Rollback is not available while run status is ${status}.`;
 	}
-	const executionBackend = String(run.executionSummary?.executionBackend || "").trim().toLowerCase();
+	const executionBackend = resolveExecutionBackend(run);
 	if (executionBackend === "ansible-push") {
-		return false;
+		return "Rollback is not supported for ansible-push change plans.";
 	}
-	return Boolean(run.rollbackSummary?.previousDeploymentConfigJson);
+	if (!run.rollbackSummary?.previousDeploymentConfigJson) {
+		return "Rollback baseline evidence is missing for this run.";
+	}
+	return "";
+}
+
+function resolveExecutionBackend(run: ConfigChangeRunRecord): string {
+	const summaryBackend = String(run.executionSummary?.executionBackend || "")
+		.trim()
+		.toLowerCase();
+	if (summaryBackend) return summaryBackend;
+	const raw = String(run.reviewJson || "").trim();
+	if (!raw) return "";
+	try {
+		const parsed = JSON.parse(raw) as { executionBackend?: unknown };
+		return String(parsed.executionBackend || "").trim().toLowerCase();
+	} catch {
+		return "";
+	}
 }
 
 export type ConfigChangesPageData = ReturnType<typeof useConfigChangesPage>;

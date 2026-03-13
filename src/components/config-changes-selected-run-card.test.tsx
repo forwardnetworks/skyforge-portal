@@ -33,6 +33,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
     canRejectRun: true,
     canExecuteRun: true,
     canRollbackRun: true,
+    rollbackBlockedReason: "",
     ...overrides,
   };
 }
@@ -69,12 +70,16 @@ describe("ConfigChangesSelectedRunCard", () => {
       },
       canExecuteRun: false,
       canRollbackRun: false,
+      rollbackBlockedReason: "Rollback is only available for deployment targets.",
     });
 
     render(<ConfigChangesSelectedRunCard page={page as never} />);
 
     expect(screen.getByRole("button", { name: /execute/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /rollback/i })).toBeDisabled();
+    expect(
+      screen.getByText("Rollback is only available for deployment targets."),
+    ).toBeInTheDocument();
   });
 
   it("shows non-admin guidance without operator controls", () => {

@@ -32,6 +32,7 @@ export function ConfigChangesSelectedRunCard({
 		canRejectRun,
 		canExecuteRun,
 		canRollbackRun,
+		rollbackBlockedReason,
 	} = page;
 	const autoRollback = selectedRun
 		? latestAutoRollbackOutcome(selectedRun.executionSummary?.artifactRefs ?? [])
@@ -129,6 +130,11 @@ export function ConfigChangesSelectedRunCard({
 									>
 										Rollback
 									</Button>
+									{!canRollbackRun && rollbackBlockedReason ? (
+										<div className="basis-full text-xs text-muted-foreground">
+											{rollbackBlockedReason}
+										</div>
+									) : null}
 								</>
 							) : null}
 							<div className="text-xs text-muted-foreground">
