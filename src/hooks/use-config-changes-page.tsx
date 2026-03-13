@@ -286,6 +286,10 @@ function canRollbackRun(run: ConfigChangeRunRecord | null): boolean {
 	if (status === "queued" || status === "applying" || status === "verifying" || status === "rolled-back") {
 		return false;
 	}
+	const executionBackend = String(run.executionSummary?.executionBackend || "").trim().toLowerCase();
+	if (executionBackend === "ansible-push") {
+		return false;
+	}
 	return Boolean(run.rollbackSummary?.previousDeploymentConfigJson);
 }
 
