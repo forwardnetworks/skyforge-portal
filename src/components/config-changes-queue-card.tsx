@@ -122,27 +122,35 @@ export function ConfigChangesQueueCard({
 											{run.status}
 										</Badge>
 										<Badge variant="outline">{run.executionMode}</Badge>
-										{autoRollback ? (
-											<Badge
-												variant={autoRollbackBadgeVariant(autoRollback.outcome)}
-											>
-												{`auto-rollback: ${autoRollback.outcome}`}
-											</Badge>
-										) : autoRollbackRequest ? (
-											<Badge
-												variant={
-													autoRollbackRequest.eligibility === "eligible"
-														? "default"
-														: "outline"
-												}
-											>
-												{`auto-rollback: requested${
-													autoRollbackRequest.eligibility
-														? ` (${autoRollbackRequest.eligibility})`
-														: ""
-												}`}
+								{autoRollback ? (
+									<Badge
+										variant={autoRollbackBadgeVariant(autoRollback.outcome)}
+									>
+										{`auto-rollback: ${autoRollback.outcome}`}
+									</Badge>
+								) : autoRollbackRequest ? (
+									<>
+										<Badge
+											variant={
+												autoRollbackRequest.eligibility === "eligible"
+													? "default"
+													: "outline"
+											}
+										>
+											{`auto-rollback: requested${
+												autoRollbackRequest.eligibility
+													? ` (${autoRollbackRequest.eligibility})`
+													: ""
+											}`}
+										</Badge>
+										{autoRollbackRequest.eligibility === "unsupported" &&
+										autoRollbackRequest.backend ? (
+											<Badge variant="outline">
+												{`backend: ${autoRollbackRequest.backend}`}
 											</Badge>
 										) : null}
+									</>
+								) : null}
 									</div>
 								</div>
 							</button>

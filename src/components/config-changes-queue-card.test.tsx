@@ -100,15 +100,16 @@ describe("ConfigChangesQueueCard", () => {
 		expect(screen.queryByText("Run B")).not.toBeInTheDocument();
 	});
 
-	it("filters runs by requested-unsupported state", () => {
+  it("filters runs by requested-unsupported state", () => {
 		render(<ConfigChangesQueueCard page={makePage() as never} />);
 		fireEvent.click(
 			screen.getByRole("button", {
 				name: "filter auto-rollback: requested-unsupported",
 			}),
 		);
-		expect(screen.getByText("Run D")).toBeInTheDocument();
-		expect(screen.queryByText("Run C")).not.toBeInTheDocument();
+    expect(screen.getByText("Run D")).toBeInTheDocument();
+    expect(screen.getByText("backend: ansible-push")).toBeInTheDocument();
+    expect(screen.queryByText("Run C")).not.toBeInTheDocument();
 		expect(screen.queryByText("Run A")).not.toBeInTheDocument();
 		expect(screen.queryByText("Run B")).not.toBeInTheDocument();
 	});
