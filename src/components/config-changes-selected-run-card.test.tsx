@@ -89,4 +89,43 @@ describe("ConfigChangesSelectedRunCard", () => {
     expect(screen.queryByRole("button", { name: /approve/i })).not.toBeInTheDocument();
     expect(screen.getByText(/Only requested or validating runs can be rendered/i)).toBeInTheDocument();
   });
+
+  it("shows latest auto-rollback outcome from execution evidence", () => {
+    const page = makePage({
+      selectedRun: {
+        id: "run-3",
+        targetType: "deployment",
+        targetRef: "dep-3",
+        status: "failed",
+        approvalState: "approved",
+        sourceKind: "change-plan",
+        executionMode: "apply",
+        requestedBy: "alice",
+        executionTaskId: 42,
+        rollbackSummary: {
+          previousDeploymentConfigJson: '{"template":"demo/topology.yml"}',
+        },
+        executionSummary: {
+          artifactRefs: [
+            {
+              kind: "forward-auto-rollback-status",
+              name: "forward/auto-rollback/status",
+              key: "outcome=unsupported;reason=ansible-push",
+            },
+            {
+              kind: "forward-auto-rollback-status",
+              name: "forward/auto-rollback/status",
+              key: "outcome=failed;reason=rollback-error",
+            },
+          ],
+        },
+      },
+    });
+
+    render(<ConfigChangesSelectedRunCard page={page as never} />);
+
+    expect(screen.getByText("Auto-rollback")).toBeInTheDocument();
+    expect(screen.getAllByText("failed").length).toBeGreaterThan(0);
+    expect(screen.getByText("Reason: rollback-error")).toBeInTheDocument();
+  });
 });

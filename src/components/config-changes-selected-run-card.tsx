@@ -1,4 +1,5 @@
 import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -28,6 +29,9 @@ export function ConfigChangesSelectedRunCard({
 		canExecuteRun,
 		canRollbackRun,
 	} = page;
+	const autoRollback = selectedRun
+		? latestAutoRollbackOutcome(selectedRun.executionSummary?.artifactRefs ?? [])
+		: null;
 
 	return (
 		<Card>
@@ -68,6 +72,21 @@ export function ConfigChangesSelectedRunCard({
 								}
 								mono={Boolean(selectedRun.executionTaskId)}
 							/>
+							{autoRollback ? (
+								<div className="space-y-1">
+									<div className="text-xs uppercase tracking-wide text-muted-foreground">
+										Auto-rollback
+									</div>
+									<Badge variant={autoRollbackBadgeVariant(autoRollback.outcome)}>
+										{autoRollback.outcome}
+									</Badge>
+									{autoRollback.reason ? (
+										<div className="text-xs text-muted-foreground">
+											Reason: {autoRollback.reason}
+										</div>
+									) : null}
+								</div>
+							) : null}
 						</div>
 						<div className="flex flex-wrap items-center gap-2">
 							<Button
@@ -123,4 +142,57 @@ export function ConfigChangesSelectedRunCard({
 			</CardContent>
 		</Card>
 	);
+}
+
+type AutoRollbackOutcome = {
+	outcome: string;
+	reason: string;
+};
+
+function latestAutoRollbackOutcome(
+	refs: Array<{ kind?: string; name?: string; key?: string }>,
+): AutoRollbackOutcome | null {
+	let latest: AutoRollbackOutcome | null = null;
+	for (const ref of refs) {
+		const kind = String(ref.kind || "").trim().toLowerCase();
+		if (kind !== "forward-auto-rollback-status") continue;
+		const parsed = parseArtifactKey(ref.key || "");
+		const outcome = String(parsed.outcome || "").trim().toLowerCase();
+		if (!outcome) continue;
+		latest = {
+			outcome,
+			reason: String(parsed.reason || "").trim(),
+		};
+	}
+	return latest;
+}
+
+function parseArtifactKey(raw: string): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const segment of String(raw).split(";")) {
+		const part = segment.trim();
+		if (!part) continue;
+		const idx = part.indexOf("=");
+		if (idx <= 0) continue;
+		const key = part.slice(0, idx).trim();
+		const value = part.slice(idx + 1).trim();
+		if (!key) continue;
+		out[key] = value;
+	}
+	return out;
+}
+
+function autoRollbackBadgeVariant(
+	outcome: string,
+): "default" | "secondary" | "destructive" | "outline" {
+	switch (String(outcome).trim().toLowerCase()) {
+		case "applied":
+			return "default";
+		case "unsupported":
+			return "outline";
+		case "failed":
+			return "destructive";
+		default:
+			return "secondary";
+	}
 }
