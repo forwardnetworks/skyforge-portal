@@ -14,7 +14,7 @@ export const configChangeSourceOptions: ConfigChangeSourceOption[] = [
 			label: "Change Plan",
 			executable: true,
 			description:
-				"Forward-backed change control plan. Render, approve, execute, and verify through one durable workflow instead of direct push primitives. Supports `netlab-kne` and `ansible-push` deploy backends.",
+				"Forward-backed change control plan. Render, approve, execute, and verify through one durable workflow instead of direct push primitives. Supports `netlab-kne` and `ansible-push` deploy backends, including inline or bundled Ansible playbooks.",
 		defaultSpecJson:
 			'{\n  "name": "edge-routing-change",\n  "description": "promote validated edge routing intent",\n  "deploy": {\n    "backend": "netlab-kne",\n    "templateSource": "blueprints",\n    "template": "BGP/Default-NH/topology.yml",\n    "environment": {\n      "DEVICE": "eos"\n    }\n  },\n  "verify": {\n    "backend": "forward",\n    "networkId": "network-123",\n    "checks": ["Critical reachability"],\n    "diffCategories": ["devices", "checks"]\n  }\n}',
 	},
