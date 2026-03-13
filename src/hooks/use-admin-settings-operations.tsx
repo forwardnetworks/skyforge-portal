@@ -2,8 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-	type AdminWorkspacePodCleanupResponse,
-	adminCleanupWorkspacePods,
+	type AdminTenantPodCleanupResponse,
+	adminCleanupTenantPods,
 	adminImpersonateStart,
 	adminImpersonateStop,
 	getAdminImpersonateStatus,
@@ -70,10 +70,10 @@ export function useAdminSettingsOperations({
 	const [cleanupScopeID, setCleanupScopeID] = useState("");
 	const [cleanupNamespace, setCleanupNamespace] = useState("");
 	const [cleanupResult, setCleanupResult] =
-		useState<AdminWorkspacePodCleanupResponse | null>(null);
-	const cleanupWorkspacePods = useMutation({
+		useState<AdminTenantPodCleanupResponse | null>(null);
+	const cleanupTenantPods = useMutation({
 		mutationFn: async (dryRun: boolean) =>
-			adminCleanupWorkspacePods({
+			adminCleanupTenantPods({
 				dryRun,
 				userScopeId:
 					cleanupScopeMode === "scope" ? cleanupScopeID.trim() : undefined,
@@ -145,7 +145,7 @@ export function useAdminSettingsOperations({
 		cleanupNamespace,
 		setCleanupNamespace,
 		cleanupResult,
-		cleanupWorkspacePods,
+		cleanupTenantPods,
 		impersonateTarget,
 		setImpersonateTarget,
 		impersonateUserOptions,

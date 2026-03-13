@@ -61,7 +61,7 @@ export function AdminTasksTab(props: AdminTasksTabProps) {
 
 					<div className="space-y-3 rounded-md border p-3">
 						<div>
-							<div className="font-medium">Workspace pod cleanup</div>
+							<div className="font-medium">Tenant pod cleanup</div>
 							<div className="text-sm text-muted-foreground">
 								Force-clean kne topology pods/resources when deployment
 								deletion leaves stragglers.
@@ -101,8 +101,8 @@ export function AdminTasksTab(props: AdminTasksTabProps) {
 									</SelectContent>
 								</Select>
 							) : (
-								<Input
-									placeholder="Optional namespace override (ws-...)"
+							<Input
+									placeholder="Optional namespace override"
 									value={props.cleanupNamespace}
 									onChange={(e) =>
 										props.onCleanupNamespaceChange(e.target.value)
@@ -114,7 +114,7 @@ export function AdminTasksTab(props: AdminTasksTabProps) {
 							<Button
 								variant="outline"
 								disabled={
-									props.cleanupWorkspacePodsPending ||
+									props.cleanupTenantPodsPending ||
 									(props.cleanupScopeMode === "scope" &&
 										!props.cleanupScopeID.trim())
 								}
@@ -125,13 +125,13 @@ export function AdminTasksTab(props: AdminTasksTabProps) {
 							<Button
 								variant="destructive"
 								disabled={
-									props.cleanupWorkspacePodsPending ||
+									props.cleanupTenantPodsPending ||
 									(props.cleanupScopeMode === "scope" &&
 										!props.cleanupScopeID.trim())
 								}
 								onClick={props.onRunCleanup}
 							>
-								{props.cleanupWorkspacePodsPending ? "Running…" : "Run cleanup"}
+								{props.cleanupTenantPodsPending ? "Running…" : "Run cleanup"}
 							</Button>
 						</div>
 						{props.cleanupResult ? (

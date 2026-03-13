@@ -143,9 +143,9 @@ export function buildAdminTasksTabProps(
 		cleanupNamespace: page.cleanupNamespace,
 		onCleanupNamespaceChange: page.setCleanupNamespace,
 		allUserScopes: page.allUserScopes,
-		cleanupWorkspacePodsPending: page.cleanupWorkspacePods.isPending,
-		onPreviewCleanup: () => page.cleanupWorkspacePods.mutate(true),
-		onRunCleanup: () => page.cleanupWorkspacePods.mutate(false),
+		cleanupTenantPodsPending: page.cleanupTenantPods.isPending,
+		onPreviewCleanup: () => page.cleanupTenantPods.mutate(true),
+		onRunCleanup: () => page.cleanupTenantPods.mutate(false),
 		cleanupResult: page.cleanupResult,
 	};
 }

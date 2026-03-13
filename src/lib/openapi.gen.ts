@@ -851,7 +851,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/tasks/workspace-pods/cleanup": {
+    "/api/admin/tasks/tenant-pods/cleanup": {
         parameters: {
             query?: never;
             header?: never;

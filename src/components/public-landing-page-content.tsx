@@ -166,7 +166,9 @@ export function PublicLandingPageContent(
 								<div className="mt-2 text-3xl font-semibold text-white">
 									{props.statusSummary?.userScopesTotal ?? 0}
 								</div>
-								<div className="mt-1 text-sm text-slate-300">Tenant-isolated workspaces</div>
+								<div className="mt-1 text-sm text-slate-300">
+									Tenant-isolated environments
+								</div>
 							</div>
 						</div>
 

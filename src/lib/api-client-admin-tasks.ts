@@ -36,13 +36,13 @@ export async function reconcileRunningTasks(
 	);
 }
 
-export type AdminWorkspacePodCleanupRequest = {
+export type AdminTenantPodCleanupRequest = {
 	userScopeId?: string;
 	namespace?: string;
 	dryRun?: boolean;
 };
 
-export type AdminWorkspacePodCleanupNamespaceResult = {
+export type AdminTenantPodCleanupNamespaceResult = {
 	namespace: string;
 	topologiesFound: number;
 	topologyOwnersFound: number;
@@ -51,7 +51,7 @@ export type AdminWorkspacePodCleanupNamespaceResult = {
 	errors?: string[];
 };
 
-export type AdminWorkspacePodCleanupResponse = {
+export type AdminTenantPodCleanupResponse = {
 	status: string;
 	dryRun: boolean;
 	userScopeId?: string;
@@ -61,15 +61,15 @@ export type AdminWorkspacePodCleanupResponse = {
 	topologiesFound: number;
 	topologiesDeleted: number;
 	orphanCleanupAttempts: number;
-	namespaceResults: AdminWorkspacePodCleanupNamespaceResult[];
+	namespaceResults: AdminTenantPodCleanupNamespaceResult[];
 	errors?: string[];
 };
 
-export async function adminCleanupWorkspacePods(
-	body: AdminWorkspacePodCleanupRequest,
-): Promise<AdminWorkspacePodCleanupResponse> {
-	return apiFetch<AdminWorkspacePodCleanupResponse>(
-		"/api/admin/tasks/workspace-pods/cleanup",
+export async function adminCleanupTenantPods(
+	body: AdminTenantPodCleanupRequest,
+): Promise<AdminTenantPodCleanupResponse> {
+	return apiFetch<AdminTenantPodCleanupResponse>(
+		"/api/admin/tasks/tenant-pods/cleanup",
 		{
 			method: "POST",
 			body: JSON.stringify(body),

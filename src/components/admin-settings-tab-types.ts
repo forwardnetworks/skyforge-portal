@@ -9,7 +9,7 @@ import type {
 	AdminServiceNowGlobalConfigResponse,
 	AdminTeamsGlobalConfigResponse,
 	AdminUserRoleRecord,
-	AdminWorkspacePodCleanupResponse,
+	AdminTenantPodCleanupResponse,
 	QuickDeployTemplate,
 	SkyforgeUserScope,
 } from "../lib/api-client";
@@ -130,10 +130,10 @@ export type AdminTasksTabProps = {
 	cleanupNamespace: string;
 	onCleanupNamespaceChange: (value: string) => void;
 	allUserScopes: SkyforgeUserScope[];
-	cleanupWorkspacePodsPending: boolean;
+	cleanupTenantPodsPending: boolean;
 	onPreviewCleanup: () => void;
 	onRunCleanup: () => void;
-	cleanupResult: AdminWorkspacePodCleanupResponse | null;
+	cleanupResult: AdminTenantPodCleanupResponse | null;
 };
 
 export type AdminUsersTabProps = {
