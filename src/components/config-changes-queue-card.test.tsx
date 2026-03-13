@@ -16,6 +16,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				status: "failed",
 				executionMode: "apply",
 				executionSummary: {
+					verificationBackend: "forward",
 					artifactRefs: [
 						{
 							kind: "forward-auto-rollback-status",
@@ -50,7 +51,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				status: "approved",
 				executionMode: "apply",
 				reviewJson:
-					'{"artifactRefs":[{"kind":"forward-auto-rollback","key":"requested;eligibility=eligible"}]}',
+					'{"verificationBackend":"forward","artifactRefs":[{"kind":"forward-auto-rollback","key":"requested;eligibility=eligible"}]}',
 			},
 			{
 				id: "run-d",
@@ -87,6 +88,7 @@ describe("ConfigChangesQueueCard", () => {
 		expect(
 			screen.getAllByText("auto-rollback: requested (eligible)").length,
 		).toBeGreaterThan(0);
+		expect(screen.getAllByText("verify: forward").length).toBeGreaterThan(0);
 	});
 
 	it("filters runs by auto-rollback outcome", () => {

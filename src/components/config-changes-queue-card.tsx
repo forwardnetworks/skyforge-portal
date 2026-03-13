@@ -1,6 +1,9 @@
 import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
 import { useMemo, useState } from "react";
-import { reviewArtifactRefsFromJSON } from "../lib/config-change-review";
+import {
+	reviewArtifactRefsFromJSON,
+	reviewVerificationBackendFromJSON,
+} from "../lib/config-change-review";
 import {
 	autoRollbackBadgeVariant,
 	latestAutoRollbackRequest,
@@ -121,6 +124,11 @@ export function ConfigChangesQueueCard({
 						const autoRollbackRequest = latestAutoRollbackRequest(
 							reviewArtifactRefsFromJSON(run.reviewJson),
 						);
+						const verificationBackend =
+							String(run.executionSummary?.verificationBackend || "")
+								.trim()
+								.toLowerCase() ||
+							reviewVerificationBackendFromJSON(run.reviewJson);
 						return (
 							<button
 								key={run.id}
@@ -146,6 +154,15 @@ export function ConfigChangesQueueCard({
 											{run.status}
 										</Badge>
 										<Badge variant="outline">{run.executionMode}</Badge>
+										<Badge
+											variant={
+												verificationBackend === "forward"
+													? "default"
+													: "outline"
+											}
+										>
+											{`verify: ${verificationBackend || "none"}`}
+										</Badge>
 								{autoRollback ? (
 									<Badge
 										variant={autoRollbackBadgeVariant(autoRollback.outcome)}
