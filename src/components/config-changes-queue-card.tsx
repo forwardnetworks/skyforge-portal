@@ -2,6 +2,7 @@ import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
 import { useMemo, useState } from "react";
 import {
 	autoRollbackBadgeVariant,
+	latestAutoRollbackRequest,
 	latestAutoRollbackOutcome,
 } from "./config-changes-auto-rollback";
 import { Badge } from "./ui/badge";
@@ -21,7 +22,7 @@ export function ConfigChangesQueueCard({
 }) {
 	const { isAdmin, listQ, runs, selectedRunId, setSelectedRunId } = page;
 	const [autoRollbackFilter, setAutoRollbackFilter] = useState<
-		"all" | "applied" | "unsupported" | "failed" | "none"
+		"all" | "requested" | "applied" | "unsupported" | "failed" | "none"
 	>("all");
 	const filteredRuns = useMemo(
 		() =>
@@ -30,7 +31,9 @@ export function ConfigChangesQueueCard({
 				const outcome = latestAutoRollbackOutcome(
 					run.executionSummary?.artifactRefs ?? [],
 				);
-				if (autoRollbackFilter === "none") return !outcome;
+				const request = latestAutoRollbackRequest(reviewArtifactRefs(run.reviewJson));
+				if (autoRollbackFilter === "requested") return !outcome && Boolean(request);
+				if (autoRollbackFilter === "none") return !outcome && !request;
 				return String(outcome?.outcome || "").trim().toLowerCase() === autoRollbackFilter;
 			}),
 		[runs, autoRollbackFilter],
@@ -48,7 +51,7 @@ export function ConfigChangesQueueCard({
 			</CardHeader>
 			<CardContent className="space-y-3">
 				<div className="flex flex-wrap gap-2">
-					{(["all", "applied", "unsupported", "failed", "none"] as const).map(
+					{(["all", "requested", "applied", "unsupported", "failed", "none"] as const).map(
 						(filter) => (
 							<button
 								key={filter}
@@ -75,6 +78,9 @@ export function ConfigChangesQueueCard({
 						const selected = run.id === selectedRunId;
 						const autoRollback = latestAutoRollbackOutcome(
 							run.executionSummary?.artifactRefs ?? [],
+						);
+						const autoRollbackRequest = latestAutoRollbackRequest(
+							reviewArtifactRefs(run.reviewJson),
 						);
 						return (
 							<button
@@ -107,6 +113,20 @@ export function ConfigChangesQueueCard({
 											>
 												{`auto-rollback: ${autoRollback.outcome}`}
 											</Badge>
+										) : autoRollbackRequest ? (
+											<Badge
+												variant={
+													autoRollbackRequest.eligibility === "eligible"
+														? "default"
+														: "outline"
+												}
+											>
+												{`auto-rollback: requested${
+													autoRollbackRequest.eligibility
+														? ` (${autoRollbackRequest.eligibility})`
+														: ""
+												}`}
+											</Badge>
 										) : null}
 									</div>
 								</div>
@@ -117,4 +137,21 @@ export function ConfigChangesQueueCard({
 			</CardContent>
 		</Card>
 	);
+}
+
+function reviewArtifactRefs(reviewJson?: string): Array<{
+	kind?: string;
+	name?: string;
+	key?: string;
+}> {
+	const raw = String(reviewJson || "").trim();
+	if (!raw) return [];
+	try {
+		const parsed = JSON.parse(raw) as {
+			artifactRefs?: Array<{ kind?: string; name?: string; key?: string }>;
+		};
+		return Array.isArray(parsed.artifactRefs) ? parsed.artifactRefs : [];
+	} catch {
+		return [];
+	}
 }
