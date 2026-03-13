@@ -105,6 +105,9 @@ export function ConfigChangesQueueCard({
 						),
 					)}
 				</div>
+				<div className="text-xs text-muted-foreground">
+					{`Showing ${filteredRuns.length} of ${runs.length} runs`}
+				</div>
 				{listQ.isLoading ? (
 					<div className="text-sm text-muted-foreground">Loading change runs…</div>
 				) : filteredRuns.length === 0 ? (

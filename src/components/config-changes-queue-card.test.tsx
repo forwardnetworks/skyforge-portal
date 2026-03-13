@@ -77,6 +77,7 @@ describe("ConfigChangesQueueCard", () => {
 		expect(screen.getByText("auto-rollback: requested (2)")).toBeInTheDocument();
 		expect(screen.getByText("auto-rollback: failed (1)")).toBeInTheDocument();
 		expect(screen.getByText("auto-rollback: none (0)")).toBeInTheDocument();
+		expect(screen.getByText("Showing 4 of 4 runs")).toBeInTheDocument();
 	});
 
 	it("shows auto-rollback badges in queue rows", () => {
@@ -95,6 +96,7 @@ describe("ConfigChangesQueueCard", () => {
 		);
 		expect(screen.getByText("Run A")).toBeInTheDocument();
 		expect(screen.queryByText("Run B")).not.toBeInTheDocument();
+		expect(screen.getByText("Showing 1 of 4 runs")).toBeInTheDocument();
 	});
 
 	it("filters runs by auto-rollback requested state", () => {
