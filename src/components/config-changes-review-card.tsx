@@ -1,4 +1,6 @@
 import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
+import { latestAutoRollbackRequest } from "./config-changes-auto-rollback";
+import { Badge } from "./ui/badge";
 import {
 	Card,
 	CardContent,
@@ -14,6 +16,8 @@ export function ConfigChangesReviewCard({
 	page: ConfigChangesPageData;
 }) {
 	const review = page.reviewQ.data?.review;
+	const autoRollback = latestAutoRollbackRequest(review?.artifactRefs ?? []);
+	const autoRollbackEligible = autoRollback?.eligibility === "eligible";
 
 	return (
 		<Card>
@@ -47,6 +51,23 @@ export function ConfigChangesReviewCard({
 								value={String(review.changeCount ?? 0)}
 							/>
 						</div>
+						{autoRollback ? (
+							<div className="rounded-md border p-3 text-sm space-y-2">
+								<div className="font-medium">Auto-rollback plan</div>
+								<div className="flex flex-wrap items-center gap-2">
+									<Badge variant={autoRollbackEligible ? "default" : "outline"}>
+										{autoRollbackEligible
+											? "eligible and enforced"
+											: "requested but unsupported"}
+									</Badge>
+									{autoRollback.backend ? (
+										<span className="text-xs text-muted-foreground">
+											Backend: {autoRollback.backend}
+										</span>
+									) : null}
+								</div>
+							</div>
+						) : null}
 						{review.warnings?.length ? (
 							<div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm space-y-1">
 								{review.warnings.map((warning) => (
