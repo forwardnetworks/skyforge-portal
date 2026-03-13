@@ -15,6 +15,8 @@ describe("ConfigChangesReviewCard", () => {
 	it("shows eligible auto-rollback plan for netlab-kne review", () => {
 		const page = makePage({
 			executionPath: "planned-change-control",
+			executionBackend: "netlab-kne",
+			verificationBackend: "forward",
 			plannedExecutionTaskType: "netlab-kne-run",
 			deviceCount: 2,
 			changeCount: 1,
@@ -29,6 +31,10 @@ describe("ConfigChangesReviewCard", () => {
 
 		render(<ConfigChangesReviewCard page={page as never} />);
 
+		expect(screen.getByText("Execution backend")).toBeInTheDocument();
+		expect(screen.getByText("netlab-kne")).toBeInTheDocument();
+		expect(screen.getByText("Verification backend")).toBeInTheDocument();
+		expect(screen.getByText("forward")).toBeInTheDocument();
 		expect(screen.getByText("Auto-rollback plan")).toBeInTheDocument();
 		expect(screen.getByText("eligible and enforced")).toBeInTheDocument();
 	});

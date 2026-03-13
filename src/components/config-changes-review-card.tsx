@@ -38,6 +38,14 @@ export function ConfigChangesReviewCard({
 								value={review.executionPath || "planned"}
 							/>
 							<ConfigField
+								label="Execution backend"
+								value={review.executionBackend || "n/a"}
+							/>
+							<ConfigField
+								label="Verification backend"
+								value={review.verificationBackend || "n/a"}
+							/>
+							<ConfigField
 								label="Planned task"
 								value={review.plannedExecutionTaskType || "n/a"}
 								mono
