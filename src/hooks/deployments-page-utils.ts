@@ -132,7 +132,6 @@ export function formatDeploymentType(deployment: UserScopeDeployment): string {
 	if (family === "byos" && engine === "containerlab") {
 		return "Containerlab (BYOS)";
 	}
-	if (family === "byos" && engine === "eve_ng") return "EVE-NG (BYOS)";
 	if (family === "byos") return "BYOS";
 	if (family === "terraform") return "Terraform";
 	return String(deployment.family ?? "");

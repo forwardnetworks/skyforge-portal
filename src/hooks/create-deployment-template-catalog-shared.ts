@@ -26,7 +26,6 @@ export function getEffectiveTemplateSource(
 		if (watchSource === "custom") return "custom";
 		return "blueprints";
 	}
-	if (watchKind === "eve_ng") return "blueprints";
 	if (watchKind === "containerlab" || watchKind === "c9s_containerlab") {
 		return watchSource as TemplateSource;
 	}
@@ -79,8 +78,6 @@ export function getDeploymentModeOptions(watchKind: DeploymentKind) {
 				{ value: "in_cluster", label: "In cluster" },
 				{ value: "byos", label: "BYOS" },
 			];
-		case "eve_ng":
-			return [{ value: "byos", label: "BYOS" }];
 		default:
 			return [{ value: "in_cluster", label: "In cluster" }];
 	}

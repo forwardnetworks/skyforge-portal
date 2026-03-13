@@ -20,7 +20,7 @@ export function PlatformCapacityPageContent(props: {
 				</h1>
 				<p className="text-sm text-muted-foreground">
 					Admin planning view for reservation pressure, quota overrides, and
-					Forward tenant reset activity.
+					Forward org reset activity.
 				</p>
 			</div>
 

@@ -8,16 +8,9 @@ import { useCreateDeploymentTemplateCatalogNetlab } from "./use-create-deploymen
 import { useCreateDeploymentTemplateCatalogTemplates } from "./use-create-deployment-template-catalog-templates";
 
 export function useCreateDeploymentTemplateCatalog(args: {
-	importContainerlabServer: string;
-	importCreateContainerlab: boolean;
-	importOpen: boolean;
-	importServer: string;
 	queryClient: {
 		invalidateQueries: (args: { queryKey: unknown[] }) => Promise<unknown>;
 	};
-	setImportContainerlabServer: (value: string) => void;
-	setImportLabPath: (value: string) => void;
-	setImportServer: (value: string) => void;
 	setTerraformProviderFilter: (value: string) => void;
 	setValue: (name: "forwardCollectorId", value: string) => void;
 	terraformProviderFilter: string;
@@ -36,14 +29,7 @@ export function useCreateDeploymentTemplateCatalog(args: {
 	const {
 		defaultForwardCollectorConfigId,
 		externalTemplateRepos,
-		importContainerlabServer,
-		importCreateContainerlab,
-		importOpen,
-		importServer,
 		queryClient,
-		setImportContainerlabServer,
-		setImportLabPath,
-		setImportServer,
 		setTerraformProviderFilter,
 		setValue,
 		terraformProviderFilter,
@@ -61,15 +47,7 @@ export function useCreateDeploymentTemplateCatalog(args: {
 
 	const netlabCatalog = useCreateDeploymentTemplateCatalogNetlab({ scopeId });
 	const importOptions = useCreateDeploymentImportOptions({
-		watchUserScopeId: scopeId,
 		watchKind,
-		importOpen,
-		importServer,
-		setImportServer,
-		setImportLabPath,
-		importCreateContainerlab,
-		importContainerlabServer,
-		setImportContainerlabServer,
 	});
 	const collectorCatalog = useCreateDeploymentTemplateCatalogCollectors({
 		defaultForwardCollectorConfigId,
@@ -110,14 +88,10 @@ export function useCreateDeploymentTemplateCatalog(args: {
 	return {
 		byosContainerlabEnabled: importOptions.byosContainerlabEnabled,
 		byosContainerlabServerRefs: importOptions.byosContainerlabServerRefs,
-		byosEveEnabled: importOptions.byosEveEnabled,
 		byosNetlabEnabled: importOptions.byosNetlabEnabled,
 		byosServerRefs: importOptions.byosServerRefs,
 		deploymentModeOptions,
 		effectiveSource: templateCatalog.effectiveSource,
-		eveLabOptions: importOptions.eveLabOptions,
-		eveLabsQ: importOptions.eveLabsQ,
-		eveOptions: importOptions.eveOptions,
 		externalAllowed,
 		externalRepos,
 		forwardCollectorsQ: collectorCatalog.forwardCollectorsQ,
@@ -132,7 +106,6 @@ export function useCreateDeploymentTemplateCatalog(args: {
 		templatesQ: templateCatalog.templatesQ,
 		terraformProviders: templateCatalog.terraformProviders,
 		userContainerlabServersQ: importOptions.userContainerlabServersQ,
-		userEveServersQ: importOptions.userEveServersQ,
 		userNetlabServersQ: importOptions.userNetlabServersQ,
 		variableGroups: collectorCatalog.variableGroups,
 	};

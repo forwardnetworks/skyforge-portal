@@ -115,13 +115,13 @@ export async function listUserForwardCollectorConfigs(): Promise<ListUserForward
 
 export async function getCurrentUserForwardTenantCredential(): Promise<ForwardTenantCredentialResponse> {
 	return apiFetch<ForwardTenantCredentialResponse>(
-		"/api/forward/tenant-credential",
+		"/api/forward/org-credential",
 	);
 }
 
 export async function resetCurrentUserForwardTenantCredential(): Promise<ForwardTenantCredentialResponse> {
 	return apiFetch<ForwardTenantCredentialResponse>(
-		"/api/forward/tenant-credential/reset",
+		"/api/forward/org-credential/reset",
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -129,7 +129,7 @@ export async function resetCurrentUserForwardTenantCredential(): Promise<Forward
 export async function requestCurrentUserForwardTenantRebuild(
 	body: RequestCurrentUserForwardTenantRebuildRequest,
 ): Promise<ForwardTenantResetRun> {
-	return apiFetch<ForwardTenantResetRun>("/api/forward/tenant/rebuild", {
+	return apiFetch<ForwardTenantResetRun>("/api/forward/org/rebuild", {
 		method: "POST",
 		body: JSON.stringify(body),
 	});
@@ -137,7 +137,7 @@ export async function requestCurrentUserForwardTenantRebuild(
 
 export async function listCurrentUserForwardTenantRebuildRuns(): Promise<ForwardTenantResetRunsResponse> {
 	return apiFetch<ForwardTenantResetRunsResponse>(
-		"/api/forward/tenant/rebuild/runs",
+		"/api/forward/org/rebuild/runs",
 	);
 }
 

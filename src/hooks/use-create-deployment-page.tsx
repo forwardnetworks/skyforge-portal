@@ -29,13 +29,6 @@ export function useCreateDeploymentPage(userId?: string) {
 
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] = useState("all");
-	const [importOpen, setImportOpen] = useState(false);
-	const [importServer, setImportServer] = useState("");
-	const [importLabPath, setImportLabPath] = useState("");
-	const [importDeploymentName, setImportDeploymentName] = useState("");
-	const [importCreateContainerlab, setImportCreateContainerlab] =
-		useState(false);
-	const [importContainerlabServer, setImportContainerlabServer] = useState("");
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -47,7 +40,6 @@ export function useCreateDeploymentPage(userId?: string) {
 			templateRepoId: "",
 			template: "",
 			netlabServer: "",
-			eveServer: "",
 			forwardCollectorId: "none",
 			deploymentMode: "in_cluster",
 			labLifetime: "never",
@@ -73,15 +65,7 @@ export function useCreateDeploymentPage(userId?: string) {
 
 	const data = useCreateDeploymentData({
 		form,
-		importContainerlabServer,
-		importCreateContainerlab,
-		importLabPath,
-		importOpen,
-		importServer,
 		queryClient,
-		setImportContainerlabServer,
-		setImportLabPath,
-		setImportServer,
 		setTerraformProviderFilter,
 		setValue,
 		terraformProviderFilter,
@@ -109,8 +93,7 @@ export function useCreateDeploymentPage(userId?: string) {
 		});
 	}, [data.userSettingsQ.data?.defaultEnv, form, setValue]);
 
-	const { mutation, importEveLab, convertEveLab, validateNetlabTemplate } =
-		useCreateDeploymentMutations({
+	const { mutation, validateNetlabTemplate } = useCreateDeploymentMutations({
 			navigate,
 			queryClient,
 			form,
@@ -124,12 +107,6 @@ export function useCreateDeploymentPage(userId?: string) {
 			managedFamilies: data.managedFamilies,
 			lifetimeAllowedHours: data.lifetimeAllowedHours,
 			variableGroups: data.variableGroups,
-			importServer,
-			importLabPath,
-			importDeploymentName,
-			importCreateContainerlab,
-			importContainerlabServer,
-			setImportOpen,
 		});
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
@@ -153,7 +130,6 @@ export function useCreateDeploymentPage(userId?: string) {
 		expiryAction: data.expiryAction,
 		lifetimeDefaultHours: data.lifetimeDefaultHours,
 		deploymentModeOptions: data.deploymentModeOptions,
-		byosEveEnabled: data.byosEveEnabled,
 		byosNetlabEnabled: data.byosNetlabEnabled,
 		byosContainerlabEnabled: data.byosContainerlabEnabled,
 		forwardCollectorsQ: data.forwardCollectorsQ,
@@ -164,8 +140,6 @@ export function useCreateDeploymentPage(userId?: string) {
 		byosServerRefs: data.byosServerRefs,
 		userNetlabServersQ: data.userNetlabServersQ,
 		userContainerlabServersQ: data.userContainerlabServersQ,
-		eveOptions: data.eveOptions,
-		userEveServersQ: data.userEveServersQ,
 		templates: data.templates,
 		templatesQ: data.templatesQ,
 		terraformProviders: data.terraformProviders,
@@ -186,23 +160,6 @@ export function useCreateDeploymentPage(userId?: string) {
 		setValue,
 		append,
 		remove,
-		importOpen,
-		setImportOpen,
-		importServer,
-		setImportServer,
-		importLabPath,
-		setImportLabPath,
-		importDeploymentName,
-		setImportDeploymentName,
-		importCreateContainerlab,
-		setImportCreateContainerlab,
-		importContainerlabServer,
-		setImportContainerlabServer,
-		eveLabsQ: data.eveLabsQ,
-		eveLabOptions: data.eveLabOptions,
-		byosContainerlabServerRefs: data.byosContainerlabServerRefs,
-		importEveLab,
-		convertEveLab,
 	};
 }
 

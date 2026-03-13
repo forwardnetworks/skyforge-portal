@@ -156,34 +156,29 @@ export function UserSettingsByolServersCard(props: {
 				</div>
 
 				<div className="space-y-4">
-					<div className="text-sm font-medium">EVE-NG</div>
+					<div className="text-sm font-medium">Fixia (Baremetal)</div>
 					<div className="grid gap-2 md:grid-cols-2">
 						<Input
-							placeholder="https://eve.example.com/api"
-							value={page.newEveApiUrl}
-							onChange={(e) => page.setNewEveApiUrl(e.target.value)}
-						/>
-						<Input
-							placeholder="Web URL (optional)"
-							value={page.newEveWebUrl}
-							onChange={(e) => page.setNewEveWebUrl(e.target.value)}
+							placeholder="https://fixia.example.com"
+							value={page.newFixiaUrl}
+							onChange={(e) => page.setNewFixiaUrl(e.target.value)}
 						/>
 						<Input
 							placeholder="API username (optional)"
-							value={page.newEveApiUser}
-							onChange={(e) => page.setNewEveApiUser(e.target.value)}
+							value={page.newFixiaUser}
+							onChange={(e) => page.setNewFixiaUser(e.target.value)}
 						/>
 						<Input
-							placeholder="API password (optional)"
+							placeholder="API password or token (optional)"
 							type="password"
-							value={page.newEveApiPassword}
-							onChange={(e) => page.setNewEveApiPassword(e.target.value)}
+							value={page.newFixiaPassword}
+							onChange={(e) => page.setNewFixiaPassword(e.target.value)}
 						/>
 						<div className="flex items-center gap-2">
 							<input
 								type="checkbox"
-								checked={page.newEveSkipTlsVerify}
-								onChange={(e) => page.setNewEveSkipTlsVerify(e.target.checked)}
+								checked={page.newFixiaInsecure}
+								onChange={(e) => page.setNewFixiaInsecure(e.target.checked)}
 							/>
 							<div className="text-sm">Skip TLS verify</div>
 						</div>
@@ -191,15 +186,13 @@ export function UserSettingsByolServersCard(props: {
 					<Button
 						type="button"
 						variant="outline"
-						onClick={() => page.saveEveServerM.mutate()}
-						disabled={
-							!page.newEveApiUrl.trim() || page.saveEveServerM.isPending
-						}
+						onClick={() => page.saveFixiaServerM.mutate()}
+						disabled={!page.newFixiaUrl.trim() || page.saveFixiaServerM.isPending}
 					>
 						Add/Update
 					</Button>
 					<div className="space-y-2">
-						{(page.userEveServersQ.data?.servers ?? []).map((server) => (
+						{(page.userFixiaServersQ.data?.servers ?? []).map((server) => (
 							<div
 								key={server.id}
 								className="flex items-center justify-between rounded border px-3 py-2"
@@ -217,7 +210,7 @@ export function UserSettingsByolServersCard(props: {
 									variant="ghost"
 									size="icon"
 									onClick={() =>
-										server.id && page.deleteEveServerM.mutate(server.id)
+										server.id && page.deleteFixiaServerM.mutate(server.id)
 									}
 								>
 									<Trash2 className="h-4 w-4" />

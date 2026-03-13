@@ -109,13 +109,6 @@ export function useCreateDeploymentCreateMutation(
 				}
 				if (templatesDir) config.templatesDir = templatesDir;
 			}
-			if (normalizedKind === "eve_ng") {
-				config.templateSource = "blueprints";
-				if (templatesDir) config.templatesDir = templatesDir;
-				const eve = (values.eveServer || "").trim();
-				if (!eve) throw new Error("EVE-NG server is required");
-				config.eveServer = eve;
-			}
 			const { family, engine } = deploymentKindToSpec(normalizedKind);
 			config.engine = engine;
 			if (

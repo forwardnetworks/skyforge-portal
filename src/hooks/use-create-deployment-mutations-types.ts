@@ -17,10 +17,4 @@ export type CreateDeploymentMutationsArgs = {
 	managedFamilies: Set<string>;
 	lifetimeAllowedHours: number[];
 	variableGroups: UserVariableGroup[];
-	importServer: string;
-	importLabPath: string;
-	importDeploymentName: string;
-	importCreateContainerlab: boolean;
-	importContainerlabServer: string;
-	setImportOpen: (value: boolean) => void;
 };

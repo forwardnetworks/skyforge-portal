@@ -40,14 +40,11 @@ export function DeploymentDetailTopologyTab({
 										? "Derived from C9S/Containerlab artifacts after deploy (includes resolved mgmt IPs)."
 										: deployment.family === "byos" &&
 												deploymentEngine === "containerlab"
-											? "Derived from containerlab BYOS artifacts after deploy."
-											: deployment.family === "byos" &&
-													deploymentEngine === "netlab"
-												? "Derived from netlab BYOS artifacts after deploy."
-												: deployment.family === "byos" &&
-														deploymentEngine === "eve_ng"
-													? "Derived from EVE-NG artifacts after deploy."
-													: "Topology is provider-dependent; not yet implemented for this deployment type."}
+										? "Derived from containerlab BYOS artifacts after deploy."
+										: deployment.family === "byos" &&
+												deploymentEngine === "netlab"
+											? "Derived from netlab BYOS artifacts after deploy."
+											: "Topology is provider-dependent; not yet implemented for this deployment type."}
 							</CardDescription>
 						</div>
 						<Button

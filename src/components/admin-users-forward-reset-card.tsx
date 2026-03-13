@@ -58,11 +58,11 @@ export function AdminUsersForwardResetCard(props: AdminUsersTabProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Forward Tenant Reset</CardTitle>
+				<CardTitle>Forward Org Reset</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="text-sm text-muted-foreground">
-					Queue a managed reset for the selected user’s Forward tenant and inspect recent reset history.
+					Queue a managed reset for the selected user’s Forward org and inspect recent reset history.
 				</div>
 				<div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
 					<div className="space-y-2">
@@ -92,7 +92,7 @@ export function AdminUsersForwardResetCard(props: AdminUsersTabProps) {
 							</div>
 							<div className="mt-1 text-xs text-muted-foreground">
 								Type the selected username to confirm that this reset will
-								rebuild that user&apos;s managed Forward tenant state.
+								rebuild that user&apos;s managed Forward org state.
 							</div>
 							<Input
 								className="mt-3"

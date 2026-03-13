@@ -26,7 +26,7 @@ export function ForwardCredentialsSavedCredentialRow(
 				</div>
 				{inClusterManaged ? (
 					<div className="text-xs text-muted-foreground">
-						Managed automatically from your Forward tenant API token.
+						Managed automatically from your Forward org API token.
 					</div>
 				) : null}
 			</div>

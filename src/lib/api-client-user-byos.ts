@@ -1,5 +1,4 @@
 import { apiFetch } from "./http";
-import type { UserScopeDeployment } from "./api-client-user-shared";
 
 export type UserScopeNetlabServerConfig = {
 	id: string;
@@ -52,136 +51,6 @@ export async function deleteUserScopeNetlabServer(
 	);
 }
 
-export type UserScopeEveServerConfig = {
-	id: string;
-	name: string;
-	apiUrl: string;
-	webUrl?: string;
-	skipTlsVerify: boolean;
-	apiUser?: string;
-	hasPassword?: boolean;
-};
-
-export type UserScopeEveServersResponse = {
-	userId: string;
-	servers: UserScopeEveServerConfig[];
-};
-
-export type EveLabSummary = {
-	name: string;
-	path: string;
-	folder?: string;
-	mtime?: string;
-	umtime?: number;
-	shared?: number;
-	lock?: boolean;
-};
-
-export type EveFolderInfo = {
-	name: string;
-	path: string;
-	mtime?: string;
-};
-
-export type UserScopeEveLabsResponse = {
-	userId: string;
-	server: string;
-	labs: EveLabSummary[];
-	folders?: EveFolderInfo[];
-};
-
-export type UserScopeEveImportRequest = {
-	server?: string;
-	labPath: string;
-	deploymentName?: string;
-};
-
-export type UserScopeEveConvertRequest = {
-	server?: string;
-	labPath: string;
-	outputDir?: string;
-	outputFile?: string;
-	createDeployment?: boolean;
-	containerlabServer?: string;
-};
-
-export type UserScopeEveConvertResponse = {
-	userId: string;
-	path: string;
-	deployment?: UserScopeDeployment;
-	warnings?: string[];
-};
-
-export async function listUserScopeEveServers(
-	userId: string,
-): Promise<UserScopeEveServersResponse> {
-	void userId;
-	return apiFetch<UserScopeEveServersResponse>("/api/byos/me/eve/servers");
-}
-
-export async function listUserScopeEveLabs(
-	userId: string,
-	params?: { server?: string; path?: string; recursive?: boolean },
-): Promise<UserScopeEveLabsResponse> {
-	const qs = new URLSearchParams();
-	if (params?.server) qs.set("server", params.server);
-	if (params?.path) qs.set("path", params.path);
-	if (params?.recursive) qs.set("recursive", "true");
-	const suffix = qs.toString();
-	return apiFetch<UserScopeEveLabsResponse>(
-		`/api/byos/users/${encodeURIComponent(userId)}/eve/labs${suffix ? `?${suffix}` : ""}`,
-	);
-}
-
-export async function importUserScopeEveLab(
-	userId: string,
-	payload: UserScopeEveImportRequest,
-): Promise<UserScopeDeployment> {
-	return apiFetch<UserScopeDeployment>(
-		`/api/byos/users/${encodeURIComponent(userId)}/eve/import`,
-		{ method: "POST", body: JSON.stringify(payload) },
-	);
-}
-
-export async function convertUserScopeEveLab(
-	userId: string,
-	payload: UserScopeEveConvertRequest,
-): Promise<UserScopeEveConvertResponse> {
-	return apiFetch<UserScopeEveConvertResponse>(
-		`/api/byos/users/${encodeURIComponent(userId)}/eve/convert`,
-		{ method: "POST", body: JSON.stringify(payload) },
-	);
-}
-
-export async function upsertUserScopeEveServer(
-	userId: string,
-	payload: Partial<UserScopeEveServerConfig> & {
-		name: string;
-		apiUrl: string;
-		webUrl?: string;
-		skipTlsVerify: boolean;
-		apiUser?: string;
-		apiPassword?: string;
-	},
-): Promise<UserScopeEveServerConfig> {
-	void userId;
-	return apiFetch<UserScopeEveServerConfig>("/api/byos/me/eve/servers", {
-		method: "PUT",
-		body: JSON.stringify(payload),
-	});
-}
-
-export async function deleteUserScopeEveServer(
-	userId: string,
-	serverId: string,
-): Promise<void> {
-	void userId;
-	await apiFetch<void>(
-		`/api/byos/me/eve/servers/${encodeURIComponent(serverId)}`,
-		{ method: "DELETE" },
-	);
-}
-
 export type UserNetlabServerConfig = {
 	id?: string;
 	name: string;
@@ -210,41 +79,6 @@ export async function upsertUserNetlabServer(
 export async function deleteUserNetlabServer(serverId: string): Promise<void> {
 	await apiFetch<void>(
 		`/api/byos/me/netlab/servers/${encodeURIComponent(serverId)}`,
-		{ method: "DELETE" },
-	);
-}
-
-export type UserEveServerConfig = {
-	id?: string;
-	name: string;
-	apiUrl: string;
-	webUrl?: string;
-	skipTlsVerify: boolean;
-	apiUser?: string;
-	apiPassword?: string;
-	sshHost?: string;
-	sshUser?: string;
-	sshKey?: string;
-	hasPassword?: boolean;
-};
-export type UserEveServersResponse = { servers: UserEveServerConfig[] };
-
-export async function listUserEveServers(): Promise<UserEveServersResponse> {
-	return apiFetch<UserEveServersResponse>("/api/byos/me/eve/servers");
-}
-
-export async function upsertUserEveServer(
-	payload: UserEveServerConfig,
-): Promise<UserEveServerConfig> {
-	return apiFetch<UserEveServerConfig>("/api/byos/me/eve/servers", {
-		method: "PUT",
-		body: JSON.stringify(payload),
-	});
-}
-
-export async function deleteUserEveServer(serverId: string): Promise<void> {
-	await apiFetch<void>(
-		`/api/byos/me/eve/servers/${encodeURIComponent(serverId)}`,
 		{ method: "DELETE" },
 	);
 }
@@ -285,4 +119,37 @@ export async function deleteUserContainerlabServer(
 		`/api/byos/me/containerlab/servers/${encodeURIComponent(serverId)}`,
 		{ method: "DELETE" },
 	);
+}
+
+export type UserFixiaServerConfig = {
+	id?: string;
+	name: string;
+	apiUrl: string;
+	apiInsecure: boolean;
+	apiUser?: string;
+	apiPassword?: string;
+	apiToken?: string;
+	hasPassword?: boolean;
+};
+export type UserFixiaServersResponse = {
+	servers: UserFixiaServerConfig[];
+};
+
+export async function listUserFixiaServers(): Promise<UserFixiaServersResponse> {
+	return apiFetch<UserFixiaServersResponse>("/api/byos/me/fixia/servers");
+}
+
+export async function upsertUserFixiaServer(
+	payload: UserFixiaServerConfig,
+): Promise<UserFixiaServerConfig> {
+	return apiFetch<UserFixiaServerConfig>("/api/byos/me/fixia/servers", {
+		method: "PUT",
+		body: JSON.stringify(payload),
+	});
+}
+
+export async function deleteUserFixiaServer(serverId: string): Promise<void> {
+	await apiFetch<void>(`/api/byos/me/fixia/servers/${encodeURIComponent(serverId)}`, {
+		method: "DELETE",
+	});
 }

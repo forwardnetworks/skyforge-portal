@@ -24,7 +24,7 @@ export function ForwardTenantRebuildCard(props: {
 			<CardHeader>
 				<CardTitle>Managed Tenant Rebuild</CardTitle>
 				<CardDescription>
-					Re-sync or fully rebuild the managed in-cluster Forward tenant when
+					Re-sync or fully rebuild the managed in-cluster Forward org when
 					provisioning drifts.
 				</CardDescription>
 			</CardHeader>
@@ -54,7 +54,7 @@ export function ForwardTenantRebuildCard(props: {
 				<div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm">
 					<div className="font-medium text-destructive">Hard rebuild impact</div>
 					<div className="mt-1 text-muted-foreground">
-						This deletes the managed Forward tenant state and reprovisions it
+						This deletes the managed Forward org state and reprovisions it
 						from the Skyforge baseline. Use soft resync first unless the tenant
 						is clearly broken.
 					</div>

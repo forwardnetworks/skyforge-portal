@@ -1,13 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Download } from "lucide-react";
 import * as z from "zod";
 import { CreateDeploymentFormCard } from "../../../components/deployments/create-deployment-form-card";
-import { ImportEveLabDialog } from "../../../components/deployments/import-eve-lab-dialog";
 import { TemplatePreviewDialog } from "../../../components/deployments/template-preview-dialog";
 import { Button } from "../../../components/ui/button";
 import {
 	Card,
-	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
@@ -29,26 +26,6 @@ function CreateDeploymentPage() {
 	const {
 		navigate,
 		watchUserScopeId,
-		watchKind,
-		byosEveEnabled,
-		setImportOpen,
-		importOpen,
-		importServer,
-		setImportServer,
-		importLabPath,
-		setImportLabPath,
-		importDeploymentName,
-		setImportDeploymentName,
-		importCreateContainerlab,
-		setImportCreateContainerlab,
-		importContainerlabServer,
-		setImportContainerlabServer,
-		eveOptions,
-		eveLabsQ,
-		eveLabOptions,
-		byosContainerlabServerRefs,
-		importEveLab,
-		convertEveLab,
 		templatePreviewOpen,
 		setTemplatePreviewOpen,
 		templatePreviewQ,
@@ -81,55 +58,7 @@ function CreateDeploymentPage() {
 				</CardHeader>
 			</Card>
 
-			{byosEveEnabled && watchKind === "eve_ng" && (
-				<Card>
-					<CardHeader>
-						<CardTitle>Import from EVE-NG</CardTitle>
-						<CardDescription>
-							Register an existing EVE-NG lab as a deployment or convert it into
-							a Containerlab template.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="flex flex-wrap items-center justify-between gap-3">
-						<div className="text-sm text-muted-foreground">
-							Select an EVE-NG lab and import it into Skyforge without
-							rebuilding the topology.
-						</div>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setImportOpen(true)}
-						>
-							<Download className="mr-2 h-4 w-4" />
-							Import EVE-NG lab
-						</Button>
-					</CardContent>
-				</Card>
-			)}
-
 			<CreateDeploymentFormCard page={page} />
-
-			<ImportEveLabDialog
-				open={importOpen}
-				onOpenChange={setImportOpen}
-				importServer={importServer}
-				setImportServer={setImportServer}
-				importLabPath={importLabPath}
-				setImportLabPath={setImportLabPath}
-				importDeploymentName={importDeploymentName}
-				setImportDeploymentName={setImportDeploymentName}
-				importCreateContainerlab={importCreateContainerlab}
-				setImportCreateContainerlab={setImportCreateContainerlab}
-				importContainerlabServer={importContainerlabServer}
-				setImportContainerlabServer={setImportContainerlabServer}
-				eveOptions={eveOptions}
-				eveLabsLoading={eveLabsQ.isLoading}
-				eveLabsError={eveLabsQ.isError}
-				eveLabOptions={eveLabOptions}
-				byosContainerlabServerRefs={byosContainerlabServerRefs}
-				importEveLab={importEveLab}
-				convertEveLab={convertEveLab}
-			/>
 
 			<TemplatePreviewDialog
 				open={templatePreviewOpen}

@@ -46,6 +46,7 @@ import { Route as DashboardForwardCollectorsRouteImport } from './routes/dashboa
 import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$slug'
 import { Route as DashboardDeploymentsQuickRouteImport } from './routes/dashboard/deployments/quick'
 import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/deployments/new'
+import { Route as DashboardDeploymentsCompositeRouteImport } from './routes/dashboard/deployments/composite'
 import { Route as AdminInfobloxConsoleRouteImport } from './routes/admin/infoblox.console'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
 import { Route as DashboardForwardAnalyticsNetworkRefCapacityRouteImport } from './routes/dashboard/forward-analytics/$networkRef.capacity'
@@ -242,6 +243,12 @@ const DashboardDeploymentsNewRoute = DashboardDeploymentsNewRouteImport.update({
   path: '/dashboard/deployments/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardDeploymentsCompositeRoute =
+  DashboardDeploymentsCompositeRouteImport.update({
+    id: '/dashboard/deployments/composite',
+    path: '/dashboard/deployments/composite',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminInfobloxConsoleRoute = AdminInfobloxConsoleRouteImport.update({
   id: '/admin/infoblox/console',
   path: '/admin/infoblox/console',
@@ -297,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
   '/admin/infoblox/console': typeof AdminInfobloxConsoleRoute
+  '/dashboard/deployments/composite': typeof DashboardDeploymentsCompositeRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
@@ -340,6 +348,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
   '/admin/infoblox/console': typeof AdminInfobloxConsoleRoute
+  '/dashboard/deployments/composite': typeof DashboardDeploymentsCompositeRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
@@ -385,6 +394,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/admin/infoblox/console': typeof AdminInfobloxConsoleRoute
+  '/dashboard/deployments/composite': typeof DashboardDeploymentsCompositeRoute
   '/dashboard/deployments/new': typeof DashboardDeploymentsNewRoute
   '/dashboard/deployments/quick': typeof DashboardDeploymentsQuickRoute
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
@@ -431,6 +441,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/docs'
     | '/admin/infoblox/console'
+    | '/dashboard/deployments/composite'
     | '/dashboard/deployments/new'
     | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
@@ -474,6 +485,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/docs'
     | '/admin/infoblox/console'
+    | '/dashboard/deployments/composite'
     | '/dashboard/deployments/new'
     | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
@@ -518,6 +530,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/docs/'
     | '/admin/infoblox/console'
+    | '/dashboard/deployments/composite'
     | '/dashboard/deployments/new'
     | '/dashboard/deployments/quick'
     | '/dashboard/docs/$slug'
@@ -563,6 +576,7 @@ export interface RootRouteChildren {
   DashboardIndexRoute: typeof DashboardIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   AdminInfobloxConsoleRoute: typeof AdminInfobloxConsoleRoute
+  DashboardDeploymentsCompositeRoute: typeof DashboardDeploymentsCompositeRoute
   DashboardDeploymentsNewRoute: typeof DashboardDeploymentsNewRoute
   DashboardDeploymentsQuickRoute: typeof DashboardDeploymentsQuickRoute
   DashboardDocsSlugRoute: typeof DashboardDocsSlugRoute
@@ -841,6 +855,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/deployments/composite': {
+      id: '/dashboard/deployments/composite'
+      path: '/dashboard/deployments/composite'
+      fullPath: '/dashboard/deployments/composite'
+      preLoaderRoute: typeof DashboardDeploymentsCompositeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/infoblox/console': {
       id: '/admin/infoblox/console'
       path: '/admin/infoblox/console'
@@ -919,6 +940,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
   AdminInfobloxConsoleRoute: AdminInfobloxConsoleRoute,
+  DashboardDeploymentsCompositeRoute: DashboardDeploymentsCompositeRoute,
   DashboardDeploymentsNewRoute: DashboardDeploymentsNewRoute,
   DashboardDeploymentsQuickRoute: DashboardDeploymentsQuickRoute,
   DashboardDocsSlugRoute: DashboardDocsSlugRoute,

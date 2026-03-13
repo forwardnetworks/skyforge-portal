@@ -61,6 +61,13 @@ export function DeploymentsPageToolbar({
 			>
 				<Plus className="mr-2 h-4 w-4" /> Create
 			</Link>
+			<Link
+				to="/dashboard/deployments/composite"
+				search={{ userId: state.selectedUserScopeId }}
+				className={buttonVariants({ variant: "secondary" })}
+			>
+				Composite
+			</Link>
 		</div>
 	);
 }

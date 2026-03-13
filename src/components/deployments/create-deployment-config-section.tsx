@@ -34,7 +34,6 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 		expiryAction,
 		lifetimeDefaultHours,
 		deploymentModeOptions,
-		byosEveEnabled,
 		byosNetlabEnabled,
 		byosContainerlabEnabled,
 		forwardCollectorsQ,
@@ -65,9 +64,6 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 								<SelectItem value="c9s_netlab">Netlab</SelectItem>
 								{byosNetlabEnabled && (
 									<SelectItem value="netlab">Netlab (BYOS)</SelectItem>
-								)}
-								{byosEveEnabled && (
-									<SelectItem value="eve_ng">EVE-NG</SelectItem>
 								)}
 								{byosContainerlabEnabled && (
 									<SelectItem value="containerlab">

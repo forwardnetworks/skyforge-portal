@@ -92,20 +92,6 @@ export async function getUserScopeTerraformTemplates(
 	);
 }
 
-export async function getUserScopeEveNgTemplates(
-	userId: string,
-	query?: TemplatesQuery,
-): Promise<UserScopeTemplatesResponse> {
-	const params = new URLSearchParams();
-	if (query?.source) params.set("source", query.source);
-	if (query?.repo) params.set("repo", query.repo);
-	if (query?.dir) params.set("dir", query.dir);
-	const qs = params.toString();
-	return apiFetch<UserScopeTemplatesResponse>(
-		`/api/users/${encodeURIComponent(userId)}/eve-ng/templates${qs ? `?${qs}` : ""}`,
-	);
-}
-
 export type RegistryReposResponse = {
 	baseUrl?: string;
 	repositories: string[];

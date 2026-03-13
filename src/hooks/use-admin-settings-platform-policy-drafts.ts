@@ -126,7 +126,7 @@ export function useAdminSettingsPlatformPolicyDrafts({
       });
     },
     onSuccess: async () => {
-      toast.success("Forward tenant reset queued");
+      toast.success("Forward org reset queued");
       setAdminForwardTenantResetConfirm("");
       await queryClient.invalidateQueries({
         queryKey: queryKeys.adminForwardTenantRebuildRuns(platformPolicyTargetUser),
@@ -136,7 +136,7 @@ export function useAdminSettingsPlatformPolicyDrafts({
       });
     },
     onError: (err) =>
-      toast.error("Failed to queue Forward tenant reset", {
+      toast.error("Failed to queue Forward org reset", {
         description: err instanceof Error ? err.message : String(err),
       }),
   });

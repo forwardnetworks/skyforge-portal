@@ -162,7 +162,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 											Reset + reservation
 										</div>
 										<div className="mt-2 text-slate-300">
-											Forward tenant reset, reservation, and capacity controls are
+											Forward org reset, reservation, and capacity controls are
 											available from the platform and Forward workflows.
 										</div>
 									</div>

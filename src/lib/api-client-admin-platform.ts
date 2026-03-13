@@ -253,7 +253,7 @@ export async function getAdminForwardTenantRebuildRuns(
 	username: string,
 ): Promise<AdminForwardTenantResetRunsResponse> {
 	return apiFetch<AdminForwardTenantResetRunsResponse>(
-		`/api/admin/forward/tenants/${encodeURIComponent(username)}/rebuild/runs`,
+		`/api/admin/forward/orgs/${encodeURIComponent(username)}/rebuild/runs`,
 	);
 }
 
@@ -262,7 +262,7 @@ export async function requestAdminForwardTenantRebuild(
 	body: RequestAdminForwardTenantRebuildRequest,
 ): Promise<AdminForwardTenantResetRun> {
 	return apiFetch<AdminForwardTenantResetRun>(
-		`/api/admin/forward/tenants/${encodeURIComponent(username)}/rebuild`,
+		`/api/admin/forward/orgs/${encodeURIComponent(username)}/rebuild`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),

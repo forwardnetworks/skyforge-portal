@@ -9,15 +9,7 @@ import { useCreateDeploymentTemplateCatalog } from "./use-create-deployment-temp
 type CreateDeploymentForm = z.infer<typeof formSchema>;
 
 type Args = {
-	importContainerlabServer: string;
-	importCreateContainerlab: boolean;
-	importLabPath: string;
-	importOpen: boolean;
-	importServer: string;
 	queryClient: QueryClient;
-	setImportContainerlabServer: (value: string) => void;
-	setImportLabPath: (value: string) => void;
-	setImportServer: (value: string) => void;
 	setTerraformProviderFilter: (value: string) => void;
 	setValue: UseFormSetValue<CreateDeploymentForm>;
 	terraformProviderFilter: string;
@@ -47,14 +39,7 @@ export function useCreateDeploymentData(args: Args) {
 	});
 
 	const catalog = useCreateDeploymentTemplateCatalog({
-		importContainerlabServer: args.importContainerlabServer,
-		importCreateContainerlab: args.importCreateContainerlab,
-		importOpen: args.importOpen,
-		importServer: args.importServer,
 		queryClient: args.queryClient,
-		setImportContainerlabServer: args.setImportContainerlabServer,
-		setImportLabPath: args.setImportLabPath,
-		setImportServer: args.setImportServer,
 		setTerraformProviderFilter: args.setTerraformProviderFilter,
 		setValue: (name, value) => args.setValue(name, value),
 		terraformProviderFilter: args.terraformProviderFilter,

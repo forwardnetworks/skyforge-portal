@@ -73,9 +73,8 @@ const DOC_PAGES: DocPage[] = [
 						reuse them across deployments.
 					</li>
 					<li>
-						<strong>BYOL Servers</strong>: register Netlab / Containerlab /
-						EVE-NG servers (using <span className="font-mono">user:</span>{" "}
-						refs).
+						<strong>BYOL Servers</strong>: register Netlab / Containerlab
+						servers (using <span className="font-mono">user:</span> refs).
 					</li>
 					<li>
 						<strong>Cloud credentials</strong>: stored per-user; UI only shows

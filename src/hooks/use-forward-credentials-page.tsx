@@ -42,7 +42,7 @@ export function isInClusterCollectorBaseURL(value: string): boolean {
 export function useForwardCredentialsPage() {
 	const queryClient = useQueryClient();
 	const collectorsKey = queryKeys.userForwardCollectorConfigs();
-	const tenantCredentialKey = ["forward", "tenant-credential"] as const;
+	const tenantCredentialKey = ["forward", "org-credential"] as const;
 	const tenantResetRunsKey = queryKeys.userForwardTenantRebuildRuns();
 
 	const collectorsQ = useQuery({
@@ -121,13 +121,13 @@ export function useForwardCredentialsPage() {
 	const resetTenantCredentialMutation = useMutation({
 		mutationFn: resetCurrentUserForwardTenantCredential,
 		onSuccess: async () => {
-			toast.success("Forward tenant credential reset");
+			toast.success("Forward org credential reset");
 			setShowTenantPassword(false);
 			await queryClient.invalidateQueries({ queryKey: tenantCredentialKey });
 			await queryClient.invalidateQueries({ queryKey: collectorsKey });
 		},
 		onError: (err) =>
-			toast.error("Failed to reset Forward tenant credential", {
+			toast.error("Failed to reset Forward org credential", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
@@ -142,8 +142,8 @@ export function useForwardCredentialsPage() {
 		onSuccess: async (_run, mode) => {
 			toast.success(
 				mode === "hard-reset"
-					? "Forward tenant rebuild queued"
-					: "Forward tenant resync queued",
+					? "Forward org rebuild queued"
+					: "Forward org resync queued",
 			);
 			if (mode === "hard-reset") {
 				setConfirmHardReset(false);
@@ -155,8 +155,8 @@ export function useForwardCredentialsPage() {
 		onError: (err, mode) =>
 			toast.error(
 				mode === "hard-reset"
-					? "Failed to queue Forward tenant rebuild"
-					: "Failed to queue Forward tenant resync",
+					? "Failed to queue Forward org rebuild"
+					: "Failed to queue Forward org resync",
 				{
 					description: err instanceof Error ? err.message : String(err),
 				},

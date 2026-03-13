@@ -3,13 +3,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
 	deleteUserContainerlabServer,
-	deleteUserEveServer,
+	deleteUserFixiaServer,
 	deleteUserNetlabServer,
 	listUserContainerlabServers,
-	listUserEveServers,
+	listUserFixiaServers,
 	listUserNetlabServers,
 	upsertUserContainerlabServer,
-	upsertUserEveServer,
+	upsertUserFixiaServer,
 	upsertUserNetlabServer,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
@@ -30,15 +30,15 @@ export function useUserSettingsByolServers() {
 		staleTime: 10_000,
 		retry: false,
 	});
-	const userEveServersQ = useQuery({
-		queryKey: queryKeys.userEveServers(),
-		queryFn: listUserEveServers,
-		staleTime: 10_000,
-		retry: false,
-	});
 	const userContainerlabServersQ = useQuery({
 		queryKey: queryKeys.userContainerlabServers(),
 		queryFn: listUserContainerlabServers,
+		staleTime: 10_000,
+		retry: false,
+	});
+	const userFixiaServersQ = useQuery({
+		queryKey: queryKeys.userFixiaServers(),
+		queryFn: listUserFixiaServers,
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -51,11 +51,10 @@ export function useUserSettingsByolServers() {
 	const [newContainerlabInsecure, setNewContainerlabInsecure] = useState(true);
 	const [newContainerlabUser, setNewContainerlabUser] = useState("");
 	const [newContainerlabPassword, setNewContainerlabPassword] = useState("");
-	const [newEveApiUrl, setNewEveApiUrl] = useState("");
-	const [newEveWebUrl, setNewEveWebUrl] = useState("");
-	const [newEveSkipTlsVerify, setNewEveSkipTlsVerify] = useState(true);
-	const [newEveApiUser, setNewEveApiUser] = useState("");
-	const [newEveApiPassword, setNewEveApiPassword] = useState("");
+	const [newFixiaUrl, setNewFixiaUrl] = useState("");
+	const [newFixiaInsecure, setNewFixiaInsecure] = useState(true);
+	const [newFixiaUser, setNewFixiaUser] = useState("");
+	const [newFixiaPassword, setNewFixiaPassword] = useState("");
 
 	const saveNetlabServerM = useMutation({
 		mutationFn: async () =>
@@ -135,51 +134,49 @@ export function useUserSettingsByolServers() {
 			}),
 	});
 
-	const saveEveServerM = useMutation({
+	const saveFixiaServerM = useMutation({
 		mutationFn: async () =>
-			upsertUserEveServer({
-				name: nameFromURL(newEveApiUrl).trim(),
-				apiUrl: newEveApiUrl.trim(),
-				webUrl: newEveWebUrl.trim() || undefined,
-				skipTlsVerify: newEveSkipTlsVerify,
-				apiUser: newEveApiUser.trim() || undefined,
-				apiPassword: newEveApiPassword.trim() || undefined,
+			upsertUserFixiaServer({
+				name: nameFromURL(newFixiaUrl).trim(),
+				apiUrl: newFixiaUrl.trim(),
+				apiInsecure: newFixiaInsecure,
+				apiUser: newFixiaUser.trim() || undefined,
+				apiPassword: newFixiaPassword.trim() || undefined,
 			}),
 		onSuccess: async () => {
-			setNewEveApiUrl("");
-			setNewEveWebUrl("");
-			setNewEveSkipTlsVerify(true);
-			setNewEveApiUser("");
-			setNewEveApiPassword("");
+			setNewFixiaUrl("");
+			setNewFixiaInsecure(true);
+			setNewFixiaUser("");
+			setNewFixiaPassword("");
 			await queryClient.invalidateQueries({
-				queryKey: queryKeys.userEveServers(),
+				queryKey: queryKeys.userFixiaServers(),
 			});
-			toast.success("EVE-NG server saved");
+			toast.success("Fixia server saved");
 		},
 		onError: (err: unknown) =>
-			toast.error("Failed to save EVE-NG server", {
+			toast.error("Failed to save Fixia server", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
 
-	const deleteEveServerM = useMutation({
-		mutationFn: async (id: string) => deleteUserEveServer(id),
+	const deleteFixiaServerM = useMutation({
+		mutationFn: async (id: string) => deleteUserFixiaServer(id),
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
-				queryKey: queryKeys.userEveServers(),
+				queryKey: queryKeys.userFixiaServers(),
 			});
-			toast.success("EVE-NG server deleted");
+			toast.success("Fixia server deleted");
 		},
 		onError: (err: unknown) =>
-			toast.error("Failed to delete EVE-NG server", {
+			toast.error("Failed to delete Fixia server", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
 
 	return {
 		userNetlabServersQ,
-		userEveServersQ,
 		userContainerlabServersQ,
+		userFixiaServersQ,
 		newNetlabUrl,
 		setNewNetlabUrl,
 		newNetlabInsecure,
@@ -196,21 +193,19 @@ export function useUserSettingsByolServers() {
 		setNewContainerlabUser,
 		newContainerlabPassword,
 		setNewContainerlabPassword,
-		newEveApiUrl,
-		setNewEveApiUrl,
-		newEveWebUrl,
-		setNewEveWebUrl,
-		newEveSkipTlsVerify,
-		setNewEveSkipTlsVerify,
-		newEveApiUser,
-		setNewEveApiUser,
-		newEveApiPassword,
-		setNewEveApiPassword,
+		newFixiaUrl,
+		setNewFixiaUrl,
+		newFixiaInsecure,
+		setNewFixiaInsecure,
+		newFixiaUser,
+		setNewFixiaUser,
+		newFixiaPassword,
+		setNewFixiaPassword,
 		saveNetlabServerM,
 		deleteNetlabServerM,
 		saveContainerlabServerM,
 		deleteContainerlabServerM,
-		saveEveServerM,
-		deleteEveServerM,
+		saveFixiaServerM,
+		deleteFixiaServerM,
 	};
 }

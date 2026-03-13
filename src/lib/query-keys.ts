@@ -99,6 +99,10 @@ export const queryKeys = {
 		["configChangeRunReview", id] as const,
 	configChangeRunLifecycle: (id: string) =>
 		["configChangeRunLifecycle", id] as const,
+	compositePlans: (userId: string) => ["compositePlans", userId] as const,
+	compositePlanPreview: (userId: string) =>
+		["compositePlanPreview", userId] as const,
+	compositeRuns: (userId: string) => ["compositeRuns", userId] as const,
 	userForwardConfig: (userId: string) => ["userForwardConfig", userId] as const,
 	userForwardCollectors: (userId: string) =>
 		["userForwardCollectors", userId] as const,
@@ -113,8 +117,8 @@ export const queryKeys = {
 	userNetlabDeviceOptions: (userId: string) =>
 		["userNetlabDeviceOptions", userId] as const,
 	userNetlabServers: () => ["userNetlabServers"] as const,
-	userEveServers: () => ["userEveServers"] as const,
 	userContainerlabServers: () => ["userContainerlabServers"] as const,
+	userFixiaServers: () => ["userFixiaServers"] as const,
 	userAwsStaticCredentials: () => ["userAwsStaticCredentials"] as const,
 	userAwsSsoCredentials: () => ["userAwsSsoCredentials"] as const,
 	awsSsoConfig: () => ["awsSsoConfig"] as const,
@@ -135,14 +139,6 @@ export const queryKeys = {
 	userTeamsConfig: () => ["userTeamsConfig"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	userArtifacts: (userId: string) => ["userArtifacts", userId] as const,
-	userEveServersByScope: (userId: string) =>
-		["userEveServersByScope", userId] as const,
-	userEveLabs: (
-		userId: string,
-		server: string,
-		path: string,
-		recursive: boolean,
-	) => ["userEveLabs", userId, server, path, recursive ? "1" : "0"] as const,
 	userNetlabServersByScope: (userId: string) =>
 		["userNetlabServersByScope", userId] as const,
 	notifications: (includeRead?: boolean, limit?: string) =>

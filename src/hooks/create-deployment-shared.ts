@@ -9,7 +9,6 @@ import type {
 export type DeploymentKind =
 	| "c9s_netlab"
 	| "netlab"
-	| "eve_ng"
 	| "containerlab"
 	| "c9s_containerlab"
 	| "terraform";
@@ -29,8 +28,6 @@ export function deploymentKindToSpec(kind: DeploymentKind): {
 			return { family: "byos", engine: "netlab" };
 		case "containerlab":
 			return { family: "byos", engine: "containerlab" };
-		case "eve_ng":
-			return { family: "byos", engine: "eve_ng" };
 		default:
 			return { family: "terraform", engine: "terraform" };
 	}
@@ -40,7 +37,6 @@ export function deploymentModeFromKind(kind: DeploymentKind): DeploymentMode {
 	switch (kind) {
 		case "netlab":
 		case "containerlab":
-		case "eve_ng":
 			return "byos";
 		default:
 			return "in_cluster";
@@ -90,13 +86,11 @@ export const formSchema = z.object({
 		"containerlab",
 		"c9s_containerlab",
 		"terraform",
-		"eve_ng",
 	]),
 	source: z.enum([USER_REPO_SOURCE, "blueprints", "external", "custom"]),
 	templateRepoId: z.string().optional(),
 	template: z.string().min(1, "Template is required"),
 	netlabServer: z.string().optional(),
-	eveServer: z.string().optional(),
 	forwardCollectorId: z.string().optional(),
 	deploymentMode: z.enum(["in_cluster", "byos"]).optional(),
 	labLifetime: z.string().optional(),

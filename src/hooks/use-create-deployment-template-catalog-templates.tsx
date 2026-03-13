@@ -5,7 +5,6 @@ import {
 	estimateUserScopeTemplateResources,
 	getUserScopeContainerlabTemplate,
 	getUserScopeContainerlabTemplates,
-	getUserScopeEveNgTemplates,
 	getUserScopeNetlabTemplate,
 	getUserScopeNetlabTemplates,
 	getUserScopeTerraformTemplates,
@@ -86,8 +85,6 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 				case "netlab":
 				case "c9s_netlab":
 					return getUserScopeNetlabTemplates(scopeId, query);
-				case "eve_ng":
-					return getUserScopeEveNgTemplates(scopeId, query);
 				case "containerlab":
 				case "c9s_containerlab":
 					return getUserScopeContainerlabTemplates(scopeId, query);

@@ -2,7 +2,6 @@ import { Info } from "lucide-react";
 import {
 	type CreateDeploymentPageState,
 	USER_REPO_SOURCE,
-	hostLabelFromURL,
 } from "../../hooks/use-create-deployment-page";
 import type { ExternalTemplateRepo } from "../../lib/api-client";
 import {
@@ -40,8 +39,6 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 		byosServerRefs,
 		userNetlabServersQ,
 		userContainerlabServersQ,
-		eveOptions,
-		userEveServersQ,
 	} = page;
 
 	return (
@@ -202,44 +199,6 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 							</Select>
 							{(userNetlabServersQ.isLoading ||
 								userContainerlabServersQ.isLoading) && (
-								<FormDescription>Loading servers…</FormDescription>
-							)}
-							<FormDescription>
-								Configure servers under{" "}
-								<code className="font-mono">Dashboard → Settings</code>.
-							</FormDescription>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-			)}
-
-			{watchKind === "eve_ng" && (
-				<FormField
-					control={form.control}
-					name="eveServer"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>EVE-NG server</FormLabel>
-							<Select
-								onValueChange={field.onChange}
-								defaultValue={field.value || ""}
-								value={field.value || ""}
-							>
-								<FormControl>
-									<SelectTrigger>
-										<SelectValue placeholder="Select server…" />
-									</SelectTrigger>
-								</FormControl>
-								<SelectContent>
-									{eveOptions.map((s) => (
-										<SelectItem key={s.id} value={`user:${s.id}`}>
-											{hostLabelFromURL(s.apiUrl) || s.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							{userEveServersQ.isLoading && (
 								<FormDescription>Loading servers…</FormDescription>
 							)}
 							<FormDescription>
