@@ -43,6 +43,8 @@ describe("ConfigChangesSelectedRunCard", () => {
     const page = makePage();
     render(<ConfigChangesSelectedRunCard page={page as never} />);
 
+    expect(screen.getByText("Execution backend")).toBeInTheDocument();
+    expect(screen.getAllByText("n/a").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /execute/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /rollback/i })).toBeEnabled();
     expect(screen.getByText(/Only deployment-targeted change-plan runs are executable/i)).toBeInTheDocument();
@@ -132,5 +134,28 @@ describe("ConfigChangesSelectedRunCard", () => {
     expect(screen.getByText("Auto-rollback")).toBeInTheDocument();
     expect(screen.getAllByText("failed").length).toBeGreaterThan(0);
     expect(screen.getByText("Reason: rollback-error")).toBeInTheDocument();
+  });
+
+  it("falls back to review execution backend when execution summary is absent", () => {
+    const page = makePage({
+      selectedRun: {
+        id: "run-4",
+        targetType: "deployment",
+        targetRef: "dep-4",
+        status: "approved",
+        approvalState: "approved",
+        sourceKind: "change-plan",
+        executionMode: "apply",
+        requestedBy: "alice",
+        executionTaskId: null,
+        rollbackSummary: {
+          previousDeploymentConfigJson: '{"template":"demo/topology.yml"}',
+        },
+        reviewJson: '{"executionBackend":"ansible-push"}',
+      },
+    });
+
+    render(<ConfigChangesSelectedRunCard page={page as never} />);
+    expect(screen.getByText("ansible-push")).toBeInTheDocument();
   });
 });

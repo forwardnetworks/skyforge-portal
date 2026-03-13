@@ -1,4 +1,5 @@
 import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
+import { reviewExecutionBackendFromJSON } from "../lib/config-change-review";
 import {
 	autoRollbackBadgeVariant,
 	latestAutoRollbackOutcome,
@@ -37,6 +38,10 @@ export function ConfigChangesSelectedRunCard({
 	const autoRollback = selectedRun
 		? latestAutoRollbackOutcome(selectedRun.executionSummary?.artifactRefs ?? [])
 		: null;
+	const executionBackend = selectedRun
+		? String(selectedRun.executionSummary?.executionBackend || "").trim().toLowerCase() ||
+			reviewExecutionBackendFromJSON(selectedRun.reviewJson)
+		: "";
 
 	return (
 		<Card>
@@ -66,6 +71,10 @@ export function ConfigChangesSelectedRunCard({
 								badgeVariant="outline"
 							/>
 							<ConfigField label="Source" value={selectedRun.sourceKind} />
+							<ConfigField
+								label="Execution backend"
+								value={executionBackend || "n/a"}
+							/>
 							<ConfigField label="Mode" value={selectedRun.executionMode} />
 							<ConfigField label="Requested by" value={selectedRun.requestedBy} />
 							<ConfigField
