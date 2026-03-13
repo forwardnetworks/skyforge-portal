@@ -22,19 +22,24 @@ export function ConfigChangesQueueCard({
 }) {
 	const { isAdmin, listQ, runs, selectedRunId, setSelectedRunId } = page;
 	const [autoRollbackFilter, setAutoRollbackFilter] = useState<
-		"all" | "requested" | "applied" | "unsupported" | "failed" | "none"
+		| "all"
+		| "requested"
+		| "requested-eligible"
+		| "requested-unsupported"
+		| "applied"
+		| "unsupported"
+		| "failed"
+		| "none"
 	>("all");
 	const filteredRuns = useMemo(
 		() =>
 			runs.filter((run) => {
 				if (autoRollbackFilter === "all") return true;
-				const outcome = latestAutoRollbackOutcome(
-					run.executionSummary?.artifactRefs ?? [],
-				);
-				const request = latestAutoRollbackRequest(reviewArtifactRefs(run.reviewJson));
-				if (autoRollbackFilter === "requested") return !outcome && Boolean(request);
-				if (autoRollbackFilter === "none") return !outcome && !request;
-				return String(outcome?.outcome || "").trim().toLowerCase() === autoRollbackFilter;
+				const state = autoRollbackState(run);
+				if (autoRollbackFilter === "requested") {
+					return state === "requested-eligible" || state === "requested-unsupported";
+				}
+				return state === autoRollbackFilter;
 			}),
 		[runs, autoRollbackFilter],
 	);
@@ -51,7 +56,16 @@ export function ConfigChangesQueueCard({
 			</CardHeader>
 			<CardContent className="space-y-3">
 				<div className="flex flex-wrap gap-2">
-					{(["all", "requested", "applied", "unsupported", "failed", "none"] as const).map(
+					{([
+						"all",
+						"requested",
+						"requested-eligible",
+						"requested-unsupported",
+						"applied",
+						"unsupported",
+						"failed",
+						"none",
+					] as const).map(
 						(filter) => (
 							<button
 								key={filter}
@@ -137,6 +151,38 @@ export function ConfigChangesQueueCard({
 			</CardContent>
 		</Card>
 	);
+}
+
+function autoRollbackState(
+	run: {
+		executionSummary?: {
+			artifactRefs?: Array<{ kind?: string; name?: string; key?: string }>;
+		};
+		reviewJson?: string;
+	},
+):
+	| "requested-eligible"
+	| "requested-unsupported"
+	| "applied"
+	| "unsupported"
+	| "failed"
+	| "none" {
+	const outcome = latestAutoRollbackOutcome(run.executionSummary?.artifactRefs ?? []);
+	if (outcome) {
+		const value = String(outcome.outcome || "").trim().toLowerCase();
+		switch (value) {
+			case "applied":
+			case "unsupported":
+			case "failed":
+				return value;
+			default:
+				return "none";
+		}
+	}
+	const request = latestAutoRollbackRequest(reviewArtifactRefs(run.reviewJson));
+	if (!request) return "none";
+	if (request.eligibility === "eligible") return "requested-eligible";
+	return "requested-unsupported";
 }
 
 function reviewArtifactRefs(reviewJson?: string): Array<{

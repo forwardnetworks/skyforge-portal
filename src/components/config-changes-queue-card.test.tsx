@@ -52,6 +52,17 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				reviewJson:
 					'{"artifactRefs":[{"kind":"forward-auto-rollback","key":"requested;eligibility=eligible"}]}',
 			},
+			{
+				id: "run-d",
+				summary: "Run D",
+				targetType: "deployment",
+				targetRef: "dep-d",
+				sourceKind: "change-plan",
+				status: "approved",
+				executionMode: "apply",
+				reviewJson:
+					'{"artifactRefs":[{"kind":"forward-auto-rollback","key":"requested;eligibility=unsupported;backend=ansible-push"}]}',
+			},
 		],
 		selectedRunId: "run-a",
 		setSelectedRunId: vi.fn(),
@@ -84,6 +95,20 @@ describe("ConfigChangesQueueCard", () => {
 			screen.getByRole("button", { name: "filter auto-rollback: requested" }),
 		);
 		expect(screen.getByText("Run C")).toBeInTheDocument();
+		expect(screen.getByText("Run D")).toBeInTheDocument();
+		expect(screen.queryByText("Run A")).not.toBeInTheDocument();
+		expect(screen.queryByText("Run B")).not.toBeInTheDocument();
+	});
+
+	it("filters runs by requested-unsupported state", () => {
+		render(<ConfigChangesQueueCard page={makePage() as never} />);
+		fireEvent.click(
+			screen.getByRole("button", {
+				name: "filter auto-rollback: requested-unsupported",
+			}),
+		);
+		expect(screen.getByText("Run D")).toBeInTheDocument();
+		expect(screen.queryByText("Run C")).not.toBeInTheDocument();
 		expect(screen.queryByText("Run A")).not.toBeInTheDocument();
 		expect(screen.queryByText("Run B")).not.toBeInTheDocument();
 	});
