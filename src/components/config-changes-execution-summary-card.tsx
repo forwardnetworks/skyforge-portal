@@ -15,6 +15,7 @@ export function ConfigChangesExecutionSummaryCard({
 }) {
 	const summary = run.executionSummary;
 	if (!summary) return null;
+	const autoRollbackOutcomes = extractAutoRollbackOutcomes(summary.artifactRefs ?? []);
 
 	return (
 		<Card>
@@ -73,6 +74,28 @@ export function ConfigChangesExecutionSummaryCard({
 						Verified at {new Date(summary.verifiedAt).toLocaleString()}
 					</div>
 				) : null}
+				{autoRollbackOutcomes.length ? (
+					<div className="rounded-md border p-3 text-sm space-y-2">
+						<div className="font-medium">Auto-rollback outcomes</div>
+						<div className="flex flex-wrap gap-2">
+							{autoRollbackOutcomes.map((item) => (
+								<Badge
+									key={`${item.outcome}-${item.reason || "none"}`}
+									variant={autoRollbackBadgeVariant(item.outcome)}
+								>
+									{`auto-rollback: ${item.outcome}`}
+								</Badge>
+							))}
+						</div>
+						{autoRollbackOutcomes.map((item) =>
+							item.reason ? (
+								<div key={`reason-${item.outcome}-${item.reason}`} className="text-xs text-muted-foreground">
+									Reason: {item.reason}
+								</div>
+							) : null,
+						)}
+					</div>
+				) : null}
 				{summary.verificationWarnings?.length ? (
 					<div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm space-y-1">
 						<div className="font-medium">Verification warnings</div>
@@ -105,6 +128,57 @@ export function ConfigChangesExecutionSummaryCard({
 			</CardContent>
 		</Card>
 	);
+}
+
+type AutoRollbackOutcome = {
+	outcome: string;
+	reason: string;
+};
+
+function extractAutoRollbackOutcomes(
+	refs: Array<{ kind?: string; name?: string; key?: string }>,
+): AutoRollbackOutcome[] {
+	const out: AutoRollbackOutcome[] = [];
+	for (const ref of refs) {
+		const kind = String(ref.kind || "").trim().toLowerCase();
+		if (kind !== "forward-auto-rollback-status") continue;
+		const parts = parseArtifactKey(ref.key || "");
+		const outcome = String(parts.outcome || "").trim().toLowerCase();
+		if (!outcome) continue;
+		const reason = String(parts.reason || "").trim();
+		out.push({ outcome, reason });
+	}
+	return out;
+}
+
+function parseArtifactKey(raw: string): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const segment of String(raw).split(";")) {
+		const part = segment.trim();
+		if (!part) continue;
+		const idx = part.indexOf("=");
+		if (idx <= 0) continue;
+		const key = part.slice(0, idx).trim();
+		const value = part.slice(idx + 1).trim();
+		if (!key) continue;
+		out[key] = value;
+	}
+	return out;
+}
+
+function autoRollbackBadgeVariant(
+	outcome: string,
+): "default" | "secondary" | "destructive" | "outline" {
+	switch (String(outcome).trim().toLowerCase()) {
+		case "applied":
+			return "default";
+		case "unsupported":
+			return "outline";
+		case "failed":
+			return "destructive";
+		default:
+			return "secondary";
+	}
 }
 
 function ExecutionField({
