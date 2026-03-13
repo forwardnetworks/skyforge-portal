@@ -191,4 +191,29 @@ describe("ConfigChangesSelectedRunCard", () => {
     render(<ConfigChangesSelectedRunCard page={page as never} />);
     expect(screen.getByText("requested (eligible)")).toBeInTheDocument();
   });
+
+  it("shows requested-unsupported backend before execution outcomes exist", () => {
+    const page = makePage({
+      selectedRun: {
+        id: "run-6",
+        targetType: "deployment",
+        targetRef: "dep-6",
+        status: "approved",
+        approvalState: "approved",
+        sourceKind: "change-plan",
+        executionMode: "apply",
+        requestedBy: "alice",
+        executionTaskId: null,
+        rollbackSummary: {
+          previousDeploymentConfigJson: '{"template":"demo/topology.yml"}',
+        },
+        reviewJson:
+          '{"artifactRefs":[{"kind":"forward-auto-rollback","key":"requested;eligibility=unsupported;backend=ansible-push"}]}',
+      },
+    });
+
+    render(<ConfigChangesSelectedRunCard page={page as never} />);
+    expect(screen.getByText("requested (unsupported)")).toBeInTheDocument();
+    expect(screen.getByText("Backend: ansible-push")).toBeInTheDocument();
+  });
 });

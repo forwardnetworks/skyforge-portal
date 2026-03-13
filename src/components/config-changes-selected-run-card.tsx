@@ -142,6 +142,12 @@ export function ConfigChangesSelectedRunCard({
 									>
 										{`requested (${autoRollbackRequested.eligibility || "unknown"})`}
 									</Badge>
+									{autoRollbackRequested.eligibility === "unsupported" &&
+									autoRollbackRequested.backend ? (
+										<div className="text-xs text-muted-foreground">
+											{`Backend: ${autoRollbackRequested.backend}`}
+										</div>
+									) : null}
 								</div>
 							) : null}
 						</div>
