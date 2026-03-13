@@ -93,6 +93,11 @@ export function ConfigChangesSelectedRunCard({
 								}
 								mono={Boolean(selectedRun.executionTaskId)}
 							/>
+							<ConfigField
+								label="Rollback readiness"
+								value={canRollbackRun ? "ready" : "blocked"}
+								badgeVariant={canRollbackRun ? "default" : "destructive"}
+							/>
 							{autoRollback ? (
 								<div className="space-y-1">
 									<div className="text-xs uppercase tracking-wide text-muted-foreground">

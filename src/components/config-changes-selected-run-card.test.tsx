@@ -47,6 +47,8 @@ describe("ConfigChangesSelectedRunCard", () => {
     expect(screen.getAllByText("n/a").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /execute/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /rollback/i })).toBeEnabled();
+    expect(screen.getByText("Rollback readiness")).toBeInTheDocument();
+    expect(screen.getByText("ready")).toBeInTheDocument();
     expect(screen.getByText(/Only deployment-targeted change-plan runs are executable/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /execute/i }));
@@ -79,6 +81,7 @@ describe("ConfigChangesSelectedRunCard", () => {
 
     expect(screen.getByRole("button", { name: /execute/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /rollback/i })).toBeDisabled();
+    expect(screen.getByText("blocked")).toBeInTheDocument();
     expect(
       screen.getByText("Rollback is only available for deployment targets."),
     ).toBeInTheDocument();
