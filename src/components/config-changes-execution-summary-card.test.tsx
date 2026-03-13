@@ -19,6 +19,26 @@ function makeRun(overrides: Record<string, unknown> = {}) {
 }
 
 describe("ConfigChangesExecutionSummaryCard", () => {
+	it("renders execution and verification backend fields", () => {
+		const run = makeRun({
+			executionSummary: {
+				taskId: 101,
+				executionPath: "change-plan",
+				executionBackend: "netlab-kne",
+				verificationBackend: "forward",
+				verified: false,
+				verificationWarnings: [],
+				artifactRefs: [],
+			},
+		});
+
+		render(<ConfigChangesExecutionSummaryCard run={run as never} />);
+		expect(screen.getByText("Execution backend")).toBeInTheDocument();
+		expect(screen.getByText("netlab-kne")).toBeInTheDocument();
+		expect(screen.getByText("Verification backend")).toBeInTheDocument();
+		expect(screen.getByText("forward")).toBeInTheDocument();
+	});
+
 	it("renders auto-rollback applied outcome", () => {
 		const run = makeRun({
 			executionSummary: {

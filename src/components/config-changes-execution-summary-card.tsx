@@ -41,6 +41,14 @@ export function ConfigChangesExecutionSummaryCard({
 						value={summary.executionPath || "n/a"}
 					/>
 					<ExecutionField
+						label="Execution backend"
+						value={summary.executionBackend || "n/a"}
+					/>
+					<ExecutionField
+						label="Verification backend"
+						value={summary.verificationBackend || "n/a"}
+					/>
+					<ExecutionField
 						label="Planned task type"
 						value={summary.plannedExecutionTaskType || "n/a"}
 						mono
