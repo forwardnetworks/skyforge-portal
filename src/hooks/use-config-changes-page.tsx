@@ -20,6 +20,7 @@ import {
 import {
 	defaultConfigChangeSpecJson,
 } from "../components/config-changes-shared";
+import { reviewExecutionBackendFromJSON } from "../lib/config-change-review";
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
 
@@ -306,14 +307,7 @@ function resolveExecutionBackend(run: ConfigChangeRunRecord): string {
 		.trim()
 		.toLowerCase();
 	if (summaryBackend) return summaryBackend;
-	const raw = String(run.reviewJson || "").trim();
-	if (!raw) return "";
-	try {
-		const parsed = JSON.parse(raw) as { executionBackend?: unknown };
-		return String(parsed.executionBackend || "").trim().toLowerCase();
-	} catch {
-		return "";
-	}
+	return reviewExecutionBackendFromJSON(run.reviewJson);
 }
 
 export type ConfigChangesPageData = ReturnType<typeof useConfigChangesPage>;

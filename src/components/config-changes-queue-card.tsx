@@ -1,5 +1,6 @@
 import type { ConfigChangesPageData } from "../hooks/use-config-changes-page";
 import { useMemo, useState } from "react";
+import { reviewArtifactRefsFromJSON } from "../lib/config-change-review";
 import {
 	autoRollbackBadgeVariant,
 	latestAutoRollbackRequest,
@@ -94,7 +95,7 @@ export function ConfigChangesQueueCard({
 							run.executionSummary?.artifactRefs ?? [],
 						);
 						const autoRollbackRequest = latestAutoRollbackRequest(
-							reviewArtifactRefs(run.reviewJson),
+							reviewArtifactRefsFromJSON(run.reviewJson),
 						);
 						return (
 							<button
@@ -179,25 +180,10 @@ function autoRollbackState(
 				return "none";
 		}
 	}
-	const request = latestAutoRollbackRequest(reviewArtifactRefs(run.reviewJson));
+	const request = latestAutoRollbackRequest(
+		reviewArtifactRefsFromJSON(run.reviewJson),
+	);
 	if (!request) return "none";
 	if (request.eligibility === "eligible") return "requested-eligible";
 	return "requested-unsupported";
-}
-
-function reviewArtifactRefs(reviewJson?: string): Array<{
-	kind?: string;
-	name?: string;
-	key?: string;
-}> {
-	const raw = String(reviewJson || "").trim();
-	if (!raw) return [];
-	try {
-		const parsed = JSON.parse(raw) as {
-			artifactRefs?: Array<{ kind?: string; name?: string; key?: string }>;
-		};
-		return Array.isArray(parsed.artifactRefs) ? parsed.artifactRefs : [];
-	} catch {
-		return [];
-	}
 }
