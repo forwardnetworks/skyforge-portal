@@ -12961,7 +12961,7 @@ export interface operations {
                     templateRepo: string;
                     /** user (default), blueprints, or custom */
                     templateSource: string;
-                    /** repo-relative directory (default: blueprints/kne) */
+                    /** repo-relative directory (default: blueprints/netlab) */
                     templatesDir: string;
                     /** remote workdir-relative (or absolute) topology file */
                     topologyPath: string;
