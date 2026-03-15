@@ -124,8 +124,15 @@ export function useRootLayout() {
 			}),
 		[expiryNowMs, session.data],
 	);
+	const suppressLoginGate =
+		!session.data?.authenticated &&
+		(location.pathname === "/dashboard" ||
+			location.pathname.startsWith("/dashboard/"));
 	const showLoginGate =
-		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
+		isProtectedRoute &&
+		!session.isLoading &&
+		!session.data?.authenticated &&
+		!suppressLoginGate;
 
 	useEffect(() => {
 		if (!showLoginGate) return;
