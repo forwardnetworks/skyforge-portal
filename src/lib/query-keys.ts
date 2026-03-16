@@ -175,6 +175,7 @@ export const queryKeys = {
 	adminServiceNowGlobalConfig: () => ["adminServiceNowGlobalConfig"] as const,
 	adminTeamsGlobalConfig: () => ["adminTeamsGlobalConfig"] as const,
 	adminPlatformOverview: () => ["adminPlatformOverview"] as const,
+	adminPlatformRuntimePolicy: () => ["adminPlatformRuntimePolicy"] as const,
 	adminPlatformReservations: () => ["adminPlatformReservations"] as const,
 	adminPlatformUserPolicy: (username: string) =>
 		["adminPlatformUserPolicy", username] as const,

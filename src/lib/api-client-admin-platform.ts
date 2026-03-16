@@ -199,6 +199,21 @@ export async function createAdminPlatformReservation(
 export type AdminPlatformUserPolicyResponse =
 	operations["GET:skyforge.GetAdminPlatformUserPolicy"]["responses"][200]["content"]["application/json"];
 
+export type AdminPlatformRuntimePolicyResponse = {
+	failOnInsufficientResources: boolean;
+	compatibilityPreflight: boolean;
+	capacityReserveCpuPercent: number;
+	capacityReserveMemoryPercent: number;
+	updatedAt?: string;
+};
+
+export type PutAdminPlatformRuntimePolicyRequest = {
+	failOnInsufficientResources: boolean;
+	compatibilityPreflight: boolean;
+	capacityReserveCpuPercent: number;
+	capacityReserveMemoryPercent: number;
+};
+
 export type PutAdminPlatformUserProfilesRequest = NonNullable<
 	operations["PUT:skyforge.PutAdminPlatformUserProfiles"]["requestBody"]
 >["content"]["application/json"];
@@ -212,6 +227,24 @@ export async function getAdminPlatformUserPolicy(
 ): Promise<AdminPlatformUserPolicyResponse> {
 	return apiFetch<AdminPlatformUserPolicyResponse>(
 		`/api/admin/platform/users/${encodeURIComponent(username)}/policy`,
+	);
+}
+
+export async function getAdminPlatformRuntimePolicy(): Promise<AdminPlatformRuntimePolicyResponse> {
+	return apiFetch<AdminPlatformRuntimePolicyResponse>(
+		"/api/admin/platform/runtime-policy",
+	);
+}
+
+export async function putAdminPlatformRuntimePolicy(
+	body: PutAdminPlatformRuntimePolicyRequest,
+): Promise<AdminPlatformRuntimePolicyResponse> {
+	return apiFetch<AdminPlatformRuntimePolicyResponse>(
+		"/api/admin/platform/runtime-policy",
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
 	);
 }
 

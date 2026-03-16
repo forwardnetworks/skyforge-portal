@@ -2,6 +2,7 @@ import type { PlatformCapacityPageState } from "@/hooks/use-platform-capacity-pa
 import { PlatformCapacityInfraComparisonCard } from "./platform-capacity-infra-comparison-card";
 import { PlatformCapacitySummaryCards } from "./platform-capacity-summary-cards";
 import { PlatformCapacityTables } from "./platform-capacity-tables";
+import { PlatformRuntimePolicyCard } from "./platform-runtime-policy-card";
 import { PlatformWarningsCard } from "./platform-warnings-card";
 
 export { formatCurrencyFromCents } from "./platform-capacity-formatting";
@@ -35,6 +36,7 @@ export function PlatformCapacityPageContent(props: {
 			/>
 
 			<PlatformCapacitySummaryCards page={page} />
+			<PlatformRuntimePolicyCard page={page} />
 
 			<PlatformCapacityTables page={page} />
 		</div>

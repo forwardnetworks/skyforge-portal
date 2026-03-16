@@ -110,29 +110,28 @@ export function PublicLandingPageContent(
 
 	return (
 		<div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 lg:px-6 lg:py-8">
-			<section className="relative overflow-hidden rounded-[2.2rem] border border-border/60 bg-[linear-gradient(140deg,rgba(10,14,23,0.98),rgba(17,24,39,0.98)_52%,rgba(13,148,136,0.14))] text-white shadow-[0_32px_120px_rgba(2,6,23,0.46)]">
-				<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(226,232,240,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.16),transparent_32%),linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[length:auto,auto,26px_26px,26px_26px] opacity-80" />
-				<div className="relative grid gap-6 px-6 py-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-8">
+			<section className="rounded-2xl border border-border/70 bg-card shadow-sm">
+				<div className="grid gap-6 px-6 py-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-8">
 					<div className="space-y-6">
 						<div className="flex flex-wrap items-center gap-2">
-							<Badge variant="outline" className="border-white/15 bg-white/10 text-white">
+							<Badge variant="outline">
 								Internal GTM platform
 							</Badge>
 							<Badge variant={statusVariant(headlineStatus)} className="capitalize">
 								{headlineStatus}
 							</Badge>
-							<Badge variant="outline" className="border-white/15 bg-white/10 text-white">
+							<Badge variant="outline">
 								Auth {props.authModeLabel}
 							</Badge>
 						</div>
 						<div className="space-y-3">
-							<div className="font-mono text-[11px] uppercase tracking-[0.34em] text-slate-300">
+							<div className="font-mono text-[11px] uppercase tracking-[0.34em] text-muted-foreground">
 								Operator entry point
 							</div>
-							<h1 className="max-w-3xl font-serif text-4xl tracking-tight text-white sm:text-5xl">
+							<h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
 								{productName}
 							</h1>
-							<p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
+							<p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
 								Launch demos, inspect platform readiness, and move into
 								Forward-connected workflows from a single internal control surface.
 								The entry page now exposes enough live state to tell you whether the
@@ -141,32 +140,32 @@ export function PublicLandingPageContent(
 						</div>
 
 						<div className="grid gap-3 sm:grid-cols-3">
-							<div className="rounded-[1.4rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
-								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
+							<div className="rounded-[1.1rem] border bg-muted/20 p-4">
+								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
 									Healthy
 								</div>
-								<div className="mt-2 text-3xl font-semibold text-white">
+								<div className="mt-2 text-3xl font-semibold">
 									{props.statusSummary?.up ?? 0}
 								</div>
-								<div className="mt-1 text-sm text-slate-300">Public-safe ready checks</div>
+								<div className="mt-1 text-sm text-muted-foreground">Public-safe ready checks</div>
 							</div>
-							<div className="rounded-[1.4rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
-								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
+							<div className="rounded-[1.1rem] border bg-muted/20 p-4">
+								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
 									Active labs
 								</div>
-								<div className="mt-2 text-3xl font-semibold text-white">
+								<div className="mt-2 text-3xl font-semibold">
 									{props.statusSummary?.deploymentsActive ?? 0}
 								</div>
-								<div className="mt-1 text-sm text-slate-300">Currently running environments</div>
+								<div className="mt-1 text-sm text-muted-foreground">Currently running environments</div>
 							</div>
-							<div className="rounded-[1.4rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
-								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
+							<div className="rounded-[1.1rem] border bg-muted/20 p-4">
+								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
 									Tracked scopes
 								</div>
-								<div className="mt-2 text-3xl font-semibold text-white">
+								<div className="mt-2 text-3xl font-semibold">
 									{props.statusSummary?.userScopesTotal ?? 0}
 								</div>
-								<div className="mt-1 text-sm text-slate-300">
+								<div className="mt-1 text-sm text-muted-foreground">
 									Tenant-isolated environments
 								</div>
 							</div>
@@ -176,7 +175,6 @@ export function PublicLandingPageContent(
 							<Button
 								asChild
 								size="lg"
-								className="bg-white text-slate-950 hover:bg-slate-100"
 							>
 								<a href={props.loginHref}>
 									<KeyRound className="h-4 w-4" />
@@ -187,7 +185,6 @@ export function PublicLandingPageContent(
 								asChild
 								size="lg"
 								variant="outline"
-								className="border-white/15 bg-white/5 text-white hover:bg-white/10"
 							>
 								<Link to="/docs">
 									<BookOpen className="h-4 w-4" />
@@ -199,7 +196,6 @@ export function PublicLandingPageContent(
 									asChild
 									size="lg"
 									variant="ghost"
-									className="text-white hover:bg-white/10 hover:text-white"
 								>
 									<a href={props.localLoginHref}>{props.breakGlassLabel}</a>
 								</Button>
@@ -208,33 +204,33 @@ export function PublicLandingPageContent(
 					</div>
 
 					<div className="grid gap-4">
-						<Card className="border-white/10 bg-black/25 text-white shadow-none backdrop-blur-sm">
+						<Card className="shadow-none">
 							<CardHeader className="space-y-3 pb-4">
 								<div className="flex items-center justify-between gap-3">
 									<div>
-										<CardTitle className="text-xl text-white">Entry protocol</CardTitle>
-										<CardDescription className="text-slate-300">
+										<CardTitle className="text-xl">Entry protocol</CardTitle>
+										<CardDescription>
 											Internal login hub, not a generic landing page.
 										</CardDescription>
 									</div>
-									<ServerCog className="h-5 w-5 text-slate-300" />
+									<ServerCog className="h-5 w-5 text-muted-foreground" />
 								</div>
 							</CardHeader>
-							<CardContent className="space-y-4 text-sm text-slate-200">
-								<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-									<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
+							<CardContent className="space-y-4 text-sm">
+								<div className="rounded-2xl border bg-muted/20 p-4">
+									<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
 										Default path
 									</div>
-									<div className="mt-2 text-base font-medium text-white">
+									<div className="mt-2 text-base font-medium">
 										Authenticate, then land on the status-first dashboard.
 									</div>
-									<div className="mt-1 text-slate-300">
+									<div className="mt-1 text-muted-foreground">
 										Quick Deploy is available from the dashboard, but it is no
 										longer the blind default.
 									</div>
 								</div>
-								<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-									<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
+								<div className="rounded-2xl border bg-muted/20 p-4">
+									<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
 										Primary signal
 									</div>
 									<div className="mt-2 flex items-start gap-3">
@@ -245,10 +241,10 @@ export function PublicLandingPageContent(
 											)}
 										/>
 										<div>
-											<div className="font-medium text-white">
+											<div className="font-medium">
 												{topSignalLabel(checks)}
 											</div>
-											<div className="mt-1 text-slate-300">
+											<div className="mt-1 text-muted-foreground">
 												{props.statusSummary?.timestamp
 													? `Status feed updated ${new Date(props.statusSummary.timestamp).toLocaleString()}.`
 													: "Status feed has not reported yet."}
@@ -259,16 +255,16 @@ export function PublicLandingPageContent(
 							</CardContent>
 						</Card>
 
-						<Card className="border-white/10 bg-white/5 text-white shadow-none backdrop-blur-sm">
+						<Card className="shadow-none">
 							<CardHeader className="pb-4">
-								<CardTitle className="text-lg text-white">Live signal board</CardTitle>
-								<CardDescription className="text-slate-300">
+								<CardTitle className="text-lg">Live signal board</CardTitle>
+								<CardDescription>
 									Most relevant platform checks before sign-in.
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-3">
 								{signalRows.length === 0 ? (
-									<div className="rounded-2xl border border-dashed border-white/15 bg-black/20 px-4 py-5 text-sm text-slate-300">
+									<div className="rounded-2xl border border-dashed px-4 py-5 text-sm text-muted-foreground">
 										Waiting for the first status sample.
 									</div>
 								) : (
@@ -285,14 +281,14 @@ export function PublicLandingPageContent(
 												)}
 											>
 												<div className="flex items-center justify-between gap-3">
-													<div className="font-medium capitalize text-white">
+													<div className="font-medium capitalize">
 														{check.name.replace(/[-_]/g, " ")}
 													</div>
 													<Badge variant={statusVariant(check.status)}>
 														{check.status}
 													</Badge>
 												</div>
-												<div className="mt-1 text-sm text-slate-300">
+												<div className="mt-1 text-sm text-muted-foreground">
 													{check.detail?.trim() || "No additional detail reported."}
 												</div>
 											</div>

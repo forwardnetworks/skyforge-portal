@@ -47,10 +47,10 @@ export function buildLoginUrl(
 ): string {
 	const safeNext = next.startsWith("/") ? next : "/";
 	if (mode == null) {
-		return `${SKYFORGE_API}/reauth?next=${encodeURIComponent(safeNext)}`;
+		return `${SKYFORGE_API}/auth/reauth?next=${encodeURIComponent(safeNext)}`;
 	}
 	if (mode === "local") {
 		return buildLocalLoginUrl(safeNext);
 	}
-	return `${SKYFORGE_API}/oidc/login?next=${encodeURIComponent(safeNext)}`;
+	return `${SKYFORGE_API}/auth/oidc/login?next=${encodeURIComponent(safeNext)}`;
 }
