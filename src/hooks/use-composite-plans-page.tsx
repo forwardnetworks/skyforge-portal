@@ -201,12 +201,7 @@ export function useCompositePlansPage(userId?: string) {
 	}, [plans, selectedPlanId]);
 
 	useEffect(() => {
-		if (!selectedPlanId) {
-			setDraft(emptyDraft());
-			setPreviewWarnings([]);
-			setPreviewErrors([]);
-			return;
-		}
+		if (!selectedPlanId) return;
 		const selected = plans.find((plan) => plan.id === selectedPlanId);
 		if (!selected) return;
 		setDraft(toDraft(selected));
