@@ -1,9 +1,10 @@
 import type { PlatformReservationsPageState } from "@/hooks/use-platform-reservations-page";
-import { PlatformWarningsCard } from "./platform-warnings-card";
+import { PlatformReservationsCalendar } from "./platform-reservations-calendar";
 import { PlatformReservationsGuidanceCard } from "./platform-reservations-guidance-card";
 import { PlatformReservationsLifecycleCard } from "./platform-reservations-lifecycle-card";
 import { PlatformReservationsRequestCard } from "./platform-reservations-request-card";
 import { PlatformReservationsTable } from "./platform-reservations-table";
+import { PlatformWarningsCard } from "./platform-warnings-card";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 export function PlatformReservationsPageContent(props: {
@@ -30,6 +31,7 @@ export function PlatformReservationsPageContent(props: {
 				</p>
 			</div>
 
+			<PlatformReservationsCalendar page={page} />
 			<PlatformReservationsRequestCard page={page} />
 
 			<Card>
