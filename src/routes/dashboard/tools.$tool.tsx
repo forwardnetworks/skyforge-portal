@@ -68,7 +68,11 @@ function EmbeddedToolPage() {
 
 	const src = useMemo(() => {
 		if (!uiConfigQ.data) return "";
-		return composeToolSrc(toolDef.resolveUrl(uiConfigQ.data), path ?? "");
+		const resolved = toolDef.resolveUrl(uiConfigQ.data, { path: path ?? "" });
+		if (toolDef.pathStrategy === "resolve") {
+			return resolved;
+		}
+		return composeToolSrc(resolved, path ?? "");
 	}, [path, toolDef, uiConfigQ.data]);
 
 	useEffect(() => {

@@ -251,7 +251,7 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 										</div>
 										<a
 											className="hover:text-foreground transition-colors underline hover:no-underline"
-											href="/api/gitea/public?next=/skyforge/skyforge/issues/new"
+											href="/git/user/oauth2/oidc?redirect_to=/git/skyforge/skyforge/issues/new"
 											target="_blank"
 											rel="noreferrer"
 										>

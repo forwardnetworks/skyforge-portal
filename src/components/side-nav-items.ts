@@ -93,18 +93,6 @@ function createNavItems(): NavItem[] {
 					icon: Network,
 				},
 				{
-					label: "Grafana",
-					href: embeddedToolHref("forward-grafana"),
-					icon: Activity,
-					featureFlag: "forwardGrafanaEnabled",
-				},
-				{
-					label: "Prometheus",
-					href: embeddedToolHref("forward-prometheus"),
-					icon: Activity,
-					featureFlag: "forwardPrometheusEnabled",
-				},
-				{
 					label: "Analytics",
 					href: "/dashboard/forward-analytics",
 					icon: ShieldCheck,
@@ -194,6 +182,18 @@ function createNavItems(): NavItem[] {
 					featureFlag: "coderEnabled",
 				},
 				{
+					label: "Grafana",
+					href: embeddedToolHref("grafana"),
+					icon: Activity,
+					featureFlag: "forwardGrafanaEnabled",
+				},
+				{
+					label: "Prometheus",
+					href: embeddedToolHref("prometheus"),
+					icon: Activity,
+					featureFlag: "forwardPrometheusEnabled",
+				},
+				{
 					label: "Reservations",
 					href: "/dashboard/reservations",
 					icon: Activity,
@@ -221,6 +221,12 @@ function createNavItems(): NavItem[] {
 					href: embeddedToolHref("api-testing"),
 					icon: PanelTop,
 					featureFlag: "yaadeEnabled",
+				},
+				{
+					label: "ReDoc",
+					href: "/redoc/",
+					icon: BookOpen,
+					featureFlag: "swaggerUIEnabled",
 				},
 				{ label: "Webhooks", href: "/webhooks", icon: Webhook },
 				{ label: "Syslog", href: "/syslog", icon: Inbox },

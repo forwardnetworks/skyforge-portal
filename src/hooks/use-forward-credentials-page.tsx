@@ -4,6 +4,7 @@ import {
 	getCurrentUserForwardTenantCredential,
 	listCurrentUserForwardTenantRebuildRuns,
 	listUserForwardCollectorConfigs,
+	revealCurrentUserForwardTenantCredentialPassword,
 	requestCurrentUserForwardTenantRebuild,
 	resetCurrentUserForwardTenantCredential,
 } from "@/lib/api-client";
@@ -65,7 +66,7 @@ export function useForwardCredentialsPage() {
 	const [skipTlsVerify, setSkipTlsVerify] = useState(false);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
-	const [showTenantPassword, setShowTenantPassword] = useState(false);
+	const [revealedTenantPassword, setRevealedTenantPassword] = useState("");
 	const [confirmHardReset, setConfirmHardReset] = useState(false);
 	const tlsCheckboxDisabled = false;
 	const effectiveSkipTlsVerify = skipTlsVerify;
@@ -122,12 +123,29 @@ export function useForwardCredentialsPage() {
 		mutationFn: resetCurrentUserForwardTenantCredential,
 		onSuccess: async () => {
 			toast.success("Forward org credential reset");
-			setShowTenantPassword(false);
+			setRevealedTenantPassword("");
 			await queryClient.invalidateQueries({ queryKey: tenantCredentialKey });
 			await queryClient.invalidateQueries({ queryKey: collectorsKey });
 		},
 		onError: (err) =>
 			toast.error("Failed to reset Forward org credential", {
+				description: err instanceof Error ? err.message : String(err),
+		}),
+	});
+
+	const revealTenantCredentialMutation = useMutation({
+		mutationFn: revealCurrentUserForwardTenantCredentialPassword,
+		onSuccess: (resp) => {
+			const value = String(resp?.password ?? "").trim();
+			if (!value) {
+				toast.error("Managed credential password unavailable");
+				return;
+			}
+			setRevealedTenantPassword(value);
+			toast.success("Managed credential password revealed");
+		},
+		onError: (err) =>
+			toast.error("Failed to reveal managed credential password", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
@@ -175,8 +193,8 @@ export function useForwardCredentialsPage() {
 		setUsername,
 		password,
 		setPassword,
-		showTenantPassword,
-		setShowTenantPassword,
+		revealedTenantPassword,
+		setRevealedTenantPassword,
 		confirmHardReset,
 		setConfirmHardReset,
 		tlsCheckboxDisabled,
@@ -185,6 +203,7 @@ export function useForwardCredentialsPage() {
 		createMutation,
 		deleteMutation,
 		resetTenantCredentialMutation,
+		revealTenantCredentialMutation,
 		requestTenantResetMutation,
 	};
 }

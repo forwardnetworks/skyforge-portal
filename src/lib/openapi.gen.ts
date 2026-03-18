@@ -2268,23 +2268,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/gitea/public": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GiteaPublicSSO logs into Gitea with a read-only public user. */
-        get: operations["GET:skyforge.GiteaPublicSSO"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -14476,25 +14459,6 @@ export interface operations {
                         username: string;
                     };
                 };
-            };
-            default: components["responses"]["APIError"];
-        };
-    };
-    "GET:skyforge.GiteaPublicSSO": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             default: components["responses"]["APIError"];
         };

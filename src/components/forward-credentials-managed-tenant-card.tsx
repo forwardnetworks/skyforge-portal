@@ -51,33 +51,39 @@ export function ForwardCredentialsManagedTenantCard(props: {
 									{page.tenantCredentialQ.data.username || "—"}
 								</div>
 							</div>
-							<div className="space-y-1">
-								<div className="text-xs text-muted-foreground">
-									Forward password
-								</div>
-								<div className="break-all font-mono text-sm">
-									{page.showTenantPassword
-										? page.tenantCredentialQ.data.password || "—"
-										: "••••••••••••••••"}
+								<div className="space-y-1">
+									<div className="text-xs text-muted-foreground">
+										Forward password
+									</div>
+									<div className="break-all font-mono text-sm">
+										{page.revealedTenantPassword
+											? page.revealedTenantPassword
+											: "••••••••••••••••"}
+									</div>
 								</div>
 							</div>
-						</div>
 						<div className="text-xs text-muted-foreground">
 							Org: {" "}
 							{page.tenantCredentialQ.data.orgName ||
 								page.tenantCredentialQ.data.orgId ||
 								"—"}
 						</div>
-						<div className="flex flex-wrap gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => page.setShowTenantPassword((v) => !v)}
-							>
-								{page.showTenantPassword ? "Hide password" : "Show password"}
-							</Button>
-							<Button
-								variant="outline"
+							<div className="flex flex-wrap gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									disabled={
+										!page.tenantCredentialQ.data.hasPassword ||
+										page.revealTenantCredentialMutation.isPending
+									}
+									onClick={() => page.revealTenantCredentialMutation.mutate()}
+								>
+									{page.revealTenantCredentialMutation.isPending
+										? "Revealing…"
+										: "Reveal password"}
+								</Button>
+								<Button
+									variant="outline"
 								size="sm"
 								onClick={() => {
 									const value = page.tenantCredentialQ.data?.username?.trim();
@@ -88,14 +94,14 @@ export function ForwardCredentialsManagedTenantCard(props: {
 							>
 								Copy username
 							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => {
-									const value = page.tenantCredentialQ.data?.password?.trim();
-									if (!value) return;
-									void navigator.clipboard?.writeText(value);
-									toast.success("Forward password copied");
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										const value = page.revealedTenantPassword.trim();
+										if (!value) return;
+										void navigator.clipboard?.writeText(value);
+										toast.success("Forward password copied");
 								}}
 							>
 								Copy password
@@ -106,11 +112,11 @@ export function ForwardCredentialsManagedTenantCard(props: {
 								disabled={page.resetTenantCredentialMutation.isPending}
 								onClick={() => page.resetTenantCredentialMutation.mutate()}
 							>
-								{page.resetTenantCredentialMutation.isPending
-									? "Resetting…"
-									: "Reset managed credential"}
-							</Button>
-						</div>
+									{page.resetTenantCredentialMutation.isPending
+										? "Resetting…"
+										: "Reset managed credential"}
+								</Button>
+							</div>
 					</div>
 				) : null}
 			</CardContent>

@@ -55,6 +55,7 @@ describe("side nav model", () => {
 				elkEnabled: true,
 				infobloxEnabled: true,
 				dnsEnabled: true,
+				swaggerUIEnabled: true,
 			},
 			"local",
 		);
@@ -101,6 +102,7 @@ describe("side nav model", () => {
 				"Reservations",
 				"Infoblox Console",
 				"API Testing",
+				"ReDoc",
 				"Webhooks",
 				"Syslog",
 				"SNMP",

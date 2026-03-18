@@ -75,6 +75,7 @@ export type ForwardTenantCredentialResponse = {
 	orgName?: string;
 	username?: string;
 	email?: string;
+	hasPassword?: boolean;
 	password?: string;
 	updatedAt?: ISO8601;
 	lastRotatedAt?: ISO8601;
@@ -122,6 +123,13 @@ export async function getCurrentUserForwardTenantCredential(): Promise<ForwardTe
 export async function resetCurrentUserForwardTenantCredential(): Promise<ForwardTenantCredentialResponse> {
 	return apiFetch<ForwardTenantCredentialResponse>(
 		"/api/forward/org-credential/reset",
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function revealCurrentUserForwardTenantCredentialPassword(): Promise<ForwardTenantCredentialResponse> {
+	return apiFetch<ForwardTenantCredentialResponse>(
+		"/api/forward/org-credential/reveal",
 		{ method: "POST", body: "{}" },
 	);
 }

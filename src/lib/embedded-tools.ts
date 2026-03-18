@@ -3,8 +3,8 @@ import { SKYFORGE_API } from "./skyforge-config";
 
 export type EmbeddedToolId =
 	| "forward-cluster"
-	| "forward-grafana"
-	| "forward-prometheus"
+	| "grafana"
+	| "prometheus"
 	| "netbox"
 	| "nautobot"
 	| "jira"
@@ -22,10 +22,18 @@ export type EmbeddedToolDefinition = {
 	title: string;
 	description: string;
 	featureFlag?: keyof NonNullable<UIConfigResponse["features"]>;
-	resolveUrl: (uiConfig: UIConfigResponse) => string;
+	pathStrategy?: "compose" | "resolve";
+	resolveUrl: (
+		uiConfig: UIConfigResponse,
+		options?: { path?: string },
+	) => string;
 };
 
-const FORWARD_CLUSTER_URL = "https://skyforge-fwd.local.forwardnetworks.com";
+function normalizeToolBase(baseUrl: string | undefined, fallback: string): string {
+	const raw = String(baseUrl || "").trim();
+	const value = raw || fallback;
+	return value.endsWith("/") ? value.slice(0, -1) : value;
+}
 
 export const EMBEDDED_TOOL_DEFS: Record<
 	EmbeddedToolId,
@@ -36,20 +44,29 @@ export const EMBEDDED_TOOL_DEFS: Record<
 		title: "Forward Cluster",
 		description: "Embedded access to the in-app Forward cluster.",
 		featureFlag: "forwardEnabled",
-		resolveUrl: () => FORWARD_CLUSTER_URL,
+		pathStrategy: "resolve",
+		resolveUrl: (_uiConfig, options) => {
+			const params = new URLSearchParams();
+			const next = String(options?.path ?? "").trim();
+			if (next.startsWith("/")) {
+				params.set("next", next);
+			}
+			const query = params.toString();
+			return query ? `/api/forward/session?${query}` : "/api/forward/session";
+		},
 	},
-	"forward-grafana": {
-		id: "forward-grafana",
-		title: "Forward Grafana",
-		description: "Embedded Forward Grafana observability UI.",
-		featureFlag: "forwardEnabled",
+	grafana: {
+		id: "grafana",
+		title: "Grafana",
+		description: "Embedded platform Grafana observability UI.",
+		featureFlag: "forwardGrafanaEnabled",
 		resolveUrl: () => "/grafana",
 	},
-	"forward-prometheus": {
-		id: "forward-prometheus",
-		title: "Forward Prometheus",
-		description: "Embedded Forward Prometheus observability UI.",
-		featureFlag: "forwardEnabled",
+	prometheus: {
+		id: "prometheus",
+		title: "Prometheus",
+		description: "Embedded platform Prometheus observability UI.",
+		featureFlag: "forwardPrometheusEnabled",
 		resolveUrl: () => "/prometheus",
 	},
 	netbox: {
@@ -57,14 +74,20 @@ export const EMBEDDED_TOOL_DEFS: Record<
 		title: "NetBox",
 		description: "Embedded NetBox interface.",
 		featureFlag: "netboxEnabled",
-		resolveUrl: (uiConfig) => uiConfig.netboxBaseUrl || "/netbox/",
+		resolveUrl: (uiConfig) => {
+			const base = normalizeToolBase(uiConfig.netboxBaseUrl, "/netbox");
+			return `${base}/oauth/login/oidc/?next=%2F`;
+		},
 	},
 	nautobot: {
 		id: "nautobot",
 		title: "Nautobot",
 		description: "Embedded Nautobot interface.",
 		featureFlag: "nautobotEnabled",
-		resolveUrl: (uiConfig) => uiConfig.nautobotBaseUrl || "/nautobot/",
+		resolveUrl: (uiConfig) => {
+			const base = normalizeToolBase(uiConfig.nautobotBaseUrl, "/nautobot");
+			return `${base}/login/oidc/?next=%2F`;
+		},
 	},
 	jira: {
 		id: "jira",
@@ -99,7 +122,7 @@ export const EMBEDDED_TOOL_DEFS: Record<
 		title: "Git",
 		description: "Embedded Gitea interface.",
 		featureFlag: "giteaEnabled",
-		resolveUrl: () => "/api/gitea/public",
+		resolveUrl: () => "/git/user/oauth2/oidc",
 	},
 	artifacts: {
 		id: "artifacts",
