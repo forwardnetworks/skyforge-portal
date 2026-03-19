@@ -31,6 +31,7 @@ import { normalizeUIExperienceMode } from "../lib/ui-experience";
 
 export type NavItem = {
 	id?: string;
+	order?: number;
 	label: string;
 	href: string;
 	icon: ComponentType<{ className?: string }>;
@@ -39,7 +40,7 @@ export type NavItem = {
 	adminOnly?: boolean;
 	featureFlag?: keyof Features;
 	children?: NavItem[];
-	experience?: "both" | "advanced";
+	experience?: "both" | "advanced" | "simple";
 };
 
 function toolNavIcon(icon: string | undefined) {
@@ -54,10 +55,16 @@ function toolNavIcon(icon: string | undefined) {
 			return Cloud;
 		case "database":
 			return Database;
+		case "folder-kanban":
+			return FolderKanban;
 		case "git-branch":
 			return GitBranch;
+		case "hammer":
+			return Hammer;
 		case "inbox":
 			return Inbox;
+		case "layout-dashboard":
+			return LayoutDashboard;
 		case "network":
 			return Network;
 		case "panel-top":
@@ -94,6 +101,7 @@ function toolNavExperience(tool: ToolLaunchEntry): "both" | "advanced" {
 function navToolItem(tool: ToolLaunchEntry): NavItem {
 	return {
 		id: tool.id,
+		order: tool.navigationOrder,
 		label: String(tool.navigationLabel).trim(),
 		href: tool.navigationHref,
 		icon: toolNavIcon(tool.navigationIcon),
@@ -106,14 +114,20 @@ function navToolItem(tool: ToolLaunchEntry): NavItem {
 function navEntryItem(entry: ToolNavigationEntry): NavItem {
 	return {
 		id: entry.id,
+		order: entry.navigationOrder,
 		label: String(entry.label).trim(),
 		href: entry.navigationHref,
 		icon: toolNavIcon(entry.navigationIcon),
 		adminOnly: entry.adminOnly,
+		featureFlag: entry.featureFlag as keyof Features | undefined,
 		experience:
-			String(entry.experience).trim().toLowerCase() === "both"
-				? "both"
-				: "advanced",
+			String(entry.displayMode || entry.experience)
+				.trim()
+				.toLowerCase() === "simple"
+				? "simple"
+				: String(entry.experience).trim().toLowerCase() === "both"
+					? "both"
+					: "advanced",
 	};
 }
 
@@ -176,7 +190,17 @@ function createNavItems(
 	entries: ToolNavigationEntry[] | undefined,
 	toolLaunches?: ToolLaunchMap,
 ): NavItem[] {
-	const simpleMode = mode === "simple";
+	const topLevelEntries = navEntryItemsForSection(entries, "").sort(
+		(left, right) =>
+			Number(
+				(entries ?? []).find((entry) => entry.id === left.id)
+					?.navigationOrder ?? 0,
+			) -
+			Number(
+				(entries ?? []).find((entry) => entry.id === right.id)
+					?.navigationOrder ?? 0,
+			),
+	);
 	const dynamicSections = [...(sections ?? [])]
 		.sort((left, right) => left.order - right.order)
 		.map((section) => {
@@ -203,6 +227,7 @@ function createNavItems(
 			});
 			return {
 				id: section.id,
+				order: section.order,
 				label: section.label,
 				href: "",
 				icon: toolNavIcon(section.icon),
@@ -212,48 +237,7 @@ function createNavItems(
 				children,
 			} satisfies NavItem;
 		});
-	return [
-		{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-		{
-			label: "Observability",
-			href: "/dashboard/observability",
-			icon: Activity,
-			experience: "advanced",
-		},
-		{
-			label: "Deployments",
-			href: "/dashboard/deployments",
-			icon: FolderKanban,
-		},
-		{
-			label: "Launch Lab",
-			href: "/dashboard/deployments/quick",
-			icon: Workflow,
-			featureFlag: "forwardEnabled",
-		},
-		{
-			label: "Designer",
-			href: "/dashboard/labs/designer",
-			icon: Hammer,
-			experience: "advanced",
-		},
-		...(simpleMode
-			? [
-					{
-						label: "Reservations",
-						href: "/dashboard/reservations",
-						icon: Activity,
-					} satisfies NavItem,
-				]
-			: []),
-		...dynamicSections,
-		{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
-		{
-			label: "Settings",
-			href: "/settings",
-			icon: Settings,
-		},
-	];
+	return [...topLevelEntries, ...dynamicSections];
 }
 
 function filterNavItems(
@@ -262,27 +246,32 @@ function filterNavItems(
 	features?: Features,
 	mode: UIExperienceMode = "simple",
 ): NavItem[] {
-	return items.flatMap((item) => {
-		if (item.experience === "advanced" && mode !== "advanced") {
-			return [];
-		}
-		if (item.adminOnly && !isAdmin) {
-			return [];
-		}
-		if (item.featureFlag && features && !features[item.featureFlag]) {
-			return [];
-		}
-		if (!item.children) {
-			return [item];
-		}
+	return items
+		.flatMap((item) => {
+			if (item.experience === "advanced" && mode !== "advanced") {
+				return [];
+			}
+			if (item.experience === "simple" && mode !== "simple") {
+				return [];
+			}
+			if (item.adminOnly && !isAdmin) {
+				return [];
+			}
+			if (item.featureFlag && features && !features[item.featureFlag]) {
+				return [];
+			}
+			if (!item.children) {
+				return [item];
+			}
 
-		const children = filterNavItems(item.children, isAdmin, features, mode);
-		if (children.length === 0) {
-			return [];
-		}
+			const children = filterNavItems(item.children, isAdmin, features, mode);
+			if (children.length === 0) {
+				return [];
+			}
 
-		return [{ ...item, children }];
-	});
+			return [{ ...item, children }];
+		})
+		.sort((left, right) => Number(left.order ?? 0) - Number(right.order ?? 0));
 }
 
 export function buildSideNavItems(

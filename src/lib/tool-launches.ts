@@ -14,6 +14,8 @@ export type ToolNavigationEntry = {
 	navigationIcon: string;
 	navigationHref: string;
 	experience: string;
+	displayMode?: string;
+	featureFlag?: string;
 	adminOnly?: boolean;
 };
 
