@@ -19,7 +19,7 @@ import {
 import { getToolCatalog } from "@/lib/api-client-tool-catalog";
 import { queryKeys } from "@/lib/query-keys";
 import { composeToolContentUrl, indexToolLaunches } from "@/lib/tool-launches";
-import { requireAdvancedRouteAccess } from "@/lib/ui-experience-route";
+import { requireToolRouteAccess } from "@/lib/ui-experience-route";
 
 export const Route = createFileRoute("/dashboard/tools/$tool")({
 	validateSearch: (search: Record<string, unknown>) => {
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/dashboard/tools/$tool")({
 		return out;
 	},
 	beforeLoad: async ({ context, params }) => {
-		await requireAdvancedRouteAccess(context);
+		await requireToolRouteAccess(context, params.tool);
 	},
 	component: EmbeddedToolPage,
 });

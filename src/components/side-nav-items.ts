@@ -21,7 +21,7 @@ import type { ComponentType } from "react";
 import type { UIExperienceMode } from "../lib/api-client-user-settings";
 import { sessionHasRole } from "../lib/rbac";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
-import type { ToolLaunchMap } from "../lib/tool-launches";
+import type { ToolLaunchEntry, ToolLaunchMap } from "../lib/tool-launches";
 import { normalizeUIExperienceMode } from "../lib/ui-experience";
 
 export type NavItem = {
@@ -36,21 +36,77 @@ export type NavItem = {
 	experience?: "both" | "advanced";
 };
 
-function navToolItem(
-	toolLaunches: ToolLaunchMap | undefined,
-	toolID: string,
-	label: string,
-	icon: ComponentType<{ className?: string }>,
-): NavItem | null {
-	const tool = toolLaunches?.[toolID];
-	if (!tool) return null;
+function toolNavIcon(icon: string | undefined) {
+	switch (
+		String(icon ?? "")
+			.trim()
+			.toLowerCase()
+	) {
+		case "activity":
+			return Activity;
+		case "cloud":
+			return Cloud;
+		case "database":
+			return Database;
+		case "git-branch":
+			return GitBranch;
+		case "inbox":
+			return Inbox;
+		case "network":
+			return Network;
+		case "panel-top":
+			return PanelTop;
+		case "server":
+			return Server;
+		case "workflow":
+			return Workflow;
+		default:
+			return Workflow;
+	}
+}
+
+function toolNavSection(tool: ToolLaunchEntry): string {
+	return String(tool.navigationSection ?? tool.category ?? "")
+		.trim()
+		.toLowerCase();
+}
+
+function toolNavExperience(tool: ToolLaunchEntry): "both" | "advanced" {
+	return String(tool.experience ?? "advanced")
+		.trim()
+		.toLowerCase() === "both"
+		? "both"
+		: "advanced";
+}
+
+function navToolItem(tool: ToolLaunchEntry): NavItem {
 	return {
-		label,
+		label: String(tool.navigationLabel ?? tool.title ?? "").trim() || tool.id,
 		href: tool.navigationHref,
-		icon,
+		icon: toolNavIcon(tool.navigationIcon),
 		external: String(tool.navigationMode ?? "").trim() === "direct",
 		newTab: String(tool.launchMode ?? "").trim() === "new_tab",
+		experience: toolNavExperience(tool),
 	};
+}
+
+function navToolItemsForSection(
+	toolLaunches: ToolLaunchMap | undefined,
+	section: string,
+): NavItem[] {
+	return Object.values(toolLaunches ?? {})
+		.filter((tool) => toolNavSection(tool) === section)
+		.sort((left, right) => {
+			const orderDelta =
+				Number(left.navigationOrder ?? 0) - Number(right.navigationOrder ?? 0);
+			if (orderDelta !== 0) {
+				return orderDelta;
+			}
+			return String(
+				left.navigationLabel ?? left.title ?? left.id,
+			).localeCompare(String(right.navigationLabel ?? right.title ?? right.id));
+		})
+		.map((tool) => navToolItem(tool));
 }
 
 export type Features = {
@@ -126,7 +182,7 @@ function createNavItems(
 					href: "/dashboard/forward/collectors",
 					icon: Radio,
 				},
-				navToolItem(toolLaunches, "forward-cluster", "Cluster", Network),
+				...navToolItemsForSection(toolLaunches, "forward"),
 				{
 					label: "Analytics",
 					href: "/dashboard/forward-analytics",
@@ -153,14 +209,7 @@ function createNavItems(
 			href: "",
 			icon: Workflow,
 			experience: "advanced",
-			children: [
-				navToolItem(toolLaunches, "netbox", "NetBox", Network),
-				navToolItem(toolLaunches, "nautobot", "Nautobot", Network),
-				navToolItem(toolLaunches, "jira", "Jira", Workflow),
-				navToolItem(toolLaunches, "rapid7", "Rapid7", Workflow),
-				navToolItem(toolLaunches, "elk", "ELK", Database),
-				navToolItem(toolLaunches, "infoblox", "Infoblox", Server),
-			].filter(Boolean) as NavItem[],
+			children: navToolItemsForSection(toolLaunches, "integrations"),
 		},
 		{
 			label: "Platform",
@@ -168,12 +217,7 @@ function createNavItems(
 			icon: Cloud,
 			experience: "advanced",
 			children: [
-				navToolItem(toolLaunches, "git", "Git", GitBranch),
-				navToolItem(toolLaunches, "artifacts", "Artifacts", Inbox),
-				navToolItem(toolLaunches, "dns", "DNS", Network),
-				navToolItem(toolLaunches, "coder", "Coder", Cloud),
-				navToolItem(toolLaunches, "grafana", "Grafana", Activity),
-				navToolItem(toolLaunches, "prometheus", "Prometheus", Activity),
+				...navToolItemsForSection(toolLaunches, "platform"),
 				{
 					label: "Reservations",
 					href: "/dashboard/reservations",
@@ -197,7 +241,6 @@ function createNavItems(
 					featureFlag: "infobloxEnabled",
 					adminOnly: true,
 				},
-				navToolItem(toolLaunches, "api-testing", "API Testing", PanelTop),
 				{
 					label: "ReDoc",
 					href: "/redoc/",

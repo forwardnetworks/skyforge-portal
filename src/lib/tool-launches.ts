@@ -3,6 +3,11 @@ export type ToolLaunchEntry = {
 	title: string;
 	description?: string;
 	category?: string;
+	experience?: string;
+	navigationSection?: string;
+	navigationLabel?: string;
+	navigationOrder?: number;
+	navigationIcon?: string;
 	navigationHref: string;
 	navigationMode?: string;
 	launchMode?: string;
