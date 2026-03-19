@@ -52,6 +52,7 @@ export type DeploymentTopology = {
 	nodes: Array<{
 		id: string;
 		label: string;
+		podName?: string;
 		kind?: string;
 		mgmtIp?: string;
 		mgmtHost?: string;

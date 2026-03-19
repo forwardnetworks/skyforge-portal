@@ -34,10 +34,7 @@ export function NodeLogsView({
 		queryKey: ["deploymentNodeLogs", userId, deploymentId, nodeId, tail],
 		enabled: !!userId && !!deploymentId && !!nodeId,
 		queryFn: async () =>
-			getDeploymentNodeLogs(userId, deploymentId, nodeId, {
-				tail,
-				container: nodeId,
-			}),
+			getDeploymentNodeLogs(userId, deploymentId, nodeId, { tail }),
 		refetchOnWindowFocus: false,
 		retry: 1,
 	});
