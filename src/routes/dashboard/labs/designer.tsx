@@ -1,7 +1,7 @@
 import { LabDesignerPage } from "@/components/lab-designer-page";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { requireAdvancedRouteAccess } from "../../../lib/ui-experience-route";
+import { requireCatalogRouteAccess } from "../../../lib/ui-experience-route";
 
 const designerSearchSchema = z.object({
 	userId: z.string().optional().catch(""),
@@ -10,7 +10,8 @@ const designerSearchSchema = z.object({
 
 export const Route = createFileRoute("/dashboard/labs/designer")({
 	validateSearch: (search) => designerSearchSchema.parse(search),
-	beforeLoad: async ({ context }) => requireAdvancedRouteAccess(context),
+	beforeLoad: async ({ context }) =>
+		requireCatalogRouteAccess(context, "/dashboard/labs/designer"),
 	component: LabDesignerRoute,
 });
 

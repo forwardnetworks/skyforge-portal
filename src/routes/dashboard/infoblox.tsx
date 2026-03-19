@@ -12,10 +12,11 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { getUserInfobloxStatus, wakeUserInfoblox } from "@/lib/api-client";
-import { requireAdvancedRouteAccess } from "@/lib/ui-experience-route";
+import { requireCatalogRouteAccess } from "@/lib/ui-experience-route";
 
 export const Route = createFileRoute("/dashboard/infoblox")({
-	beforeLoad: async ({ context }) => requireAdvancedRouteAccess(context),
+	beforeLoad: async ({ context }) =>
+		requireCatalogRouteAccess(context, "/dashboard/infoblox"),
 	component: InfobloxPage,
 });
 

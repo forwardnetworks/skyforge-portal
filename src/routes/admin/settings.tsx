@@ -14,8 +14,7 @@ import {
 } from "../../components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { useAdminSettingsPage } from "../../hooks/use-admin-settings-page";
-import { requireAdminRouteAccess } from "../../lib/admin-route";
-import { requireAdvancedRouteAccess } from "../../lib/ui-experience-route";
+import { requireCatalogRouteAccess } from "../../lib/ui-experience-route";
 import {
 	buildAdminAuditTabProps,
 	buildAdminOverviewTabProps,
@@ -25,8 +24,7 @@ import {
 
 export const Route = createFileRoute("/admin/settings")({
 	beforeLoad: async ({ context }) => {
-		await requireAdvancedRouteAccess(context);
-		await requireAdminRouteAccess(context);
+		await requireCatalogRouteAccess(context, "/admin/settings");
 		throw redirect({ to: "/settings", search: { tab: "admin" } });
 	},
 	component: AdminSettingsPage,

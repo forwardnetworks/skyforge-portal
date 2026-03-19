@@ -16,11 +16,12 @@ import {
 	listSyslogEvents,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
-import { requireAdvancedRouteAccess } from "../lib/ui-experience-route";
 import { useSyslogEvents } from "../lib/syslog-events";
+import { requireCatalogRouteAccess } from "../lib/ui-experience-route";
 
 export const Route = createFileRoute("/syslog")({
-	beforeLoad: async ({ context }) => requireAdvancedRouteAccess(context),
+	beforeLoad: async ({ context }) =>
+		requireCatalogRouteAccess(context, "/syslog"),
 	component: SyslogPage,
 });
 

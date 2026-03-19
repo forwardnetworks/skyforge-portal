@@ -3,11 +3,13 @@ import type {
 	ToolLaunchEntry,
 	ToolNavigationEntry,
 	ToolNavigationSection,
+	ToolRouteAccessEntry,
 } from "./tool-launches";
 
 export type ToolCatalogResponse = {
 	sections?: ToolNavigationSection[];
 	entries?: ToolNavigationEntry[];
+	routes?: ToolRouteAccessEntry[];
 	tools?: ToolLaunchEntry[];
 };
 
