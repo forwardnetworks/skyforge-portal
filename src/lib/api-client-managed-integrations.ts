@@ -6,6 +6,9 @@ export type ManagedIntegrationStatus = {
 	kind?: string;
 	status: string;
 	detail?: string;
+	launchMode?: string;
+	authMode?: string;
+	supportsWake?: boolean;
 	desiredReplicas?: number;
 	availableReplicas?: number;
 	runStrategy?: string;

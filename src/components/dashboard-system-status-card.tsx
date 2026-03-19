@@ -3,13 +3,25 @@ import { toast } from "sonner";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
 import { apiFetch } from "../lib/http";
 import { queryKeys } from "../lib/query-keys";
-import { Badge } from "./ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { StatusCheckGrid } from "./status-check-grid";
 import { formatCount } from "./dashboard-shared";
+import { StatusCheckGrid } from "./status-check-grid";
+import { Badge } from "./ui/badge";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "./ui/card";
 
-function healthVariant(status?: string): "secondary" | "destructive" | "outline" {
-	switch (String(status ?? "").trim().toLowerCase()) {
+function healthVariant(
+	status?: string,
+): "secondary" | "destructive" | "outline" {
+	switch (
+		String(status ?? "")
+			.trim()
+			.toLowerCase()
+	) {
 		case "ok":
 		case "up":
 		case "healthy":
@@ -28,7 +40,6 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 	const statusSummary = page.statusSummary;
 	const managedIntegrations = page.managedIntegrations?.integrations ?? [];
 	const observability = page.observabilitySummary;
-	const wakeableIntegrationIDs = new Set(["rapid7", "elk", "netbox", "nautobot"]);
 	const wakeMutation = useMutation({
 		mutationFn: async (id: string) =>
 			apiFetch(`/api/tooling/services/${encodeURIComponent(id)}/replicas`, {
@@ -117,8 +128,8 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 									Managed integrations
 								</div>
 								<div className="text-sm text-muted-foreground">
-									Subordinate tools that can scale to zero or remain stopped until
-									requested.
+									Subordinate tools that can scale to zero or remain stopped
+									until requested.
 								</div>
 							</div>
 						</div>
@@ -129,13 +140,11 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 								status: integration.status,
 								detail: integration.detail,
 								actionLabel:
-									integration.status === "standby" &&
-									wakeableIntegrationIDs.has(integration.id)
+									integration.status === "standby" && integration.supportsWake
 										? "Wake"
 										: undefined,
 								onAction:
-									integration.status === "standby" &&
-									wakeableIntegrationIDs.has(integration.id)
+									integration.status === "standby" && integration.supportsWake
 										? () => wakeMutation.mutate(integration.id)
 										: undefined,
 								actionDisabled: wakeMutation.isPending,
@@ -185,7 +194,9 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 								<div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
 									Forward observability
 								</div>
-								<Badge variant={healthVariant(observability.forward.sourceStatus)}>
+								<Badge
+									variant={healthVariant(observability.forward.sourceStatus)}
+								>
 									{observability.forward.sourceStatus}
 								</Badge>
 							</div>
@@ -193,13 +204,17 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 								<div className="flex items-center justify-between gap-3">
 									<span>Prometheus service</span>
 									<span className="font-medium">
-										{observability.forward.prometheusService ? "present" : "missing"}
+										{observability.forward.prometheusService
+											? "present"
+											: "missing"}
 									</span>
 								</div>
 								<div className="flex items-center justify-between gap-3">
 									<span>Grafana service</span>
 									<span className="font-medium">
-										{observability.forward.grafanaService ? "present" : "missing"}
+										{observability.forward.grafanaService
+											? "present"
+											: "missing"}
 									</span>
 								</div>
 								<div className="flex items-center justify-between gap-3">
