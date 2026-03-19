@@ -122,21 +122,13 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const warnings = page.canAccessPlatformView
 		? [...availabilityWarnings, ...overviewWarnings]
 		: availabilityWarnings;
-	const status = page.statusSummary?.status ?? "unknown";
 	const simpleMode = page.uiExperienceMode === "simple";
 	const dashboardHeroActions = page.dashboardHeroActions;
 	const dashboardContent = page.dashboardContent;
 	const forwardClusterLaunchHref = page.forwardClusterLaunchHref;
-	const statusVariant =
-		status === "ok"
-			? "secondary"
-			: status === "degraded"
-				? "destructive"
-				: "outline";
-	const simpleHero = firstDashboardContentEntry(
+	const simpleHero = requireDashboardContentEntry(
 		dashboardContent,
-		"hero",
-		"simple",
+		"dashboard-hero-simple",
 	);
 	const simpleCallout = firstDashboardContentEntry(
 		dashboardContent,
@@ -163,10 +155,9 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 		dashboardContent,
 		"dashboard-simple-posture-degraded",
 	);
-	const advancedHero = firstDashboardContentEntry(
+	const advancedHero = requireDashboardContentEntry(
 		dashboardContent,
-		"hero",
-		"advanced",
+		"dashboard-hero-advanced",
 	);
 	const advancedPostureHeader = requireDashboardContentEntry(
 		dashboardContent,
@@ -202,6 +193,14 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 		"principle",
 		"advanced",
 	);
+	const status =
+		page.statusSummary?.status ?? simpleHero.fallbackValue ?? "unknown";
+	const statusVariant =
+		status === "ok"
+			? "secondary"
+			: status === "degraded"
+				? "destructive"
+				: "outline";
 
 	if (simpleMode) {
 		return (
@@ -227,7 +226,9 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 										variant="outline"
 										className="border-white/15 bg-white/10 text-white"
 									>
-										Mode {formatMode(primaryMode)}
+										{dashboardContentDetail(simpleHero, {
+											mode: formatMode(primaryMode),
+										})}
 									</Badge>
 								) : null}
 							</div>
@@ -239,9 +240,9 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 									</div>
 								) : null}
 								<h1 className="font-serif text-4xl tracking-tight text-white sm:text-5xl">
-									{simpleHero?.title ?? "Dashboard"}
+									{simpleHero.title}
 								</h1>
-								{simpleHero?.description ? (
+								{simpleHero.description ? (
 									<p className="max-w-3xl text-base leading-7 text-slate-200">
 										{simpleHero.description}
 									</p>
@@ -405,7 +406,9 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 									variant="outline"
 									className="border-white/15 bg-white/10 text-white"
 								>
-									Mode {formatMode(primaryMode)}
+									{dashboardContentDetail(advancedHero, {
+										mode: formatMode(primaryMode),
+									})}
 								</Badge>
 							) : null}
 						</div>
@@ -417,9 +420,9 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 								</div>
 							) : null}
 							<h1 className="font-serif text-4xl tracking-tight text-white sm:text-5xl">
-								{advancedHero?.title ?? "Dashboard"}
+								{advancedHero.title}
 							</h1>
-							{advancedHero?.description ? (
+							{advancedHero.description ? (
 								<p className="max-w-3xl text-base leading-7 text-slate-200">
 									{advancedHero.description}
 								</p>

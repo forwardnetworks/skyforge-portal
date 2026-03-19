@@ -90,6 +90,8 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				eyebrow: "Start here",
 				title: "Launch faster",
 				description: "Simple hero copy",
+				detailTemplate: "Mode {mode}",
+				fallbackValue: "unknown",
 				order: 10,
 			},
 			{
@@ -150,6 +152,8 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				eyebrow: "Operational home",
 				title: "Control plane",
 				description: "Advanced hero copy",
+				detailTemplate: "Mode {mode}",
+				fallbackValue: "unknown",
 				order: 30,
 			},
 			{
