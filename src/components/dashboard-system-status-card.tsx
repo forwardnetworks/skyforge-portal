@@ -1,4 +1,8 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
+import { apiFetch } from "../lib/http";
+import { queryKeys } from "../lib/query-keys";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { StatusCheckGrid } from "./status-check-grid";
@@ -20,9 +24,34 @@ function healthVariant(status?: string): "secondary" | "destructive" | "outline"
 
 export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 	const { page } = props;
+	const queryClient = useQueryClient();
 	const statusSummary = page.statusSummary;
 	const managedIntegrations = page.managedIntegrations?.integrations ?? [];
 	const observability = page.observabilitySummary;
+	const wakeableIntegrationIDs = new Set(["rapid7", "elk", "netbox", "nautobot"]);
+	const wakeMutation = useMutation({
+		mutationFn: async (id: string) =>
+			apiFetch(`/api/tooling/services/${encodeURIComponent(id)}/replicas`, {
+				method: "POST",
+				body: JSON.stringify({ replicas: "1" }),
+				headers: { "Content-Type": "application/json" },
+			}),
+		onSuccess: async () => {
+			await Promise.all([
+				queryClient.invalidateQueries({
+					queryKey: queryKeys.managedIntegrationsStatus(),
+				}),
+				queryClient.invalidateQueries({
+					queryKey: queryKeys.statusSummary(),
+				}),
+			]);
+		},
+		onError: (error) => {
+			toast.error("Failed to wake integration", {
+				description: (error as Error).message,
+			});
+		},
+	});
 
 	return (
 		<Card className="border-border/70">
@@ -95,9 +124,21 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 						</div>
 						<StatusCheckGrid
 							checks={managedIntegrations.map((integration) => ({
+								id: integration.id,
 								name: integration.label || integration.id,
 								status: integration.status,
 								detail: integration.detail,
+								actionLabel:
+									integration.status === "standby" &&
+									wakeableIntegrationIDs.has(integration.id)
+										? "Wake"
+										: undefined,
+								onAction:
+									integration.status === "standby" &&
+									wakeableIntegrationIDs.has(integration.id)
+										? () => wakeMutation.mutate(integration.id)
+										: undefined,
+								actionDisabled: wakeMutation.isPending,
 							}))}
 							compact
 							categoryLabel="Managed integration"

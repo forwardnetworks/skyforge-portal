@@ -204,7 +204,10 @@ export function useDeploymentsPageActions(args: {
 			const url = `/api/forward/session?next=${encodeURIComponent(nextPath)}`;
 			const popup = window.open(url, "_blank", "noopener,noreferrer");
 			if (!popup) {
-				window.location.href = url;
+				toast.error("Pop-up blocked", {
+					description:
+						"Allow pop-ups for this site to open Forward in a new tab.",
+				});
 			}
 		},
 		[],

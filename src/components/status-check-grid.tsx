@@ -10,13 +10,18 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 
 export type StatusCheckView = {
+	id?: string;
 	name: string;
 	status: string;
 	detail?: string;
 	icon?: string;
+	actionLabel?: string;
+	onAction?: () => void;
+	actionDisabled?: boolean;
 };
 
 function toneForStatus(status?: string): "healthy" | "degraded" {
@@ -126,9 +131,22 @@ export function StatusCheckGrid(props: {
 									</div>
 								</div>
 							</div>
-							<Badge variant={badgeVariantForStatus(check.status)}>
-								{labelForStatus(check.status)}
-							</Badge>
+							<div className="flex flex-col items-end gap-2">
+								<Badge variant={badgeVariantForStatus(check.status)}>
+									{labelForStatus(check.status)}
+								</Badge>
+								{check.onAction ? (
+									<Button
+										type="button"
+										size="sm"
+										variant="outline"
+										onClick={check.onAction}
+										disabled={check.actionDisabled}
+									>
+										{check.actionLabel ?? "Wake"}
+									</Button>
+								) : null}
+							</div>
 						</div>
 						<div className="mt-3 text-sm text-muted-foreground">
 							{check.detail?.trim() || "No additional detail reported."}
