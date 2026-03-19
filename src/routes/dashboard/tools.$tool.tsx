@@ -1,7 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	getManagedIntegrationsStatus,
+	runManagedIntegrationAction,
+} from "@/lib/api-client-managed-integrations";
 import { getToolCatalog } from "@/lib/api-client-tool-catalog";
 import { queryKeys } from "@/lib/query-keys";
 import { composeToolContentUrl, indexToolLaunches } from "@/lib/tool-launches";
@@ -34,6 +39,7 @@ export const Route = createFileRoute("/dashboard/tools/$tool")({
 function EmbeddedToolPage() {
 	const { tool } = Route.useParams();
 	const { path } = Route.useSearch();
+	const queryClient = useQueryClient();
 	const [frameKey, setFrameKey] = useState(0);
 	const [loaded, setLoaded] = useState(false);
 	const [loadTimedOut, setLoadTimedOut] = useState(false);
@@ -43,10 +49,37 @@ function EmbeddedToolPage() {
 		retry: false,
 		staleTime: 5 * 60_000,
 	});
+	const managedIntegrationsQ = useQuery({
+		queryKey: queryKeys.managedIntegrationsStatus(),
+		queryFn: getManagedIntegrationsStatus,
+		retry: false,
+		staleTime: 30_000,
+	});
 	const toolDef = useMemo(
 		() => indexToolLaunches(toolCatalogQ.data?.tools)[tool],
 		[tool, toolCatalogQ.data?.tools],
 	);
+	const runtimeStatus = useMemo(
+		() =>
+			managedIntegrationsQ.data?.integrations?.find(
+				(integration) => integration.id === tool,
+			) ?? null,
+		[managedIntegrationsQ.data?.integrations, tool],
+	);
+	const wakeMutation = useMutation({
+		mutationFn: runManagedIntegrationAction,
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.managedIntegrationsStatus(),
+			});
+			toast.success("Integration wake requested");
+		},
+		onError: (error) => {
+			toast.error("Failed to wake integration", {
+				description: (error as Error).message,
+			});
+		},
+	});
 
 	const enabled = Boolean(toolDef);
 
@@ -112,6 +145,65 @@ function EmbeddedToolPage() {
 							No launch URL is configured for this tool.
 						</CardDescription>
 					</CardHeader>
+				</Card>
+			</div>
+		);
+	}
+
+	if (
+		runtimeStatus?.status === "standby" ||
+		runtimeStatus?.status === "starting"
+	) {
+		const wakeAction = runtimeStatus.wakeAction ?? null;
+		const waitingForWake = runtimeStatus.status === "starting";
+		return (
+			<div className="p-6">
+				<Card className="max-w-2xl">
+					<CardHeader>
+						<CardTitle>{toolDef.title}</CardTitle>
+						<CardDescription>
+							{waitingForWake
+								? `${toolDef.title} is starting.`
+								: `${toolDef.title} is in standby until requested.`}
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<p className="text-sm text-muted-foreground">
+							{runtimeStatus.detail || "No additional detail reported."}
+						</p>
+						<div className="flex flex-wrap gap-2">
+							{wakeAction ? (
+								<Button
+									size="sm"
+									onClick={() => wakeMutation.mutate(wakeAction)}
+									disabled={
+										wakeMutation.isPending ||
+										waitingForWake ||
+										wakeAction.allowed === false
+									}
+								>
+									{wakeAction.label || "Wake"}
+								</Button>
+							) : null}
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() =>
+									queryClient.invalidateQueries({
+										queryKey: queryKeys.managedIntegrationsStatus(),
+									})
+								}
+							>
+								<RefreshCw className="mr-2 h-4 w-4" />
+								Refresh status
+							</Button>
+						</div>
+						{wakeAction?.allowed === false && wakeAction.disabledReason ? (
+							<p className="text-sm text-muted-foreground">
+								{wakeAction.disabledReason}
+							</p>
+						) : null}
+					</CardContent>
 				</Card>
 			</div>
 		);

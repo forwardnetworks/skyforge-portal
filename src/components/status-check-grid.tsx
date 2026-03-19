@@ -4,14 +4,14 @@ import {
 	Database,
 	GitBranch,
 	HardDrive,
+	type LucideIcon,
 	Package2,
 	ServerCog,
 	ShieldCheck,
-	type LucideIcon,
 } from "lucide-react";
+import { cn } from "../lib/utils";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { cn } from "../lib/utils";
 
 export type StatusCheckView = {
 	id?: string;
@@ -25,7 +25,9 @@ export type StatusCheckView = {
 };
 
 function toneForStatus(status?: string): "healthy" | "degraded" {
-	const value = String(status ?? "").trim().toLowerCase();
+	const value = String(status ?? "")
+		.trim()
+		.toLowerCase();
 	if (
 		value === "up" ||
 		value === "ok" ||
@@ -45,7 +47,9 @@ function badgeVariantForStatus(
 }
 
 function labelForStatus(status?: string): string {
-	const value = String(status ?? "").trim().toLowerCase();
+	const value = String(status ?? "")
+		.trim()
+		.toLowerCase();
 	if (!value) return "unknown";
 	if (value === "up") return "healthy";
 	if (value === "down") return "degraded";
@@ -135,13 +139,13 @@ export function StatusCheckGrid(props: {
 								<Badge variant={badgeVariantForStatus(check.status)}>
 									{labelForStatus(check.status)}
 								</Badge>
-								{check.onAction ? (
+								{check.actionLabel ? (
 									<Button
 										type="button"
 										size="sm"
 										variant="outline"
-										onClick={check.onAction}
-										disabled={check.actionDisabled}
+										onClick={() => check.onAction?.()}
+										disabled={check.actionDisabled || !check.onAction}
 									>
 										{check.actionLabel ?? "Wake"}
 									</Button>

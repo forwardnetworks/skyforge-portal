@@ -9,6 +9,7 @@ export type ToolLaunchEntry = {
 	authMode?: string;
 	contentUrl?: string;
 	supportsWake?: boolean;
+	requiredCapabilities?: string[];
 };
 
 export type ToolLaunchMap = Record<string, ToolLaunchEntry>;

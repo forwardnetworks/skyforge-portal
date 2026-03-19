@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
-import { apiFetch } from "../lib/http";
+import { runManagedIntegrationAction } from "../lib/api-client-managed-integrations";
 import { queryKeys } from "../lib/query-keys";
 import { formatCount } from "./dashboard-shared";
 import { StatusCheckGrid } from "./status-check-grid";
@@ -41,12 +41,7 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 	const managedIntegrations = page.managedIntegrations?.integrations ?? [];
 	const observability = page.observabilitySummary;
 	const wakeMutation = useMutation({
-		mutationFn: async (id: string) =>
-			apiFetch(`/api/tooling/services/${encodeURIComponent(id)}/replicas`, {
-				method: "POST",
-				body: JSON.stringify({ replicas: "1" }),
-				headers: { "Content-Type": "application/json" },
-			}),
+		mutationFn: runManagedIntegrationAction,
 		onSuccess: async () => {
 			await Promise.all([
 				queryClient.invalidateQueries({
@@ -134,21 +129,27 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 							</div>
 						</div>
 						<StatusCheckGrid
-							checks={managedIntegrations.map((integration) => ({
-								id: integration.id,
-								name: integration.label || integration.id,
-								status: integration.status,
-								detail: integration.detail,
-								actionLabel:
-									integration.status === "standby" && integration.supportsWake
-										? "Wake"
+							checks={managedIntegrations.map((integration) => {
+								const wakeAction =
+									integration.status === "standby"
+										? (integration.wakeAction ?? null)
+										: null;
+								return {
+									id: integration.id,
+									name: integration.label || integration.id,
+									status: integration.status,
+									actionLabel: wakeAction?.label ?? undefined,
+									onAction: wakeAction
+										? () => wakeMutation.mutate(wakeAction)
 										: undefined,
-								onAction:
-									integration.status === "standby" && integration.supportsWake
-										? () => wakeMutation.mutate(integration.id)
-										: undefined,
-								actionDisabled: wakeMutation.isPending,
-							}))}
+									actionDisabled:
+										wakeMutation.isPending || wakeAction?.allowed === false,
+									detail:
+										wakeAction?.allowed === false && wakeAction.disabledReason
+											? `${integration.detail ?? ""} ${wakeAction.disabledReason}`.trim()
+											: integration.detail,
+								};
+							})}
 							compact
 							categoryLabel="Managed integration"
 						/>
