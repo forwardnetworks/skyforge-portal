@@ -37,6 +37,23 @@ export type ToolLaunchpadEntry = {
 	allowed?: boolean;
 };
 
+export type ToolCatalogActionEntry = {
+	id: string;
+	label: string;
+	href: string;
+	icon?: string;
+	variant?: string;
+	order: number;
+	allowed?: boolean;
+};
+
+export type ToolCatalogTextEntry = {
+	id: string;
+	text: string;
+	order: number;
+	allowed?: boolean;
+};
+
 export type ToolLaunchEntry = {
 	id: string;
 	title: string;

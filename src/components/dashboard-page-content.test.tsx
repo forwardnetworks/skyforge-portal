@@ -50,6 +50,41 @@ function makePage(overrides: Record<string, unknown> = {}) {
 		canAccessPlatformView: false,
 		statusSummary: undefined,
 		observabilitySummary: undefined,
+		forwardClusterLaunchHref: "/api/forward/session",
+		dashboardHeroActions: [
+			{
+				id: "dashboard-hero-launch-lab",
+				label: "Launch lab",
+				href: "/dashboard/deployments/quick",
+				variant: "primary",
+				order: 10,
+			},
+			{
+				id: "dashboard-hero-view-deployments",
+				label: "View deployments",
+				href: "/dashboard/deployments",
+				variant: "outline",
+				order: 20,
+			},
+			{
+				id: "dashboard-hero-reservations",
+				label: "Reservations",
+				href: "/dashboard/reservations",
+				variant: "ghost",
+				order: 30,
+			},
+			{
+				id: "dashboard-hero-forward",
+				label: "Open Forward",
+				href: "/api/forward/session",
+				variant: "ghost",
+				order: 40,
+			},
+		],
+		dashboardNextSteps: [
+			{ id: "one", text: "step one", order: 10 },
+			{ id: "two", text: "step two", order: 20 },
+		],
 		adminOverview: { warnings: ["admin warning"] },
 		platformAvailability: {
 			warnings: ["availability warning"],

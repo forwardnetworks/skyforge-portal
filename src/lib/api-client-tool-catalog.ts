@@ -1,5 +1,7 @@
 import { apiFetch } from "./http";
 import type {
+	ToolCatalogActionEntry,
+	ToolCatalogTextEntry,
 	ToolLaunchEntry,
 	ToolLaunchpadEntry,
 	ToolNavigationEntry,
@@ -12,6 +14,8 @@ export type ToolCatalogResponse = {
 	entries?: ToolNavigationEntry[];
 	routes?: ToolRouteAccessEntry[];
 	launchpad?: ToolLaunchpadEntry[];
+	dashboardHeroActions?: ToolCatalogActionEntry[];
+	dashboardNextSteps?: ToolCatalogTextEntry[];
 	tools?: ToolLaunchEntry[];
 };
 

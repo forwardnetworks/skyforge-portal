@@ -30,6 +30,21 @@ type DashboardPageContentProps = {
 	page: DashboardPageState;
 };
 
+function heroButtonClass(variant: string | undefined): string {
+	switch (
+		String(variant ?? "")
+			.trim()
+			.toLowerCase()
+	) {
+		case "outline":
+			return "border-white/20 bg-white/5 text-white hover:bg-white/10";
+		case "ghost":
+			return "text-white hover:bg-white/10 hover:text-white";
+		default:
+			return "bg-white text-slate-950 hover:bg-slate-100";
+	}
+}
+
 export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const availability = page.platformAvailability;
 	const policy = availability?.policy;
@@ -42,6 +57,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 		: availabilityWarnings;
 	const status = page.statusSummary?.status ?? "unknown";
 	const simpleMode = page.uiExperienceMode === "simple";
+	const dashboardHeroActions = page.dashboardHeroActions;
 	const forwardClusterLaunchHref = page.forwardClusterLaunchHref;
 	const statusVariant =
 		status === "ok"
@@ -93,49 +109,41 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 							</div>
 
 							<div className="flex flex-wrap gap-3">
-								<Button
-									asChild
-									className="bg-white text-slate-950 hover:bg-slate-100"
-								>
-									<Link to="/dashboard/deployments/quick">Launch lab</Link>
-								</Button>
-								<Button
-									asChild
-									variant="outline"
-									className="border-white/20 bg-white/5 text-white hover:bg-white/10"
-								>
-									<Link to="/dashboard/deployments">View deployments</Link>
-								</Button>
-								<Button
-									asChild
-									variant="ghost"
-									className="text-white hover:bg-white/10 hover:text-white"
-								>
-									<Link to="/dashboard/reservations">Reservations</Link>
-								</Button>
-								{forwardClusterLaunchHref ? (
-									<Button
-										asChild
-										variant="ghost"
-										className="text-white hover:bg-white/10 hover:text-white"
-									>
-										<a
-											href={forwardClusterLaunchHref}
-											target="_blank"
-											rel="noreferrer noopener"
-										>
-											Open Forward
-										</a>
-									</Button>
-								) : (
-									<Button
-										variant="ghost"
-										className="text-white hover:bg-white/10 hover:text-white"
-										disabled
-									>
-										Open Forward
-									</Button>
-								)}
+								{dashboardHeroActions.map((action) => {
+									const className = heroButtonClass(action.variant);
+									const isForwardAction =
+										action.id === "dashboard-hero-forward";
+									if (isForwardAction && !forwardClusterLaunchHref) {
+										return (
+											<Button
+												key={action.id}
+												variant="ghost"
+												className="text-white hover:bg-white/10 hover:text-white"
+												disabled
+											>
+												{action.label}
+											</Button>
+										);
+									}
+									if (isForwardAction) {
+										return (
+											<Button key={action.id} asChild className={className}>
+												<a
+													href={forwardClusterLaunchHref}
+													target="_blank"
+													rel="noreferrer noopener"
+												>
+													{action.label}
+												</a>
+											</Button>
+										);
+									}
+									return (
+										<Button key={action.id} asChild className={className}>
+											<Link to={action.href}>{action.label}</Link>
+										</Button>
+									);
+								})}
 							</div>
 						</div>
 
@@ -194,7 +202,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 				</div>
 
 				<div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-					<DashboardNextStepsCard />
+					<DashboardNextStepsCard page={page} />
 					<Card>
 						<CardHeader>
 							<CardTitle>Current posture</CardTitle>
@@ -416,7 +424,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 					{page.canAccessPlatformView ? (
 						<DashboardAdminSummaryCard page={page} />
 					) : (
-						<DashboardNextStepsCard />
+						<DashboardNextStepsCard page={page} />
 					)}
 				</div>
 			</div>

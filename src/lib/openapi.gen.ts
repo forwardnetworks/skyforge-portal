@@ -9548,6 +9548,16 @@ export interface components {
             };
             requiredCapabilities: string[];
         };
+        "skyforge.ToolCatalogActionEntry": {
+            allowed: boolean;
+            href: string;
+            icon: string;
+            id: string;
+            label: string;
+            /** Format: int64 */
+            order: number;
+            variant: string;
+        };
         "skyforge.ToolCatalogEntry": {
             allowed: boolean;
             authMode: string;
@@ -9609,6 +9619,13 @@ export interface components {
             label: string;
             /** Format: int64 */
             order: number;
+        };
+        "skyforge.ToolCatalogTextEntry": {
+            allowed: boolean;
+            id: string;
+            /** Format: int64 */
+            order: number;
+            text: string;
         };
         "skyforge.ToolServiceStatus": {
             authMode: string;
@@ -16565,6 +16582,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        dashboardHeroActions: components["schemas"]["skyforge.ToolCatalogActionEntry"][];
+                        dashboardNextSteps: components["schemas"]["skyforge.ToolCatalogTextEntry"][];
                         entries: components["schemas"]["skyforge.ToolCatalogNavEntry"][];
                         launchpad: components["schemas"]["skyforge.ToolCatalogLaunchpadEntry"][];
                         routes: components["schemas"]["skyforge.ToolCatalogRouteEntry"][];
