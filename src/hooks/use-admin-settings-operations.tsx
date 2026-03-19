@@ -15,23 +15,19 @@ import {
 import { queryKeys } from "../lib/query-keys";
 
 export function useAdminSettingsOperations({
-	isAdmin,
 	knownUsersFromScopes,
 }: {
-	isAdmin: boolean;
 	knownUsersFromScopes: string[];
 }) {
 	const impersonateStatusQ = useQuery({
 		queryKey: queryKeys.adminImpersonateStatus(),
 		queryFn: getAdminImpersonateStatus,
-		enabled: isAdmin,
 		staleTime: 5_000,
 		retry: false,
 	});
 	const adminForwardSupportCredentialQ = useQuery({
 		queryKey: queryKeys.adminForwardSupportCredential(),
 		queryFn: getAdminForwardSupportCredential,
-		enabled: isAdmin,
 		staleTime: 30_000,
 		retry: false,
 	});

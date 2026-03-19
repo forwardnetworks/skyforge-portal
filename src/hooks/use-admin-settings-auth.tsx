@@ -18,45 +18,38 @@ import { useAdminSettingsAuthTeams } from "./use-admin-settings-auth-teams";
 
 export function useAdminSettingsAuth({
 	queryClient,
-	isAdmin,
 	adminScopeID,
 }: {
 	queryClient: QueryClient;
-	isAdmin: boolean;
 	adminScopeID: string;
 }) {
 	const cfgQ = useQuery({
 		queryKey: queryKeys.adminConfig(),
 		queryFn: getAdminEffectiveConfig,
-		enabled: isAdmin,
 		staleTime: 15_000,
 		retry: false,
 	});
 	const authSettingsQ = useQuery({
 		queryKey: queryKeys.adminAuthSettings(),
 		queryFn: getAdminAuthSettings,
-		enabled: isAdmin,
 		staleTime: 15_000,
 		retry: false,
 	});
 	const oidcSettingsQ = useQuery({
 		queryKey: queryKeys.adminOidcSettings(),
 		queryFn: getAdminOIDCSettings,
-		enabled: isAdmin,
 		staleTime: 15_000,
 		retry: false,
 	});
 	const quickDeployCatalogQ = useQuery({
 		queryKey: queryKeys.adminQuickDeployCatalog(),
 		queryFn: getAdminQuickDeployCatalog,
-		enabled: isAdmin,
 		staleTime: 15_000,
 		retry: false,
 	});
 	const quickDeployTemplateOptionsQ = useQuery({
 		queryKey: ["adminQuickDeployTemplateOptions"],
 		queryFn: getAdminQuickDeployTemplateOptions,
-		enabled: isAdmin,
 		staleTime: 15_000,
 		retry: false,
 	});
@@ -73,21 +66,19 @@ export function useAdminSettingsAuth({
 				source: "blueprints",
 				dir: "netlab",
 			}),
-		enabled: isAdmin && adminScopeID.length > 0,
+		enabled: adminScopeID.length > 0,
 		staleTime: 15_000,
 		retry: false,
 	});
 	const serviceNowGlobalConfigQ = useQuery({
 		queryKey: queryKeys.adminServiceNowGlobalConfig(),
 		queryFn: getAdminServiceNowGlobalConfig,
-		enabled: isAdmin,
 		staleTime: 15_000,
 		retry: false,
 	});
 	const teamsGlobalConfigQ = useQuery({
 		queryKey: queryKeys.adminTeamsGlobalConfig(),
 		queryFn: getAdminTeamsGlobalConfig,
-		enabled: isAdmin,
 		staleTime: 15_000,
 		retry: false,
 	});

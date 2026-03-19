@@ -13,7 +13,6 @@ export type AdminUserRolesQuery = RefetchableQuery & {
 };
 
 export type AdminSettingsUsersAccessArgs = {
-	isAdmin: boolean;
 	knownUsersFromScopes: string[];
 	adminUserRolesQ: AdminUserRolesQuery;
 	userScopesQ: RefetchableQuery;

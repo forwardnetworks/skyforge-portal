@@ -7,13 +7,7 @@ import { useAdminSettingsUsersRbac } from "./use-admin-settings-users-rbac";
 export function useAdminSettingsUsersAccess(
 	args: AdminSettingsUsersAccessArgs,
 ) {
-	const {
-		isAdmin,
-		knownUsersFromScopes,
-		adminUserRolesQ,
-		userScopesQ,
-		sessionQ,
-	} = args;
+	const { knownUsersFromScopes, adminUserRolesQ, userScopesQ, sessionQ } = args;
 
 	const rbac = useAdminSettingsUsersRbac({
 		knownUsersFromScopes,
@@ -28,7 +22,6 @@ export function useAdminSettingsUsersAccess(
 		sessionQ,
 	});
 	const apiPermissions = useAdminSettingsUserApiPermissions({
-		isAdmin,
 		rbacKnownUsers: rbac.rbacKnownUsers,
 	});
 	const purge = useAdminSettingsUsersPurge({

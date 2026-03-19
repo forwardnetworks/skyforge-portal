@@ -61,10 +61,8 @@ function filterApiCatalogEntries(
 }
 
 export function useAdminSettingsUserApiPermissions({
-	isAdmin,
 	rbacKnownUsers,
 }: {
-	isAdmin: boolean;
 	rbacKnownUsers: string[];
 }) {
 	const [apiPermTargetUser, setApiPermTargetUser] = useState("");
@@ -76,14 +74,13 @@ export function useAdminSettingsUserApiPermissions({
 	const apiCatalogQ = useQuery({
 		queryKey: queryKeys.adminApiCatalog(),
 		queryFn: getAdminAPICatalog,
-		enabled: isAdmin,
 		staleTime: 60_000,
 		retry: false,
 	});
 	const userApiPermsQ = useQuery({
 		queryKey: queryKeys.adminUserApiPermissions(apiPermTargetUser || "none"),
 		queryFn: () => getAdminUserAPIPermissions(apiPermTargetUser),
-		enabled: isAdmin && apiPermTargetUser.trim().length > 0,
+		enabled: apiPermTargetUser.trim().length > 0,
 		staleTime: 15_000,
 		retry: false,
 	});

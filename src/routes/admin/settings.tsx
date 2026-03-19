@@ -7,7 +7,6 @@ import {
 } from "../../components/admin-settings-tabs";
 import {
 	Card,
-	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
@@ -46,34 +45,22 @@ export function AdminSettingsPage() {
 				</CardHeader>
 			</Card>
 
-			{!page.isAdmin && (
-				<Card variant="danger">
-					<CardContent className="pt-6">
-						<div className="text-center font-medium">
-							Admin access required.
-						</div>
-					</CardContent>
-				</Card>
-			)}
+			<Tabs defaultValue="overview">
+				<TabsList>
+					<TabsTrigger value="overview">Overview</TabsTrigger>
+					<TabsTrigger value="audit">Audit</TabsTrigger>
+					<TabsTrigger value="tasks">Tasks</TabsTrigger>
+					<TabsTrigger value="users">Users</TabsTrigger>
+				</TabsList>
 
-			{page.isAdmin && (
-				<Tabs defaultValue="overview">
-					<TabsList>
-						<TabsTrigger value="overview">Overview</TabsTrigger>
-						<TabsTrigger value="audit">Audit</TabsTrigger>
-						<TabsTrigger value="tasks">Tasks</TabsTrigger>
-						<TabsTrigger value="users">Users</TabsTrigger>
-					</TabsList>
+				<AdminOverviewTab {...overviewTabProps} />
 
-					<AdminOverviewTab {...overviewTabProps} />
+				<AdminAuditTab {...auditTabProps} />
 
-					<AdminAuditTab {...auditTabProps} />
+				<AdminTasksTab {...tasksTabProps} />
 
-					<AdminTasksTab {...tasksTabProps} />
-
-					<AdminUsersTab {...usersTabProps} />
-				</Tabs>
-			)}
+				<AdminUsersTab {...usersTabProps} />
+			</Tabs>
 		</div>
 	);
 }
