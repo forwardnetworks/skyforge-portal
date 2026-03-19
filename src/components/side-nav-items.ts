@@ -19,8 +19,6 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { UIExperienceMode } from "../lib/api-client-user-settings";
-import { sessionHasRole } from "../lib/rbac";
-import type { SkyforgeAuthMode } from "../lib/skyforge-config";
 import type {
 	ToolLaunchEntry,
 	ToolLaunchMap,
@@ -37,8 +35,8 @@ export type NavItem = {
 	icon: ComponentType<{ className?: string }>;
 	external?: boolean;
 	newTab?: boolean;
-	adminOnly?: boolean;
 	featureFlag?: keyof Features;
+	allowed?: boolean;
 	children?: NavItem[];
 	experience?: "both" | "advanced" | "simple";
 };
@@ -107,6 +105,7 @@ function navToolItem(tool: ToolLaunchEntry): NavItem {
 		icon: toolNavIcon(tool.navigationIcon),
 		external: String(tool.navigationMode ?? "").trim() === "direct",
 		newTab: String(tool.launchMode ?? "").trim() === "new_tab",
+		allowed: tool.allowed,
 		experience: toolNavExperience(tool),
 	};
 }
@@ -118,8 +117,8 @@ function navEntryItem(entry: ToolNavigationEntry): NavItem {
 		label: String(entry.label).trim(),
 		href: entry.navigationHref,
 		icon: toolNavIcon(entry.navigationIcon),
-		adminOnly: entry.adminOnly,
 		featureFlag: entry.featureFlag as keyof Features | undefined,
+		allowed: entry.allowed,
 		experience:
 			String(entry.displayMode || entry.experience)
 				.trim()
@@ -242,19 +241,18 @@ function createNavItems(
 
 function filterNavItems(
 	items: NavItem[],
-	isAdmin: boolean,
 	features?: Features,
 	mode: UIExperienceMode = "simple",
 ): NavItem[] {
 	return items
 		.flatMap((item) => {
+			if (item.allowed === false) {
+				return [];
+			}
 			if (item.experience === "advanced" && mode !== "advanced") {
 				return [];
 			}
 			if (item.experience === "simple" && mode !== "simple") {
-				return [];
-			}
-			if (item.adminOnly && !isAdmin) {
 				return [];
 			}
 			if (item.featureFlag && features && !features[item.featureFlag]) {
@@ -264,7 +262,7 @@ function filterNavItems(
 				return [item];
 			}
 
-			const children = filterNavItems(item.children, isAdmin, features, mode);
+			const children = filterNavItems(item.children, features, mode);
 			if (children.length === 0) {
 				return [];
 			}
@@ -275,24 +273,16 @@ function filterNavItems(
 }
 
 export function buildSideNavItems(
-	sessionOrAdmin?: unknown,
 	features?: Features,
-	_authMode?: SkyforgeAuthMode | null,
 	mode?: UIExperienceMode,
 	sections?: ToolNavigationSection[],
 	entries?: ToolNavigationEntry[],
 	toolLaunches?: ToolLaunchMap,
 ): NavItem[] {
-	const session =
-		typeof sessionOrAdmin === "boolean"
-			? { isAdmin: sessionOrAdmin }
-			: sessionOrAdmin;
-	const isAdmin = sessionHasRole(session, "ADMIN");
 	const uiExperienceMode = normalizeUIExperienceMode(mode);
 
 	return filterNavItems(
 		createNavItems(uiExperienceMode, sections, entries, toolLaunches),
-		isAdmin,
 		features,
 		uiExperienceMode,
 	);

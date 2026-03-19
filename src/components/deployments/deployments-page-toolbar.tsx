@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { Box, Filter, Plus, Search } from "lucide-react";
 import { useCatalogRouteAccess } from "../../hooks/use-catalog-route-access";
 import type { DeploymentsPageState } from "../../hooks/use-deployments-page";
-import { useUIExperienceMode } from "../../hooks/use-ui-experience-mode";
 import { buttonVariants } from "../ui/button";
 import { Input } from "../ui/input";
 import {
@@ -27,10 +26,7 @@ export function DeploymentsPageToolbar({
 		| "selectedUserScopeId"
 	>;
 }) {
-	const uiExperience = useUIExperienceMode();
-	const routeAccess = useCatalogRouteAccess({
-		mode: uiExperience.mode,
-	});
+	const routeAccess = useCatalogRouteAccess();
 	const canCreateDeployment = routeAccess.canAccessRoute(
 		"/dashboard/deployments/new",
 	);

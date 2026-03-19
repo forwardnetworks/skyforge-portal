@@ -7,11 +7,7 @@ import {
 	lookupCatalogRouteAccess,
 } from "../lib/catalog-route-access";
 import { queryKeys } from "../lib/query-keys";
-import type { UIExperienceMode } from "../lib/ui-experience";
-
 type Options = {
-	session?: unknown;
-	mode?: UIExperienceMode;
 	enabled?: boolean;
 };
 
@@ -33,10 +29,6 @@ export function useCatalogRouteAccess(options?: Options) {
 		canAccessRoute: (routePath: string) =>
 			catalogRouteAllowsAccess(
 				lookupCatalogRouteAccess(routeAccessMap, routePath),
-				{
-					session: options?.session,
-					mode: options?.mode,
-				},
 			),
 	};
 }

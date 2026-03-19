@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { getToolCatalog } from "../lib/api-client-tool-catalog";
 import type { UIExperienceMode } from "../lib/api-client-user-settings";
 import { queryKeys } from "../lib/query-keys";
-import type { SkyforgeAuthMode } from "../lib/skyforge-config";
 import { indexToolLaunches } from "../lib/tool-launches";
 import { type Features, buildSideNavItems } from "./side-nav-items";
 import {
@@ -19,17 +18,11 @@ export type { Features } from "./side-nav-items";
 
 export function SideNav({
 	collapsed = false,
-	session,
-	isAdmin,
 	features,
-	authMode,
 	mode,
 }: {
 	collapsed?: boolean;
-	session?: unknown;
-	isAdmin?: boolean;
 	features?: Features;
-	authMode?: SkyforgeAuthMode | null;
 	mode?: UIExperienceMode;
 }) {
 	const pathname = useRouterState({
@@ -39,9 +32,6 @@ export function SideNav({
 	const toolCatalogQ = useQuery({
 		queryKey: queryKeys.toolCatalog(),
 		queryFn: getToolCatalog,
-		enabled: Boolean(
-			session && (session as { authenticated?: boolean }).authenticated,
-		),
 		retry: false,
 		staleTime: 5 * 60_000,
 	});
@@ -69,9 +59,7 @@ export function SideNav({
 		});
 	}, [defaultExpandedSections]);
 	const items = buildSideNavItems(
-		session ?? { isAdmin: !!isAdmin },
 		features,
-		authMode ?? null,
 		mode,
 		toolCatalogQ.data?.sections ?? [],
 		toolCatalogQ.data?.entries ?? [],

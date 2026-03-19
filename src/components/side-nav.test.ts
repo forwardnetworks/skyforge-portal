@@ -31,6 +31,15 @@ const toolSections: ToolNavigationSection[] = [
 	},
 ];
 
+function withAllowedEntries(
+	overrides?: Record<string, boolean>,
+): ToolNavigationEntry[] {
+	return toolEntries.map((entry) => ({
+		...entry,
+		allowed: overrides?.[entry.id] ?? true,
+	}));
+}
+
 const toolEntries: ToolNavigationEntry[] = [
 	{
 		id: "top-dashboard",
@@ -415,6 +424,15 @@ const toolLaunches: ToolLaunchMap = {
 	},
 };
 
+function withAllowedTools(overrides?: Record<string, boolean>): ToolLaunchMap {
+	return Object.fromEntries(
+		Object.entries(toolLaunches).map(([id, tool]) => [
+			id,
+			{ ...tool, allowed: overrides?.[id] ?? true },
+		]),
+	);
+}
+
 function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 	return items.find((i) => i.label === label);
 }
@@ -422,13 +440,11 @@ function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 describe("side nav model", () => {
 	it("shows Forward section with expected entries when enabled", () => {
 		const items = buildSideNavItems(
-			false,
 			{ forwardEnabled: true },
-			"local",
 			"advanced",
 			toolSections,
-			toolEntries,
-			toolLaunches,
+			withAllowedEntries(),
+			withAllowedTools(),
 		);
 		const forward = findGroup("Forward", items);
 
@@ -454,13 +470,11 @@ describe("side nav model", () => {
 
 	it("hides Forward section when forward feature is disabled", () => {
 		const items = buildSideNavItems(
-			false,
 			{ forwardEnabled: false },
-			"local",
 			"simple",
 			toolSections,
-			toolEntries,
-			toolLaunches,
+			withAllowedEntries(),
+			withAllowedTools(),
 		);
 		const forward = findGroup("Forward", items);
 		const labels = items.map((i) => i.label);
@@ -471,7 +485,6 @@ describe("side nav model", () => {
 
 	it("removes Connect/Tools groupings and legacy nav items", () => {
 		const items = buildSideNavItems(
-			{ authenticated: true, roles: ["ADMIN"] },
 			{
 				forwardEnabled: true,
 				giteaEnabled: true,
@@ -486,11 +499,13 @@ describe("side nav model", () => {
 				dnsEnabled: true,
 				swaggerUIEnabled: true,
 			},
-			"local",
 			"advanced",
 			toolSections,
-			toolEntries,
-			toolLaunches,
+			withAllowedEntries({
+				"platform-capacity": true,
+				"platform-infoblox-console": true,
+			}),
+			withAllowedTools(),
 		);
 		const labels = items.map((i) => i.label);
 		expect(labels).toContain("Launch Lab");
@@ -551,13 +566,11 @@ describe("side nav model", () => {
 
 	it("collapses admin controls into settings hub", () => {
 		const items = buildSideNavItems(
-			true,
 			{ coderEnabled: true },
-			"local",
 			"advanced",
 			toolSections,
-			toolEntries,
-			toolLaunches,
+			withAllowedEntries(),
+			withAllowedTools(),
 		);
 		const settings = items.find((i) => i.label === "Settings");
 		expect(settings).toBeDefined();
@@ -567,13 +580,14 @@ describe("side nav model", () => {
 
 	it("hides admin-only operational tools for non-admin sessions", () => {
 		const items = buildSideNavItems(
-			false,
 			{ infobloxEnabled: true, coderEnabled: true },
-			"local",
 			"advanced",
 			toolSections,
-			toolEntries,
-			toolLaunches,
+			withAllowedEntries({
+				"platform-capacity": false,
+				"platform-infoblox-console": false,
+			}),
+			withAllowedTools(),
 		);
 		const platform = findGroup("Platform", items);
 		expect(platform?.children?.map((item) => item.label)).not.toContain(
@@ -583,13 +597,11 @@ describe("side nav model", () => {
 
 	it("uses direct tool links once the session is authenticated", () => {
 		const items = buildSideNavItems(
-			{ authenticated: true, roles: ["ADMIN"] },
 			{ coderEnabled: true, nautobotEnabled: true },
-			"local",
 			"advanced",
 			toolSections,
-			toolEntries,
-			toolLaunches,
+			withAllowedEntries(),
+			withAllowedTools(),
 		);
 		const platform = findGroup("Platform", items);
 		const integrations = findGroup("Integrations", items);
@@ -603,13 +615,11 @@ describe("side nav model", () => {
 
 	it("shows a guided simple nav by default", () => {
 		const items = buildSideNavItems(
-			{ authenticated: true, roles: ["USER"] },
 			{ forwardEnabled: true, teamsEnabled: true, netboxEnabled: true },
-			"local",
 			"simple",
 			toolSections,
-			toolEntries,
-			toolLaunches,
+			withAllowedEntries(),
+			withAllowedTools(),
 		);
 		const labels = items.map((item) => item.label);
 		const forward = findGroup("Forward", items);

@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/command";
 import { getToolCatalog } from "@/lib/api-client-tool-catalog";
 import { queryKeys } from "@/lib/query-keys";
-import type { SkyforgeAuthMode } from "@/lib/skyforge-config";
 import { indexToolLaunches } from "@/lib/tool-launches";
 import {
 	type Features,
@@ -43,9 +42,7 @@ function flattenCommandSections(items: NavItem[]): CommandMenuSection[] {
 }
 
 export function CommandMenu(props: {
-	session?: unknown;
 	features?: Features;
-	authMode?: SkyforgeAuthMode | null;
 	mode?: "simple" | "advanced";
 }) {
 	const [open, setOpen] = React.useState(false);
@@ -53,10 +50,6 @@ export function CommandMenu(props: {
 	const toolCatalogQ = useQuery({
 		queryKey: queryKeys.toolCatalog(),
 		queryFn: getToolCatalog,
-		enabled: Boolean(
-			props.session &&
-				(props.session as { authenticated?: boolean }).authenticated,
-		),
 		retry: false,
 		staleTime: 5 * 60_000,
 	});
@@ -64,9 +57,7 @@ export function CommandMenu(props: {
 		() =>
 			flattenCommandSections(
 				buildSideNavItems(
-					props.session,
 					props.features,
-					props.authMode ?? null,
 					props.mode,
 					toolCatalogQ.data?.sections ?? [],
 					toolCatalogQ.data?.entries ?? [],
@@ -74,10 +65,8 @@ export function CommandMenu(props: {
 				),
 			),
 		[
-			props.authMode,
 			props.features,
 			props.mode,
-			props.session,
 			toolCatalogQ.data?.entries,
 			toolCatalogQ.data?.sections,
 			toolCatalogQ.data?.tools,

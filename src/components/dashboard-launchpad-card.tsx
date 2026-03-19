@@ -73,8 +73,6 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 		props.page.platformAvailability?.policy?.primaryOperatingMode;
 	const simpleMode = props.page.uiExperienceMode === "simple";
 	const routeAccess = useCatalogRouteAccess({
-		session: props.page.session,
-		mode: props.page.uiExperienceMode,
 		enabled: props.page.session?.authenticated === true,
 	});
 

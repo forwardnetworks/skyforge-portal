@@ -1,5 +1,4 @@
 import type { RootLayoutState } from "@/hooks/use-root-layout";
-import type { SkyforgeAuthMode } from "@/lib/skyforge-config";
 import { cn } from "@/lib/utils";
 import { Outlet } from "@tanstack/react-router";
 import {
@@ -48,10 +47,7 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 										<div className="px-2 py-6">
 											<SideNav
 												collapsed={false}
-												session={page.session.data}
-												isAdmin={page.isAdmin}
 												features={page.uiConfig.data?.features}
-												authMode={page.authMode as SkyforgeAuthMode | null}
 												mode={page.uiExperienceMode}
 											/>
 										</div>
@@ -207,10 +203,7 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 								>
 									<SideNav
 										collapsed={page.navCollapsed}
-										session={page.session.data}
-										isAdmin={page.isAdmin}
 										features={page.uiConfig.data?.features}
-										authMode={page.authMode as SkyforgeAuthMode | null}
 										mode={page.uiExperienceMode}
 									/>
 								</div>
@@ -277,9 +270,7 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 				</div>
 				{page.session.data?.authenticated ? (
 					<CommandMenu
-						session={page.session.data}
 						features={page.uiConfig.data?.features}
-						authMode={page.authMode as SkyforgeAuthMode | null}
 						mode={page.uiExperienceMode}
 					/>
 				) : null}

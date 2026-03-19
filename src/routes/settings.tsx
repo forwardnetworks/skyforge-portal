@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import {
@@ -14,9 +13,6 @@ import {
 	TabsTrigger,
 } from "../components/ui/tabs";
 import { useCatalogRouteAccess } from "../hooks/use-catalog-route-access";
-import { useUIExperienceMode } from "../hooks/use-ui-experience-mode";
-import { getSession } from "../lib/api-client";
-import { queryKeys } from "../lib/query-keys";
 import { AdminSettingsPage } from "./admin/settings";
 import { UserSettingsPage } from "./dashboard/settings";
 
@@ -32,20 +28,7 @@ export const Route = createFileRoute("/settings")({
 function SettingsHubPage() {
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
-	const sessionQ = useQuery({
-		queryKey: queryKeys.session(),
-		queryFn: getSession,
-		staleTime: 30_000,
-		retry: false,
-	});
-	const uiExperience = useUIExperienceMode({
-		enabled: sessionQ.data?.authenticated === true,
-	});
-	const routeAccess = useCatalogRouteAccess({
-		session: sessionQ.data,
-		mode: uiExperience.mode,
-		enabled: sessionQ.data?.authenticated === true,
-	});
+	const routeAccess = useCatalogRouteAccess();
 	const currentTab = search.tab ?? "profile";
 	const canAccessAdminTab = routeAccess.canAccessRoute("/admin/settings");
 	const activeTab = canAccessAdminTab ? currentTab : "profile";
