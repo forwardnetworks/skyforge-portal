@@ -6,6 +6,17 @@ export type ToolNavigationSection = {
 	defaultExpanded: boolean;
 };
 
+export type ToolNavigationEntry = {
+	id: string;
+	label: string;
+	navigationSection: string;
+	navigationOrder: number;
+	navigationIcon: string;
+	navigationHref: string;
+	experience: string;
+	adminOnly?: boolean;
+};
+
 export type ToolLaunchEntry = {
 	id: string;
 	title: string;
@@ -26,6 +37,7 @@ export type ToolLaunchEntry = {
 };
 
 export type ToolLaunchMap = Record<string, ToolLaunchEntry>;
+export type ToolNavigationEntryMap = Record<string, ToolNavigationEntry>;
 
 export function toolRouteHref(id: string): string {
 	return `/dashboard/tools/${encodeURIComponent(String(id ?? "").trim())}`;
@@ -48,6 +60,18 @@ export function indexToolLaunches(
 		const id = String(tool?.id ?? "").trim();
 		if (!id) continue;
 		out[id] = tool;
+	}
+	return out;
+}
+
+export function indexToolNavigationEntries(
+	entries?: ToolNavigationEntry[] | null,
+): ToolNavigationEntryMap {
+	const out: ToolNavigationEntryMap = {};
+	for (const entry of entries ?? []) {
+		const id = String(entry?.id ?? "").trim();
+		if (!id) continue;
+		out[id] = entry;
 	}
 	return out;
 }

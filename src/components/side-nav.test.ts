@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	type ToolLaunchMap,
+	type ToolNavigationEntry,
 	type ToolNavigationSection,
 	toolRouteHref,
 } from "../lib/tool-launches";
@@ -27,6 +28,128 @@ const toolSections: ToolNavigationSection[] = [
 		icon: "cloud",
 		order: 30,
 		defaultExpanded: true,
+	},
+];
+
+const toolEntries: ToolNavigationEntry[] = [
+	{
+		id: "forward-credentials",
+		label: "Credentials",
+		navigationSection: "forward",
+		navigationOrder: 1,
+		navigationIcon: "settings",
+		navigationHref: "/dashboard/forward/credentials",
+		experience: "both",
+	},
+	{
+		id: "forward-collector",
+		label: "Collector",
+		navigationSection: "forward",
+		navigationOrder: 2,
+		navigationIcon: "radio",
+		navigationHref: "/dashboard/forward/collectors",
+		experience: "both",
+	},
+	{
+		id: "forward-analytics",
+		label: "Analytics",
+		navigationSection: "forward",
+		navigationOrder: 20,
+		navigationIcon: "shield-check",
+		navigationHref: "/dashboard/forward-analytics",
+		experience: "advanced",
+	},
+	{
+		id: "forward-servicenow",
+		label: "ServiceNow",
+		navigationSection: "forward",
+		navigationOrder: 30,
+		navigationIcon: "workflow",
+		navigationHref: "/dashboard/servicenow",
+		experience: "advanced",
+	},
+	{
+		id: "forward-teams",
+		label: "Teams",
+		navigationSection: "forward",
+		navigationOrder: 40,
+		navigationIcon: "workflow",
+		navigationHref: "/dashboard/teams",
+		experience: "advanced",
+	},
+	{
+		id: "platform-reservations",
+		label: "Reservations",
+		navigationSection: "platform",
+		navigationOrder: 80,
+		navigationIcon: "activity",
+		navigationHref: "/dashboard/reservations",
+		experience: "advanced",
+	},
+	{
+		id: "platform-config-changes",
+		label: "Config Changes",
+		navigationSection: "platform",
+		navigationOrder: 90,
+		navigationIcon: "workflow",
+		navigationHref: "/dashboard/config-changes",
+		experience: "advanced",
+	},
+	{
+		id: "platform-capacity",
+		label: "Capacity",
+		navigationSection: "platform",
+		navigationOrder: 100,
+		navigationIcon: "activity",
+		navigationHref: "/dashboard/platform",
+		experience: "advanced",
+		adminOnly: true,
+	},
+	{
+		id: "platform-infoblox-console",
+		label: "Infoblox Console",
+		navigationSection: "platform",
+		navigationOrder: 110,
+		navigationIcon: "server",
+		navigationHref: "/admin/infoblox/console",
+		experience: "advanced",
+		adminOnly: true,
+	},
+	{
+		id: "platform-redoc",
+		label: "ReDoc",
+		navigationSection: "platform",
+		navigationOrder: 120,
+		navigationIcon: "book-open",
+		navigationHref: "/redoc/",
+		experience: "advanced",
+	},
+	{
+		id: "platform-webhooks",
+		label: "Webhooks",
+		navigationSection: "platform",
+		navigationOrder: 130,
+		navigationIcon: "webhook",
+		navigationHref: "/webhooks",
+		experience: "advanced",
+	},
+	{
+		id: "platform-syslog",
+		label: "Syslog",
+		navigationSection: "platform",
+		navigationOrder: 140,
+		navigationIcon: "inbox",
+		navigationHref: "/syslog",
+		experience: "advanced",
+	},
+	{
+		id: "platform-snmp",
+		label: "SNMP",
+		navigationSection: "platform",
+		navigationOrder: 150,
+		navigationIcon: "shield-check",
+		navigationHref: "/snmp",
+		experience: "advanced",
 	},
 ];
 
@@ -227,6 +350,7 @@ describe("side nav model", () => {
 			"local",
 			"advanced",
 			toolSections,
+			toolEntries,
 			toolLaunches,
 		);
 		const forward = findGroup("Forward", items);
@@ -258,6 +382,7 @@ describe("side nav model", () => {
 			"local",
 			"simple",
 			toolSections,
+			toolEntries,
 			toolLaunches,
 		);
 		const forward = findGroup("Forward", items);
@@ -287,6 +412,7 @@ describe("side nav model", () => {
 			"local",
 			"advanced",
 			toolSections,
+			toolEntries,
 			toolLaunches,
 		);
 		const labels = items.map((i) => i.label);
@@ -353,6 +479,7 @@ describe("side nav model", () => {
 			"local",
 			"advanced",
 			toolSections,
+			toolEntries,
 			toolLaunches,
 		);
 		const settings = items.find((i) => i.label === "Settings");
@@ -368,6 +495,7 @@ describe("side nav model", () => {
 			"local",
 			"advanced",
 			toolSections,
+			toolEntries,
 			toolLaunches,
 		);
 		const platform = findGroup("Platform", items);
@@ -383,6 +511,7 @@ describe("side nav model", () => {
 			"local",
 			"advanced",
 			toolSections,
+			toolEntries,
 			toolLaunches,
 		);
 		const platform = findGroup("Platform", items);
@@ -402,6 +531,7 @@ describe("side nav model", () => {
 			"local",
 			"simple",
 			toolSections,
+			toolEntries,
 			toolLaunches,
 		);
 		const labels = items.map((item) => item.label);

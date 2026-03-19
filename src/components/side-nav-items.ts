@@ -24,6 +24,7 @@ import type { SkyforgeAuthMode } from "../lib/skyforge-config";
 import type {
 	ToolLaunchEntry,
 	ToolLaunchMap,
+	ToolNavigationEntry,
 	ToolNavigationSection,
 } from "../lib/tool-launches";
 import { normalizeUIExperienceMode } from "../lib/ui-experience";
@@ -61,8 +62,18 @@ function toolNavIcon(icon: string | undefined) {
 			return Network;
 		case "panel-top":
 			return PanelTop;
+		case "radio":
+			return Radio;
 		case "server":
 			return Server;
+		case "settings":
+			return Settings;
+		case "shield-check":
+			return ShieldCheck;
+		case "webhook":
+			return Webhook;
+		case "book-open":
+			return BookOpen;
 		case "workflow":
 			return Workflow;
 		default:
@@ -92,6 +103,20 @@ function navToolItem(tool: ToolLaunchEntry): NavItem {
 	};
 }
 
+function navEntryItem(entry: ToolNavigationEntry): NavItem {
+	return {
+		id: entry.id,
+		label: String(entry.label).trim(),
+		href: entry.navigationHref,
+		icon: toolNavIcon(entry.navigationIcon),
+		adminOnly: entry.adminOnly,
+		experience:
+			String(entry.experience).trim().toLowerCase() === "both"
+				? "both"
+				: "advanced",
+	};
+}
+
 function navToolItemsForSection(
 	toolLaunches: ToolLaunchMap | undefined,
 	section: string,
@@ -109,6 +134,22 @@ function navToolItemsForSection(
 			);
 		})
 		.map((tool) => navToolItem(tool));
+}
+
+function navEntryItemsForSection(
+	entries: ToolNavigationEntry[] | undefined,
+	section: string,
+): NavItem[] {
+	return (entries ?? [])
+		.filter(
+			(entry) =>
+				String(entry.navigationSection).trim().toLowerCase() === section,
+		)
+		.sort(
+			(left, right) =>
+				Number(left.navigationOrder ?? 0) - Number(right.navigationOrder ?? 0),
+		)
+		.map((entry) => navEntryItem(entry));
 }
 
 export type Features = {
@@ -129,110 +170,42 @@ export type Features = {
 	dnsEnabled?: boolean;
 };
 
-function toolSectionIcon(section: ToolNavigationSection["icon"]) {
-	return toolNavIcon(section);
-}
-
-function sectionStaticChildren(sectionID: string): NavItem[] {
-	switch (sectionID) {
-		case "forward":
-			return [
-				{
-					label: "Credentials",
-					href: "/dashboard/forward/credentials",
-					icon: Settings,
-				},
-				{
-					label: "Collector",
-					href: "/dashboard/forward/collectors",
-					icon: Radio,
-				},
-				{
-					label: "Analytics",
-					href: "/dashboard/forward-analytics",
-					icon: ShieldCheck,
-					experience: "advanced",
-				},
-				{
-					label: "ServiceNow",
-					href: "/dashboard/servicenow",
-					icon: Workflow,
-					experience: "advanced",
-				},
-				{
-					label: "Teams",
-					href: "/dashboard/teams",
-					icon: Workflow,
-					featureFlag: "teamsEnabled",
-					experience: "advanced",
-				},
-			];
-		case "platform":
-			return [
-				{
-					label: "Reservations",
-					href: "/dashboard/reservations",
-					icon: Activity,
-				},
-				{
-					label: "Config Changes",
-					href: "/dashboard/config-changes",
-					icon: Workflow,
-				},
-				{
-					label: "Capacity",
-					href: "/dashboard/platform",
-					icon: Activity,
-					adminOnly: true,
-				},
-				{
-					label: "Infoblox Console",
-					href: "/admin/infoblox/console",
-					icon: Server,
-					featureFlag: "infobloxEnabled",
-					adminOnly: true,
-				},
-				{
-					label: "ReDoc",
-					href: "/redoc/",
-					icon: BookOpen,
-					featureFlag: "swaggerUIEnabled",
-				},
-				{ label: "Webhooks", href: "/webhooks", icon: Webhook },
-				{ label: "Syslog", href: "/syslog", icon: Inbox },
-				{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
-			];
-		default:
-			return [];
-	}
-}
-
 function createNavItems(
 	mode: UIExperienceMode,
 	sections: ToolNavigationSection[] | undefined,
+	entries: ToolNavigationEntry[] | undefined,
 	toolLaunches?: ToolLaunchMap,
 ): NavItem[] {
 	const simpleMode = mode === "simple";
 	const dynamicSections = [...(sections ?? [])]
 		.sort((left, right) => left.order - right.order)
 		.map((section) => {
-			const toolChildren = navToolItemsForSection(toolLaunches, section.id);
-			const staticChildren = sectionStaticChildren(section.id);
-			const children =
-				section.id === "forward"
-					? [
-							...staticChildren.slice(0, 2),
-							...toolChildren,
-							...staticChildren.slice(2),
-						]
-					: section.id === "platform"
-						? [...toolChildren, ...staticChildren]
-						: toolChildren;
+			const children = [
+				...navEntryItemsForSection(entries, section.id),
+				...navToolItemsForSection(toolLaunches, section.id),
+			].sort((left, right) => {
+				const leftOrder = (entries ?? []).find(
+					(entry) => entry.id === left.id,
+				)?.navigationOrder;
+				const rightOrder = (entries ?? []).find(
+					(entry) => entry.id === right.id,
+				)?.navigationOrder;
+				const leftToolOrder = Object.values(toolLaunches ?? {}).find(
+					(tool) => tool.id === left.id,
+				)?.navigationOrder;
+				const rightToolOrder = Object.values(toolLaunches ?? {}).find(
+					(tool) => tool.id === right.id,
+				)?.navigationOrder;
+				return (
+					Number(leftOrder ?? leftToolOrder ?? 0) -
+					Number(rightOrder ?? rightToolOrder ?? 0)
+				);
+			});
 			return {
 				id: section.id,
 				label: section.label,
 				href: "",
-				icon: toolSectionIcon(section.icon),
+				icon: toolNavIcon(section.icon),
 				experience: section.id === "forward" ? "both" : "advanced",
 				featureFlag:
 					section.id === "forward" ? ("forwardEnabled" as const) : undefined,
@@ -318,6 +291,7 @@ export function buildSideNavItems(
 	_authMode?: SkyforgeAuthMode | null,
 	mode?: UIExperienceMode,
 	sections?: ToolNavigationSection[],
+	entries?: ToolNavigationEntry[],
 	toolLaunches?: ToolLaunchMap,
 ): NavItem[] {
 	const session =
@@ -328,7 +302,7 @@ export function buildSideNavItems(
 	const uiExperienceMode = normalizeUIExperienceMode(mode);
 
 	return filterNavItems(
-		createNavItems(uiExperienceMode, sections, toolLaunches),
+		createNavItems(uiExperienceMode, sections, entries, toolLaunches),
 		isAdmin,
 		features,
 		uiExperienceMode,

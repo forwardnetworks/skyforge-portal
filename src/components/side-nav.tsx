@@ -74,6 +74,7 @@ export function SideNav({
 		authMode ?? null,
 		mode,
 		toolCatalogQ.data?.sections ?? [],
+		toolCatalogQ.data?.entries ?? [],
 		indexToolLaunches(toolCatalogQ.data?.tools),
 	);
 
