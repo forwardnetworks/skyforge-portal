@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
 	Activity,
@@ -8,8 +9,10 @@ import {
 	PlayCircle,
 	Shield,
 } from "lucide-react";
-import { useCatalogRouteAccess } from "../hooks/use-catalog-route-access";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
+import { getToolCatalog } from "../lib/api-client-tool-catalog";
+import { queryKeys } from "../lib/query-keys";
+import type { ToolLaunchpadEntry } from "../lib/tool-launches";
 import { formatMode } from "./dashboard-shared";
 import { Button } from "./ui/button";
 import {
@@ -20,61 +23,39 @@ import {
 	CardTitle,
 } from "./ui/card";
 
-const launchpadItems = [
-	{
-		title: "Launch Lab",
-		description:
-			"Launch curated GTM and training topologies from the platform catalog.",
-		to: "/dashboard/deployments/quick" as const,
-		icon: PlayCircle,
-	},
-	{
-		title: "Designer",
-		description:
-			"Build containerlab labs visually, validate them, and deploy from the same workbench.",
-		to: "/dashboard/labs/designer" as const,
-		icon: LayoutDashboard,
-		experience: "advanced",
-	},
-	{
-		title: "Reservations",
-		description:
-			"Reserve future capacity and monitor approved versus requested platform time.",
-		to: "/dashboard/reservations" as const,
-		icon: Boxes,
-	},
-	{
-		title: "Forward",
-		description:
-			"Check tenant credentials, collector state, and analytics workflows.",
-		to: "/dashboard/forward/credentials" as const,
-		icon: Network,
-	},
-	{
-		title: "Observability",
-		description:
-			"Inspect live system health, queue pressure, and Forward observability signals.",
-		to: "/dashboard/observability" as const,
-		icon: Activity,
-		experience: "advanced",
-	},
-	{
-		title: "Platform",
-		description:
-			"Open capacity, reservation, and hybrid placement views for operator workflows.",
-		to: "/dashboard/platform" as const,
-		icon: Shield,
-		experience: "advanced",
-	},
-];
+function launchpadIcon(icon: string) {
+	switch (String(icon).trim().toLowerCase()) {
+		case "activity":
+			return Activity;
+		case "boxes":
+			return Boxes;
+		case "layout-dashboard":
+			return LayoutDashboard;
+		case "network":
+			return Network;
+		case "play-circle":
+			return PlayCircle;
+		case "shield":
+			return Shield;
+		default:
+			return PlayCircle;
+	}
+}
 
 export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 	const primaryOperatingMode =
 		props.page.platformAvailability?.policy?.primaryOperatingMode;
 	const simpleMode = props.page.uiExperienceMode === "simple";
-	const routeAccess = useCatalogRouteAccess({
+	const toolCatalogQ = useQuery({
+		queryKey: queryKeys.toolCatalog(),
+		queryFn: getToolCatalog,
 		enabled: props.page.session?.authenticated === true,
+		retry: false,
+		staleTime: 5 * 60_000,
 	});
+	const launchpadItems = (toolCatalogQ.data?.launchpad ?? [])
+		.filter((item) => item.allowed !== false)
+		.sort((left, right) => Number(left.order ?? 0) - Number(right.order ?? 0));
 
 	return (
 		<Card className="overflow-hidden border-border/70 bg-[linear-gradient(145deg,rgba(2,6,23,0.96),rgba(17,24,39,0.97)_52%,rgba(34,197,94,0.10))] text-white shadow-2xl shadow-black/15">
@@ -125,31 +106,29 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 				</div>
 			</CardHeader>
 			<CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-				{launchpadItems
-					.filter((item) => routeAccess.canAccessRoute(item.to))
-					.map((item) => {
-						const Icon = item.icon;
-						return (
-							<Link
-								key={item.title}
-								to={item.to}
-								className="group rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10"
-							>
-								<div className="flex items-start justify-between gap-3">
-									<div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-black/20">
-										<Icon className="h-5 w-5" />
-									</div>
-									<ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:text-white" />
+				{launchpadItems.map((item: ToolLaunchpadEntry) => {
+					const Icon = launchpadIcon(item.icon);
+					return (
+						<Link
+							key={item.id}
+							to={item.href}
+							className="group rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10"
+						>
+							<div className="flex items-start justify-between gap-3">
+								<div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-black/20">
+									<Icon className="h-5 w-5" />
 								</div>
-								<div className="mt-4 text-base font-semibold text-white">
-									{item.title}
-								</div>
-								<div className="mt-1 text-sm leading-6 text-slate-300">
-									{item.description}
-								</div>
-							</Link>
-						);
-					})}
+								<ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:text-white" />
+							</div>
+							<div className="mt-4 text-base font-semibold text-white">
+								{item.title}
+							</div>
+							<div className="mt-1 text-sm leading-6 text-slate-300">
+								{item.description}
+							</div>
+						</Link>
+					);
+				})}
 			</CardContent>
 		</Card>
 	);

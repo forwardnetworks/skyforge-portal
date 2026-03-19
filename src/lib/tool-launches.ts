@@ -27,6 +27,16 @@ export type ToolRouteAccessEntry = {
 	allowed?: boolean;
 };
 
+export type ToolLaunchpadEntry = {
+	id: string;
+	title: string;
+	description: string;
+	href: string;
+	icon: string;
+	order: number;
+	allowed?: boolean;
+};
+
 export type ToolLaunchEntry = {
 	id: string;
 	title: string;

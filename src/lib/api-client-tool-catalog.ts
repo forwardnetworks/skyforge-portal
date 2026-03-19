@@ -1,6 +1,7 @@
 import { apiFetch } from "./http";
 import type {
 	ToolLaunchEntry,
+	ToolLaunchpadEntry,
 	ToolNavigationEntry,
 	ToolNavigationSection,
 	ToolRouteAccessEntry,
@@ -10,6 +11,7 @@ export type ToolCatalogResponse = {
 	sections?: ToolNavigationSection[];
 	entries?: ToolNavigationEntry[];
 	routes?: ToolRouteAccessEntry[];
+	launchpad?: ToolLaunchpadEntry[];
 	tools?: ToolLaunchEntry[];
 };
 

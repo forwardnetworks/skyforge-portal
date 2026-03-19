@@ -469,12 +469,25 @@ describe("side nav model", () => {
 	});
 
 	it("hides Forward section when forward feature is disabled", () => {
+		const sectionsWithoutForward = toolSections.filter(
+			(section) => section.id !== "forward",
+		);
+		const entriesWithoutForward = withAllowedEntries().filter(
+			(entry) =>
+				entry.id !== "top-launch-lab" && entry.navigationSection !== "forward",
+		);
+		const toolsWithoutForward = Object.fromEntries(
+			Object.entries(withAllowedTools()).filter(
+				([id, tool]) =>
+					id !== "forward-cluster" && tool.navigationSection !== "forward",
+			),
+		);
 		const items = buildSideNavItems(
 			{ forwardEnabled: false },
 			"simple",
-			toolSections,
-			withAllowedEntries(),
-			withAllowedTools(),
+			sectionsWithoutForward,
+			entriesWithoutForward,
+			toolsWithoutForward,
 		);
 		const forward = findGroup("Forward", items);
 		const labels = items.map((i) => i.label);

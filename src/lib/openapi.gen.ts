@@ -9552,6 +9552,16 @@ export interface components {
             supportsWake: boolean;
             title: string;
         };
+        "skyforge.ToolCatalogLaunchpadEntry": {
+            allowed: boolean;
+            description: string;
+            href: string;
+            icon: string;
+            id: string;
+            /** Format: int64 */
+            order: number;
+            title: string;
+        };
         "skyforge.ToolCatalogNavEntry": {
             adminOnly: boolean;
             allowed: boolean;
@@ -16515,6 +16525,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         entries: components["schemas"]["skyforge.ToolCatalogNavEntry"][];
+                        launchpad: components["schemas"]["skyforge.ToolCatalogLaunchpadEntry"][];
                         routes: components["schemas"]["skyforge.ToolCatalogRouteEntry"][];
                         sections: components["schemas"]["skyforge.ToolCatalogSection"][];
                         tools: components["schemas"]["skyforge.ToolCatalogEntry"][];

@@ -230,9 +230,6 @@ function createNavItems(
 				label: section.label,
 				href: "",
 				icon: toolNavIcon(section.icon),
-				experience: section.id === "forward" ? "both" : "advanced",
-				featureFlag:
-					section.id === "forward" ? ("forwardEnabled" as const) : undefined,
 				children,
 			} satisfies NavItem;
 		});
