@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { redirect } from "@tanstack/react-router";
+import { notFound, redirect } from "@tanstack/react-router";
 import { getUserSettings } from "./api-client";
 import { getToolCatalog } from "./api-client-tool-catalog";
 import { queryKeys } from "./query-keys";
@@ -41,10 +41,14 @@ export async function requireToolRouteAccess(
 		retry: false,
 	});
 	const tool = indexToolLaunches(catalog.tools)[String(toolID ?? "").trim()];
+	if (!tool) {
+		throw notFound();
+	}
 	const mode = normalizeUIExperienceMode(settings.uiExperienceMode);
-	const experience = String(tool?.experience ?? "advanced")
-		.trim()
-		.toLowerCase();
+	const experience = String(tool.experience).trim().toLowerCase();
+	if (experience !== "both" && experience !== "advanced") {
+		throw new Error(`tool ${tool.id} is missing a valid experience contract`);
+	}
 	if (experience === "advanced" && mode !== "advanced") {
 		throw redirect({ to: "/dashboard" });
 	}

@@ -1,6 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { type ToolLaunchMap, toolRouteHref } from "../lib/tool-launches";
+import {
+	type ToolLaunchMap,
+	type ToolNavigationSection,
+	toolRouteHref,
+} from "../lib/tool-launches";
 import { buildSideNavItems } from "./side-nav";
+
+const toolSections: ToolNavigationSection[] = [
+	{
+		id: "forward",
+		label: "Forward",
+		icon: "network",
+		order: 10,
+		defaultExpanded: true,
+	},
+	{
+		id: "integrations",
+		label: "Integrations",
+		icon: "workflow",
+		order: 20,
+		defaultExpanded: true,
+	},
+	{
+		id: "platform",
+		label: "Platform",
+		icon: "cloud",
+		order: 30,
+		defaultExpanded: true,
+	},
+];
 
 const toolLaunches: ToolLaunchMap = {
 	"forward-cluster": {
@@ -22,6 +50,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "integrations",
 		experience: "advanced",
 		navigationSection: "integrations",
+		navigationLabel: "NetBox",
 		navigationOrder: 10,
 		navigationIcon: "network",
 		navigationHref: toolRouteHref("netbox"),
@@ -34,6 +63,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "integrations",
 		experience: "advanced",
 		navigationSection: "integrations",
+		navigationLabel: "Nautobot",
 		navigationOrder: 20,
 		navigationIcon: "network",
 		navigationHref: toolRouteHref("nautobot"),
@@ -46,6 +76,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "integrations",
 		experience: "advanced",
 		navigationSection: "integrations",
+		navigationLabel: "Jira",
 		navigationOrder: 30,
 		navigationIcon: "workflow",
 		navigationHref: toolRouteHref("jira"),
@@ -58,6 +89,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "integrations",
 		experience: "advanced",
 		navigationSection: "integrations",
+		navigationLabel: "Rapid7",
 		navigationOrder: 40,
 		navigationIcon: "workflow",
 		navigationHref: toolRouteHref("rapid7"),
@@ -70,6 +102,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "integrations",
 		experience: "advanced",
 		navigationSection: "integrations",
+		navigationLabel: "ELK",
 		navigationOrder: 50,
 		navigationIcon: "database",
 		navigationHref: toolRouteHref("elk"),
@@ -82,6 +115,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "integrations",
 		experience: "advanced",
 		navigationSection: "integrations",
+		navigationLabel: "Infoblox",
 		navigationOrder: 60,
 		navigationIcon: "server",
 		navigationHref: toolRouteHref("infoblox"),
@@ -94,6 +128,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "platform",
 		experience: "advanced",
 		navigationSection: "platform",
+		navigationLabel: "Git",
 		navigationOrder: 10,
 		navigationIcon: "git-branch",
 		navigationHref: toolRouteHref("git"),
@@ -106,6 +141,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "platform",
 		experience: "advanced",
 		navigationSection: "platform",
+		navigationLabel: "Artifacts",
 		navigationOrder: 20,
 		navigationIcon: "inbox",
 		navigationHref: toolRouteHref("artifacts"),
@@ -118,6 +154,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "platform",
 		experience: "advanced",
 		navigationSection: "platform",
+		navigationLabel: "DNS",
 		navigationOrder: 30,
 		navigationIcon: "network",
 		navigationHref: toolRouteHref("dns"),
@@ -130,6 +167,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "platform",
 		experience: "advanced",
 		navigationSection: "platform",
+		navigationLabel: "Coder",
 		navigationOrder: 40,
 		navigationIcon: "cloud",
 		navigationHref: toolRouteHref("coder"),
@@ -142,6 +180,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "platform",
 		experience: "advanced",
 		navigationSection: "platform",
+		navigationLabel: "Grafana",
 		navigationOrder: 50,
 		navigationIcon: "activity",
 		navigationHref: toolRouteHref("grafana"),
@@ -154,6 +193,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "platform",
 		experience: "advanced",
 		navigationSection: "platform",
+		navigationLabel: "Prometheus",
 		navigationOrder: 60,
 		navigationIcon: "activity",
 		navigationHref: toolRouteHref("prometheus"),
@@ -166,6 +206,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "platform",
 		experience: "advanced",
 		navigationSection: "platform",
+		navigationLabel: "API Testing",
 		navigationOrder: 70,
 		navigationIcon: "panel-top",
 		navigationHref: toolRouteHref("api-testing"),
@@ -185,6 +226,7 @@ describe("side nav model", () => {
 			{ forwardEnabled: true },
 			"local",
 			"advanced",
+			toolSections,
 			toolLaunches,
 		);
 		const forward = findGroup("Forward", items);
@@ -215,6 +257,7 @@ describe("side nav model", () => {
 			{ forwardEnabled: false },
 			"local",
 			"simple",
+			toolSections,
 			toolLaunches,
 		);
 		const forward = findGroup("Forward", items);
@@ -243,6 +286,7 @@ describe("side nav model", () => {
 			},
 			"local",
 			"advanced",
+			toolSections,
 			toolLaunches,
 		);
 		const labels = items.map((i) => i.label);
@@ -308,6 +352,7 @@ describe("side nav model", () => {
 			{ coderEnabled: true },
 			"local",
 			"advanced",
+			toolSections,
 			toolLaunches,
 		);
 		const settings = items.find((i) => i.label === "Settings");
@@ -322,6 +367,7 @@ describe("side nav model", () => {
 			{ infobloxEnabled: true, coderEnabled: true },
 			"local",
 			"advanced",
+			toolSections,
 			toolLaunches,
 		);
 		const platform = findGroup("Platform", items);
@@ -336,6 +382,7 @@ describe("side nav model", () => {
 			{ coderEnabled: true, nautobotEnabled: true },
 			"local",
 			"advanced",
+			toolSections,
 			toolLaunches,
 		);
 		const platform = findGroup("Platform", items);
@@ -354,6 +401,7 @@ describe("side nav model", () => {
 			{ forwardEnabled: true, teamsEnabled: true, netboxEnabled: true },
 			"local",
 			"simple",
+			toolSections,
 			toolLaunches,
 		);
 		const labels = items.map((item) => item.label);

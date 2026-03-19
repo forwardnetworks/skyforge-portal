@@ -1,13 +1,21 @@
+export type ToolNavigationSection = {
+	id: string;
+	label: string;
+	icon: string;
+	order: number;
+	defaultExpanded: boolean;
+};
+
 export type ToolLaunchEntry = {
 	id: string;
 	title: string;
 	description?: string;
 	category?: string;
-	experience?: string;
-	navigationSection?: string;
-	navigationLabel?: string;
-	navigationOrder?: number;
-	navigationIcon?: string;
+	experience: string;
+	navigationSection: string;
+	navigationLabel: string;
+	navigationOrder: number;
+	navigationIcon: string;
 	navigationHref: string;
 	navigationMode?: string;
 	launchMode?: string;

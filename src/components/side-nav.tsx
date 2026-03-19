@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getToolCatalog } from "../lib/api-client-tool-catalog";
 import type { UIExperienceMode } from "../lib/api-client-user-settings";
 import { queryKeys } from "../lib/query-keys";
@@ -13,12 +13,6 @@ import {
 	SideNavLeafItem,
 	hasChildren,
 } from "./side-nav-renderers";
-
-const DEFAULT_EXPANDED_GROUPS: Record<string, boolean> = {
-	Forward: true,
-	Integrations: true,
-	Platform: true,
-};
 
 export { buildSideNavItems } from "./side-nav-items";
 export type { Features } from "./side-nav-items";
@@ -41,7 +35,7 @@ export function SideNav({
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
-	const [expanded, setExpanded] = useState(DEFAULT_EXPANDED_GROUPS);
+	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 	const toolCatalogQ = useQuery({
 		queryKey: queryKeys.toolCatalog(),
 		queryFn: getToolCatalog,
@@ -51,11 +45,35 @@ export function SideNav({
 		retry: false,
 		staleTime: 5 * 60_000,
 	});
+	const defaultExpandedSections = useMemo(
+		() =>
+			Object.fromEntries(
+				(toolCatalogQ.data?.sections ?? []).map((section) => [
+					section.id,
+					section.defaultExpanded,
+				]),
+			),
+		[toolCatalogQ.data?.sections],
+	);
+	useEffect(() => {
+		setExpanded((previous) => {
+			const next = { ...previous };
+			for (const [sectionID, isExpanded] of Object.entries(
+				defaultExpandedSections,
+			)) {
+				if (typeof next[sectionID] !== "boolean") {
+					next[sectionID] = isExpanded;
+				}
+			}
+			return next;
+		});
+	}, [defaultExpandedSections]);
 	const items = buildSideNavItems(
 		session ?? { isAdmin: !!isAdmin },
 		features,
 		authMode ?? null,
 		mode,
+		toolCatalogQ.data?.sections ?? [],
 		indexToolLaunches(toolCatalogQ.data?.tools),
 	);
 
@@ -72,8 +90,8 @@ export function SideNav({
 		return pathname === href || pathname.startsWith(`${href}/`);
 	};
 
-	const toggleExpand = (label: string) => {
-		setExpanded((previous) => ({ ...previous, [label]: !previous[label] }));
+	const toggleExpand = (groupID: string) => {
+		setExpanded((previous) => ({ ...previous, [groupID]: !previous[groupID] }));
 	};
 
 	return (
@@ -88,17 +106,17 @@ export function SideNav({
 
 							return collapsed ? (
 								<CollapsedNavGroup
-									key={item.label}
+									key={item.id ?? item.label}
 									item={item}
 									isChildActive={isChildActive}
 								/>
 							) : (
 								<ExpandedNavGroup
-									key={item.label}
+									key={item.id ?? item.label}
 									item={item}
 									isChildActive={isChildActive}
-									isOpen={!!expanded[item.label]}
-									onToggle={toggleExpand}
+									isOpen={!!expanded[item.id ?? item.label]}
+									onToggle={(label) => toggleExpand(item.id ?? label)}
 									isActiveHref={isActiveHref}
 								/>
 							);
