@@ -104,9 +104,7 @@ describe("DashboardPageContent", () => {
 		);
 
 		expect(screen.getByText("Launch faster")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: "Launch quick deploy" }),
-		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Launch lab" })).toBeInTheDocument();
 		expect(screen.queryByTestId("system-status-card")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("availability-card")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("policy-summary-card")).not.toBeInTheDocument();

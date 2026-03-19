@@ -21,7 +21,7 @@ import { formatMode } from "./dashboard-shared";
 
 const launchpadItems = [
 	{
-		title: "Quick Deploy",
+		title: "Launch Lab",
 		description:
 			"Launch curated GTM and training topologies from the platform catalog.",
 		to: "/dashboard/deployments/quick" as const,
@@ -93,7 +93,7 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 						asChild
 						className="bg-white text-slate-950 hover:bg-slate-100"
 					>
-						<Link to="/dashboard/deployments/quick">Launch quick deploy</Link>
+						<Link to="/dashboard/deployments/quick">Launch lab</Link>
 					</Button>
 					{primaryOperatingMode ? (
 						<Button

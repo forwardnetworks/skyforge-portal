@@ -70,7 +70,7 @@ function createNavItems(mode: UIExperienceMode): NavItem[] {
 			icon: FolderKanban,
 		},
 		{
-			label: "Quick Deploy",
+			label: "Launch Lab",
 			href: "/dashboard/deployments/quick",
 			icon: Workflow,
 			featureFlag: "forwardEnabled",

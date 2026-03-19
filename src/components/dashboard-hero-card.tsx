@@ -19,7 +19,7 @@ export function DashboardHeroCard(props: { page: DashboardPageState }) {
 			</CardHeader>
 			<CardContent className="flex flex-wrap gap-3">
 				<Button asChild>
-					<Link to="/dashboard/deployments/quick">Launch quick deploy</Link>
+					<Link to="/dashboard/deployments/quick">Launch lab</Link>
 				</Button>
 				{primaryOperatingMode ? (
 					<Button asChild variant="outline">

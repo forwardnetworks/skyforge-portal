@@ -11,7 +11,7 @@ export function DashboardNextStepsCard() {
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-2 text-sm text-muted-foreground">
-				<p>Use Quick Deploy for curated demos and repeatable training flows.</p>
+				<p>Use Launch Lab for curated demos and repeatable training flows.</p>
 				<p>
 					Reserve capacity when you need a future slot or a persistent sandbox.
 				</p>

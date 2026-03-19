@@ -39,7 +39,7 @@ type WorkflowCard = {
 
 const workflowCards: WorkflowCard[] = [
 	{
-		title: "Quick Deploy",
+		title: "Launch Lab",
 		description:
 			"Launch curated GTM labs, training environments, and baseline demos from Netlab-backed templates.",
 		icon: Sparkles,
@@ -225,7 +225,7 @@ export function PublicLandingPageContent(
 										Authenticate, then land on the status-first dashboard.
 									</div>
 									<div className="mt-1 text-muted-foreground">
-										Quick Deploy is available from the dashboard, but it is no
+										Launch Lab is available from the dashboard, but it is no
 										longer the blind default.
 									</div>
 								</div>

@@ -47,7 +47,7 @@ describe("side nav model", () => {
 		const labels = items.map((i) => i.label);
 
 		expect(forward).toBeUndefined();
-		expect(labels).not.toContain("Quick Deploy");
+		expect(labels).not.toContain("Launch Lab");
 	});
 
 	it("removes Connect/Tools groupings and legacy nav items", () => {
@@ -71,7 +71,7 @@ describe("side nav model", () => {
 			"advanced",
 		);
 		const labels = items.map((i) => i.label);
-		expect(labels).toContain("Quick Deploy");
+		expect(labels).toContain("Launch Lab");
 		expect(labels).not.toContain("Connect");
 		expect(labels).not.toContain("Tools");
 		expect(labels).not.toContain("Runs");
@@ -183,7 +183,7 @@ describe("side nav model", () => {
 		expect(labels).toEqual([
 			"Dashboard",
 			"Deployments",
-			"Quick Deploy",
+			"Launch Lab",
 			"Reservations",
 			"Forward",
 			"Docs",

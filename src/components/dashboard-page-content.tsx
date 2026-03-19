@@ -84,7 +84,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 									Launch faster
 								</h1>
 								<p className="max-w-3xl text-base leading-7 text-slate-200">
-									Use Quick Deploy for the fastest path, check your current
+									Use Launch Lab for the fastest path, check your current
 									deployments, and reserve time when you need a future slot. The
 									header switch opens the full operator surface when you need
 									it.
@@ -96,9 +96,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 									asChild
 									className="bg-white text-slate-950 hover:bg-slate-100"
 								>
-									<Link to="/dashboard/deployments/quick">
-										Launch quick deploy
-									</Link>
+									<Link to="/dashboard/deployments/quick">Launch lab</Link>
 								</Button>
 								<Button
 									asChild
@@ -422,7 +420,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 					</div>
 					<div className="mt-1 text-sm leading-6 text-muted-foreground">
 						Operators land here first so status, reservations, and capacity are
-						visible before Quick Deploy or Designer.
+						visible before Launch Lab or Designer.
 					</div>
 				</div>
 				<div className="rounded-[1.35rem] border border-border/70 bg-background p-5">
@@ -455,7 +453,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 							<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
 								Primary launch
 							</div>
-							<div className="mt-2 text-base font-semibold">Quick Deploy</div>
+							<div className="mt-2 text-base font-semibold">Launch Lab</div>
 						</div>
 						<ArrowRight className="h-4 w-4 text-muted-foreground" />
 					</div>

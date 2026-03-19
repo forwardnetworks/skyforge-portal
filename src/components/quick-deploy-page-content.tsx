@@ -64,7 +64,7 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 	return (
 		<div className="w-full space-y-5 p-4 lg:p-5">
 			<div className="space-y-1">
-				<h1 className="text-2xl font-bold tracking-tight">Quick Deploy</h1>
+				<h1 className="text-2xl font-bold tracking-tight">Launch Lab</h1>
 				<p className="text-sm text-muted-foreground">
 					One-click curated labs using the in-app Forward cluster and managed
 					credentials. Deploy opens the deployment topology first, then opens
@@ -173,10 +173,10 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 				{page.catalogQ.isError ? (
 					<Card className="md:col-span-2 xl:col-span-3">
 						<CardHeader>
-							<CardTitle>Quick Deploy Unavailable</CardTitle>
+							<CardTitle>Launch Lab Unavailable</CardTitle>
 							<CardDescription>
 								{page.loadError ||
-									"Quick Deploy is not enabled for this environment."}
+									"Launch Lab is not enabled for this environment."}
 							</CardDescription>
 						</CardHeader>
 					</Card>
