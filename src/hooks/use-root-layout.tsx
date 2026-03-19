@@ -18,7 +18,6 @@ import {
 	useNotificationsEvents,
 } from "../lib/notifications-events";
 import { queryKeys } from "../lib/query-keys";
-import { sessionIsAdmin } from "../lib/rbac";
 import { getSessionExpiryWarning } from "../lib/session-expiry";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
 import { useUIExperienceMode } from "./use-ui-experience-mode";
@@ -113,7 +112,6 @@ export function useRootLayout() {
 	}, [location.pathname]);
 
 	const who = session.data?.displayName || session.data?.username || "";
-	const isAdmin = sessionIsAdmin(session.data);
 	const isImpersonating = !!session.data?.impersonating;
 	const actorUsername = String(session.data?.actorUsername ?? "").trim();
 	const effectiveUsername = String(session.data?.username ?? "").trim();
@@ -275,7 +273,6 @@ export function useRootLayout() {
 		loginHref,
 		localLoginHref,
 		who,
-		isAdmin,
 		isImpersonating,
 		actorUsername,
 		effectiveUsername,
