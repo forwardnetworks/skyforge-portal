@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Shield, TimerReset, Zap } from "lucide-react";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
-import { buildForwardSessionHref } from "../lib/tool-launches";
 import { DashboardAdminSummaryCard } from "./dashboard-admin-summary-card";
 import { DashboardAvailabilityCard } from "./dashboard-availability-card";
 import { DashboardGuidanceCard } from "./dashboard-guidance-card";
@@ -43,6 +42,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 		: availabilityWarnings;
 	const status = page.statusSummary?.status ?? "unknown";
 	const simpleMode = page.uiExperienceMode === "simple";
+	const forwardClusterLaunchHref = page.forwardClusterLaunchHref;
 	const statusVariant =
 		status === "ok"
 			? "secondary"
@@ -113,19 +113,29 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 								>
 									<Link to="/dashboard/reservations">Reservations</Link>
 								</Button>
-								<Button
-									asChild
-									variant="ghost"
-									className="text-white hover:bg-white/10 hover:text-white"
-								>
-									<a
-										href={buildForwardSessionHref()}
-										target="_blank"
-										rel="noreferrer noopener"
+								{forwardClusterLaunchHref ? (
+									<Button
+										asChild
+										variant="ghost"
+										className="text-white hover:bg-white/10 hover:text-white"
+									>
+										<a
+											href={forwardClusterLaunchHref}
+											target="_blank"
+											rel="noreferrer noopener"
+										>
+											Open Forward
+										</a>
+									</Button>
+								) : (
+									<Button
+										variant="ghost"
+										className="text-white hover:bg-white/10 hover:text-white"
+										disabled
 									>
 										Open Forward
-									</a>
-								</Button>
+									</Button>
+								)}
 							</div>
 						</div>
 

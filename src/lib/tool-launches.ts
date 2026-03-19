@@ -140,14 +140,10 @@ export function toolAllowsEmbedFallbackToNewTab(
 	return String(tool?.embedFallbackMode ?? "").trim() === "new_tab";
 }
 
-export function buildForwardSessionHref(nextPath?: string): string {
-	const params = new URLSearchParams();
-	const next = String(nextPath ?? "").trim();
-	if (next.startsWith("/")) {
-		params.set("next", next);
-	}
-	const query = params.toString();
-	return query ? `/api/forward/session?${query}` : "/api/forward/session";
+export function forwardNetworkSessionHref(networkID: string): string {
+	const id = String(networkID ?? "").trim();
+	if (!id) return "";
+	return `/api/forward/networks/${encodeURIComponent(id)}/session`;
 }
 
 export function isDirectToolLaunch(tool?: ToolLaunchEntry | null): boolean {

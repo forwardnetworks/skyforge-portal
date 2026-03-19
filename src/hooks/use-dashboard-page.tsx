@@ -31,6 +31,7 @@ import {
 } from "../lib/catalog-route-access";
 import { queryKeys } from "../lib/query-keys";
 import { useStatusSummaryEvents } from "../lib/status-events";
+import { indexToolLaunches } from "../lib/tool-launches";
 import {
 	type UIExperienceMode,
 	normalizeUIExperienceMode,
@@ -51,6 +52,7 @@ export type DashboardPageState = {
 	statusSummary: PublicStatusSummaryResponse | undefined;
 	managedIntegrations: ManagedIntegrationsStatusResponse | undefined;
 	observabilitySummary: UserObservabilitySummaryResponse | undefined;
+	forwardClusterLaunchHref: string;
 	uiExperienceMode: UIExperienceMode;
 };
 
@@ -86,6 +88,12 @@ export function useDashboardPage(): DashboardPageState {
 	});
 
 	const session = sessionQ.data;
+	const forwardClusterLaunchHref = useMemo(() => {
+		return (
+			indexToolLaunches(toolCatalogQ.data?.tools)["forward-cluster"]
+				?.navigationHref ?? ""
+		);
+	}, [toolCatalogQ.data?.tools]);
 	const canAccessPlatformView = useMemo(() => {
 		const route = lookupCatalogRouteAccess(
 			indexCatalogRouteAccess(toolCatalogQ.data?.routes),
@@ -165,6 +173,7 @@ export function useDashboardPage(): DashboardPageState {
 		statusSummary: statusSummaryQ.data,
 		managedIntegrations: managedIntegrationsQ.data,
 		observabilitySummary: observabilityQ.data,
+		forwardClusterLaunchHref,
 		uiExperienceMode: normalizeUIExperienceMode(
 			userSettingsQ.data?.uiExperienceMode,
 		),

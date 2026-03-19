@@ -1,7 +1,7 @@
 import { DeploymentStatusBadge } from "@/components/deployments/deployment-status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { DeploymentDetailPageState } from "@/hooks/use-deployment-detail-page";
-import { buildForwardSessionHref } from "@/lib/tool-launches";
+import { forwardNetworkSessionHref } from "@/lib/tool-launches";
 import { Link } from "@tanstack/react-router";
 import {
 	ArrowLeft,
@@ -81,8 +81,7 @@ export function DeploymentDetailHeader({
 					}
 					onClick={() => {
 						if (!forwardNetworkID) return;
-						const nextPath = `/search?networkId=${encodeURIComponent(forwardNetworkID)}`;
-						const url = buildForwardSessionHref(nextPath);
+						const url = forwardNetworkSessionHref(forwardNetworkID);
 						const popup = window.open(url, "_blank", "noopener,noreferrer");
 						if (!popup) {
 							toast.error("Pop-up blocked", {

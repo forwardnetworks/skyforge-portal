@@ -2220,6 +2220,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forward/networks/{networkID}/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ForwardNetworkSessionStart mints a short-lived bridge token on the
+         * @description authenticated Skyforge host and redirects the browser to the Forward-host bridge path for a specific network search target.
+         */
+        get: operations["GET:skyforge.ForwardNetworkSessionStart"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/forward/org-credential": {
         parameters: {
             query?: never;
@@ -14654,6 +14674,27 @@ export interface operations {
                         collectors: components["schemas"]["skyforge.ForwardCollectorSummary"][];
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ForwardNetworkSessionStart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                networkID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };

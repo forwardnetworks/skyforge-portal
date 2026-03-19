@@ -11,7 +11,7 @@ import {
 	runDeploymentActionWithRetry,
 } from "../lib/deployment-actions";
 import { queryKeys } from "../lib/query-keys";
-import { buildForwardSessionHref } from "../lib/tool-launches";
+import { forwardNetworkSessionHref } from "../lib/tool-launches";
 import {
 	deploymentForwardNetworkId,
 	resolveLifetimeSelection,
@@ -201,8 +201,7 @@ export function useDeploymentsPageActions(args: {
 				toast.message("Forward network is not available yet");
 				return;
 			}
-			const nextPath = `/search?networkId=${encodeURIComponent(forwardNetworkID)}`;
-			const url = buildForwardSessionHref(nextPath);
+			const url = forwardNetworkSessionHref(forwardNetworkID);
 			const popup = window.open(url, "_blank", "noopener,noreferrer");
 			if (!popup) {
 				toast.error("Pop-up blocked", {
