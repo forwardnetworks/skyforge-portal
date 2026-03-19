@@ -18,7 +18,12 @@ import {
 } from "@/lib/api-client-managed-integrations";
 import { getToolCatalog } from "@/lib/api-client-tool-catalog";
 import { queryKeys } from "@/lib/query-keys";
-import { composeToolContentUrl, indexToolLaunches } from "@/lib/tool-launches";
+import {
+	composeToolContentUrl,
+	indexToolLaunches,
+	toolAllowsEmbedFallbackToNewTab,
+	toolEmbedLoadTimeoutMs,
+} from "@/lib/tool-launches";
 import { requireToolRouteAccess } from "@/lib/ui-experience-route";
 
 export const Route = createFileRoute("/dashboard/tools/$tool")({
@@ -88,6 +93,14 @@ function EmbeddedToolPage() {
 		if (!resolved) return "";
 		return composeToolContentUrl(resolved, path ?? "");
 	}, [path, toolDef?.contentUrl]);
+	const embedLoadTimeoutMs = useMemo(
+		() => toolEmbedLoadTimeoutMs(toolDef),
+		[toolDef],
+	);
+	const allowEmbedFallbackToNewTab = useMemo(
+		() => toolAllowsEmbedFallbackToNewTab(toolDef),
+		[toolDef],
+	);
 
 	useEffect(() => {
 		setLoaded(false);
@@ -96,9 +109,13 @@ function EmbeddedToolPage() {
 
 	useEffect(() => {
 		if (loaded) return;
-		const timer = window.setTimeout(() => setLoadTimedOut(true), 10_000);
+		if (embedLoadTimeoutMs <= 0) return;
+		const timer = window.setTimeout(
+			() => setLoadTimedOut(true),
+			embedLoadTimeoutMs,
+		);
 		return () => window.clearTimeout(timer);
-	}, [loaded, frameKey, src]);
+	}, [embedLoadTimeoutMs, loaded, frameKey, src]);
 
 	if (toolCatalogQ.isLoading) {
 		return (
@@ -133,6 +150,12 @@ function EmbeddedToolPage() {
 				</Card>
 			</div>
 		);
+	}
+
+	if (String(toolDef.launchMode ?? "").trim() === "embedded") {
+		if (String(toolDef.embedMode ?? "").trim() !== "iframe") {
+			throw new Error(`tool ${toolDef.id} is missing an iframe embed contract`);
+		}
 	}
 
 	if (!src) {
@@ -250,10 +273,10 @@ function EmbeddedToolPage() {
 					<div className="absolute inset-0 z-10 flex items-center justify-center bg-background/85 backdrop-blur-sm p-4">
 						<Card className="max-w-xl w-full">
 							<CardHeader>
-								<CardTitle>Embedded View Unavailable</CardTitle>
+								<CardTitle>Embedded View Still Loading</CardTitle>
 								<CardDescription>
-									{toolDef.title} did not finish loading in-frame. This usually
-									means the app blocks iframe embedding.
+									{toolDef.title} has not finished loading within the configured
+									embed timeout.
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="flex flex-wrap gap-2">
@@ -265,12 +288,14 @@ function EmbeddedToolPage() {
 									<RefreshCw className="mr-2 h-4 w-4" />
 									Try again
 								</Button>
-								<Button asChild size="sm">
-									<a href={src} target="_blank" rel="noreferrer noopener">
-										<ExternalLink className="mr-2 h-4 w-4" />
-										Open in new tab
-									</a>
-								</Button>
+								{allowEmbedFallbackToNewTab ? (
+									<Button asChild size="sm">
+										<a href={src} target="_blank" rel="noreferrer noopener">
+											<ExternalLink className="mr-2 h-4 w-4" />
+											Open in new tab
+										</a>
+									</Button>
+								) : null}
 							</CardContent>
 						</Card>
 					</div>

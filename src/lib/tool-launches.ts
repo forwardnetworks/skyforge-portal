@@ -42,6 +42,9 @@ export type ToolLaunchEntry = {
 	launchMode?: string;
 	authMode?: string;
 	contentUrl?: string;
+	embedMode?: string;
+	embedLoadTimeoutSecs?: number;
+	embedFallbackMode?: string;
 	supportsWake?: boolean;
 	requiredCapabilities?: string[];
 	allowed?: boolean;
@@ -113,6 +116,18 @@ export function composeToolContentUrl(base: string, path: string): string {
 	} catch {
 		return normalizedBase;
 	}
+}
+
+export function toolEmbedLoadTimeoutMs(tool?: ToolLaunchEntry | null): number {
+	const secs = Number(tool?.embedLoadTimeoutSecs ?? 0);
+	if (!Number.isFinite(secs) || secs <= 0) return 0;
+	return Math.round(secs * 1000);
+}
+
+export function toolAllowsEmbedFallbackToNewTab(
+	tool?: ToolLaunchEntry | null,
+): boolean {
+	return String(tool?.embedFallbackMode ?? "").trim() === "new_tab";
 }
 
 export function buildForwardSessionHref(nextPath?: string): string {

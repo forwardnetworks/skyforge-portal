@@ -9534,6 +9534,10 @@ export interface components {
             category: string;
             contentUrl: string;
             description: string;
+            embedFallbackMode: string;
+            /** Format: int64 */
+            embedLoadTimeoutSecs: number;
+            embedMode: string;
             experience: string;
             id: string;
             launchMode: string;
