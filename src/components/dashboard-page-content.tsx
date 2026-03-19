@@ -98,6 +98,20 @@ function dashboardContentIcon(icon: string | undefined, muted = false) {
 	}
 }
 
+function dashboardContentDetail(
+	entry: ToolCatalogContentEntry,
+	values: Record<string, string>,
+): string {
+	let out = String(entry.detailTemplate ?? "").trim();
+	if (!out) {
+		return entry.description;
+	}
+	for (const [key, value] of Object.entries(values)) {
+		out = out.replaceAll(`{${key}}`, value);
+	}
+	return out;
+}
+
 export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const availability = page.platformAvailability;
 	const policy = availability?.policy;
@@ -154,15 +168,34 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 		"hero",
 		"advanced",
 	);
-	const advancedPostureHeader = firstDashboardContentEntry(
+	const advancedPostureHeader = requireDashboardContentEntry(
 		dashboardContent,
-		"posture-header",
-		"advanced",
+		"dashboard-advanced-posture-header",
+	);
+	const advancedPosturePrimaryMode = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-advanced-posture-primary-mode",
 	);
 	const advancedPostureEntries = dashboardContentEntries(
 		dashboardContent,
 		"posture",
 		"advanced",
+	);
+	const advancedKPIConcurrentHeadroom = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-advanced-kpi-concurrent-headroom",
+	);
+	const advancedKPIPersistentHeadroom = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-advanced-kpi-persistent-headroom",
+	);
+	const advancedKPIRequestedReservations = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-advanced-kpi-requested-reservations",
+	);
+	const advancedKPIApprovedReservations = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-advanced-kpi-approved-reservations",
 	);
 	const advancedPrinciples = dashboardContentEntries(
 		dashboardContent,
@@ -396,50 +429,56 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 						<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 							<div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
 								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
-									Concurrent headroom
+									{advancedKPIConcurrentHeadroom.title}
 								</div>
 								<div className="mt-2 text-3xl font-semibold text-white">
 									{usage ? formatCount(usage.remainingConcurrentLabs) : "—"}
 								</div>
 								<div className="mt-1 text-sm text-slate-300">
 									{policy
-										? `${formatCount(usage?.activeDeployments)} active of ${formatCount(policy.quota.maxConcurrentLabs)}`
-										: "Quota data loading"}
+										? dashboardContentDetail(advancedKPIConcurrentHeadroom, {
+												active: formatCount(usage?.activeDeployments),
+												quota: formatCount(policy.quota.maxConcurrentLabs),
+											})
+										: advancedKPIConcurrentHeadroom.description}
 								</div>
 							</div>
 							<div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
 								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
-									Persistent headroom
+									{advancedKPIPersistentHeadroom.title}
 								</div>
 								<div className="mt-2 text-3xl font-semibold text-white">
 									{usage ? formatCount(usage.remainingPersistentLabs) : "—"}
 								</div>
 								<div className="mt-1 text-sm text-slate-300">
 									{policy
-										? `${formatCount(usage?.persistentLabs)} active of ${formatCount(policy.quota.maxPersistentLabs)}`
-										: "Persistence policy loading"}
+										? dashboardContentDetail(advancedKPIPersistentHeadroom, {
+												active: formatCount(usage?.persistentLabs),
+												quota: formatCount(policy.quota.maxPersistentLabs),
+											})
+										: advancedKPIPersistentHeadroom.description}
 								</div>
 							</div>
 							<div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
 								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
-									Requested reservations
+									{advancedKPIRequestedReservations.title}
 								</div>
 								<div className="mt-2 text-3xl font-semibold text-white">
 									{usage ? formatCount(usage.requestedReservations) : "—"}
 								</div>
 								<div className="mt-1 text-sm text-slate-300">
-									Awaiting approval or scheduling
+									{advancedKPIRequestedReservations.description}
 								</div>
 							</div>
 							<div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
 								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
-									Approved reservations
+									{advancedKPIApprovedReservations.title}
 								</div>
 								<div className="mt-2 text-3xl font-semibold text-white">
 									{usage ? formatCount(usage.approvedReservations) : "—"}
 								</div>
 								<div className="mt-1 text-sm text-slate-300">
-									Reserved platform time
+									{advancedKPIApprovedReservations.description}
 								</div>
 							</div>
 						</div>
@@ -451,22 +490,24 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 								<div className="flex items-center justify-between gap-3">
 									<div>
 										<CardTitle className="text-xl text-white">
-											{advancedPostureHeader?.title ?? "Current posture"}
+											{advancedPostureHeader.title}
 										</CardTitle>
 										<CardDescription className="text-slate-300">
-											{advancedPostureHeader?.description ?? ""}
+											{advancedPostureHeader.description}
 										</CardDescription>
 									</div>
-									{dashboardContentIcon(advancedPostureHeader?.icon)}
+									{dashboardContentIcon(advancedPostureHeader.icon)}
 								</div>
 							</CardHeader>
 							<CardContent className="space-y-4 text-sm text-slate-200">
 								<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
 									<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
-										Primary mode
+										{advancedPosturePrimaryMode.title}
 									</div>
 									<div className="mt-2 text-lg font-semibold text-white">
-										{primaryMode ? formatMode(primaryMode) : "Unreported"}
+										{primaryMode
+											? formatMode(primaryMode)
+											: advancedPosturePrimaryMode.fallbackValue}
 									</div>
 									<div className="mt-1 leading-6 text-slate-300">
 										{describeOperatingMode(primaryMode)}

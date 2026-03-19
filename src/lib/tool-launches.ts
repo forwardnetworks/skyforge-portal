@@ -56,6 +56,8 @@ export type ToolCatalogContentEntry = {
 	eyebrow?: string;
 	title: string;
 	description: string;
+	detailTemplate?: string;
+	fallbackValue?: string;
 	icon?: string;
 	order: number;
 	allowed?: boolean;

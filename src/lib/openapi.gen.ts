@@ -9563,7 +9563,9 @@ export interface components {
             allowed: boolean;
             badge: string;
             description: string;
+            detailTemplate: string;
             eyebrow: string;
+            fallbackValue: string;
             icon: string;
             id: string;
             mode: string;

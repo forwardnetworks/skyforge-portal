@@ -162,6 +162,15 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				order: 40,
 			},
 			{
+				id: "dashboard-advanced-posture-primary-mode",
+				surface: "posture-primary",
+				mode: "advanced",
+				title: "Primary mode",
+				description: "Resolved account mode from the live platform policy.",
+				fallbackValue: "Unreported",
+				order: 45,
+			},
+			{
 				id: "dashboard-advanced-posture-status",
 				surface: "posture",
 				mode: "advanced",
@@ -179,6 +188,40 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				description: "Reset and reservation controls remain available.",
 				icon: "timer-reset",
 				order: 60,
+			},
+			{
+				id: "dashboard-advanced-kpi-concurrent-headroom",
+				surface: "kpi",
+				mode: "advanced",
+				title: "Concurrent headroom",
+				description: "Quota data loading",
+				detailTemplate: "{active} active of {quota}",
+				order: 65,
+			},
+			{
+				id: "dashboard-advanced-kpi-persistent-headroom",
+				surface: "kpi",
+				mode: "advanced",
+				title: "Persistent headroom",
+				description: "Persistence policy loading",
+				detailTemplate: "{active} active of {quota}",
+				order: 66,
+			},
+			{
+				id: "dashboard-advanced-kpi-requested-reservations",
+				surface: "kpi",
+				mode: "advanced",
+				title: "Requested reservations",
+				description: "Awaiting approval or scheduling",
+				order: 67,
+			},
+			{
+				id: "dashboard-advanced-kpi-approved-reservations",
+				surface: "kpi",
+				mode: "advanced",
+				title: "Approved reservations",
+				description: "Reserved platform time",
+				order: 68,
 			},
 			{
 				id: "dashboard-advanced-principle-launch-rule",
@@ -240,6 +283,8 @@ describe("DashboardPageContent", () => {
 		expect(screen.getByTestId("platform-warnings").textContent).toBe(
 			"availability warning|admin warning",
 		);
+		expect(screen.getByText("Concurrent headroom")).toBeInTheDocument();
+		expect(screen.getByText("Primary mode")).toBeInTheDocument();
 	});
 
 	it("shows a lighter simple-mode dashboard", () => {
