@@ -31,13 +31,37 @@ vi.mock("./dashboard-next-steps-card", () => ({
 	DashboardNextStepsCard: () => <div data-testid="next-steps-card" />,
 }));
 vi.mock("./platform-warnings-card", () => ({
-	PlatformWarningsCard: ({ warnings }: { warnings?: string[] }) => (
-		<div data-testid="platform-warnings">{(warnings ?? []).join("|")}</div>
+	PlatformWarningsCard: ({
+		title,
+		description,
+		warnings,
+	}: {
+		title?: string;
+		description?: string;
+		warnings?: string[];
+	}) => (
+		<div data-testid="platform-warnings">
+			<div>{title}</div>
+			<div>{description}</div>
+			<div>{(warnings ?? []).join("|")}</div>
+		</div>
 	),
 }));
 vi.mock("./dashboard-shared", () => ({
-	MetricCard: ({ title, value }: { title: string; value: string }) => (
-		<div data-testid={`metric-${title}`}>{value}</div>
+	MetricCard: ({
+		title,
+		value,
+		description,
+	}: {
+		title: string;
+		value: string;
+		description?: string;
+	}) => (
+		<div data-testid={`metric-${title}`}>
+			<div>{title}</div>
+			<div>{value}</div>
+			<div>{description}</div>
+		</div>
 	),
 	formatCount: (value: number | null | undefined) =>
 		value == null ? "0" : String(value),
@@ -145,6 +169,15 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				order: 29,
 			},
 			{
+				id: "dashboard-simple-warnings-header",
+				surface: "warnings-header",
+				mode: "simple",
+				title: "Platform conditions",
+				description:
+					"Only the warnings that affect launch and reservation decisions.",
+				order: 30,
+			},
+			{
 				id: "dashboard-hero-advanced",
 				surface: "hero",
 				mode: "advanced",
@@ -228,6 +261,31 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				order: 68,
 			},
 			{
+				id: "dashboard-advanced-metric-degraded-checks",
+				surface: "metric",
+				mode: "advanced",
+				title: "Degraded checks",
+				description: "Public-safe service checks reporting degraded state",
+				order: 69,
+			},
+			{
+				id: "dashboard-advanced-metric-tracked-reservations",
+				surface: "metric",
+				mode: "advanced",
+				title: "Tracked reservations",
+				description: "Most recent reservation records visible to this account",
+				order: 70,
+			},
+			{
+				id: "dashboard-advanced-warnings-header",
+				surface: "warnings-header",
+				mode: "advanced",
+				title: "Platform conditions",
+				description:
+					"Live hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions.",
+				order: 71,
+			},
+			{
 				id: "dashboard-advanced-principle-launch-rule",
 				surface: "principle",
 				mode: "advanced",
@@ -271,7 +329,7 @@ describe("DashboardPageContent", () => {
 		expect(screen.getByTestId("next-steps-card")).toBeInTheDocument();
 		expect(screen.queryByTestId("admin-summary-card")).not.toBeInTheDocument();
 		expect(screen.getByTestId("platform-warnings").textContent).toBe(
-			"availability warning",
+			"Platform conditionsLive hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions.availability warning",
 		);
 	});
 
@@ -285,10 +343,14 @@ describe("DashboardPageContent", () => {
 		expect(screen.getByTestId("admin-summary-card")).toBeInTheDocument();
 		expect(screen.queryByTestId("next-steps-card")).not.toBeInTheDocument();
 		expect(screen.getByTestId("platform-warnings").textContent).toBe(
-			"availability warning|admin warning",
+			"Platform conditionsLive hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions.availability warning|admin warning",
 		);
 		expect(screen.getByText("Concurrent headroom")).toBeInTheDocument();
 		expect(screen.getByText("Primary mode")).toBeInTheDocument();
+		expect(screen.getByText("Tracked reservations")).toBeInTheDocument();
+		expect(
+			screen.getByText("Public-safe service checks reporting degraded state"),
+		).toBeInTheDocument();
 	});
 
 	it("shows a lighter simple-mode dashboard", () => {

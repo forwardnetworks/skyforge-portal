@@ -155,6 +155,10 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 		dashboardContent,
 		"dashboard-simple-posture-degraded",
 	);
+	const simpleWarningsHeader = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-simple-warnings-header",
+	);
 	const advancedHero = requireDashboardContentEntry(
 		dashboardContent,
 		"dashboard-hero-advanced",
@@ -187,6 +191,18 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const advancedKPIApprovedReservations = requireDashboardContentEntry(
 		dashboardContent,
 		"dashboard-advanced-kpi-approved-reservations",
+	);
+	const advancedMetricDegradedChecks = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-advanced-metric-degraded-checks",
+	);
+	const advancedMetricTrackedReservations = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-advanced-metric-tracked-reservations",
+	);
+	const advancedWarningsHeader = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-advanced-warnings-header",
 	);
 	const advancedPrinciples = dashboardContentEntries(
 		dashboardContent,
@@ -334,8 +350,8 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 				</section>
 
 				<PlatformWarningsCard
-					title="Platform conditions"
-					description="Only the warnings that affect launch and reservation decisions."
+					title={simpleWarningsHeader.title}
+					description={simpleWarningsHeader.description}
 					warnings={warnings}
 				/>
 
@@ -537,14 +553,14 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 
 						<div className="grid gap-3 sm:grid-cols-2">
 							<MetricCard
-								title="Degraded checks"
+								title={advancedMetricDegradedChecks.title}
 								value={formatCount(page.statusSummary?.down)}
-								description="Public-safe service checks reporting degraded state"
+								description={advancedMetricDegradedChecks.description}
 							/>
 							<MetricCard
-								title="Tracked reservations"
+								title={advancedMetricTrackedReservations.title}
 								value={formatCount(page.reservations.length)}
-								description="Most recent reservation records visible to this account"
+								description={advancedMetricTrackedReservations.description}
 							/>
 						</div>
 					</div>
@@ -552,8 +568,8 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 			</section>
 
 			<PlatformWarningsCard
-				title="Platform conditions"
-				description="Live hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions."
+				title={advancedWarningsHeader.title}
+				description={advancedWarningsHeader.description}
 				warnings={warnings}
 			/>
 
