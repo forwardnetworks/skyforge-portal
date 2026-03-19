@@ -12,7 +12,6 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { getUserInfobloxStatus, wakeUserInfoblox } from "@/lib/api-client";
-import { embeddedToolHref } from "@/lib/embedded-tools";
 
 export const Route = createFileRoute("/dashboard/infoblox")({
 	component: InfobloxPage,
@@ -69,7 +68,7 @@ function InfobloxPage() {
 							{wake.isPending ? "Starting..." : "Wake VM"}
 						</Button>
 						<Button asChild size="sm" variant="secondary">
-							<Link to={embeddedToolHref("infoblox")}>Open UI</Link>
+							<a href="/infoblox/ui/">Open UI</a>
 						</Button>
 						<Button asChild size="sm" variant="outline">
 							<Link to="/admin/infoblox/console">

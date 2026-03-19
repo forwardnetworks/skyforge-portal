@@ -31,7 +31,6 @@ export function useDeploymentsPageActions(args: {
 		defaultLifetimeHours,
 		lifetimeHoursOptions,
 		loginHref,
-		navigate,
 		queryClient,
 	} = args;
 	const [destroyTarget, setDestroyTarget] =
@@ -201,15 +200,14 @@ export function useDeploymentsPageActions(args: {
 				toast.message("Forward network is not available yet");
 				return;
 			}
-			void navigate({
-				to: "/dashboard/tools/$tool",
-				params: { tool: "forward-cluster" },
-				search: {
-					path: `/?/search?networkId=${encodeURIComponent(forwardNetworkID)}`,
-				},
-			});
+			const nextPath = `/search?networkId=${encodeURIComponent(forwardNetworkID)}`;
+			const url = `/api/forward/session?next=${encodeURIComponent(nextPath)}`;
+			const popup = window.open(url, "_blank", "noopener,noreferrer");
+			if (!popup) {
+				window.location.href = url;
+			}
 		},
-		[navigate],
+		[],
 	);
 
 	const handleDestroy = useCallback(async () => {

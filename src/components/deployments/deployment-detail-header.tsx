@@ -21,7 +21,6 @@ export function DeploymentDetailHeader({
 		primaryAction,
 		isBusy,
 		forwardNetworkID,
-		navigate,
 		handleStart,
 		handleStop,
 		setDestroyDialogOpen,
@@ -75,18 +74,17 @@ export function DeploymentDetailHeader({
 					disabled={!forwardNetworkID}
 					title={
 						forwardNetworkID
-							? "Open this deployment network in Forward"
-							: "Forward network is not available yet"
+						? "Open this deployment network in Forward"
+						: "Forward network is not available yet"
 					}
 					onClick={() => {
 						if (!forwardNetworkID) return;
-						void navigate({
-							to: "/dashboard/tools/$tool",
-							params: { tool: "forward-cluster" },
-							search: {
-								path: `/?/search?networkId=${encodeURIComponent(forwardNetworkID)}`,
-							},
-						});
+						const nextPath = `/search?networkId=${encodeURIComponent(forwardNetworkID)}`;
+						const url = `/api/forward/session?next=${encodeURIComponent(nextPath)}`;
+						const popup = window.open(url, "_blank", "noopener,noreferrer");
+						if (!popup) {
+							window.location.href = url;
+						}
 					}}
 				>
 					<ExternalLink className="mr-2 h-4 w-4" />

@@ -89,8 +89,10 @@ function createNavItems(): NavItem[] {
 				},
 				{
 					label: "Cluster",
-					href: embeddedToolHref("forward-cluster"),
+					href: "/api/forward/session",
 					icon: Network,
+					external: true,
+					newTab: true,
 				},
 				{
 					label: "Analytics",
@@ -148,7 +150,7 @@ function createNavItems(): NavItem[] {
 				{
 					label: "Infoblox",
 					icon: Server,
-					href: "/dashboard/infoblox",
+					href: embeddedToolHref("infoblox"),
 					featureFlag: "infobloxEnabled",
 				},
 			],
