@@ -74,17 +74,19 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 								/>
 							</div>
 
-							<Button
-								variant="outline"
-								className="hidden md:flex h-9 w-64 items-center justify-start px-3 text-sm text-muted-foreground font-normal"
-								onClick={page.triggerCommandMenu}
-							>
-								<Search className="mr-2 h-4 w-4" />
-								<span>Search...</span>
-								<kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
-									<span className="text-xs">⌘</span>K
-								</kbd>
-							</Button>
+							{page.session.data?.authenticated ? (
+								<Button
+									variant="outline"
+									className="hidden md:flex h-9 w-64 items-center justify-start px-3 text-sm text-muted-foreground font-normal"
+									onClick={page.triggerCommandMenu}
+								>
+									<Search className="mr-2 h-4 w-4" />
+									<span>Search...</span>
+									<kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+										<span className="text-xs">⌘</span>K
+									</kbd>
+								</Button>
+							) : null}
 						</div>
 
 						<nav className="flex items-center gap-4 text-sm">
@@ -273,7 +275,14 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 						)}
 					</main>
 				</div>
-				<CommandMenu />
+				{page.session.data?.authenticated ? (
+					<CommandMenu
+						session={page.session.data}
+						features={page.uiConfig.data?.features}
+						authMode={page.authMode as SkyforgeAuthMode | null}
+						mode={page.uiExperienceMode}
+					/>
+				) : null}
 				<Toaster />
 			</div>
 		</ThemeProvider>

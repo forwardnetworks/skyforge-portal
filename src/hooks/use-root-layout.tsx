@@ -98,18 +98,15 @@ export function useRootLayout() {
 		[authMode, next],
 	);
 	const localLoginHref = useMemo(() => buildLocalLoginUrl(next), [next]);
+	const protectedRoutePrefixes = useMemo(
+		() => uiConfig.data?.protectedRoutePrefixes ?? [],
+		[uiConfig.data?.protectedRoutePrefixes],
+	);
 	const isProtectedRoute = useMemo(() => {
-		const protectedPrefixes = [
-			"/dashboard",
-			"/admin",
-			"/webhooks",
-			"/syslog",
-			"/snmp",
-		];
-		return protectedPrefixes.some((prefix) =>
+		return protectedRoutePrefixes.some((prefix) =>
 			location.pathname.startsWith(prefix),
 		);
-	}, [location.pathname]);
+	}, [location.pathname, protectedRoutePrefixes]);
 
 	useEffect(() => {
 		setMobileMenuOpen(false);
@@ -128,15 +125,8 @@ export function useRootLayout() {
 			}),
 		[expiryNowMs, session.data],
 	);
-	const suppressLoginGate =
-		!session.data?.authenticated &&
-		(location.pathname === "/dashboard" ||
-			location.pathname.startsWith("/dashboard/"));
 	const showLoginGate =
-		isProtectedRoute &&
-		!session.isLoading &&
-		!session.data?.authenticated &&
-		!suppressLoginGate;
+		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
 
 	useEffect(() => {
 		if (!showLoginGate) return;

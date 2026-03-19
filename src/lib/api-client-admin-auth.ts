@@ -92,6 +92,7 @@ export type UIConfigResponse =
 		infobloxBaseUrl?: string;
 		rapid7BaseUrl?: string;
 		elkBaseUrl?: string;
+		protectedRoutePrefixes?: string[];
 		features?: operations["GET:authn.GetUIConfig"]["responses"][200]["content"]["application/json"]["features"] & {
 			jiraEnabled?: boolean;
 			infobloxEnabled?: boolean;
