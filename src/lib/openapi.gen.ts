@@ -9554,6 +9554,7 @@ export interface components {
             icon: string;
             id: string;
             label: string;
+            mode: string;
             /** Format: int64 */
             order: number;
             variant: string;
@@ -16600,6 +16601,8 @@ export interface operations {
                         dashboardNextSteps: components["schemas"]["skyforge.ToolCatalogTextEntry"][];
                         entries: components["schemas"]["skyforge.ToolCatalogNavEntry"][];
                         launchpad: components["schemas"]["skyforge.ToolCatalogLaunchpadEntry"][];
+                        launchpadActions: components["schemas"]["skyforge.ToolCatalogActionEntry"][];
+                        launchpadContent: components["schemas"]["skyforge.ToolCatalogContentEntry"][];
                         routes: components["schemas"]["skyforge.ToolCatalogRouteEntry"][];
                         sections: components["schemas"]["skyforge.ToolCatalogSection"][];
                         tools: components["schemas"]["skyforge.ToolCatalogEntry"][];

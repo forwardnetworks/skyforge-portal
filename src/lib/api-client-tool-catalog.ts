@@ -14,6 +14,8 @@ export type ToolCatalogResponse = {
 	sections?: ToolNavigationSection[];
 	entries?: ToolNavigationEntry[];
 	routes?: ToolRouteAccessEntry[];
+	launchpadContent?: ToolCatalogContentEntry[];
+	launchpadActions?: ToolCatalogActionEntry[];
 	launchpad?: ToolLaunchpadEntry[];
 	dashboardHeroActions?: ToolCatalogActionEntry[];
 	dashboardContent?: ToolCatalogContentEntry[];

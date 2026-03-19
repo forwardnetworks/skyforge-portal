@@ -39,6 +39,7 @@ export type ToolLaunchpadEntry = {
 
 export type ToolCatalogActionEntry = {
 	id: string;
+	mode?: string;
 	label: string;
 	href: string;
 	icon?: string;

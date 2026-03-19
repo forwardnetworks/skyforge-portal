@@ -12,7 +12,11 @@ import {
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
 import { getToolCatalog } from "../lib/api-client-tool-catalog";
 import { queryKeys } from "../lib/query-keys";
-import type { ToolLaunchpadEntry } from "../lib/tool-launches";
+import type {
+	ToolCatalogActionEntry,
+	ToolCatalogContentEntry,
+	ToolLaunchpadEntry,
+} from "../lib/tool-launches";
 import { formatMode } from "./dashboard-shared";
 import { Button } from "./ui/button";
 import {
@@ -42,10 +46,59 @@ function launchpadIcon(icon: string) {
 	}
 }
 
+function launchpadActionClass(variant: string | undefined): string {
+	switch (
+		String(variant ?? "")
+			.trim()
+			.toLowerCase()
+	) {
+		case "outline":
+			return "border-white/20 bg-white/5 text-white hover:bg-white/10";
+		case "ghost":
+			return "text-white hover:bg-white/10 hover:text-white";
+		default:
+			return "bg-white text-slate-950 hover:bg-slate-100";
+	}
+}
+
+function contentForMode(
+	entries: ToolCatalogContentEntry[] | undefined,
+	mode: string,
+): ToolCatalogContentEntry | null {
+	return (
+		(entries ?? [])
+			.filter(
+				(entry) =>
+					entry.allowed !== false &&
+					entry.surface === "header" &&
+					entry.mode === mode,
+			)
+			.sort(
+				(left, right) => Number(left.order ?? 0) - Number(right.order ?? 0),
+			)[0] ?? null
+	);
+}
+
+function launchpadActionsForMode(
+	actions: ToolCatalogActionEntry[] | undefined,
+	mode: string,
+): ToolCatalogActionEntry[] {
+	return (actions ?? [])
+		.filter((entry) => {
+			if (entry.allowed === false) return false;
+			const entryMode = String(entry.mode ?? "both")
+				.trim()
+				.toLowerCase();
+			return entryMode === "both" || entryMode === mode;
+		})
+		.sort((left, right) => Number(left.order ?? 0) - Number(right.order ?? 0));
+}
+
 export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 	const primaryOperatingMode =
 		props.page.platformAvailability?.policy?.primaryOperatingMode;
 	const simpleMode = props.page.uiExperienceMode === "simple";
+	const mode = simpleMode ? "simple" : "advanced";
 	const toolCatalogQ = useQuery({
 		queryKey: queryKeys.toolCatalog(),
 		queryFn: getToolCatalog,
@@ -53,6 +106,11 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 		retry: false,
 		staleTime: 5 * 60_000,
 	});
+	const header = contentForMode(toolCatalogQ.data?.launchpadContent, mode);
+	const launchpadActions = launchpadActionsForMode(
+		toolCatalogQ.data?.launchpadActions,
+		mode,
+	);
 	const launchpadItems = (toolCatalogQ.data?.launchpad ?? [])
 		.filter((item) => item.allowed !== false)
 		.sort((left, right) => Number(left.order ?? 0) - Number(right.order ?? 0));
@@ -60,26 +118,31 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 	return (
 		<Card className="overflow-hidden border-border/70 bg-[linear-gradient(145deg,rgba(2,6,23,0.96),rgba(17,24,39,0.97)_52%,rgba(34,197,94,0.10))] text-white shadow-2xl shadow-black/15">
 			<CardHeader className="space-y-4">
-				<div className="text-[11px] uppercase tracking-[0.32em] text-slate-300">
-					{simpleMode ? "Guided launchpad" : "Operator launchpad"}
-				</div>
+				{header?.eyebrow ? (
+					<div className="text-[11px] uppercase tracking-[0.32em] text-slate-300">
+						{header.eyebrow}
+					</div>
+				) : null}
 				<div className="space-y-2">
 					<CardTitle className="font-serif text-3xl text-white">
-						{simpleMode ? "Choose a path" : "Dashboard"}
+						{header?.title ?? "Dashboard"}
 					</CardTitle>
-					<CardDescription className="max-w-2xl text-slate-300">
-						{simpleMode
-							? "The core workflows stay visible here. Advanced mode adds the broader operator and integration surface."
-							: "Launch demos, check platform readiness, and move directly into the workflows that matter for the current environment."}
-					</CardDescription>
+					{header?.description ? (
+						<CardDescription className="max-w-2xl text-slate-300">
+							{header.description}
+						</CardDescription>
+					) : null}
 				</div>
 				<div className="flex flex-wrap gap-3">
-					<Button
-						asChild
-						className="bg-white text-slate-950 hover:bg-slate-100"
-					>
-						<Link to="/dashboard/deployments/quick">Launch lab</Link>
-					</Button>
+					{launchpadActions.map((action) => (
+						<Button
+							key={action.id}
+							asChild
+							className={launchpadActionClass(action.variant)}
+						>
+							<Link to={action.href}>{action.label}</Link>
+						</Button>
+					))}
 					{primaryOperatingMode ? (
 						<Button
 							asChild
@@ -94,15 +157,6 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 							</Link>
 						</Button>
 					) : null}
-					<Button
-						asChild
-						variant="ghost"
-						className="text-white hover:bg-white/10 hover:text-white"
-					>
-						<Link to="/settings">
-							{simpleMode ? "Profile & settings" : "Settings"}
-						</Link>
-					</Button>
 				</div>
 			</CardHeader>
 			<CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
