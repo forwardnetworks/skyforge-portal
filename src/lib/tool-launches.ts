@@ -17,12 +17,14 @@ export type ToolNavigationEntry = {
 	displayMode?: string;
 	featureFlag?: string;
 	adminOnly?: boolean;
+	allowed?: boolean;
 };
 
 export type ToolRouteAccessEntry = {
 	path: string;
 	experience: string;
 	adminOnly?: boolean;
+	allowed?: boolean;
 };
 
 export type ToolLaunchEntry = {
@@ -42,6 +44,7 @@ export type ToolLaunchEntry = {
 	contentUrl?: string;
 	supportsWake?: boolean;
 	requiredCapabilities?: string[];
+	allowed?: boolean;
 };
 
 export type ToolLaunchMap = Record<string, ToolLaunchEntry>;

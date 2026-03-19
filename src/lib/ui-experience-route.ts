@@ -3,28 +3,16 @@ import { notFound, redirect } from "@tanstack/react-router";
 import { requireAdminRouteAccess } from "./admin-route";
 import { getUserSettings } from "./api-client";
 import { getToolCatalog } from "./api-client-tool-catalog";
-import { queryKeys } from "./query-keys";
 import {
-	indexToolLaunches,
-	indexToolRouteAccessEntries,
-} from "./tool-launches";
+	catalogRouteAllowsAccess,
+	indexCatalogRouteAccess,
+	lookupCatalogRouteAccess,
+} from "./catalog-route-access";
+import { queryKeys } from "./query-keys";
+import { indexToolLaunches } from "./tool-launches";
 import { normalizeUIExperienceMode } from "./ui-experience";
 
 type RouteContext = { queryClient: QueryClient };
-
-function assertExperienceContract(kind: string, id: string) {
-	const normalized = String(kind ?? "")
-		.trim()
-		.toLowerCase();
-	if (
-		normalized !== "both" &&
-		normalized !== "simple" &&
-		normalized !== "advanced"
-	) {
-		throw new Error(`${id} is missing a valid experience contract`);
-	}
-	return normalized;
-}
 
 export async function requireCatalogRouteAccess(
 	context: RouteContext,
@@ -45,20 +33,19 @@ export async function requireCatalogRouteAccess(
 		}),
 	]);
 	const normalizedRoutePath = String(routePath ?? "").trim();
-	const rule = indexToolRouteAccessEntries(catalog.routes)[normalizedRoutePath];
+	const rule = lookupCatalogRouteAccess(
+		indexCatalogRouteAccess(catalog.routes),
+		normalizedRoutePath,
+	);
 	if (!rule) {
 		throw new Error(
 			`route ${normalizedRoutePath} is missing a catalog route contract`,
 		);
 	}
-	const mode = normalizeUIExperienceMode(settings.uiExperienceMode);
-	const experience = assertExperienceContract(
-		rule.experience,
-		`route ${normalizedRoutePath}`,
-	);
 	if (
-		(experience === "advanced" && mode !== "advanced") ||
-		(experience === "simple" && mode !== "simple")
+		!catalogRouteAllowsAccess(rule, {
+			mode: normalizeUIExperienceMode(settings.uiExperienceMode),
+		})
 	) {
 		throw redirect({ to: "/dashboard" });
 	}
@@ -89,10 +76,16 @@ export async function requireToolRouteAccess(
 		throw notFound();
 	}
 	const mode = normalizeUIExperienceMode(settings.uiExperienceMode);
-	const experience = assertExperienceContract(
-		tool.experience,
-		`tool ${tool.id}`,
-	);
+	const experience = String(tool.experience ?? "")
+		.trim()
+		.toLowerCase();
+	if (
+		experience !== "both" &&
+		experience !== "simple" &&
+		experience !== "advanced"
+	) {
+		throw new Error(`tool ${tool.id} is missing a valid experience contract`);
+	}
 	if (
 		(experience === "advanced" && mode !== "advanced") ||
 		(experience === "simple" && mode !== "simple")

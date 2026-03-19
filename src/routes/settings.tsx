@@ -13,10 +13,10 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "../components/ui/tabs";
+import { useCatalogRouteAccess } from "../hooks/use-catalog-route-access";
+import { useUIExperienceMode } from "../hooks/use-ui-experience-mode";
 import { getSession } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
-import { sessionIsAdmin } from "../lib/rbac";
-import { useUIExperienceMode } from "../hooks/use-ui-experience-mode";
 import { AdminSettingsPage } from "./admin/settings";
 import { UserSettingsPage } from "./dashboard/settings";
 
@@ -38,12 +38,16 @@ function SettingsHubPage() {
 		staleTime: 30_000,
 		retry: false,
 	});
-	const isAdmin = sessionIsAdmin(sessionQ.data);
 	const uiExperience = useUIExperienceMode({
 		enabled: sessionQ.data?.authenticated === true,
 	});
+	const routeAccess = useCatalogRouteAccess({
+		session: sessionQ.data,
+		mode: uiExperience.mode,
+		enabled: sessionQ.data?.authenticated === true,
+	});
 	const currentTab = search.tab ?? "profile";
-	const canAccessAdminTab = isAdmin && uiExperience.isAdvanced;
+	const canAccessAdminTab = routeAccess.canAccessRoute("/admin/settings");
 	const activeTab = canAccessAdminTab ? currentTab : "profile";
 
 	return (

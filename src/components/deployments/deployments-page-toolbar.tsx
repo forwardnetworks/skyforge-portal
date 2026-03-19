@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Filter, Plus, Search, Box } from "lucide-react";
+import { Box, Filter, Plus, Search } from "lucide-react";
+import { useCatalogRouteAccess } from "../../hooks/use-catalog-route-access";
 import type { DeploymentsPageState } from "../../hooks/use-deployments-page";
 import { useUIExperienceMode } from "../../hooks/use-ui-experience-mode";
+import { buttonVariants } from "../ui/button";
 import { Input } from "../ui/input";
 import {
 	Select,
@@ -10,7 +12,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../ui/select";
-import { buttonVariants } from "../ui/button";
 
 export function DeploymentsPageToolbar({
 	state,
@@ -27,6 +28,15 @@ export function DeploymentsPageToolbar({
 	>;
 }) {
 	const uiExperience = useUIExperienceMode();
+	const routeAccess = useCatalogRouteAccess({
+		mode: uiExperience.mode,
+	});
+	const canCreateDeployment = routeAccess.canAccessRoute(
+		"/dashboard/deployments/new",
+	);
+	const canCreateComposite = routeAccess.canAccessRoute(
+		"/dashboard/deployments/composite",
+	);
 
 	return (
 		<div className="flex flex-col gap-3 sm:flex-row">
@@ -63,22 +73,26 @@ export function DeploymentsPageToolbar({
 					<SelectItem value="terraform">Terraform</SelectItem>
 				</SelectContent>
 			</Select>
-			{uiExperience.isAdvanced ? (
+			{canCreateDeployment || canCreateComposite ? (
 				<>
-					<Link
-						to="/dashboard/deployments/new"
-						search={{ userId: state.selectedUserScopeId }}
-						className={buttonVariants({ variant: "default" })}
-					>
-						<Plus className="mr-2 h-4 w-4" /> Create
-					</Link>
-					<Link
-						to="/dashboard/deployments/composite"
-						search={{ userId: state.selectedUserScopeId }}
-						className={buttonVariants({ variant: "secondary" })}
-					>
-						Composite
-					</Link>
+					{canCreateDeployment ? (
+						<Link
+							to="/dashboard/deployments/new"
+							search={{ userId: state.selectedUserScopeId }}
+							className={buttonVariants({ variant: "default" })}
+						>
+							<Plus className="mr-2 h-4 w-4" /> Create
+						</Link>
+					) : null}
+					{canCreateComposite ? (
+						<Link
+							to="/dashboard/deployments/composite"
+							search={{ userId: state.selectedUserScopeId }}
+							className={buttonVariants({ variant: "secondary" })}
+						>
+							Composite
+						</Link>
+					) : null}
 				</>
 			) : null}
 		</div>

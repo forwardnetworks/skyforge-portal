@@ -8,7 +8,9 @@ import {
 	PlayCircle,
 	Shield,
 } from "lucide-react";
+import { useCatalogRouteAccess } from "../hooks/use-catalog-route-access";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
+import { formatMode } from "./dashboard-shared";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -17,7 +19,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "./ui/card";
-import { formatMode } from "./dashboard-shared";
 
 const launchpadItems = [
 	{
@@ -71,6 +72,11 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 	const primaryOperatingMode =
 		props.page.platformAvailability?.policy?.primaryOperatingMode;
 	const simpleMode = props.page.uiExperienceMode === "simple";
+	const routeAccess = useCatalogRouteAccess({
+		session: props.page.session,
+		mode: props.page.uiExperienceMode,
+		enabled: props.page.session?.authenticated === true,
+	});
 
 	return (
 		<Card className="overflow-hidden border-border/70 bg-[linear-gradient(145deg,rgba(2,6,23,0.96),rgba(17,24,39,0.97)_52%,rgba(34,197,94,0.10))] text-white shadow-2xl shadow-black/15">
@@ -122,14 +128,7 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 			</CardHeader>
 			<CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 				{launchpadItems
-					.filter((item) =>
-						props.page.uiExperienceMode === "advanced"
-							? true
-							: item.experience !== "advanced",
-					)
-					.filter((item) =>
-						item.to === "/dashboard/platform" ? props.page.isAdmin : true,
-					)
+					.filter((item) => routeAccess.canAccessRoute(item.to))
 					.map((item) => {
 						const Icon = item.icon;
 						return (
