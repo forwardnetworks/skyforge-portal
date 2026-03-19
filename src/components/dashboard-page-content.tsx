@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Shield, TimerReset, Zap } from "lucide-react";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
+import type { ToolCatalogContentEntry } from "../lib/tool-launches";
 import { DashboardAdminSummaryCard } from "./dashboard-admin-summary-card";
 import { DashboardAvailabilityCard } from "./dashboard-availability-card";
 import { DashboardGuidanceCard } from "./dashboard-guidance-card";
@@ -45,6 +46,47 @@ function heroButtonClass(variant: string | undefined): string {
 	}
 }
 
+function dashboardContentEntries(
+	entries: ToolCatalogContentEntry[],
+	surface: string,
+	mode: string,
+): ToolCatalogContentEntry[] {
+	return entries.filter(
+		(entry) => entry.surface === surface && entry.mode === mode,
+	);
+}
+
+function firstDashboardContentEntry(
+	entries: ToolCatalogContentEntry[],
+	surface: string,
+	mode: string,
+): ToolCatalogContentEntry | null {
+	return dashboardContentEntries(entries, surface, mode)[0] ?? null;
+}
+
+function dashboardContentIcon(icon: string | undefined, muted = false) {
+	switch (String(icon ?? "").trim()) {
+		case "arrow-right":
+			return (
+				<ArrowRight
+					className={`h-4 w-4 ${muted ? "text-muted-foreground" : "text-slate-300"}`}
+				/>
+			);
+		case "shield":
+			return (
+				<Shield
+					className={`h-5 w-5 ${muted ? "text-muted-foreground" : "text-slate-300"}`}
+				/>
+			);
+		case "timer-reset":
+			return <TimerReset className="h-4 w-4 text-amber-300" />;
+		case "zap":
+			return <Zap className="h-4 w-4 text-teal-300" />;
+		default:
+			return null;
+	}
+}
+
 export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const availability = page.platformAvailability;
 	const policy = availability?.policy;
@@ -58,6 +100,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const status = page.statusSummary?.status ?? "unknown";
 	const simpleMode = page.uiExperienceMode === "simple";
 	const dashboardHeroActions = page.dashboardHeroActions;
+	const dashboardContent = page.dashboardContent;
 	const forwardClusterLaunchHref = page.forwardClusterLaunchHref;
 	const statusVariant =
 		status === "ok"
@@ -65,6 +108,36 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 			: status === "degraded"
 				? "destructive"
 				: "outline";
+	const simpleHero = firstDashboardContentEntry(
+		dashboardContent,
+		"hero",
+		"simple",
+	);
+	const simpleCallout = firstDashboardContentEntry(
+		dashboardContent,
+		"callout",
+		"simple",
+	);
+	const advancedHero = firstDashboardContentEntry(
+		dashboardContent,
+		"hero",
+		"advanced",
+	);
+	const advancedPostureHeader = firstDashboardContentEntry(
+		dashboardContent,
+		"posture-header",
+		"advanced",
+	);
+	const advancedPostureEntries = dashboardContentEntries(
+		dashboardContent,
+		"posture",
+		"advanced",
+	);
+	const advancedPrinciples = dashboardContentEntries(
+		dashboardContent,
+		"principle",
+		"advanced",
+	);
 
 	if (simpleMode) {
 		return (
@@ -74,12 +147,14 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 					<div className="relative grid gap-6 px-6 py-6 xl:grid-cols-[1.1fr_0.9fr] xl:px-8 xl:py-8">
 						<div className="space-y-6">
 							<div className="flex flex-wrap items-center gap-2">
-								<Badge
-									variant="outline"
-									className="border-white/15 bg-white/10 text-white"
-								>
-									Simple mode
-								</Badge>
+								{simpleHero?.badge ? (
+									<Badge
+										variant="outline"
+										className="border-white/15 bg-white/10 text-white"
+									>
+										{simpleHero.badge}
+									</Badge>
+								) : null}
 								<Badge variant={statusVariant} className="capitalize">
 									{status}
 								</Badge>
@@ -94,18 +169,19 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 							</div>
 
 							<div className="space-y-3">
-								<div className="font-mono text-[11px] uppercase tracking-[0.34em] text-slate-300">
-									Start here
-								</div>
+								{simpleHero?.eyebrow ? (
+									<div className="font-mono text-[11px] uppercase tracking-[0.34em] text-slate-300">
+										{simpleHero.eyebrow}
+									</div>
+								) : null}
 								<h1 className="font-serif text-4xl tracking-tight text-white sm:text-5xl">
-									Launch faster
+									{simpleHero?.title ?? "Dashboard"}
 								</h1>
-								<p className="max-w-3xl text-base leading-7 text-slate-200">
-									Use Launch Lab for the fastest path, check your current
-									deployments, and reserve time when you need a future slot. The
-									header switch opens the full operator surface when you need
-									it.
-								</p>
+								{simpleHero?.description ? (
+									<p className="max-w-3xl text-base leading-7 text-slate-200">
+										{simpleHero.description}
+									</p>
+								) : null}
 							</div>
 
 							<div className="flex flex-wrap gap-3">
@@ -176,15 +252,17 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 								</div>
 							</div>
 							<div className="rounded-[1.35rem] border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
-								<div className="flex items-center gap-2 font-medium text-white">
-									<Zap className="h-4 w-4 text-teal-300" />
-									Need more tools?
-								</div>
-								<div className="mt-2 text-sm leading-6 text-slate-300">
-									Switch to advanced mode in the header for Designer,
-									observability, embedded integrations, and platform operator
-									views.
-								</div>
+								{simpleCallout ? (
+									<>
+										<div className="flex items-center gap-2 font-medium text-white">
+											{dashboardContentIcon(simpleCallout.icon)}
+											{simpleCallout.title}
+										</div>
+										<div className="mt-2 text-sm leading-6 text-slate-300">
+											{simpleCallout.description}
+										</div>
+									</>
+								) : null}
 							</div>
 						</div>
 					</div>
@@ -247,12 +325,14 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 				<div className="relative grid gap-6 px-6 py-6 xl:grid-cols-[1.15fr_0.85fr] xl:px-8 xl:py-8">
 					<div className="space-y-6">
 						<div className="flex flex-wrap items-center gap-2">
-							<Badge
-								variant="outline"
-								className="border-white/15 bg-white/10 text-white"
-							>
-								Status-first dashboard
-							</Badge>
+							{advancedHero?.badge ? (
+								<Badge
+									variant="outline"
+									className="border-white/15 bg-white/10 text-white"
+								>
+									{advancedHero.badge}
+								</Badge>
+							) : null}
 							<Badge variant={statusVariant} className="capitalize">
 								{status}
 							</Badge>
@@ -267,17 +347,19 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 						</div>
 
 						<div className="space-y-3">
-							<div className="font-mono text-[11px] uppercase tracking-[0.34em] text-slate-300">
-								Operational home
-							</div>
+							{advancedHero?.eyebrow ? (
+								<div className="font-mono text-[11px] uppercase tracking-[0.34em] text-slate-300">
+									{advancedHero.eyebrow}
+								</div>
+							) : null}
 							<h1 className="font-serif text-4xl tracking-tight text-white sm:text-5xl">
-								Control plane
+								{advancedHero?.title ?? "Dashboard"}
 							</h1>
-							<p className="max-w-3xl text-base leading-7 text-slate-200">
-								Launch labs, inspect readiness, and understand current platform
-								limits before you enter a workflow. This page is the default
-								home so operators see health, reservations, and headroom first.
-							</p>
+							{advancedHero?.description ? (
+								<p className="max-w-3xl text-base leading-7 text-slate-200">
+									{advancedHero.description}
+								</p>
+							) : null}
 						</div>
 
 						<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -338,13 +420,13 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 								<div className="flex items-center justify-between gap-3">
 									<div>
 										<CardTitle className="text-xl text-white">
-											Current operating posture
+											{advancedPostureHeader?.title ?? "Current posture"}
 										</CardTitle>
 										<CardDescription className="text-slate-300">
-											Resolved account mode and immediate operator guidance.
+											{advancedPostureHeader?.description ?? ""}
 										</CardDescription>
 									</div>
-									<Shield className="h-5 w-5 text-slate-300" />
+									{dashboardContentIcon(advancedPostureHeader?.icon)}
 								</div>
 							</CardHeader>
 							<CardContent className="space-y-4 text-sm text-slate-200">
@@ -360,27 +442,20 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 									</div>
 								</div>
 								<div className="grid gap-3 sm:grid-cols-2">
-									<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-										<div className="flex items-center gap-2 font-medium text-white">
-											<Zap className="h-4 w-4 text-teal-300" />
-											Status signal
+									{advancedPostureEntries.map((entry) => (
+										<div
+											key={entry.id}
+											className="rounded-2xl border border-white/10 bg-white/5 p-4"
+										>
+											<div className="flex items-center gap-2 font-medium text-white">
+												{dashboardContentIcon(entry.icon)}
+												{entry.title}
+											</div>
+											<div className="mt-2 text-slate-300">
+												{entry.description}
+											</div>
 										</div>
-										<div className="mt-2 text-slate-300">
-											{status === "ok"
-												? "Core services are reporting healthy state."
-												: "One or more platform checks are degraded. Review warnings before launching."}
-										</div>
-									</div>
-									<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-										<div className="flex items-center gap-2 font-medium text-white">
-											<TimerReset className="h-4 w-4 text-amber-300" />
-											Reset + reservation
-										</div>
-										<div className="mt-2 text-slate-300">
-											Forward org reset, reservation, and capacity controls are
-											available from the platform and Forward workflows.
-										</div>
-									</div>
+									))}
 								</div>
 							</CardContent>
 						</Card>
@@ -430,57 +505,29 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 			</div>
 
 			<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-				<div className="rounded-[1.35rem] border border-border/70 bg-background p-5">
-					<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-						Launch rule
-					</div>
-					<div className="mt-2 text-base font-semibold">
-						Dashboard before workflow
-					</div>
-					<div className="mt-1 text-sm leading-6 text-muted-foreground">
-						Operators land here first so status, reservations, and capacity are
-						visible before Launch Lab or Designer.
-					</div>
-				</div>
-				<div className="rounded-[1.35rem] border border-border/70 bg-background p-5">
-					<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-						Forward contract
-					</div>
-					<div className="mt-2 text-base font-semibold">
-						Tenant-aware by default
-					</div>
-					<div className="mt-1 text-sm leading-6 text-muted-foreground">
-						Forward credentials, collectors, resets, and analytics remain in the
-						Forward workflow, not hidden behind generic settings.
-					</div>
-				</div>
-				<div className="rounded-[1.35rem] border border-border/70 bg-background p-5">
-					<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-						Status discipline
-					</div>
-					<div className="mt-2 text-base font-semibold">
-						Live contracts only
-					</div>
-					<div className="mt-1 text-sm leading-6 text-muted-foreground">
-						This page is assembled from existing platform, observability, and
-						public-status APIs. No dashboard mega-endpoint was added.
-					</div>
-				</div>
-				<div className="rounded-[1.35rem] border border-border/70 bg-background p-5">
-					<div className="flex items-center justify-between gap-3">
-						<div>
-							<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-								Primary launch
+				{advancedPrinciples.map((entry) => (
+					<div
+						key={entry.id}
+						className="rounded-[1.35rem] border border-border/70 bg-background p-5"
+					>
+						<div className="flex items-center justify-between gap-3">
+							<div>
+								{entry.eyebrow ? (
+									<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+										{entry.eyebrow}
+									</div>
+								) : null}
+								<div className="mt-2 text-base font-semibold">
+									{entry.title}
+								</div>
 							</div>
-							<div className="mt-2 text-base font-semibold">Launch Lab</div>
+							{dashboardContentIcon(entry.icon, true)}
 						</div>
-						<ArrowRight className="h-4 w-4 text-muted-foreground" />
+						<div className="mt-1 text-sm leading-6 text-muted-foreground">
+							{entry.description}
+						</div>
 					</div>
-					<div className="mt-1 text-sm leading-6 text-muted-foreground">
-						Curated demos remain the fastest path, but the dashboard now gives
-						the operator enough state to decide whether to launch.
-					</div>
-				</div>
+				))}
 			</section>
 		</div>
 	);

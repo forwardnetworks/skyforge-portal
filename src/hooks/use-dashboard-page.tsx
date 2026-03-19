@@ -33,6 +33,7 @@ import { queryKeys } from "../lib/query-keys";
 import { useStatusSummaryEvents } from "../lib/status-events";
 import {
 	type ToolCatalogActionEntry,
+	type ToolCatalogContentEntry,
 	type ToolCatalogTextEntry,
 	indexToolLaunches,
 } from "../lib/tool-launches";
@@ -58,6 +59,7 @@ export type DashboardPageState = {
 	observabilitySummary: UserObservabilitySummaryResponse | undefined;
 	forwardClusterLaunchHref: string;
 	dashboardHeroActions: ToolCatalogActionEntry[];
+	dashboardContent: ToolCatalogContentEntry[];
 	dashboardNextSteps: ToolCatalogTextEntry[];
 	uiExperienceMode: UIExperienceMode;
 };
@@ -117,6 +119,15 @@ export function useDashboardPage(): DashboardPageState {
 					(left, right) => Number(left.order ?? 0) - Number(right.order ?? 0),
 				),
 		[toolCatalogQ.data?.dashboardNextSteps],
+	);
+	const dashboardContent = useMemo(
+		() =>
+			(toolCatalogQ.data?.dashboardContent ?? [])
+				.filter((entry) => entry.allowed !== false)
+				.sort(
+					(left, right) => Number(left.order ?? 0) - Number(right.order ?? 0),
+				),
+		[toolCatalogQ.data?.dashboardContent],
 	);
 	const canAccessPlatformView = useMemo(() => {
 		const route = lookupCatalogRouteAccess(
@@ -199,6 +210,7 @@ export function useDashboardPage(): DashboardPageState {
 		observabilitySummary: observabilityQ.data,
 		forwardClusterLaunchHref,
 		dashboardHeroActions,
+		dashboardContent,
 		dashboardNextSteps,
 		uiExperienceMode: normalizeUIExperienceMode(
 			userSettingsQ.data?.uiExperienceMode,

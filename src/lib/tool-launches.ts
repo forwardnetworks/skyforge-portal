@@ -47,6 +47,19 @@ export type ToolCatalogActionEntry = {
 	allowed?: boolean;
 };
 
+export type ToolCatalogContentEntry = {
+	id: string;
+	surface: string;
+	mode: string;
+	badge?: string;
+	eyebrow?: string;
+	title: string;
+	description: string;
+	icon?: string;
+	order: number;
+	allowed?: boolean;
+};
+
 export type ToolCatalogTextEntry = {
 	id: string;
 	text: string;

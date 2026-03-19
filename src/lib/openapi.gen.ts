@@ -9558,6 +9558,19 @@ export interface components {
             order: number;
             variant: string;
         };
+        "skyforge.ToolCatalogContentEntry": {
+            allowed: boolean;
+            badge: string;
+            description: string;
+            eyebrow: string;
+            icon: string;
+            id: string;
+            mode: string;
+            /** Format: int64 */
+            order: number;
+            surface: string;
+            title: string;
+        };
         "skyforge.ToolCatalogEntry": {
             allowed: boolean;
             authMode: string;
@@ -16582,6 +16595,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        dashboardContent: components["schemas"]["skyforge.ToolCatalogContentEntry"][];
                         dashboardHeroActions: components["schemas"]["skyforge.ToolCatalogActionEntry"][];
                         dashboardNextSteps: components["schemas"]["skyforge.ToolCatalogTextEntry"][];
                         entries: components["schemas"]["skyforge.ToolCatalogNavEntry"][];
