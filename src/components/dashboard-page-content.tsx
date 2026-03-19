@@ -64,6 +64,17 @@ function firstDashboardContentEntry(
 	return dashboardContentEntries(entries, surface, mode)[0] ?? null;
 }
 
+function requireDashboardContentEntry(
+	entries: ToolCatalogContentEntry[],
+	id: string,
+): ToolCatalogContentEntry {
+	const match = entries.find((entry) => entry.id === id);
+	if (!match) {
+		throw new Error(`dashboard content entry ${id} is missing`);
+	}
+	return match;
+}
+
 function dashboardContentIcon(icon: string | undefined, muted = false) {
 	switch (String(icon ?? "").trim()) {
 		case "arrow-right":
@@ -117,6 +128,26 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 		dashboardContent,
 		"callout",
 		"simple",
+	);
+	const simpleSummaryActiveDeployments = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-simple-summary-active-deployments",
+	);
+	const simpleSummaryOpenReservations = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-simple-summary-open-reservations",
+	);
+	const simplePostureHeader = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-simple-posture-header",
+	);
+	const simplePostureHeadroom = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-simple-posture-headroom",
+	);
+	const simplePostureDegraded = requireDashboardContentEntry(
+		dashboardContent,
+		"dashboard-simple-posture-degraded",
 	);
 	const advancedHero = firstDashboardContentEntry(
 		dashboardContent,
@@ -226,18 +257,18 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 						<div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
 							<div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
 								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
-									Active deployments
+									{simpleSummaryActiveDeployments.title}
 								</div>
 								<div className="mt-2 text-3xl font-semibold text-white">
 									{formatCount(usage?.activeDeployments)}
 								</div>
 								<div className="mt-1 text-sm text-slate-300">
-									Running labs in your current quota window
+									{simpleSummaryActiveDeployments.description}
 								</div>
 							</div>
 							<div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
 								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-300">
-									Open reservations
+									{simpleSummaryOpenReservations.title}
 								</div>
 								<div className="mt-2 text-3xl font-semibold text-white">
 									{formatCount(
@@ -248,7 +279,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 									)}
 								</div>
 								<div className="mt-1 text-sm text-slate-300">
-									Requested and approved reservation activity
+									{simpleSummaryOpenReservations.description}
 								</div>
 							</div>
 							<div className="rounded-[1.35rem] border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
@@ -283,32 +314,32 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 					<DashboardNextStepsCard page={page} />
 					<Card>
 						<CardHeader>
-							<CardTitle>Current posture</CardTitle>
+							<CardTitle>{simplePostureHeader.title}</CardTitle>
 							<CardDescription>
-								The smallest useful amount of platform state for new users.
+								{simplePostureHeader.description}
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="grid gap-3 sm:grid-cols-2">
 							<div className="rounded-xl border border-border/70 bg-background/70 p-4">
 								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-									Concurrent headroom
+									{simplePostureHeadroom.title}
 								</div>
 								<div className="mt-2 text-2xl font-semibold">
 									{formatCount(usage?.remainingConcurrentLabs)}
 								</div>
 								<div className="mt-1 text-sm text-muted-foreground">
-									Available slots before you need to reserve.
+									{simplePostureHeadroom.description}
 								</div>
 							</div>
 							<div className="rounded-xl border border-border/70 bg-background/70 p-4">
 								<div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-									Degraded checks
+									{simplePostureDegraded.title}
 								</div>
 								<div className="mt-2 text-2xl font-semibold">
 									{formatCount(page.statusSummary?.down)}
 								</div>
 								<div className="mt-1 text-sm text-muted-foreground">
-									Health checks currently reporting degraded state.
+									{simplePostureDegraded.description}
 								</div>
 							</div>
 						</CardContent>

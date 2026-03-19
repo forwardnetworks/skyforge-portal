@@ -102,6 +102,47 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				order: 20,
 			},
 			{
+				id: "dashboard-simple-summary-active-deployments",
+				surface: "summary",
+				mode: "simple",
+				title: "Active deployments",
+				description: "Running labs in your current quota window",
+				order: 25,
+			},
+			{
+				id: "dashboard-simple-summary-open-reservations",
+				surface: "summary",
+				mode: "simple",
+				title: "Open reservations",
+				description: "Requested and approved reservation activity",
+				order: 26,
+			},
+			{
+				id: "dashboard-simple-posture-header",
+				surface: "posture-header",
+				mode: "simple",
+				title: "Current posture",
+				description:
+					"The smallest useful amount of platform state for new users.",
+				order: 27,
+			},
+			{
+				id: "dashboard-simple-posture-headroom",
+				surface: "posture",
+				mode: "simple",
+				title: "Concurrent headroom",
+				description: "Available slots before you need to reserve.",
+				order: 28,
+			},
+			{
+				id: "dashboard-simple-posture-degraded",
+				surface: "posture",
+				mode: "simple",
+				title: "Degraded checks",
+				description: "Health checks currently reporting degraded state.",
+				order: 29,
+			},
+			{
 				id: "dashboard-hero-advanced",
 				surface: "hero",
 				mode: "advanced",
@@ -209,6 +250,8 @@ describe("DashboardPageContent", () => {
 		);
 
 		expect(screen.getByText("Launch faster")).toBeInTheDocument();
+		expect(screen.getByText("Active deployments")).toBeInTheDocument();
+		expect(screen.getByText("Current posture")).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: "Launch lab" }),
 		).toBeInTheDocument();
