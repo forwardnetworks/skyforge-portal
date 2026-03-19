@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getSession } from "../lib/api-client";
+import { getSession, getUserSettings } from "../lib/api-client";
 import {
 	getAdminPlatformOverview,
 	type AdminPlatformOverviewResponseWithCapacity,
@@ -22,6 +22,10 @@ import {
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
 import { useStatusSummaryEvents } from "../lib/status-events";
+import {
+	normalizeUIExperienceMode,
+	type UIExperienceMode,
+} from "../lib/ui-experience";
 
 export type ReservationTotals = {
 	status: string;
@@ -37,6 +41,7 @@ export type DashboardPageState = {
 	adminOverview: AdminPlatformOverviewResponseWithCapacity | undefined;
 	statusSummary: PublicStatusSummaryResponse | undefined;
 	observabilitySummary: UserObservabilitySummaryResponse | undefined;
+	uiExperienceMode: UIExperienceMode;
 };
 
 export function useDashboardPage(): DashboardPageState {
@@ -89,6 +94,13 @@ export function useDashboardPage(): DashboardPageState {
 		retry: false,
 		enabled: sessionQ.data?.authenticated === true,
 	});
+	const userSettingsQ = useQuery({
+		queryKey: queryKeys.userSettings(),
+		queryFn: getUserSettings,
+		staleTime: 30_000,
+		retry: false,
+		enabled: sessionQ.data?.authenticated === true,
+	});
 
 	const reservations = useMemo(() => {
 		return (reservationsQ.data?.reservations ?? []).map((record) =>
@@ -117,5 +129,8 @@ export function useDashboardPage(): DashboardPageState {
 		adminOverview: overviewQ.data,
 		statusSummary: statusSummaryQ.data,
 		observabilitySummary: observabilityQ.data,
+		uiExperienceMode: normalizeUIExperienceMode(
+			userSettingsQ.data?.uiExperienceMode,
+		),
 	};
 }

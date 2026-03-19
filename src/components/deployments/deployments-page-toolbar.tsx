@@ -1,8 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { Filter, Plus, Search, Box } from "lucide-react";
 import type { DeploymentsPageState } from "../../hooks/use-deployments-page";
+import { useUIExperienceMode } from "../../hooks/use-ui-experience-mode";
 import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../ui/select";
 import { buttonVariants } from "../ui/button";
 
 export function DeploymentsPageToolbar({
@@ -10,7 +17,7 @@ export function DeploymentsPageToolbar({
 }: {
 	state: Pick<
 		DeploymentsPageState,
-		"searchQuery"
+		| "searchQuery"
 		| "setSearchQuery"
 		| "statusFilter"
 		| "setStatusFilter"
@@ -19,6 +26,8 @@ export function DeploymentsPageToolbar({
 		| "selectedUserScopeId"
 	>;
 }) {
+	const uiExperience = useUIExperienceMode();
+
 	return (
 		<div className="flex flex-col gap-3 sm:flex-row">
 			<div className="relative flex-1">
@@ -54,20 +63,24 @@ export function DeploymentsPageToolbar({
 					<SelectItem value="terraform">Terraform</SelectItem>
 				</SelectContent>
 			</Select>
-			<Link
-				to="/dashboard/deployments/new"
-				search={{ userId: state.selectedUserScopeId }}
-				className={buttonVariants({ variant: "default" })}
-			>
-				<Plus className="mr-2 h-4 w-4" /> Create
-			</Link>
-			<Link
-				to="/dashboard/deployments/composite"
-				search={{ userId: state.selectedUserScopeId }}
-				className={buttonVariants({ variant: "secondary" })}
-			>
-				Composite
-			</Link>
+			{uiExperience.isAdvanced ? (
+				<>
+					<Link
+						to="/dashboard/deployments/new"
+						search={{ userId: state.selectedUserScopeId }}
+						className={buttonVariants({ variant: "default" })}
+					>
+						<Plus className="mr-2 h-4 w-4" /> Create
+					</Link>
+					<Link
+						to="/dashboard/deployments/composite"
+						search={{ userId: state.selectedUserScopeId }}
+						className={buttonVariants({ variant: "secondary" })}
+					>
+						Composite
+					</Link>
+				</>
+			) : null}
 		</div>
 	);
 }

@@ -21,8 +21,10 @@ import {
 	getUserObservabilitySummary,
 } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
+import { requireAdvancedRouteAccess } from "../../lib/ui-experience-route";
 
 export const Route = createFileRoute("/dashboard/observability")({
+	beforeLoad: async ({ context }) => requireAdvancedRouteAccess(context),
 	component: ObservabilityPage,
 });
 

@@ -10,65 +10,82 @@ import {
 } from "lucide-react";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "./ui/card";
 import { formatMode } from "./dashboard-shared";
 
 const launchpadItems = [
 	{
 		title: "Quick Deploy",
-		description: "Launch curated GTM and training topologies from the platform catalog.",
+		description:
+			"Launch curated GTM and training topologies from the platform catalog.",
 		to: "/dashboard/deployments/quick" as const,
 		icon: PlayCircle,
 	},
 	{
 		title: "Designer",
-		description: "Build containerlab labs visually, validate them, and deploy from the same workbench.",
+		description:
+			"Build containerlab labs visually, validate them, and deploy from the same workbench.",
 		to: "/dashboard/labs/designer" as const,
 		icon: LayoutDashboard,
+		experience: "advanced",
 	},
 	{
 		title: "Reservations",
-		description: "Reserve future capacity and monitor approved versus requested platform time.",
+		description:
+			"Reserve future capacity and monitor approved versus requested platform time.",
 		to: "/dashboard/reservations" as const,
 		icon: Boxes,
 	},
 	{
 		title: "Forward",
-		description: "Check tenant credentials, collector state, and analytics workflows.",
+		description:
+			"Check tenant credentials, collector state, and analytics workflows.",
 		to: "/dashboard/forward/credentials" as const,
 		icon: Network,
 	},
 	{
 		title: "Observability",
-		description: "Inspect live system health, queue pressure, and Forward observability signals.",
+		description:
+			"Inspect live system health, queue pressure, and Forward observability signals.",
 		to: "/dashboard/observability" as const,
 		icon: Activity,
+		experience: "advanced",
 	},
 	{
 		title: "Platform",
-		description: "Open capacity, reservation, and hybrid placement views for operator workflows.",
+		description:
+			"Open capacity, reservation, and hybrid placement views for operator workflows.",
 		to: "/dashboard/platform" as const,
 		icon: Shield,
+		experience: "advanced",
 	},
 ];
 
 export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 	const primaryOperatingMode =
 		props.page.platformAvailability?.policy?.primaryOperatingMode;
+	const simpleMode = props.page.uiExperienceMode === "simple";
 
 	return (
 		<Card className="overflow-hidden border-border/70 bg-[linear-gradient(145deg,rgba(2,6,23,0.96),rgba(17,24,39,0.97)_52%,rgba(34,197,94,0.10))] text-white shadow-2xl shadow-black/15">
 			<CardHeader className="space-y-4">
 				<div className="text-[11px] uppercase tracking-[0.32em] text-slate-300">
-					Operator launchpad
+					{simpleMode ? "Guided launchpad" : "Operator launchpad"}
 				</div>
 				<div className="space-y-2">
 					<CardTitle className="font-serif text-3xl text-white">
-						Dashboard
+						{simpleMode ? "Choose a path" : "Dashboard"}
 					</CardTitle>
 					<CardDescription className="max-w-2xl text-slate-300">
-						Launch demos, check platform readiness, and move directly into the
-						workflows that matter for the current environment.
+						{simpleMode
+							? "The core workflows stay visible here. Advanced mode adds the broader operator and integration surface."
+							: "Launch demos, check platform readiness, and move directly into the workflows that matter for the current environment."}
 					</CardDescription>
 				</div>
 				<div className="flex flex-wrap gap-3">
@@ -97,12 +114,19 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 						variant="ghost"
 						className="text-white hover:bg-white/10 hover:text-white"
 					>
-						<Link to="/settings">Settings</Link>
+						<Link to="/settings">
+							{simpleMode ? "Profile & settings" : "Settings"}
+						</Link>
 					</Button>
 				</div>
 			</CardHeader>
 			<CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 				{launchpadItems
+					.filter((item) =>
+						props.page.uiExperienceMode === "advanced"
+							? true
+							: item.experience !== "advanced",
+					)
 					.filter((item) =>
 						item.to === "/dashboard/platform" ? props.page.isAdmin : true,
 					)
@@ -133,4 +157,3 @@ export function DashboardLaunchpadCard(props: { page: DashboardPageState }) {
 		</Card>
 	);
 }
-

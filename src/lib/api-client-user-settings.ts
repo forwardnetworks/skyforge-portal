@@ -35,8 +35,11 @@ export type UserSettingsResponse = {
 	defaultForwardCollectorConfigId?: string;
 	defaultEnv?: Array<{ key: string; value: string }>;
 	externalTemplateRepos?: ExternalTemplateRepo[];
+	uiExperienceMode?: UIExperienceMode;
 	updatedAt?: string;
 };
+
+export type UIExperienceMode = "simple" | "advanced";
 
 export async function getUserSettings(): Promise<UserSettingsResponse> {
 	return apiFetch<UserSettingsResponse>("/api/settings");
@@ -46,6 +49,7 @@ export async function putUserSettings(payload: {
 	defaultForwardCollectorConfigId?: string;
 	defaultEnv?: Array<{ key: string; value: string }>;
 	externalTemplateRepos?: ExternalTemplateRepo[];
+	uiExperienceMode?: UIExperienceMode;
 }): Promise<UserSettingsResponse> {
 	return apiFetch<UserSettingsResponse>("/api/settings", {
 		method: "PUT",
@@ -136,10 +140,13 @@ export async function putUserAWSStaticCredentials(payload: {
 	accessKeyId: string;
 	secretAccessKey: string;
 }): Promise<UserAWSStaticCredentialsGetResponse> {
-	return apiFetch<UserAWSStaticCredentialsGetResponse>("/api/cloud/aws-static", {
-		method: "PUT",
-		body: JSON.stringify(payload),
-	});
+	return apiFetch<UserAWSStaticCredentialsGetResponse>(
+		"/api/cloud/aws-static",
+		{
+			method: "PUT",
+			body: JSON.stringify(payload),
+		},
+	);
 }
 
 export async function deleteUserAWSStaticCredentials(): Promise<void> {

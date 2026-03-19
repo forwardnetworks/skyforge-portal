@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { useAdminSettingsPage } from "../../hooks/use-admin-settings-page";
 import { requireAdminRouteAccess } from "../../lib/admin-route";
+import { requireAdvancedRouteAccess } from "../../lib/ui-experience-route";
 import {
 	buildAdminAuditTabProps,
 	buildAdminOverviewTabProps,
@@ -24,6 +25,7 @@ import {
 
 export const Route = createFileRoute("/admin/settings")({
 	beforeLoad: async ({ context }) => {
+		await requireAdvancedRouteAccess(context);
 		await requireAdminRouteAccess(context);
 		throw redirect({ to: "/settings", search: { tab: "admin" } });
 	},
@@ -57,7 +59,7 @@ export function AdminSettingsPage() {
 			)}
 
 			{page.isAdmin && (
-	<Tabs defaultValue="overview">
+				<Tabs defaultValue="overview">
 					<TabsList>
 						<TabsTrigger value="overview">Overview</TabsTrigger>
 						<TabsTrigger value="audit">Audit</TabsTrigger>

@@ -8,7 +8,12 @@ function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 
 describe("side nav model", () => {
 	it("shows Forward section with expected entries when enabled", () => {
-		const items = buildSideNavItems(false, { forwardEnabled: true }, "local");
+		const items = buildSideNavItems(
+			false,
+			{ forwardEnabled: true },
+			"local",
+			"advanced",
+		);
 		const forward = findGroup("Forward", items);
 
 		expect(forward).toBeDefined();
@@ -32,7 +37,12 @@ describe("side nav model", () => {
 	});
 
 	it("hides Forward section when forward feature is disabled", () => {
-		const items = buildSideNavItems(false, { forwardEnabled: false }, "local");
+		const items = buildSideNavItems(
+			false,
+			{ forwardEnabled: false },
+			"local",
+			"simple",
+		);
 		const forward = findGroup("Forward", items);
 		const labels = items.map((i) => i.label);
 
@@ -58,6 +68,7 @@ describe("side nav model", () => {
 				swaggerUIEnabled: true,
 			},
 			"local",
+			"advanced",
 		);
 		const labels = items.map((i) => i.label);
 		expect(labels).toContain("Quick Deploy");
@@ -117,7 +128,12 @@ describe("side nav model", () => {
 	});
 
 	it("collapses admin controls into settings hub", () => {
-		const items = buildSideNavItems(true, { coderEnabled: true }, "local");
+		const items = buildSideNavItems(
+			true,
+			{ coderEnabled: true },
+			"local",
+			"advanced",
+		);
 		const settings = items.find((i) => i.label === "Settings");
 		expect(settings).toBeDefined();
 		expect(settings?.children).toBeUndefined();
@@ -129,6 +145,7 @@ describe("side nav model", () => {
 			false,
 			{ infobloxEnabled: true, coderEnabled: true },
 			"local",
+			"advanced",
 		);
 		const platform = findGroup("Platform", items);
 		expect(platform?.children?.map((item) => item.label)).not.toContain(
@@ -141,6 +158,7 @@ describe("side nav model", () => {
 			{ authenticated: true, roles: ["ADMIN"] },
 			{ coderEnabled: true, nautobotEnabled: true },
 			"local",
+			"advanced",
 		);
 		const platform = findGroup("Platform", items);
 		const integrations = findGroup("Integrations", items);
@@ -150,5 +168,35 @@ describe("side nav model", () => {
 		);
 		expect(coder?.href).toBe(embeddedToolHref("coder"));
 		expect(nautobot?.href).toBe(embeddedToolHref("nautobot"));
+	});
+
+	it("shows a guided simple nav by default", () => {
+		const items = buildSideNavItems(
+			{ authenticated: true, roles: ["USER"] },
+			{ forwardEnabled: true, teamsEnabled: true, netboxEnabled: true },
+			"local",
+			"simple",
+		);
+		const labels = items.map((item) => item.label);
+		const forward = findGroup("Forward", items);
+
+		expect(labels).toEqual([
+			"Dashboard",
+			"Deployments",
+			"Quick Deploy",
+			"Reservations",
+			"Forward",
+			"Docs",
+			"Settings",
+		]);
+		expect(forward?.children?.map((child) => child.label)).toEqual([
+			"Credentials",
+			"Collector",
+			"Cluster",
+		]);
+		expect(labels).not.toContain("Observability");
+		expect(labels).not.toContain("Designer");
+		expect(labels).not.toContain("Integrations");
+		expect(labels).not.toContain("Platform");
 	});
 });

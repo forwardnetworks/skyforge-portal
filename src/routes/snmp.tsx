@@ -16,9 +16,11 @@ import {
 	listSnmpTrapEvents,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
+import { requireAdvancedRouteAccess } from "../lib/ui-experience-route";
 import { useSnmpTrapEvents } from "../lib/snmp-events";
 
 export const Route = createFileRoute("/snmp")({
+	beforeLoad: async ({ context }) => requireAdvancedRouteAccess(context),
 	component: SnmpTrapsPage,
 });
 

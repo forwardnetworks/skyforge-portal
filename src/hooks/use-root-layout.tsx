@@ -21,6 +21,7 @@ import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
 import { getSessionExpiryWarning } from "../lib/session-expiry";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
+import { useUIExperienceMode } from "./use-ui-experience-mode";
 
 export function useRootLayout() {
 	const location = useRouterState({ select: (state) => state.location });
@@ -57,6 +58,9 @@ export function useRootLayout() {
 		queryFn: getSession,
 		retry: false,
 		staleTime: 30_000,
+	});
+	const uiExperience = useUIExperienceMode({
+		enabled: session.data?.authenticated === true,
 	});
 
 	const uiConfig = useQuery({
@@ -267,6 +271,11 @@ export function useRootLayout() {
 		isFullBleedRoute,
 		session,
 		uiConfig,
+		uiExperienceMode: uiExperience.mode,
+		uiExperienceBusy: uiExperience.setModeMutation.isPending,
+		setUIExperienceMode: async (nextMode: "simple" | "advanced") => {
+			await uiExperience.setMode(nextMode);
+		},
 		productName,
 		productSubtitle,
 		authMode,

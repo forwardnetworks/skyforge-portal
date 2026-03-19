@@ -1,5 +1,6 @@
 import { useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
+import type { UIExperienceMode } from "../lib/api-client-user-settings";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
 import { type Features, buildSideNavItems } from "./side-nav-items";
 import {
@@ -24,12 +25,14 @@ export function SideNav({
 	isAdmin,
 	features,
 	authMode,
+	mode,
 }: {
 	collapsed?: boolean;
 	session?: unknown;
 	isAdmin?: boolean;
 	features?: Features;
 	authMode?: SkyforgeAuthMode | null;
+	mode?: UIExperienceMode;
 }) {
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
@@ -39,6 +42,7 @@ export function SideNav({
 		session ?? { isAdmin: !!isAdmin },
 		features,
 		authMode ?? null,
+		mode,
 	);
 
 	const isActiveHref = (href: string) => {

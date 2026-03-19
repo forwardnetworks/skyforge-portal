@@ -16,6 +16,7 @@ import {
 import { getSession } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
+import { useUIExperienceMode } from "../hooks/use-ui-experience-mode";
 import { AdminSettingsPage } from "./admin/settings";
 import { UserSettingsPage } from "./dashboard/settings";
 
@@ -38,8 +39,12 @@ function SettingsHubPage() {
 		retry: false,
 	});
 	const isAdmin = sessionIsAdmin(sessionQ.data);
+	const uiExperience = useUIExperienceMode({
+		enabled: sessionQ.data?.authenticated === true,
+	});
 	const currentTab = search.tab ?? "profile";
-	const activeTab = isAdmin ? currentTab : "profile";
+	const canAccessAdminTab = isAdmin && uiExperience.isAdvanced;
+	const activeTab = canAccessAdminTab ? currentTab : "profile";
 
 	return (
 		<div className="space-y-6 p-6">
@@ -64,14 +69,14 @@ function SettingsHubPage() {
 			>
 				<TabsList>
 					<TabsTrigger value="profile">Profile</TabsTrigger>
-					{isAdmin ? (
+					{canAccessAdminTab ? (
 						<TabsTrigger value="admin">Users & Access</TabsTrigger>
 					) : null}
 				</TabsList>
 				<TabsContent value="profile" className="space-y-6">
 					<UserSettingsPage />
 				</TabsContent>
-				{isAdmin ? (
+				{canAccessAdminTab ? (
 					<TabsContent value="admin" className="space-y-6">
 						<AdminSettingsPage />
 					</TabsContent>

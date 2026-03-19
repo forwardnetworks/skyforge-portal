@@ -14,6 +14,7 @@ import {
 import { getUIConfig } from "@/lib/api-client";
 import { EMBEDDED_TOOL_DEFS, type EmbeddedToolId } from "@/lib/embedded-tools";
 import { queryKeys } from "@/lib/query-keys";
+import { requireAdvancedRouteAccess } from "@/lib/ui-experience-route";
 
 export const Route = createFileRoute("/dashboard/tools/$tool")({
 	validateSearch: (search: Record<string, unknown>) => {
@@ -24,10 +25,11 @@ export const Route = createFileRoute("/dashboard/tools/$tool")({
 		}
 		return out;
 	},
-	beforeLoad: ({ params }) => {
+	beforeLoad: async ({ context, params }) => {
 		if (!(params.tool in EMBEDDED_TOOL_DEFS)) {
 			throw notFound();
 		}
+		await requireAdvancedRouteAccess(context);
 	},
 	component: EmbeddedToolPage,
 });

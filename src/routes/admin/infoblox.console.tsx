@@ -12,6 +12,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { requireAdminRouteAccess } from "@/lib/admin-route";
+import { requireAdvancedRouteAccess } from "@/lib/ui-experience-route";
 import {
 	getUIConfig,
 	getUserInfobloxStatus,
@@ -20,7 +21,10 @@ import {
 import { queryKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/admin/infoblox/console")({
-	beforeLoad: async ({ context }) => requireAdminRouteAccess(context),
+	beforeLoad: async ({ context }) => {
+		await requireAdvancedRouteAccess(context);
+		return requireAdminRouteAccess(context);
+	},
 	component: InfobloxConsolePage,
 });
 

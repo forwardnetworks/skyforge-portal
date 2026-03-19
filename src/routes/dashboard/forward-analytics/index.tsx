@@ -4,6 +4,7 @@ import { ForwardAnalyticsPageContent } from "../../../components/forward-analyti
 import { useForwardAnalyticsPage } from "../../../hooks/use-forward-analytics-page";
 import { listUserScopes } from "../../../lib/api-client";
 import { queryKeys } from "../../../lib/query-keys";
+import { requireAdvancedRouteAccess } from "../../../lib/ui-experience-route";
 
 const searchSchema = z.object({
 	userId: z.string().optional().catch(""),
@@ -12,7 +13,9 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/dashboard/forward-analytics/")({
 	validateSearch: (search) => searchSchema.parse(search),
 	loaderDeps: ({ search: { userId } }) => ({ userId }),
-	loader: async ({ context: { queryClient } }) => {
+	loader: async ({ context }) => {
+		await requireAdvancedRouteAccess(context);
+		const { queryClient } = context;
 		await queryClient.ensureQueryData({
 			queryKey: queryKeys.userScopes(),
 			queryFn: listUserScopes,

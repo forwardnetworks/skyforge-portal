@@ -2,29 +2,33 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DashboardPageContent } from "./dashboard-page-content";
 
+vi.mock("@tanstack/react-router", () => ({
+	Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
+}));
+
 vi.mock("./dashboard-launchpad-card", () => ({
-	DashboardLaunchpadCard: () => <div data-testid="launchpad-card" />, 
+	DashboardLaunchpadCard: () => <div data-testid="launchpad-card" />,
 }));
 vi.mock("./dashboard-system-status-card", () => ({
-	DashboardSystemStatusCard: () => <div data-testid="system-status-card" />, 
+	DashboardSystemStatusCard: () => <div data-testid="system-status-card" />,
 }));
 vi.mock("./dashboard-guidance-card", () => ({
-	DashboardGuidanceCard: () => <div data-testid="guidance-card" />, 
+	DashboardGuidanceCard: () => <div data-testid="guidance-card" />,
 }));
 vi.mock("./dashboard-availability-card", () => ({
-	DashboardAvailabilityCard: () => <div data-testid="availability-card" />, 
+	DashboardAvailabilityCard: () => <div data-testid="availability-card" />,
 }));
 vi.mock("./dashboard-policy-summary-card", () => ({
-	DashboardPolicySummaryCard: () => <div data-testid="policy-summary-card" />, 
+	DashboardPolicySummaryCard: () => <div data-testid="policy-summary-card" />,
 }));
 vi.mock("./dashboard-reservations-card", () => ({
-	DashboardReservationsCard: () => <div data-testid="reservations-card" />, 
+	DashboardReservationsCard: () => <div data-testid="reservations-card" />,
 }));
 vi.mock("./dashboard-admin-summary-card", () => ({
-	DashboardAdminSummaryCard: () => <div data-testid="admin-summary-card" />, 
+	DashboardAdminSummaryCard: () => <div data-testid="admin-summary-card" />,
 }));
 vi.mock("./dashboard-next-steps-card", () => ({
-	DashboardNextStepsCard: () => <div data-testid="next-steps-card" />, 
+	DashboardNextStepsCard: () => <div data-testid="next-steps-card" />,
 }));
 vi.mock("./platform-warnings-card", () => ({
 	PlatformWarningsCard: ({ warnings }: { warnings?: string[] }) => (
@@ -82,9 +86,7 @@ describe("DashboardPageContent", () => {
 
 	it("shows admin summary and merges admin warnings", () => {
 		render(
-			<DashboardPageContent
-				page={makePage({ isAdmin: true }) as never}
-			/>,
+			<DashboardPageContent page={makePage({ isAdmin: true }) as never} />,
 		);
 
 		expect(screen.getByTestId("admin-summary-card")).toBeInTheDocument();
@@ -92,5 +94,21 @@ describe("DashboardPageContent", () => {
 		expect(screen.getByTestId("platform-warnings").textContent).toBe(
 			"availability warning|admin warning",
 		);
+	});
+
+	it("shows a lighter simple-mode dashboard", () => {
+		render(
+			<DashboardPageContent
+				page={makePage({ uiExperienceMode: "simple" }) as never}
+			/>,
+		);
+
+		expect(screen.getByText("Launch faster")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Launch quick deploy" }),
+		).toBeInTheDocument();
+		expect(screen.queryByTestId("system-status-card")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("availability-card")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("policy-summary-card")).not.toBeInTheDocument();
 	});
 });

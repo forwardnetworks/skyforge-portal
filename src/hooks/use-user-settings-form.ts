@@ -21,6 +21,7 @@ export const userSettingsFormSchema = z.object({
 			}),
 		)
 		.optional(),
+	uiExperienceMode: z.enum(["simple", "advanced"]).optional(),
 });
 
 export type UserSettingsFormValues = z.infer<typeof userSettingsFormSchema>;
@@ -62,6 +63,7 @@ export function useUserSettingsForm() {
 				settingsQ.data?.defaultForwardCollectorConfigId || undefined,
 			defaultEnv: settingsQ.data?.defaultEnv ?? [],
 			externalTemplateRepos: settingsQ.data?.externalTemplateRepos ?? [],
+			uiExperienceMode: settingsQ.data?.uiExperienceMode ?? "simple",
 		},
 	});
 
@@ -78,6 +80,7 @@ export function useUserSettingsForm() {
 				externalTemplateRepos: normalizeExternalTemplateRepos(
 					values.externalTemplateRepos,
 				),
+				uiExperienceMode: values.uiExperienceMode ?? "simple",
 			}),
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({

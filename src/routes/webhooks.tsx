@@ -16,9 +16,11 @@ import {
 	listWebhookEvents,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
+import { requireAdvancedRouteAccess } from "../lib/ui-experience-route";
 import { useWebhookEvents } from "../lib/webhook-events";
 
 export const Route = createFileRoute("/webhooks")({
+	beforeLoad: async ({ context }) => requireAdvancedRouteAccess(context),
 	component: WebhooksPage,
 });
 

@@ -10,6 +10,7 @@ import {
 	CardTitle,
 } from "../../../components/ui/card";
 import { useCreateDeploymentPage } from "../../../hooks/use-create-deployment-page";
+import { requireAdvancedRouteAccess } from "../../../lib/ui-experience-route";
 
 const deploymentsSearchSchema = z.object({
 	userId: z.string().optional().catch(""),
@@ -17,6 +18,7 @@ const deploymentsSearchSchema = z.object({
 
 export const Route = createFileRoute("/dashboard/deployments/new")({
 	validateSearch: (search) => deploymentsSearchSchema.parse(search),
+	beforeLoad: async ({ context }) => requireAdvancedRouteAccess(context),
 	component: CreateDeploymentPage,
 });
 

@@ -21,6 +21,8 @@ import type { ComponentType } from "react";
 import { embeddedToolHref } from "../lib/embedded-tools";
 import { sessionHasRole } from "../lib/rbac";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
+import type { UIExperienceMode } from "../lib/api-client-user-settings";
+import { normalizeUIExperienceMode } from "../lib/ui-experience";
 
 export type NavItem = {
 	label: string;
@@ -31,6 +33,7 @@ export type NavItem = {
 	adminOnly?: boolean;
 	featureFlag?: keyof Features;
 	children?: NavItem[];
+	experience?: "both" | "advanced";
 };
 
 export type Features = {
@@ -51,10 +54,16 @@ export type Features = {
 	dnsEnabled?: boolean;
 };
 
-function createNavItems(): NavItem[] {
+function createNavItems(mode: UIExperienceMode): NavItem[] {
+	const simpleMode = mode === "simple";
 	return [
 		{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-		{ label: "Observability", href: "/dashboard/observability", icon: Activity },
+		{
+			label: "Observability",
+			href: "/dashboard/observability",
+			icon: Activity,
+			experience: "advanced",
+		},
 		{
 			label: "Deployments",
 			href: "/dashboard/deployments",
@@ -70,7 +79,17 @@ function createNavItems(): NavItem[] {
 			label: "Designer",
 			href: "/dashboard/labs/designer",
 			icon: Hammer,
+			experience: "advanced",
 		},
+		...(simpleMode
+			? [
+					{
+						label: "Reservations",
+						href: "/dashboard/reservations",
+						icon: Activity,
+					} satisfies NavItem,
+				]
+			: []),
 		{
 			label: "Forward",
 			href: "",
@@ -98,17 +117,20 @@ function createNavItems(): NavItem[] {
 					label: "Analytics",
 					href: "/dashboard/forward-analytics",
 					icon: ShieldCheck,
+					experience: "advanced",
 				},
 				{
 					label: "ServiceNow",
 					href: "/dashboard/servicenow",
 					icon: Workflow,
+					experience: "advanced",
 				},
 				{
 					label: "Teams",
 					href: "/dashboard/teams",
 					icon: Workflow,
 					featureFlag: "teamsEnabled",
+					experience: "advanced",
 				},
 			],
 		},
@@ -116,6 +138,7 @@ function createNavItems(): NavItem[] {
 			label: "Integrations",
 			href: "",
 			icon: Workflow,
+			experience: "advanced",
 			children: [
 				{
 					label: "NetBox",
@@ -159,6 +182,7 @@ function createNavItems(): NavItem[] {
 			label: "Platform",
 			href: "",
 			icon: Cloud,
+			experience: "advanced",
 			children: [
 				{
 					label: "Git",
@@ -248,8 +272,12 @@ function filterNavItems(
 	items: NavItem[],
 	isAdmin: boolean,
 	features?: Features,
+	mode: UIExperienceMode = "simple",
 ): NavItem[] {
 	return items.flatMap((item) => {
+		if (item.experience === "advanced" && mode !== "advanced") {
+			return [];
+		}
 		if (item.adminOnly && !isAdmin) {
 			return [];
 		}
@@ -260,7 +288,7 @@ function filterNavItems(
 			return [item];
 		}
 
-		const children = filterNavItems(item.children, isAdmin, features);
+		const children = filterNavItems(item.children, isAdmin, features, mode);
 		if (children.length === 0) {
 			return [];
 		}
@@ -273,12 +301,19 @@ export function buildSideNavItems(
 	sessionOrAdmin?: unknown,
 	features?: Features,
 	_authMode?: SkyforgeAuthMode | null,
+	mode?: UIExperienceMode,
 ): NavItem[] {
 	const session =
 		typeof sessionOrAdmin === "boolean"
 			? { isAdmin: sessionOrAdmin }
 			: sessionOrAdmin;
 	const isAdmin = sessionHasRole(session, "ADMIN");
+	const uiExperienceMode = normalizeUIExperienceMode(mode);
 
-	return filterNavItems(createNavItems(), isAdmin, features);
+	return filterNavItems(
+		createNavItems(uiExperienceMode),
+		isAdmin,
+		features,
+		uiExperienceMode,
+	);
 }

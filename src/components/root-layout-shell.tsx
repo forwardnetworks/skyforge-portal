@@ -18,6 +18,7 @@ import { RootBreadcrumbs } from "./root-breadcrumbs";
 import { RootLoginGate } from "./root-login-gate";
 import { SideNav } from "./side-nav";
 import { ThemeProvider } from "./theme-provider";
+import { UIExperienceToggle } from "./ui-experience-toggle";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Toaster } from "./ui/sonner";
@@ -51,6 +52,7 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 												isAdmin={page.isAdmin}
 												features={page.uiConfig.data?.features}
 												authMode={page.authMode as SkyforgeAuthMode | null}
+												mode={page.uiExperienceMode}
 											/>
 										</div>
 									</SheetContent>
@@ -101,6 +103,13 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 								) : null}
 							</Button>
 							<ModeToggle />
+							{page.session.data?.authenticated ? (
+								<UIExperienceToggle
+									value={page.uiExperienceMode}
+									busy={page.uiExperienceBusy}
+									onChange={page.setUIExperienceMode}
+								/>
+							) : null}
 							{page.session.data?.authenticated ? (
 								<div className="flex items-center gap-3">
 									{page.sessionExpiryWarning ? (
@@ -200,6 +209,7 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 										isAdmin={page.isAdmin}
 										features={page.uiConfig.data?.features}
 										authMode={page.authMode as SkyforgeAuthMode | null}
+										mode={page.uiExperienceMode}
 									/>
 								</div>
 								<button
