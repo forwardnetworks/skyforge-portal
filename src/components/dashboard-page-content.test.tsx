@@ -47,7 +47,7 @@ vi.mock("./dashboard-shared", () => ({
 
 function makePage(overrides: Record<string, unknown> = {}) {
 	return {
-		isAdmin: false,
+		canAccessPlatformView: false,
 		statusSummary: undefined,
 		observabilitySummary: undefined,
 		adminOverview: { warnings: ["admin warning"] },
@@ -86,7 +86,9 @@ describe("DashboardPageContent", () => {
 
 	it("shows admin summary and merges admin warnings", () => {
 		render(
-			<DashboardPageContent page={makePage({ isAdmin: true }) as never} />,
+			<DashboardPageContent
+				page={makePage({ canAccessPlatformView: true }) as never}
+			/>,
 		);
 
 		expect(screen.getByTestId("admin-summary-card")).toBeInTheDocument();
@@ -104,7 +106,9 @@ describe("DashboardPageContent", () => {
 		);
 
 		expect(screen.getByText("Launch faster")).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Launch lab" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Launch lab" }),
+		).toBeInTheDocument();
 		expect(screen.queryByTestId("system-status-card")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("availability-card")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("policy-summary-card")).not.toBeInTheDocument();

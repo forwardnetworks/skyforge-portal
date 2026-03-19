@@ -1,13 +1,19 @@
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { QuotaTile, formatCount } from "./dashboard-shared";
 import { formatCurrencyFromCents } from "./platform-capacity-formatting";
-import { formatCount, QuotaTile } from "./dashboard-shared";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "./ui/card";
 
 export function DashboardAdminSummaryCard(props: { page: DashboardPageState }) {
 	const { page } = props;
 	const overview = page.adminOverview;
 
-	if (!page.isAdmin || !overview) {
+	if (!page.canAccessPlatformView || !overview) {
 		return null;
 	}
 
@@ -35,7 +41,9 @@ export function DashboardAdminSummaryCard(props: { page: DashboardPageState }) {
 					/>
 					<QuotaTile
 						label="Baseline monthly cost"
-						value={formatCurrencyFromCents(overview.baselineMonthlyCostCents ?? 0)}
+						value={formatCurrencyFromCents(
+							overview.baselineMonthlyCostCents ?? 0,
+						)}
 					/>
 				</div>
 				<div className="grid gap-3 sm:grid-cols-2">
@@ -63,10 +71,15 @@ export function DashboardAdminSummaryCard(props: { page: DashboardPageState }) {
 						</CardHeader>
 						<CardContent className="space-y-2 text-sm">
 							{(overview.poolCostInputs ?? []).slice(0, 4).map((pool) => (
-								<div key={pool.name} className="flex items-center justify-between">
+								<div
+									key={pool.name}
+									className="flex items-center justify-between"
+								>
 									<span>{pool.name}</span>
 									<span className="font-medium">
-										{formatCurrencyFromCents(pool.estimatedMonthlyCostCents ?? 0)}
+										{formatCurrencyFromCents(
+											pool.estimatedMonthlyCostCents ?? 0,
+										)}
 									</span>
 								</div>
 							))}

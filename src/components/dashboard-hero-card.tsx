@@ -1,20 +1,27 @@
 import { Link } from "@tanstack/react-router";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { formatMode } from "./dashboard-shared";
+import { Button } from "./ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "./ui/card";
 
 export function DashboardHeroCard(props: { page: DashboardPageState }) {
 	const { page } = props;
-	const primaryOperatingMode = page.platformAvailability?.policy?.primaryOperatingMode;
+	const primaryOperatingMode =
+		page.platformAvailability?.policy?.primaryOperatingMode;
 
 	return (
 		<Card variant="glass">
 			<CardHeader>
 				<CardTitle>Dashboard</CardTitle>
 				<CardDescription>
-					Quota, availability, and platform readiness from the live platform policy
-					and capacity model.
+					Quota, availability, and platform readiness from the live platform
+					policy and capacity model.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-wrap gap-3">
@@ -37,7 +44,7 @@ export function DashboardHeroCard(props: { page: DashboardPageState }) {
 				<Button asChild variant="outline">
 					<Link to="/settings">Open settings</Link>
 				</Button>
-				{page.isAdmin ? (
+				{page.canAccessPlatformView ? (
 					<Button asChild variant="outline">
 						<Link to="/dashboard/platform">Open capacity view</Link>
 					</Button>

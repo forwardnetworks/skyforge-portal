@@ -1,34 +1,39 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { getSession, getUserSettings } from "../lib/api-client";
 import {
-	getAdminPlatformOverview,
 	type AdminPlatformOverviewResponseWithCapacity,
+	getAdminPlatformOverview,
 } from "../lib/api-client-admin";
 import {
-	getUserObservabilitySummary,
 	type UserObservabilitySummaryResponse,
+	getUserObservabilitySummary,
 } from "../lib/api-client-forward-observability";
 import {
-	getPublicStatusSummary,
-	type PublicStatusSummaryResponse,
-} from "../lib/api-client-public-status";
+	type ManagedIntegrationsStatusResponse,
+	getManagedIntegrationsStatus,
+} from "../lib/api-client-managed-integrations";
 import {
-	getCurrentPlatformAvailability,
 	type CurrentPlatformAvailabilityResponse,
+	getCurrentPlatformAvailability,
 	getCurrentPlatformReservations,
 	normalizePlatformReservationRecord,
 } from "../lib/api-client-platform";
 import {
-	getManagedIntegrationsStatus,
-	type ManagedIntegrationsStatusResponse,
-} from "../lib/api-client-managed-integrations";
+	type PublicStatusSummaryResponse,
+	getPublicStatusSummary,
+} from "../lib/api-client-public-status";
+import { getToolCatalog } from "../lib/api-client-tool-catalog";
+import {
+	catalogRouteAllowsAccess,
+	indexCatalogRouteAccess,
+	lookupCatalogRouteAccess,
+} from "../lib/catalog-route-access";
 import { queryKeys } from "../lib/query-keys";
-import { sessionIsAdmin } from "../lib/rbac";
 import { useStatusSummaryEvents } from "../lib/status-events";
 import {
-	normalizeUIExperienceMode,
 	type UIExperienceMode,
+	normalizeUIExperienceMode,
 } from "../lib/ui-experience";
 
 export type ReservationTotals = {
@@ -41,7 +46,7 @@ export type DashboardPageState = {
 	platformAvailability: CurrentPlatformAvailabilityResponse | undefined;
 	reservations: ReturnType<typeof normalizePlatformReservationRecord>[];
 	reservationTotals: ReservationTotals[];
-	isAdmin: boolean;
+	canAccessPlatformView: boolean;
 	adminOverview: AdminPlatformOverviewResponseWithCapacity | undefined;
 	statusSummary: PublicStatusSummaryResponse | undefined;
 	managedIntegrations: ManagedIntegrationsStatusResponse | undefined;
@@ -72,9 +77,27 @@ export function useDashboardPage(): DashboardPageState {
 		retry: false,
 		enabled: sessionQ.isSuccess,
 	});
+	const toolCatalogQ = useQuery({
+		queryKey: queryKeys.toolCatalog(),
+		queryFn: getToolCatalog,
+		staleTime: 5 * 60_000,
+		retry: false,
+		enabled: sessionQ.data?.authenticated === true,
+	});
 
 	const session = sessionQ.data;
-	const isAdmin = sessionIsAdmin(session);
+	const canAccessPlatformView = useMemo(() => {
+		const route = lookupCatalogRouteAccess(
+			indexCatalogRouteAccess(toolCatalogQ.data?.routes),
+			"/dashboard/platform",
+		);
+		if (!route) {
+			throw new Error(
+				"route /dashboard/platform is missing a catalog route contract",
+			);
+		}
+		return catalogRouteAllowsAccess(route);
+	}, [toolCatalogQ.data?.routes]);
 
 	useStatusSummaryEvents(sessionQ.data?.authenticated === true);
 
@@ -83,7 +106,7 @@ export function useDashboardPage(): DashboardPageState {
 		queryFn: getAdminPlatformOverview,
 		staleTime: 30_000,
 		retry: false,
-		enabled: isAdmin,
+		enabled: canAccessPlatformView,
 	});
 	const statusSummaryQ = useQuery({
 		queryKey: queryKeys.statusSummary(),
@@ -137,7 +160,7 @@ export function useDashboardPage(): DashboardPageState {
 		platformAvailability: availabilityQ.data,
 		reservations,
 		reservationTotals,
-		isAdmin,
+		canAccessPlatformView,
 		adminOverview: overviewQ.data,
 		statusSummary: statusSummaryQ.data,
 		managedIntegrations: managedIntegrationsQ.data,

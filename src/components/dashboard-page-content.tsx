@@ -38,7 +38,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const primaryMode = policy?.primaryOperatingMode;
 	const availabilityWarnings = availability?.warnings ?? [];
 	const overviewWarnings = page.adminOverview?.warnings ?? [];
-	const warnings = page.isAdmin
+	const warnings = page.canAccessPlatformView
 		? [...availabilityWarnings, ...overviewWarnings]
 		: availabilityWarnings;
 	const status = page.statusSummary?.status ?? "unknown";
@@ -403,7 +403,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 				<DashboardReservationsCard page={page} />
 				<div className="grid gap-6">
 					<DashboardGuidanceCard page={page} />
-					{page.isAdmin ? (
+					{page.canAccessPlatformView ? (
 						<DashboardAdminSummaryCard page={page} />
 					) : (
 						<DashboardNextStepsCard />
