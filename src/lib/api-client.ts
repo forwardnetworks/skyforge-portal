@@ -13,3 +13,4 @@ export * from "./api-client-composite-plans";
 export * from "./api-client-forward";
 export * from "./api-client-admin";
 export * from "./api-client-forward-analytics";
+export * from "./api-client-tool-catalog";

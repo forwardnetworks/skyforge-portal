@@ -1,6 +1,107 @@
 import { describe, expect, it } from "vitest";
-import { embeddedToolHref } from "../lib/embedded-tools";
+import { type ToolLaunchMap, toolRouteHref } from "../lib/tool-launches";
 import { buildSideNavItems } from "./side-nav";
+
+const toolLaunches: ToolLaunchMap = {
+	"forward-cluster": {
+		id: "forward-cluster",
+		title: "Forward Cluster",
+		navigationHref: "/api/forward/session",
+		navigationMode: "direct",
+		launchMode: "new_tab",
+	},
+	netbox: {
+		id: "netbox",
+		title: "NetBox",
+		navigationHref: toolRouteHref("netbox"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	nautobot: {
+		id: "nautobot",
+		title: "Nautobot",
+		navigationHref: toolRouteHref("nautobot"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	jira: {
+		id: "jira",
+		title: "Jira",
+		navigationHref: toolRouteHref("jira"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	rapid7: {
+		id: "rapid7",
+		title: "Rapid7",
+		navigationHref: toolRouteHref("rapid7"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	elk: {
+		id: "elk",
+		title: "ELK",
+		navigationHref: toolRouteHref("elk"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	infoblox: {
+		id: "infoblox",
+		title: "Infoblox",
+		navigationHref: toolRouteHref("infoblox"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	git: {
+		id: "git",
+		title: "Git",
+		navigationHref: toolRouteHref("git"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	artifacts: {
+		id: "artifacts",
+		title: "Artifacts",
+		navigationHref: toolRouteHref("artifacts"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	dns: {
+		id: "dns",
+		title: "DNS",
+		navigationHref: toolRouteHref("dns"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	coder: {
+		id: "coder",
+		title: "Coder",
+		navigationHref: toolRouteHref("coder"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	grafana: {
+		id: "grafana",
+		title: "Grafana",
+		navigationHref: toolRouteHref("grafana"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	prometheus: {
+		id: "prometheus",
+		title: "Prometheus",
+		navigationHref: toolRouteHref("prometheus"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+	"api-testing": {
+		id: "api-testing",
+		title: "API Testing",
+		navigationHref: toolRouteHref("api-testing"),
+		navigationMode: "router",
+		launchMode: "embedded",
+	},
+};
 
 function findGroup(label: string, items: ReturnType<typeof buildSideNavItems>) {
 	return items.find((i) => i.label === label);
@@ -13,6 +114,7 @@ describe("side nav model", () => {
 			{ forwardEnabled: true },
 			"local",
 			"advanced",
+			toolLaunches,
 		);
 		const forward = findGroup("Forward", items);
 
@@ -42,6 +144,7 @@ describe("side nav model", () => {
 			{ forwardEnabled: false },
 			"local",
 			"simple",
+			toolLaunches,
 		);
 		const forward = findGroup("Forward", items);
 		const labels = items.map((i) => i.label);
@@ -69,6 +172,7 @@ describe("side nav model", () => {
 			},
 			"local",
 			"advanced",
+			toolLaunches,
 		);
 		const labels = items.map((i) => i.label);
 		expect(labels).toContain("Launch Lab");
@@ -120,11 +224,11 @@ describe("side nav model", () => {
 			]),
 		);
 		const coder = platform?.children?.find((c) => c.label === "Coder");
-		expect(coder?.href).toBe(embeddedToolHref("coder"));
+		expect(coder?.href).toBe(toolRouteHref("coder"));
 		const nautobot = integrations?.children?.find(
 			(c) => c.label === "Nautobot",
 		);
-		expect(nautobot?.href).toBe(embeddedToolHref("nautobot"));
+		expect(nautobot?.href).toBe(toolRouteHref("nautobot"));
 	});
 
 	it("collapses admin controls into settings hub", () => {
@@ -133,6 +237,7 @@ describe("side nav model", () => {
 			{ coderEnabled: true },
 			"local",
 			"advanced",
+			toolLaunches,
 		);
 		const settings = items.find((i) => i.label === "Settings");
 		expect(settings).toBeDefined();
@@ -146,6 +251,7 @@ describe("side nav model", () => {
 			{ infobloxEnabled: true, coderEnabled: true },
 			"local",
 			"advanced",
+			toolLaunches,
 		);
 		const platform = findGroup("Platform", items);
 		expect(platform?.children?.map((item) => item.label)).not.toContain(
@@ -159,6 +265,7 @@ describe("side nav model", () => {
 			{ coderEnabled: true, nautobotEnabled: true },
 			"local",
 			"advanced",
+			toolLaunches,
 		);
 		const platform = findGroup("Platform", items);
 		const integrations = findGroup("Integrations", items);
@@ -166,8 +273,8 @@ describe("side nav model", () => {
 		const nautobot = integrations?.children?.find(
 			(i) => i.label === "Nautobot",
 		);
-		expect(coder?.href).toBe(embeddedToolHref("coder"));
-		expect(nautobot?.href).toBe(embeddedToolHref("nautobot"));
+		expect(coder?.href).toBe(toolRouteHref("coder"));
+		expect(nautobot?.href).toBe(toolRouteHref("nautobot"));
 	});
 
 	it("shows a guided simple nav by default", () => {
@@ -176,6 +283,7 @@ describe("side nav model", () => {
 			{ forwardEnabled: true, teamsEnabled: true, netboxEnabled: true },
 			"local",
 			"simple",
+			toolLaunches,
 		);
 		const labels = items.map((item) => item.label);
 		const forward = findGroup("Forward", items);

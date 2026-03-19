@@ -18,10 +18,10 @@ import {
 	Workflow,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { embeddedToolHref } from "../lib/embedded-tools";
+import type { UIExperienceMode } from "../lib/api-client-user-settings";
 import { sessionHasRole } from "../lib/rbac";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
-import type { UIExperienceMode } from "../lib/api-client-user-settings";
+import type { ToolLaunchMap } from "../lib/tool-launches";
 import { normalizeUIExperienceMode } from "../lib/ui-experience";
 
 export type NavItem = {
@@ -35,6 +35,23 @@ export type NavItem = {
 	children?: NavItem[];
 	experience?: "both" | "advanced";
 };
+
+function navToolItem(
+	toolLaunches: ToolLaunchMap | undefined,
+	toolID: string,
+	label: string,
+	icon: ComponentType<{ className?: string }>,
+): NavItem | null {
+	const tool = toolLaunches?.[toolID];
+	if (!tool) return null;
+	return {
+		label,
+		href: tool.navigationHref,
+		icon,
+		external: String(tool.navigationMode ?? "").trim() === "direct",
+		newTab: String(tool.launchMode ?? "").trim() === "new_tab",
+	};
+}
 
 export type Features = {
 	giteaEnabled?: boolean;
@@ -54,7 +71,10 @@ export type Features = {
 	dnsEnabled?: boolean;
 };
 
-function createNavItems(mode: UIExperienceMode): NavItem[] {
+function createNavItems(
+	mode: UIExperienceMode,
+	toolLaunches?: ToolLaunchMap,
+): NavItem[] {
 	const simpleMode = mode === "simple";
 	return [
 		{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -106,13 +126,7 @@ function createNavItems(mode: UIExperienceMode): NavItem[] {
 					href: "/dashboard/forward/collectors",
 					icon: Radio,
 				},
-				{
-					label: "Cluster",
-					href: "/api/forward/session",
-					icon: Network,
-					external: true,
-					newTab: true,
-				},
+				navToolItem(toolLaunches, "forward-cluster", "Cluster", Network),
 				{
 					label: "Analytics",
 					href: "/dashboard/forward-analytics",
@@ -132,7 +146,7 @@ function createNavItems(mode: UIExperienceMode): NavItem[] {
 					featureFlag: "teamsEnabled",
 					experience: "advanced",
 				},
-			],
+			].filter(Boolean) as NavItem[],
 		},
 		{
 			label: "Integrations",
@@ -140,43 +154,13 @@ function createNavItems(mode: UIExperienceMode): NavItem[] {
 			icon: Workflow,
 			experience: "advanced",
 			children: [
-				{
-					label: "NetBox",
-					href: embeddedToolHref("netbox"),
-					icon: Network,
-					featureFlag: "netboxEnabled",
-				},
-				{
-					label: "Nautobot",
-					href: embeddedToolHref("nautobot"),
-					icon: Network,
-					featureFlag: "nautobotEnabled",
-				},
-				{
-					label: "Jira",
-					href: embeddedToolHref("jira"),
-					icon: Workflow,
-					featureFlag: "jiraEnabled",
-				},
-				{
-					label: "Rapid7",
-					href: embeddedToolHref("rapid7"),
-					icon: Workflow,
-					featureFlag: "rapid7Enabled",
-				},
-				{
-					label: "ELK",
-					href: embeddedToolHref("elk"),
-					icon: Database,
-					featureFlag: "elkEnabled",
-				},
-				{
-					label: "Infoblox",
-					icon: Server,
-					href: embeddedToolHref("infoblox"),
-					featureFlag: "infobloxEnabled",
-				},
-			],
+				navToolItem(toolLaunches, "netbox", "NetBox", Network),
+				navToolItem(toolLaunches, "nautobot", "Nautobot", Network),
+				navToolItem(toolLaunches, "jira", "Jira", Workflow),
+				navToolItem(toolLaunches, "rapid7", "Rapid7", Workflow),
+				navToolItem(toolLaunches, "elk", "ELK", Database),
+				navToolItem(toolLaunches, "infoblox", "Infoblox", Server),
+			].filter(Boolean) as NavItem[],
 		},
 		{
 			label: "Platform",
@@ -184,41 +168,12 @@ function createNavItems(mode: UIExperienceMode): NavItem[] {
 			icon: Cloud,
 			experience: "advanced",
 			children: [
-				{
-					label: "Git",
-					href: embeddedToolHref("git"),
-					icon: GitBranch,
-					featureFlag: "giteaEnabled",
-				},
-				{
-					label: "Artifacts",
-					href: embeddedToolHref("artifacts"),
-					icon: Inbox,
-				},
-				{
-					label: "DNS",
-					href: embeddedToolHref("dns"),
-					icon: Network,
-					featureFlag: "dnsEnabled",
-				},
-				{
-					label: "Coder",
-					href: embeddedToolHref("coder"),
-					icon: Cloud,
-					featureFlag: "coderEnabled",
-				},
-				{
-					label: "Grafana",
-					href: embeddedToolHref("grafana"),
-					icon: Activity,
-					featureFlag: "forwardGrafanaEnabled",
-				},
-				{
-					label: "Prometheus",
-					href: embeddedToolHref("prometheus"),
-					icon: Activity,
-					featureFlag: "forwardPrometheusEnabled",
-				},
+				navToolItem(toolLaunches, "git", "Git", GitBranch),
+				navToolItem(toolLaunches, "artifacts", "Artifacts", Inbox),
+				navToolItem(toolLaunches, "dns", "DNS", Network),
+				navToolItem(toolLaunches, "coder", "Coder", Cloud),
+				navToolItem(toolLaunches, "grafana", "Grafana", Activity),
+				navToolItem(toolLaunches, "prometheus", "Prometheus", Activity),
 				{
 					label: "Reservations",
 					href: "/dashboard/reservations",
@@ -242,12 +197,7 @@ function createNavItems(mode: UIExperienceMode): NavItem[] {
 					featureFlag: "infobloxEnabled",
 					adminOnly: true,
 				},
-				{
-					label: "API Testing",
-					href: embeddedToolHref("api-testing"),
-					icon: PanelTop,
-					featureFlag: "yaadeEnabled",
-				},
+				navToolItem(toolLaunches, "api-testing", "API Testing", PanelTop),
 				{
 					label: "ReDoc",
 					href: "/redoc/",
@@ -257,7 +207,7 @@ function createNavItems(mode: UIExperienceMode): NavItem[] {
 				{ label: "Webhooks", href: "/webhooks", icon: Webhook },
 				{ label: "Syslog", href: "/syslog", icon: Inbox },
 				{ label: "SNMP", href: "/snmp", icon: ShieldCheck },
-			],
+			].filter(Boolean) as NavItem[],
 		},
 		{ label: "Docs", href: "/dashboard/docs", icon: BookOpen },
 		{
@@ -302,6 +252,7 @@ export function buildSideNavItems(
 	features?: Features,
 	_authMode?: SkyforgeAuthMode | null,
 	mode?: UIExperienceMode,
+	toolLaunches?: ToolLaunchMap,
 ): NavItem[] {
 	const session =
 		typeof sessionOrAdmin === "boolean"
@@ -311,7 +262,7 @@ export function buildSideNavItems(
 	const uiExperienceMode = normalizeUIExperienceMode(mode);
 
 	return filterNavItems(
-		createNavItems(uiExperienceMode),
+		createNavItems(uiExperienceMode, toolLaunches),
 		isAdmin,
 		features,
 		uiExperienceMode,

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Shield, TimerReset, Zap } from "lucide-react";
 import type { DashboardPageState } from "../hooks/use-dashboard-page";
+import { buildForwardSessionHref } from "../lib/tool-launches";
 import { DashboardAdminSummaryCard } from "./dashboard-admin-summary-card";
 import { DashboardAvailabilityCard } from "./dashboard-availability-card";
 import { DashboardGuidanceCard } from "./dashboard-guidance-card";
@@ -8,13 +9,13 @@ import { DashboardLaunchpadCard } from "./dashboard-launchpad-card";
 import { DashboardNextStepsCard } from "./dashboard-next-steps-card";
 import { DashboardPolicySummaryCard } from "./dashboard-policy-summary-card";
 import { DashboardReservationsCard } from "./dashboard-reservations-card";
-import { DashboardSystemStatusCard } from "./dashboard-system-status-card";
 import {
+	MetricCard,
 	describeOperatingMode,
 	formatCount,
 	formatMode,
-	MetricCard,
 } from "./dashboard-shared";
+import { DashboardSystemStatusCard } from "./dashboard-system-status-card";
 import { PlatformWarningsCard } from "./platform-warnings-card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -118,7 +119,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 									className="text-white hover:bg-white/10 hover:text-white"
 								>
 									<a
-										href="/api/forward/session"
+										href={buildForwardSessionHref()}
 										target="_blank"
 										rel="noreferrer noopener"
 									>

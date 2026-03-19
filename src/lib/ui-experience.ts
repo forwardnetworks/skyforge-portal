@@ -1,4 +1,3 @@
-import type { EmbeddedToolId } from "./embedded-tools";
 import type { UIExperienceMode } from "./api-client-user-settings";
 
 export type { UIExperienceMode } from "./api-client-user-settings";
@@ -42,7 +41,7 @@ export function isSimpleUIExperienceMode(
 
 export function isAdvancedOnlyPathname(
 	pathname: string,
-	options?: { tool?: EmbeddedToolId | string | null },
+	options?: { tool?: string | null },
 ): boolean {
 	if (options?.tool) {
 		return true;

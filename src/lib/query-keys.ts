@@ -1,6 +1,7 @@
 export const queryKeys = {
 	session: () => ["session"] as const,
 	uiConfig: () => ["uiConfig"] as const,
+	toolCatalog: () => ["toolCatalog"] as const,
 	deploymentLifetimePolicy: () => ["deploymentLifetimePolicy"] as const,
 	dashboardSnapshot: () => ["dashboardSnapshot"] as const,
 	statusSummary: () => ["statusSummary"] as const,
@@ -96,8 +97,7 @@ export const queryKeys = {
 	currentPlatformAvailability: () => ["currentPlatformAvailability"] as const,
 	configChangeRuns: () => ["configChangeRuns"] as const,
 	configChangeRun: (id: string) => ["configChangeRun", id] as const,
-	configChangeRunReview: (id: string) =>
-		["configChangeRunReview", id] as const,
+	configChangeRunReview: (id: string) => ["configChangeRunReview", id] as const,
 	configChangeRunLifecycle: (id: string) =>
 		["configChangeRunLifecycle", id] as const,
 	compositePlans: (userId: string) => ["compositePlans", userId] as const,

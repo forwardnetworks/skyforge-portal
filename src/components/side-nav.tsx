@@ -1,7 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
+import { getToolCatalog } from "../lib/api-client-tool-catalog";
 import type { UIExperienceMode } from "../lib/api-client-user-settings";
+import { queryKeys } from "../lib/query-keys";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
+import { indexToolLaunches } from "../lib/tool-launches";
 import { type Features, buildSideNavItems } from "./side-nav-items";
 import {
 	CollapsedNavGroup,
@@ -38,11 +42,21 @@ export function SideNav({
 		select: (state) => state.location.pathname,
 	});
 	const [expanded, setExpanded] = useState(DEFAULT_EXPANDED_GROUPS);
+	const toolCatalogQ = useQuery({
+		queryKey: queryKeys.toolCatalog(),
+		queryFn: getToolCatalog,
+		enabled: Boolean(
+			session && (session as { authenticated?: boolean }).authenticated,
+		),
+		retry: false,
+		staleTime: 5 * 60_000,
+	});
 	const items = buildSideNavItems(
 		session ?? { isAdmin: !!isAdmin },
 		features,
 		authMode ?? null,
 		mode,
+		indexToolLaunches(toolCatalogQ.data?.tools),
 	);
 
 	const isActiveHref = (href: string) => {

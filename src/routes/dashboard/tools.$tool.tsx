@@ -11,9 +11,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { getUIConfig } from "@/lib/api-client";
-import { EMBEDDED_TOOL_DEFS, type EmbeddedToolId } from "@/lib/embedded-tools";
+import { getToolCatalog } from "@/lib/api-client-tool-catalog";
 import { queryKeys } from "@/lib/query-keys";
+import { composeToolContentUrl, indexToolLaunches } from "@/lib/tool-launches";
 import { requireAdvancedRouteAccess } from "@/lib/ui-experience-route";
 
 export const Route = createFileRoute("/dashboard/tools/$tool")({
@@ -26,56 +26,35 @@ export const Route = createFileRoute("/dashboard/tools/$tool")({
 		return out;
 	},
 	beforeLoad: async ({ context, params }) => {
-		if (!(params.tool in EMBEDDED_TOOL_DEFS)) {
-			throw notFound();
-		}
 		await requireAdvancedRouteAccess(context);
 	},
 	component: EmbeddedToolPage,
 });
 
-function composeToolSrc(base: string, path: string): string {
-	const normalizedBase = String(base ?? "").trim();
-	if (!normalizedBase) return "";
-	const normalizedPath = String(path ?? "").trim();
-	if (!normalizedPath || !normalizedPath.startsWith("/")) return normalizedBase;
-	try {
-		const baseURL = new URL(normalizedBase, window.location.origin);
-		const next = new URL(normalizedPath, baseURL);
-		if (/^https?:\/\//i.test(normalizedBase)) return next.toString();
-		return `${next.pathname}${next.search}${next.hash}`;
-	} catch {
-		return normalizedBase;
-	}
-}
-
 function EmbeddedToolPage() {
 	const { tool } = Route.useParams();
 	const { path } = Route.useSearch();
-	const toolDef = EMBEDDED_TOOL_DEFS[tool as EmbeddedToolId];
 	const [frameKey, setFrameKey] = useState(0);
 	const [loaded, setLoaded] = useState(false);
 	const [loadTimedOut, setLoadTimedOut] = useState(false);
-	const uiConfigQ = useQuery({
-		queryKey: queryKeys.uiConfig(),
-		queryFn: getUIConfig,
+	const toolCatalogQ = useQuery({
+		queryKey: queryKeys.toolCatalog(),
+		queryFn: getToolCatalog,
 		retry: false,
-		staleTime: 10_000,
+		staleTime: 5 * 60_000,
 	});
+	const toolDef = useMemo(
+		() => indexToolLaunches(toolCatalogQ.data?.tools)[tool],
+		[tool, toolCatalogQ.data?.tools],
+	);
 
-	const enabled = useMemo(() => {
-		if (!toolDef.featureFlag) return true;
-		return uiConfigQ.data?.features?.[toolDef.featureFlag] === true;
-	}, [toolDef.featureFlag, uiConfigQ.data?.features]);
+	const enabled = Boolean(toolDef);
 
 	const src = useMemo(() => {
-		if (!uiConfigQ.data) return "";
-		const resolved = toolDef.resolveUrl(uiConfigQ.data, { path: path ?? "" });
-		if (toolDef.pathStrategy === "resolve") {
-			return resolved;
-		}
-		return composeToolSrc(resolved, path ?? "");
-	}, [path, toolDef, uiConfigQ.data]);
+		const resolved = String(toolDef?.contentUrl ?? "").trim();
+		if (!resolved) return "";
+		return composeToolContentUrl(resolved, path ?? "");
+	}, [path, toolDef?.contentUrl]);
 
 	useEffect(() => {
 		setLoaded(false);
@@ -88,26 +67,36 @@ function EmbeddedToolPage() {
 		return () => window.clearTimeout(timer);
 	}, [loaded, frameKey, src]);
 
-	if (!toolDef) {
-		return null;
-	}
-
-	if (uiConfigQ.isLoading) {
+	if (toolCatalogQ.isLoading) {
 		return (
 			<div className="p-6 text-sm text-muted-foreground">Loading tool...</div>
 		);
 	}
 
-	if (!enabled) {
+	if (!enabled || !toolDef) {
+		throw notFound();
+	}
+
+	if (String(toolDef.launchMode ?? "").trim() === "new_tab") {
 		return (
 			<div className="p-6">
 				<Card>
 					<CardHeader>
 						<CardTitle>{toolDef.title}</CardTitle>
-						<CardDescription>
-							This tool is disabled in the current environment.
-						</CardDescription>
+						<CardDescription>This tool opens in a new tab.</CardDescription>
 					</CardHeader>
+					<CardContent>
+						<Button asChild size="sm">
+							<a
+								href={toolDef.navigationHref}
+								target="_blank"
+								rel="noreferrer noopener"
+							>
+								<ExternalLink className="mr-2 h-4 w-4" />
+								Open in new tab
+							</a>
+						</Button>
+					</CardContent>
 				</Card>
 			</div>
 		);

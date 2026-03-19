@@ -11,6 +11,7 @@ import {
 	runDeploymentActionWithRetry,
 } from "../lib/deployment-actions";
 import { queryKeys } from "../lib/query-keys";
+import { buildForwardSessionHref } from "../lib/tool-launches";
 import {
 	deploymentForwardNetworkId,
 	resolveLifetimeSelection,
@@ -201,7 +202,7 @@ export function useDeploymentsPageActions(args: {
 				return;
 			}
 			const nextPath = `/search?networkId=${encodeURIComponent(forwardNetworkID)}`;
-			const url = `/api/forward/session?next=${encodeURIComponent(nextPath)}`;
+			const url = buildForwardSessionHref(nextPath);
 			const popup = window.open(url, "_blank", "noopener,noreferrer");
 			if (!popup) {
 				toast.error("Pop-up blocked", {
