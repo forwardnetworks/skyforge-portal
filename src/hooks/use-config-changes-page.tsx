@@ -1,25 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { defaultConfigChangeSpecJson } from "../components/config-changes-shared";
 import {
+	type ConfigChangeRunRecord,
 	approveAdminConfigChangeRun,
 	createCurrentConfigChangeRun,
 	executeAdminConfigChangeRun,
-	rollbackAdminConfigChangeRun,
 	getAdminConfigChangeRunLifecycle,
 	getAdminConfigChangeRunReview,
-	listAdminConfigChangeRuns,
 	getCurrentConfigChangeRunLifecycle,
 	getCurrentConfigChangeRunReview,
 	getSession,
+	listAdminConfigChangeRuns,
 	listCurrentConfigChangeRuns,
 	rejectAdminConfigChangeRun,
 	renderCurrentConfigChangeRun,
-	type ConfigChangeRunRecord,
+	rollbackAdminConfigChangeRun,
 } from "../lib/api-client";
-import {
-	defaultConfigChangeSpecJson,
-} from "../components/config-changes-shared";
 import { reviewExecutionBackendFromJSON } from "../lib/config-change-review";
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
@@ -87,7 +85,9 @@ export function useConfigChangesPage() {
 	const [executionMode, setExecutionMode] = useState("dry-run");
 	const [summary, setSummary] = useState("");
 	const [ticketRef, setTicketRef] = useState("");
-	const [specJson, setSpecJson] = useState(defaultConfigChangeSpecJson("change-plan"));
+	const [specJson, setSpecJson] = useState(
+		defaultConfigChangeSpecJson("change-plan"),
+	);
 
 	useEffect(() => {
 		setSpecJson(defaultConfigChangeSpecJson(sourceKind));
@@ -109,7 +109,9 @@ export function useConfigChangesPage() {
 			toast.success("Config change run created");
 			setSelectedRunId(run.id);
 			await qc.invalidateQueries({ queryKey: queryKeys.configChangeRuns() });
-			await qc.invalidateQueries({ queryKey: queryKeys.configChangeRun(run.id) });
+			await qc.invalidateQueries({
+				queryKey: queryKeys.configChangeRun(run.id),
+			});
 		},
 		onError: (error) =>
 			toast.error("Failed to create config change run", {
@@ -123,7 +125,9 @@ export function useConfigChangesPage() {
 			toast.success("Rendered config change review");
 			await Promise.all([
 				qc.invalidateQueries({ queryKey: queryKeys.configChangeRuns() }),
-				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunReview(run.id) }),
+				qc.invalidateQueries({
+					queryKey: queryKeys.configChangeRunReview(run.id),
+				}),
 				qc.invalidateQueries({
 					queryKey: queryKeys.configChangeRunLifecycle(run.id),
 				}),
@@ -141,7 +145,9 @@ export function useConfigChangesPage() {
 			toast.success("Approved change run");
 			await Promise.all([
 				qc.invalidateQueries({ queryKey: queryKeys.configChangeRuns() }),
-				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunLifecycle(run.id) }),
+				qc.invalidateQueries({
+					queryKey: queryKeys.configChangeRunLifecycle(run.id),
+				}),
 			]);
 		},
 		onError: (error) =>
@@ -156,7 +162,9 @@ export function useConfigChangesPage() {
 			toast.success("Rejected change run");
 			await Promise.all([
 				qc.invalidateQueries({ queryKey: queryKeys.configChangeRuns() }),
-				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunLifecycle(run.id) }),
+				qc.invalidateQueries({
+					queryKey: queryKeys.configChangeRunLifecycle(run.id),
+				}),
 			]);
 		},
 		onError: (error) =>
@@ -171,8 +179,12 @@ export function useConfigChangesPage() {
 			toast.success("Queued change run for execution");
 			await Promise.all([
 				qc.invalidateQueries({ queryKey: queryKeys.configChangeRuns() }),
-				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunLifecycle(run.id) }),
-				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunReview(run.id) }),
+				qc.invalidateQueries({
+					queryKey: queryKeys.configChangeRunLifecycle(run.id),
+				}),
+				qc.invalidateQueries({
+					queryKey: queryKeys.configChangeRunReview(run.id),
+				}),
 			]);
 		},
 		onError: (error) =>
@@ -187,8 +199,12 @@ export function useConfigChangesPage() {
 			toast.success("Queued change run rollback");
 			await Promise.all([
 				qc.invalidateQueries({ queryKey: queryKeys.configChangeRuns() }),
-				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunLifecycle(run.id) }),
-				qc.invalidateQueries({ queryKey: queryKeys.configChangeRunReview(run.id) }),
+				qc.invalidateQueries({
+					queryKey: queryKeys.configChangeRunLifecycle(run.id),
+				}),
+				qc.invalidateQueries({
+					queryKey: queryKeys.configChangeRunReview(run.id),
+				}),
 			]);
 		},
 		onError: (error) =>
@@ -229,7 +245,7 @@ export function useConfigChangesPage() {
 		rejectMutation,
 		executeMutation,
 		rollbackMutation,
-		canRenderRun: canRenderRun(selectedRun),
+		canRenderRun: canRenderRun(selectedRun, sessionQ.data?.username),
 		canApproveRun: canApproveRun(selectedRun),
 		canRejectRun: canRejectRun(selectedRun),
 		canExecuteRun: canExecuteRun(selectedRun),
@@ -238,21 +254,45 @@ export function useConfigChangesPage() {
 	};
 }
 
-function canRenderRun(run: ConfigChangeRunRecord | null): boolean {
+function canRenderRun(
+	run: ConfigChangeRunRecord | null,
+	currentUsername?: string | null,
+): boolean {
 	if (!run) return false;
-	const status = String(run.status || "").trim().toLowerCase();
+	if (!currentUserOwnsRun(run, currentUsername)) return false;
+	const status = String(run.status || "")
+		.trim()
+		.toLowerCase();
 	return status === "requested" || status === "validating";
+}
+
+function currentUserOwnsRun(
+	run: ConfigChangeRunRecord,
+	currentUsername?: string | null,
+): boolean {
+	const current = String(currentUsername || "")
+		.trim()
+		.toLowerCase();
+	const owner = String(run.username || "")
+		.trim()
+		.toLowerCase();
+	if (!current || !owner) return false;
+	return current === owner;
 }
 
 function canApproveRun(run: ConfigChangeRunRecord | null): boolean {
 	if (!run) return false;
-	const status = String(run.status || "").trim().toLowerCase();
+	const status = String(run.status || "")
+		.trim()
+		.toLowerCase();
 	return status === "awaiting-approval" || status === "rendered";
 }
 
 function canRejectRun(run: ConfigChangeRunRecord | null): boolean {
 	if (!run) return false;
-	const status = String(run.status || "").trim().toLowerCase();
+	const status = String(run.status || "")
+		.trim()
+		.toLowerCase();
 	return (
 		status === "awaiting-approval" ||
 		status === "rendered" ||
@@ -262,14 +302,22 @@ function canRejectRun(run: ConfigChangeRunRecord | null): boolean {
 
 function canExecuteRun(run: ConfigChangeRunRecord | null): boolean {
 	if (!run) return false;
-	const targetType = String(run.targetType || "").trim().toLowerCase();
-	const sourceKind = String(run.sourceKind || "").trim().toLowerCase();
+	const targetType = String(run.targetType || "")
+		.trim()
+		.toLowerCase();
+	const sourceKind = String(run.sourceKind || "")
+		.trim()
+		.toLowerCase();
 	if (targetType !== "deployment") return false;
 	if (sourceKind !== "change-plan") {
 		return false;
 	}
-	const status = String(run.status || "").trim().toLowerCase();
-	const mode = String(run.executionMode || "").trim().toLowerCase();
+	const status = String(run.status || "")
+		.trim()
+		.toLowerCase();
+	const mode = String(run.executionMode || "")
+		.trim()
+		.toLowerCase();
 	if (mode === "dry-run") {
 		return status === "rendered" || status === "approved";
 	}
@@ -282,14 +330,26 @@ function canRollbackRun(run: ConfigChangeRunRecord | null): boolean {
 
 function rollbackBlockedReason(run: ConfigChangeRunRecord | null): string {
 	if (!run) return "No run selected.";
-	const targetType = String(run.targetType || "").trim().toLowerCase();
-	const sourceKind = String(run.sourceKind || "").trim().toLowerCase();
-	if (targetType !== "deployment") return "Rollback is only available for deployment targets.";
+	const targetType = String(run.targetType || "")
+		.trim()
+		.toLowerCase();
+	const sourceKind = String(run.sourceKind || "")
+		.trim()
+		.toLowerCase();
+	if (targetType !== "deployment")
+		return "Rollback is only available for deployment targets.";
 	if (sourceKind !== "change-plan") {
 		return "Rollback is only available for change-plan runs.";
 	}
-	const status = String(run.status || "").trim().toLowerCase();
-	if (status === "queued" || status === "applying" || status === "verifying" || status === "rolled-back") {
+	const status = String(run.status || "")
+		.trim()
+		.toLowerCase();
+	if (
+		status === "queued" ||
+		status === "applying" ||
+		status === "verifying" ||
+		status === "rolled-back"
+	) {
 		return `Rollback is not available while run status is ${status}.`;
 	}
 	const executionBackend = resolveExecutionBackend(run);
