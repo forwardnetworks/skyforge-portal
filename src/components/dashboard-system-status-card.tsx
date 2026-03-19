@@ -21,6 +21,7 @@ function healthVariant(status?: string): "secondary" | "destructive" | "outline"
 export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 	const { page } = props;
 	const statusSummary = page.statusSummary;
+	const managedIntegrations = page.managedIntegrations?.integrations ?? [];
 	const observability = page.observabilitySummary;
 
 	return (
@@ -78,6 +79,31 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 				</div>
 
 				<StatusCheckGrid checks={statusSummary?.checks ?? []} compact />
+
+				{managedIntegrations.length > 0 ? (
+					<div className="space-y-3">
+						<div className="flex items-center justify-between gap-3">
+							<div>
+								<div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+									Managed integrations
+								</div>
+								<div className="text-sm text-muted-foreground">
+									Subordinate tools that can scale to zero or remain stopped until
+									requested.
+								</div>
+							</div>
+						</div>
+						<StatusCheckGrid
+							checks={managedIntegrations.map((integration) => ({
+								name: integration.label || integration.id,
+								status: integration.status,
+								detail: integration.detail,
+							}))}
+							compact
+							categoryLabel="Managed integration"
+						/>
+					</div>
+				) : null}
 
 				{observability ? (
 					<div className="grid gap-3 lg:grid-cols-2">
@@ -155,4 +181,3 @@ export function DashboardSystemStatusCard(props: { page: DashboardPageState }) {
 		</Card>
 	);
 }
-

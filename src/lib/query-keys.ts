@@ -4,6 +4,7 @@ export const queryKeys = {
 	deploymentLifetimePolicy: () => ["deploymentLifetimePolicy"] as const,
 	dashboardSnapshot: () => ["dashboardSnapshot"] as const,
 	statusSummary: () => ["statusSummary"] as const,
+	managedIntegrationsStatus: () => ["managedIntegrationsStatus"] as const,
 	runLogs: (runId: string) => ["runLogs", runId] as const,
 	runLifecycle: (runId: string) => ["runLifecycle", runId] as const,
 	deploymentTopology: (userId: string, deploymentId: string) =>
@@ -174,6 +175,8 @@ export const queryKeys = {
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
 	adminServiceNowGlobalConfig: () => ["adminServiceNowGlobalConfig"] as const,
 	adminTeamsGlobalConfig: () => ["adminTeamsGlobalConfig"] as const,
+	adminForwardSupportCredential: () =>
+		["adminForwardSupportCredential"] as const,
 	adminPlatformOverview: () => ["adminPlatformOverview"] as const,
 	adminPlatformRuntimePolicy: () => ["adminPlatformRuntimePolicy"] as const,
 	adminPlatformReservations: () => ["adminPlatformReservations"] as const,

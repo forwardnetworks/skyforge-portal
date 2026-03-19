@@ -17,6 +17,7 @@ export function RunDetailPageContent(props: {
 	const {
 		canCancel,
 		deployFailureCategories,
+		deployTimeline,
 		handleCancel,
 		handleClear,
 		handleLogin,
@@ -192,6 +193,71 @@ export function RunDetailPageContent(props: {
 									</tbody>
 								</table>
 							</div>
+						</div>
+					)}
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Bring-up timeline</CardTitle>
+					<CardDescription>
+						Phase checkpoints emitted directly by the KNE deploy engine.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+						<Meta
+							label="Latest checkpoint"
+							value={
+								deployTimeline.latestElapsedSeconds > 0
+									? `${deployTimeline.latestElapsedSeconds}s`
+									: "—"
+							}
+						/>
+						<Meta
+							label="Checkpoint count"
+							value={String(deployTimeline.phases.length)}
+						/>
+						<Meta
+							label="Failures"
+							value={String(deployFailureCategories.reduce((sum, item) => sum + item.count, 0))}
+						/>
+					</div>
+					{deployTimeline.phases.length === 0 ? (
+						<div className="text-muted-foreground text-sm">
+							Waiting for deploy phase events…
+						</div>
+					) : (
+						<div className="space-y-2">
+							{deployTimeline.phases.map((phase, index) => (
+								<div
+									key={`${phase.phase}-${phase.time}-${index}`}
+									className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
+								>
+									<div className="space-y-1">
+										<div className="flex items-center gap-2">
+											<Badge
+												variant={
+													phase.status === "failure" ? "destructive" : "outline"
+												}
+											>
+												{phase.status === "failure" ? "failure" : "phase"}
+											</Badge>
+											<span className="font-medium text-sm">{phase.phase}</span>
+										</div>
+										<div className="text-muted-foreground text-xs">
+											{phase.detail}
+										</div>
+									</div>
+									<div className="text-right text-sm">
+										<div className="font-medium">
+											{phase.elapsedSeconds > 0 ? `${phase.elapsedSeconds}s` : "—"}
+										</div>
+										<div className="text-muted-foreground text-xs">{phase.time}</div>
+									</div>
+								</div>
+							))}
 						</div>
 					)}
 				</CardContent>

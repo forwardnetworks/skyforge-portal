@@ -21,7 +21,15 @@ export type StatusCheckView = {
 
 function toneForStatus(status?: string): "healthy" | "degraded" {
 	const value = String(status ?? "").trim().toLowerCase();
-	if (value === "up" || value === "ok" || value === "ready") return "healthy";
+	if (
+		value === "up" ||
+		value === "ok" ||
+		value === "ready" ||
+		value === "standby" ||
+		value === "starting"
+	) {
+		return "healthy";
+	}
 	return "degraded";
 }
 
@@ -67,6 +75,7 @@ function titleizeCheck(name: string): string {
 export function StatusCheckGrid(props: {
 	checks: StatusCheckView[];
 	compact?: boolean;
+	categoryLabel?: string;
 }) {
 	if (props.checks.length === 0) {
 		return (
@@ -110,7 +119,7 @@ export function StatusCheckGrid(props: {
 								</div>
 								<div>
 									<div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-										Core service
+										{props.categoryLabel ?? "Core service"}
 									</div>
 									<div className="font-medium capitalize">
 										{titleizeCheck(check.name)}
@@ -130,4 +139,3 @@ export function StatusCheckGrid(props: {
 		</div>
 	);
 }
-

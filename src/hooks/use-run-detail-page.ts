@@ -64,6 +64,10 @@ export function useRunDetailPage(args: { runId: string }) {
 		() => summarizeKneDeployFailures(lifecycleEntries),
 		[lifecycleEntries],
 	);
+	const deployTimeline = useMemo(
+		() => summarizeKneDeployTimeline(lifecycleEntries),
+		[lifecycleEntries],
+	);
 	const nodeSample = provenance.nodeResolutionSample.slice(0, 10);
 
 	const loginHref = buildLoginUrl(
@@ -130,6 +134,7 @@ export function useRunDetailPage(args: { runId: string }) {
 	return {
 		canCancel,
 		deployFailureCategories,
+		deployTimeline,
 		handleCancel,
 		handleClear,
 		handleLogin,
@@ -167,6 +172,17 @@ export type RunProvenance = {
 		device: string;
 		source: string;
 		resolved: boolean;
+	}>;
+};
+
+export type KneDeployTimelineSummary = {
+	latestElapsedSeconds: number;
+	phases: Array<{
+		phase: string;
+		time: string;
+		elapsedSeconds: number;
+		status: "phase" | "failure";
+		detail: string;
 	}>;
 };
 
@@ -231,6 +247,48 @@ function summarizeKneDeployFailures(
 	return Array.from(counts.entries())
 		.map(([category, count]) => ({ category, count }))
 		.sort((left, right) => left.category.localeCompare(right.category));
+}
+
+function summarizeKneDeployTimeline(
+	entries: TaskLifecycleEntry[],
+): KneDeployTimelineSummary {
+	const phases: KneDeployTimelineSummary["phases"] = [];
+
+	for (const entry of entries) {
+		if (entry.type !== "kne.deploy.phase" && entry.type !== "kne.deploy.failure") {
+			continue;
+		}
+		const payload = asRecord(entry.payload);
+		const phase = asString(payload?.phase);
+		if (!phase) continue;
+		const elapsedSeconds = asInt(payload?.elapsedSeconds);
+		const detail =
+			entry.type === "kne.deploy.failure"
+				? asString(payload?.error) || asString(payload?.category) || "failed"
+				: phase;
+		phases.push({
+			phase,
+			time: entry.time,
+			elapsedSeconds,
+			status: entry.type === "kne.deploy.failure" ? "failure" : "phase",
+			detail,
+		});
+	}
+
+	phases.sort((left, right) => {
+		if (left.elapsedSeconds !== right.elapsedSeconds) {
+			return left.elapsedSeconds - right.elapsedSeconds;
+		}
+		return left.time.localeCompare(right.time);
+	});
+
+	return {
+		latestElapsedSeconds: phases.reduce(
+			(maxValue, entry) => Math.max(maxValue, entry.elapsedSeconds),
+			0,
+		),
+		phases,
+	};
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

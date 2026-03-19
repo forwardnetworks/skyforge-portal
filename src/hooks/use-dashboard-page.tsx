@@ -19,6 +19,10 @@ import {
 	getCurrentPlatformReservations,
 	normalizePlatformReservationRecord,
 } from "../lib/api-client-platform";
+import {
+	getManagedIntegrationsStatus,
+	type ManagedIntegrationsStatusResponse,
+} from "../lib/api-client-managed-integrations";
 import { queryKeys } from "../lib/query-keys";
 import { sessionIsAdmin } from "../lib/rbac";
 import { useStatusSummaryEvents } from "../lib/status-events";
@@ -40,6 +44,7 @@ export type DashboardPageState = {
 	isAdmin: boolean;
 	adminOverview: AdminPlatformOverviewResponseWithCapacity | undefined;
 	statusSummary: PublicStatusSummaryResponse | undefined;
+	managedIntegrations: ManagedIntegrationsStatusResponse | undefined;
 	observabilitySummary: UserObservabilitySummaryResponse | undefined;
 	uiExperienceMode: UIExperienceMode;
 };
@@ -94,6 +99,13 @@ export function useDashboardPage(): DashboardPageState {
 		retry: false,
 		enabled: sessionQ.data?.authenticated === true,
 	});
+	const managedIntegrationsQ = useQuery({
+		queryKey: queryKeys.managedIntegrationsStatus(),
+		queryFn: getManagedIntegrationsStatus,
+		staleTime: 30_000,
+		retry: false,
+		enabled: sessionQ.data?.authenticated === true,
+	});
 	const userSettingsQ = useQuery({
 		queryKey: queryKeys.userSettings(),
 		queryFn: getUserSettings,
@@ -128,6 +140,7 @@ export function useDashboardPage(): DashboardPageState {
 		isAdmin,
 		adminOverview: overviewQ.data,
 		statusSummary: statusSummaryQ.data,
+		managedIntegrations: managedIntegrationsQ.data,
 		observabilitySummary: observabilityQ.data,
 		uiExperienceMode: normalizeUIExperienceMode(
 			userSettingsQ.data?.uiExperienceMode,
