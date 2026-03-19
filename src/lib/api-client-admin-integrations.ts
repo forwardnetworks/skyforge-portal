@@ -49,6 +49,14 @@ export type AdminTeamsTestOutgoingResponse = {
 	message?: string;
 };
 
+export type AdminForwardSupportCredentialResponse = {
+	configured: boolean;
+	username?: string;
+	hasPassword: boolean;
+	password?: string;
+	source?: string;
+};
+
 export async function getAdminServiceNowGlobalConfig(): Promise<AdminServiceNowGlobalConfigResponse> {
 	return apiFetch<AdminServiceNowGlobalConfigResponse>(
 		"/api/admin/integrations/servicenow/global-config",
@@ -103,6 +111,22 @@ export async function testAdminTeamsOutgoing(
 		{
 			method: "POST",
 			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function getAdminForwardSupportCredential(): Promise<AdminForwardSupportCredentialResponse> {
+	return apiFetch<AdminForwardSupportCredentialResponse>(
+		"/api/admin/integrations/forward/support-credential",
+	);
+}
+
+export async function revealAdminForwardSupportCredentialPassword(): Promise<AdminForwardSupportCredentialResponse> {
+	return apiFetch<AdminForwardSupportCredentialResponse>(
+		"/api/admin/integrations/forward/support-credential/reveal",
+		{
+			method: "POST",
+			body: "{}",
 		},
 	);
 }

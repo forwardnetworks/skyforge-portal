@@ -107,6 +107,19 @@ export function buildAdminOverviewTabProps(
 		onTeamsTestWebhookURLChange: page.setTeamsTestWebhookURLDraft,
 		onSaveTeamsGlobalConfig: () => page.saveTeamsGlobalConfig.mutate(),
 		onTestTeamsOutgoing: () => page.testTeamsOutgoing.mutate(),
+		adminForwardSupportCredentialLoading:
+			page.adminForwardSupportCredentialQ.isLoading,
+		adminForwardSupportCredentialConfigured:
+			page.adminForwardSupportCredentialQ.data?.configured ?? false,
+		adminForwardSupportUsername:
+			page.adminForwardSupportCredentialQ.data?.username ?? "",
+		adminForwardSupportHasPassword:
+			page.adminForwardSupportCredentialQ.data?.hasPassword ?? false,
+		adminForwardSupportPassword: page.adminForwardSupportPassword,
+		revealAdminForwardSupportCredentialPending:
+			page.revealAdminForwardSupportCredentialMutation.isPending,
+		onRevealAdminForwardSupportCredentialPassword: () =>
+			page.revealAdminForwardSupportCredentialMutation.mutate(),
 	};
 }
 

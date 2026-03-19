@@ -107,6 +107,13 @@ export type AdminOverviewTabProps = {
 	onTeamsTestWebhookURLChange: (value: string) => void;
 	onSaveTeamsGlobalConfig: () => void;
 	onTestTeamsOutgoing: () => void;
+	adminForwardSupportCredentialLoading: boolean;
+	adminForwardSupportCredentialConfigured: boolean;
+	adminForwardSupportUsername: string;
+	adminForwardSupportHasPassword: boolean;
+	adminForwardSupportPassword: string;
+	revealAdminForwardSupportCredentialPending: boolean;
+	onRevealAdminForwardSupportCredentialPassword: () => void;
 };
 
 export type AdminAuditTabProps = {

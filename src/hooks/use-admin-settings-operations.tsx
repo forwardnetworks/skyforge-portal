@@ -6,9 +6,11 @@ import {
 	adminCleanupTenantPods,
 	adminImpersonateStart,
 	adminImpersonateStop,
+	getAdminForwardSupportCredential,
 	getAdminImpersonateStatus,
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
+	revealAdminForwardSupportCredentialPassword,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 
@@ -25,6 +27,32 @@ export function useAdminSettingsOperations({
 		enabled: isAdmin,
 		staleTime: 5_000,
 		retry: false,
+	});
+	const adminForwardSupportCredentialQ = useQuery({
+		queryKey: queryKeys.adminForwardSupportCredential(),
+		queryFn: getAdminForwardSupportCredential,
+		enabled: isAdmin,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const [adminForwardSupportPassword, setAdminForwardSupportPassword] =
+		useState("");
+	const revealAdminForwardSupportCredentialMutation = useMutation({
+		mutationFn: revealAdminForwardSupportCredentialPassword,
+		onSuccess: (resp) => {
+			const password = String(resp.password ?? "").trim();
+			if (!password) {
+				toast.error("Support credential password unavailable");
+				return;
+			}
+			setAdminForwardSupportPassword(password);
+			toast.success("Support credential password revealed");
+		},
+		onError: (e) => {
+			toast.error("Failed to reveal support credential password", {
+				description: (e as Error).message,
+			});
+		},
 	});
 
 	const reconcileQueued = useMutation({
@@ -136,6 +164,10 @@ export function useAdminSettingsOperations({
 
 	return {
 		impersonateStatusQ,
+		adminForwardSupportCredentialQ,
+		adminForwardSupportPassword,
+		setAdminForwardSupportPassword,
+		revealAdminForwardSupportCredentialMutation,
 		reconcileQueued,
 		reconcileRunning,
 		cleanupScopeMode,
