@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ExternalLink, RefreshCw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,12 @@ function EmbeddedToolPage() {
 		queryFn: getManagedIntegrationsStatus,
 		retry: false,
 		staleTime: 30_000,
+		refetchInterval: (query) => {
+			const integrations = query.state.data?.integrations;
+			if (!integrations || integrations.length === 0) return false;
+			const status = integrations.find((integration) => integration.id === tool)?.status;
+			return status === "standby" || status === "starting" ? 3_000 : false;
+		},
 	});
 	const toolDef = useMemo(
 		() => indexToolLaunches(toolCatalogQ.data?.tools)[tool],
@@ -71,6 +77,8 @@ function EmbeddedToolPage() {
 			) ?? null,
 		[managedIntegrationsQ.data?.integrations, tool],
 	);
+	const wakeAction = runtimeStatus?.wakeAction ?? null;
+	const autoWakeRequestedRef = useRef<Record<string, true>>({});
 	const wakeMutation = useMutation({
 		mutationFn: runManagedIntegrationAction,
 		onSuccess: async () => {
@@ -101,6 +109,14 @@ function EmbeddedToolPage() {
 		() => toolAllowsEmbedFallbackToNewTab(toolDef),
 		[toolDef],
 	);
+
+	useEffect(() => {
+		if (!runtimeStatus || runtimeStatus.status !== "standby") return;
+		if (!wakeAction || wakeAction.allowed === false) return;
+		if (autoWakeRequestedRef.current[tool]) return;
+		autoWakeRequestedRef.current[tool] = true;
+		wakeMutation.mutate(wakeAction);
+	}, [runtimeStatus, tool, wakeAction, wakeMutation]);
 
 	useEffect(() => {
 		setLoaded(false);
@@ -177,7 +193,6 @@ function EmbeddedToolPage() {
 		runtimeStatus?.status === "standby" ||
 		runtimeStatus?.status === "starting"
 	) {
-		const wakeAction = runtimeStatus.wakeAction ?? null;
 		const waitingForWake = runtimeStatus.status === "starting";
 		return (
 			<div className="p-6">
@@ -187,7 +202,7 @@ function EmbeddedToolPage() {
 						<CardDescription>
 							{waitingForWake
 								? `${toolDef.title} is starting.`
-								: `${toolDef.title} is in standby until requested.`}
+								: `${toolDef.title} is in standby and is being started automatically.`}
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
