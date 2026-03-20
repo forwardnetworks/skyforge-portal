@@ -56,14 +56,6 @@ function dashboardContentEntries(
 	);
 }
 
-function firstDashboardContentEntry(
-	entries: ToolCatalogContentEntry[],
-	surface: string,
-	mode: string,
-): ToolCatalogContentEntry | null {
-	return dashboardContentEntries(entries, surface, mode)[0] ?? null;
-}
-
 function requireDashboardContentEntry(
 	entries: ToolCatalogContentEntry[],
 	id: string,
@@ -130,10 +122,9 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 		dashboardContent,
 		"dashboard-hero-simple",
 	);
-	const simpleCallout = firstDashboardContentEntry(
+	const simpleCallout = requireDashboardContentEntry(
 		dashboardContent,
-		"callout",
-		"simple",
+		"dashboard-simple-callout-tools",
 	);
 	const simpleSummaryActiveDeployments = requireDashboardContentEntry(
 		dashboardContent,
@@ -336,21 +327,17 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 									{simpleSummaryOpenReservations.description}
 								</div>
 							</div>
-							<div className="rounded-[1.35rem] border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
-								{simpleCallout ? (
-									<>
-										<div className="flex items-center gap-2 font-medium text-white">
-											{dashboardContentIcon(simpleCallout.icon)}
-											{simpleCallout.title}
-										</div>
-										<div className="mt-2 text-sm leading-6 text-slate-300">
-											{simpleCallout.description}
-										</div>
-									</>
-								) : null}
+								<div className="rounded-[1.35rem] border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
+									<div className="flex items-center gap-2 font-medium text-white">
+										{dashboardContentIcon(simpleCallout.icon)}
+										{simpleCallout.title}
+									</div>
+									<div className="mt-2 text-sm leading-6 text-slate-300">
+										{simpleCallout.description}
+									</div>
+								</div>
 							</div>
 						</div>
-					</div>
 				</section>
 
 				<PlatformWarningsCard
