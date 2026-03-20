@@ -66,7 +66,10 @@ vi.mock("./dashboard-shared", () => ({
 	formatCount: (value: number | null | undefined) =>
 		value == null ? "0" : String(value),
 	formatMode: (value: string | null | undefined) => value ?? "",
-	describeOperatingMode: (value: string | null | undefined) => value ?? "",
+	dashboardModeGuidanceEntryID: (value: string | null | undefined) =>
+		value
+			? `dashboard-advanced-posture-mode-${value}`
+			: "dashboard-advanced-posture-mode-unresolved",
 }));
 
 function makePage(overrides: Record<string, unknown> = {}) {
@@ -206,6 +209,23 @@ function makePage(overrides: Record<string, unknown> = {}) {
 				description: "Resolved account mode from the live platform policy.",
 				fallbackValue: "Unreported",
 				order: 45,
+			},
+			{
+				id: "dashboard-advanced-posture-mode-curated-demo",
+				surface: "posture-mode-guidance",
+				mode: "advanced",
+				title: "Mode guidance",
+				description:
+					"Use curated quick deploy templates for repeatable demos and baseline GTM workflows.",
+				order: 46,
+			},
+			{
+				id: "dashboard-advanced-posture-mode-unresolved",
+				surface: "posture-mode-guidance",
+				mode: "advanced",
+				title: "Mode guidance",
+				description: "Platform mode has not been resolved yet.",
+				order: 51,
 			},
 			{
 				id: "dashboard-advanced-posture-status",

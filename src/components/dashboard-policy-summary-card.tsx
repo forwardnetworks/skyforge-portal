@@ -2,7 +2,7 @@ import type { DashboardPageState } from "../hooks/use-dashboard-page";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import {
-	describeOperatingMode,
+	dashboardModeGuidanceEntryID,
 	formatCount,
 	formatMode,
 	QuotaTile,
@@ -14,6 +14,17 @@ export function DashboardPolicySummaryCard(props: { page: DashboardPageState }) 
 	const policy = page.platformAvailability?.policy;
 	const operatingModes = policy?.operatingModes ?? [];
 	const primaryOperatingMode = policy?.primaryOperatingMode;
+	const modeGuidance = policy
+		? page.dashboardContent.find(
+				(entry) =>
+					entry.id === dashboardModeGuidanceEntryID(primaryOperatingMode),
+			)
+		: null;
+	if (policy && !modeGuidance) {
+		throw new Error(
+			`dashboard content entry ${dashboardModeGuidanceEntryID(primaryOperatingMode)} is missing`,
+		);
+	}
 
 	return (
 		<Card>
@@ -43,7 +54,7 @@ export function DashboardPolicySummaryCard(props: { page: DashboardPageState }) 
 									))}
 							</div>
 							<div className="text-sm text-muted-foreground">
-								{describeOperatingMode(primaryOperatingMode)}
+								{modeGuidance?.description}
 							</div>
 						</div>
 						<div className="space-y-2">

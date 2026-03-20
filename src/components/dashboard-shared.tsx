@@ -14,20 +14,20 @@ export function formatMode(value: string | null | undefined): string {
 	return titleize(value);
 }
 
-export function describeOperatingMode(mode: string | undefined): string {
+export function dashboardModeGuidanceEntryID(mode: string | undefined): string {
 	switch (mode) {
 		case "curated-demo":
-			return "Use curated quick deploy templates for repeatable demos and baseline GTM workflows.";
+			return "dashboard-advanced-posture-mode-curated-demo";
 		case "training":
-			return "Use reservations and curated templates to keep training sessions repeatable and schedulable.";
+			return "dashboard-advanced-posture-mode-training";
 		case "sandbox":
-			return "Custom templates and persistent state are available within your quota and reset policy.";
+			return "dashboard-advanced-posture-mode-sandbox";
 		case "persistent-integration":
-			return "Integration workflows and longer-lived sandbox state are enabled for this account.";
+			return "dashboard-advanced-posture-mode-persistent-integration";
 		case "admin-advanced":
-			return "Advanced operational tooling and override paths are enabled for this account.";
+			return "dashboard-advanced-posture-mode-admin-advanced";
 		default:
-			return "Platform mode has not been resolved yet.";
+			return "dashboard-advanced-posture-mode-unresolved";
 	}
 }
 

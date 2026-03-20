@@ -11,7 +11,7 @@ import { DashboardPolicySummaryCard } from "./dashboard-policy-summary-card";
 import { DashboardReservationsCard } from "./dashboard-reservations-card";
 import {
 	MetricCard,
-	describeOperatingMode,
+	dashboardModeGuidanceEntryID,
 	formatCount,
 	formatMode,
 } from "./dashboard-shared";
@@ -170,6 +170,10 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const advancedPosturePrimaryMode = requireDashboardContentEntry(
 		dashboardContent,
 		"dashboard-advanced-posture-primary-mode",
+	);
+	const advancedPostureModeGuidance = requireDashboardContentEntry(
+		dashboardContent,
+		dashboardModeGuidanceEntryID(primaryMode),
 	);
 	const advancedPostureEntries = dashboardContentEntries(
 		dashboardContent,
@@ -529,7 +533,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 											: advancedPosturePrimaryMode.fallbackValue}
 									</div>
 									<div className="mt-1 leading-6 text-slate-300">
-										{describeOperatingMode(primaryMode)}
+										{advancedPostureModeGuidance.description}
 									</div>
 								</div>
 								<div className="grid gap-3 sm:grid-cols-2">
