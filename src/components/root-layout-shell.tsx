@@ -63,11 +63,27 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 									</div>
 								</div>
 								<div className="h-8 w-px bg-border hidden md:block" />
-								<img
-									src="/assets/skyforge/FN-logo.svg"
-									alt="Forward Analytics"
-									className="h-6 w-auto hidden sm:block"
-								/>
+								{page.session.data?.authenticated &&
+								page.forwardClusterNavigationHref ? (
+									<a
+										href={page.forwardClusterNavigationHref}
+										target="_blank"
+										rel="noreferrer noopener"
+										className="hidden sm:block"
+									>
+										<img
+											src="/assets/skyforge/FN-logo.svg"
+											alt="Forward Analytics"
+											className="h-6 w-auto"
+										/>
+									</a>
+								) : (
+									<img
+										src="/assets/skyforge/FN-logo.svg"
+										alt="Forward Analytics"
+										className="h-6 w-auto hidden sm:block"
+									/>
+								)}
 							</div>
 
 							{page.session.data?.authenticated ? (

@@ -12,6 +12,7 @@ import {
 	logout,
 	refreshSession,
 } from "../lib/api-client";
+import { getToolCatalog } from "../lib/api-client-tool-catalog";
 import { loginWithPopup } from "../lib/auth-popup";
 import {
 	type NotificationsSnapshot,
@@ -20,6 +21,7 @@ import {
 import { queryKeys } from "../lib/query-keys";
 import { getSessionExpiryWarning } from "../lib/session-expiry";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
+import { indexToolLaunches } from "../lib/tool-launches";
 import { useUIExperienceMode } from "./use-ui-experience-mode";
 
 export function useRootLayout() {
@@ -65,6 +67,12 @@ export function useRootLayout() {
 	const uiConfig = useQuery({
 		queryKey: queryKeys.uiConfig(),
 		queryFn: getUIConfig,
+		staleTime: 5 * 60_000,
+	});
+	const toolCatalogQ = useQuery({
+		queryKey: queryKeys.toolCatalog(),
+		queryFn: getToolCatalog,
+		retry: false,
 		staleTime: 5 * 60_000,
 	});
 
@@ -125,6 +133,13 @@ export function useRootLayout() {
 	);
 	const showLoginGate =
 		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
+	const forwardClusterNavigationHref = useMemo(() => {
+		const href = String(
+			indexToolLaunches(toolCatalogQ.data?.tools)["forward-cluster"]
+				?.navigationHref ?? "",
+		).trim();
+		return href;
+	}, [toolCatalogQ.data?.tools]);
 
 	useEffect(() => {
 		if (!showLoginGate) return;
@@ -266,6 +281,7 @@ export function useRootLayout() {
 		},
 		productName,
 		productSubtitle,
+		forwardClusterNavigationHref,
 		authMode,
 		authModeReady,
 		breakGlassEnabled,

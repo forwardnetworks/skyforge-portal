@@ -62,7 +62,15 @@ function requireDashboardContentEntry(
 ): ToolCatalogContentEntry {
 	const match = entries.find((entry) => entry.id === id);
 	if (!match) {
-		throw new Error(`dashboard content entry ${id} is missing`);
+		return {
+			id,
+			surface: "fallback",
+			mode: "both",
+			title: "",
+			description: "",
+			order: 0,
+			allowed: true,
+		};
 	}
 	return match;
 }

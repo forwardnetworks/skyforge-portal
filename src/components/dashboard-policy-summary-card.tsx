@@ -20,11 +20,6 @@ export function DashboardPolicySummaryCard(props: { page: DashboardPageState }) 
 					entry.id === dashboardModeGuidanceEntryID(primaryOperatingMode),
 			)
 		: null;
-	if (policy && !modeGuidance) {
-		throw new Error(
-			`dashboard content entry ${dashboardModeGuidanceEntryID(primaryOperatingMode)} is missing`,
-		);
-	}
 
 	return (
 		<Card>

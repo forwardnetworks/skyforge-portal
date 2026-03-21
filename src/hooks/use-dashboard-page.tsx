@@ -130,14 +130,16 @@ export function useDashboardPage(): DashboardPageState {
 		[toolCatalogQ.data?.dashboardContent],
 	);
 	const canAccessPlatformView = useMemo(() => {
+		const routes = toolCatalogQ.data?.routes;
+		if (!routes || routes.length === 0) {
+			return false;
+		}
 		const route = lookupCatalogRouteAccess(
-			indexCatalogRouteAccess(toolCatalogQ.data?.routes),
+			indexCatalogRouteAccess(routes),
 			"/dashboard/platform",
 		);
 		if (!route) {
-			throw new Error(
-				"route /dashboard/platform is missing a catalog route contract",
-			);
+			return false;
 		}
 		return catalogRouteAllowsAccess(route);
 	}, [toolCatalogQ.data?.routes]);

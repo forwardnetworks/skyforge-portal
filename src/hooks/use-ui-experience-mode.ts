@@ -41,6 +41,7 @@ export function useUIExperienceMode(options?: Options) {
 		},
 		onSuccess: (next) => {
 			queryClient.setQueryData(queryKeys.userSettings(), next);
+			void queryClient.invalidateQueries({ queryKey: queryKeys.toolCatalog() });
 		},
 	});
 

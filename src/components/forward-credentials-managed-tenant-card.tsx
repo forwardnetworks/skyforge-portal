@@ -19,9 +19,9 @@ export function ForwardCredentialsManagedTenantCard(props: {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Managed In-Cluster Credential</CardTitle>
+				<CardTitle>Managed In-Cluster Org Credential</CardTitle>
 				<CardDescription>
-					Auto-provisioned tenant credential used for in-cluster Forward
+					Auto-provisioned org credential used for in-cluster Forward
 					flows.
 				</CardDescription>
 			</CardHeader>

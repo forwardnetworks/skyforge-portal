@@ -1,9 +1,11 @@
 import {
 	createUserForwardCollectorConfig,
+	getCurrentUserForwardTenantFeatures,
 	deleteUserForwardCollectorConfig,
 	getCurrentUserForwardTenantCredential,
 	listCurrentUserForwardTenantRebuildRuns,
 	listUserForwardCollectorConfigs,
+	putCurrentUserForwardTenantFeatures,
 	revealCurrentUserForwardTenantCredentialPassword,
 	requestCurrentUserForwardTenantRebuild,
 	resetCurrentUserForwardTenantCredential,
@@ -44,6 +46,7 @@ export function useForwardCredentialsPage() {
 	const queryClient = useQueryClient();
 	const collectorsKey = queryKeys.userForwardCollectorConfigs();
 	const tenantCredentialKey = ["forward", "org-credential"] as const;
+	const tenantFeaturesKey = ["forward", "org-features"] as const;
 	const tenantResetRunsKey = queryKeys.userForwardTenantRebuildRuns();
 
 	const collectorsQ = useQuery({
@@ -60,6 +63,11 @@ export function useForwardCredentialsPage() {
 		queryKey: tenantResetRunsKey,
 		queryFn: listCurrentUserForwardTenantRebuildRuns,
 		staleTime: 5_000,
+	});
+	const tenantFeaturesQ = useQuery({
+		queryKey: tenantFeaturesKey,
+		queryFn: getCurrentUserForwardTenantFeatures,
+		staleTime: 10_000,
 	});
 
 	const [customHost, setCustomHost] = useState("");
@@ -181,10 +189,23 @@ export function useForwardCredentialsPage() {
 			),
 	});
 
+	const saveTenantFeaturesMutation = useMutation({
+		mutationFn: putCurrentUserForwardTenantFeatures,
+		onSuccess: async () => {
+			toast.success("Experimental features saved");
+			await queryClient.invalidateQueries({ queryKey: tenantFeaturesKey });
+		},
+		onError: (err) =>
+			toast.error("Failed to save experimental features", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
 	return {
 		collectorsQ,
 		tenantCredentialQ,
 		tenantResetRunsQ,
+		tenantFeaturesQ,
 		customHost,
 		setCustomHost,
 		skipTlsVerify,
@@ -205,5 +226,6 @@ export function useForwardCredentialsPage() {
 		resetTenantCredentialMutation,
 		revealTenantCredentialMutation,
 		requestTenantResetMutation,
+		saveTenantFeaturesMutation,
 	};
 }

@@ -82,6 +82,23 @@ export type ForwardTenantCredentialResponse = {
 	source?: string;
 };
 
+export type ForwardTenantFeatureFlags = {
+	inAppAudit: boolean;
+	reorgSystemOverview: boolean;
+	predictModeling: boolean;
+	nqeEspresso: boolean;
+	topoLayoutVersioning: boolean;
+	networkMaps: boolean;
+};
+
+export type ForwardTenantFeaturesResponse = {
+	features: ForwardTenantFeatureFlags;
+};
+
+export type PutCurrentUserForwardTenantFeaturesRequest = {
+	features: ForwardTenantFeatureFlags;
+};
+
 export type RequestCurrentUserForwardTenantRebuildRequest = NonNullable<
 	operations["POST:skyforge.RequestCurrentUserForwardTenantRebuild"]["requestBody"]
 >["content"]["application/json"];
@@ -132,6 +149,19 @@ export async function revealCurrentUserForwardTenantCredentialPassword(): Promis
 		"/api/forward/org-credential/reveal",
 		{ method: "POST", body: "{}" },
 	);
+}
+
+export async function getCurrentUserForwardTenantFeatures(): Promise<ForwardTenantFeaturesResponse> {
+	return apiFetch<ForwardTenantFeaturesResponse>("/api/forward/org-features");
+}
+
+export async function putCurrentUserForwardTenantFeatures(
+	body: PutCurrentUserForwardTenantFeaturesRequest,
+): Promise<ForwardTenantFeaturesResponse> {
+	return apiFetch<ForwardTenantFeaturesResponse>("/api/forward/org-features", {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
 }
 
 export async function requestCurrentUserForwardTenantRebuild(

@@ -22,7 +22,7 @@ export function ForwardTenantRebuildCard(props: {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Managed Tenant Rebuild</CardTitle>
+				<CardTitle>Managed Org Rebuild</CardTitle>
 				<CardDescription>
 					Re-sync or fully rebuild the managed in-cluster Forward org when
 					provisioning drifts.
@@ -55,7 +55,7 @@ export function ForwardTenantRebuildCard(props: {
 					<div className="font-medium text-destructive">Hard rebuild impact</div>
 					<div className="mt-1 text-muted-foreground">
 						This deletes the managed Forward org state and reprovisions it
-						from the Skyforge baseline. Use soft resync first unless the tenant
+						from the Skyforge baseline. Use soft resync first unless the org
 						is clearly broken.
 					</div>
 					<div className="mt-3 flex items-center gap-2">
@@ -66,7 +66,7 @@ export function ForwardTenantRebuildCard(props: {
 							}
 						/>
 						<Label className="text-sm">
-							I understand this rebuild replaces the current managed tenant.
+							I understand this rebuild replaces the current managed org.
 						</Label>
 					</div>
 				</div>
@@ -78,12 +78,12 @@ export function ForwardTenantRebuildCard(props: {
 				) : null}
 				{page.tenantResetRunsQ.isError ? (
 					<div className="text-sm text-destructive">
-						Failed to load managed tenant rebuild runs.
+						Failed to load managed org rebuild runs.
 					</div>
 				) : null}
 				{!page.tenantResetRunsQ.isLoading && (tenantResetRuns?.length ?? 0) === 0 ? (
 					<div className="text-sm text-muted-foreground">
-						No managed tenant rebuild runs yet.
+						No managed org rebuild runs yet.
 					</div>
 				) : null}
 				<div className="space-y-3">
