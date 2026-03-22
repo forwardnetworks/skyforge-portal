@@ -6,7 +6,6 @@ import { USER_REPO_SOURCE } from "./create-deployment-shared";
 
 export const fallbackNetlabDeviceOptions = [
 	"asav",
-	"cumulus",
 	"eos",
 	"fortios",
 	"iol",
