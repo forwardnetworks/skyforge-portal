@@ -91,9 +91,6 @@ export function useDeploymentDetailData(args: {
 	const primaryAction = deployment
 		? resolveDeploymentPrimaryAction(deployment)
 		: "none";
-	const forwardNetworkID = String(
-		(deployment?.config ?? {})["forwardNetworkId"] ?? "",
-	).trim();
 
 	const runsForDeployment = useMemo(() => {
 		if (!deployment) return [];
@@ -129,6 +126,11 @@ export function useDeploymentDetailData(args: {
 		staleTime: 30_000,
 		refetchOnWindowFocus: false,
 	});
+	const forwardNetworkID = String(
+		deploymentInfoQ.data?.forwardNetworkId ??
+			(deployment?.config ?? {})["forwardNetworkId"] ??
+			"",
+	).trim();
 
 	const resourceEstimateQ = useQuery<DeploymentResourceEstimateResponse>({
 		queryKey: ["deployment-resource-estimate", userId, deploymentId],

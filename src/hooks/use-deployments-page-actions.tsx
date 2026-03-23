@@ -3,7 +3,11 @@ import type { useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import type { UserScopeDeployment } from "../lib/api-client";
-import { deleteDeployment, updateDeploymentLease } from "../lib/api-client";
+import {
+	deleteDeployment,
+	getDeploymentInfo,
+	updateDeploymentLease,
+} from "../lib/api-client";
 import { loginWithPopup } from "../lib/auth-popup";
 import {
 	deploymentActionQueueDescription,
@@ -195,8 +199,16 @@ export function useDeploymentsPageActions(args: {
 	}, [authMode, invalidateDashboardSnapshot, loginHref, queryClient]);
 
 	const openDeploymentInForward = useCallback(
-		(deployment: UserScopeDeployment) => {
-			const forwardNetworkID = deploymentForwardNetworkId(deployment);
+		async (deployment: UserScopeDeployment) => {
+			let forwardNetworkID = deploymentForwardNetworkId(deployment);
+			if (!forwardNetworkID) {
+				try {
+					const info = await getDeploymentInfo(deployment.userId, deployment.id);
+					forwardNetworkID = String(info.forwardNetworkId ?? "").trim();
+				} catch {
+					// If lookup fails, keep the primary message below.
+				}
+			}
 			if (!forwardNetworkID) {
 				toast.message("Forward network is not available yet");
 				return;

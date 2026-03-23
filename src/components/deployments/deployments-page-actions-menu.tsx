@@ -18,7 +18,6 @@ export function DeploymentsPageActionsMenu({
 	deployment: UserScopeDeployment;
 	state: Pick<
 		DeploymentsPageState,
-		| "deploymentForwardNetworkId"
 		| "isManagedDeploymentType"
 		| "openDeploymentInForward"
 		| "pendingActions"
@@ -34,7 +33,6 @@ export function DeploymentsPageActionsMenu({
 	const primaryAction = state.resolveDeploymentPrimaryAction(deployment);
 	const canBringUp = primaryAction === "bring_up";
 	const canShutDown = primaryAction === "shut_down";
-	const forwardNetworkId = state.deploymentForwardNetworkId(deployment);
 	const isBusy =
 		Boolean(deployment.activeTaskId) || Boolean(state.pendingActions[deployment.id]);
 	const managedByLifetime = state.isManagedDeploymentType(deployment.family);
@@ -62,7 +60,7 @@ export function DeploymentsPageActionsMenu({
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => state.openDeploymentInForward(deployment)}
-					disabled={!forwardNetworkId}
+					disabled={false}
 				>
 					<ExternalLink className="mr-2 h-4 w-4" />
 					Open in Forward
