@@ -83,8 +83,6 @@ export type ForwardTenantCredentialResponse = {
 };
 
 export type ForwardTenantFeatureFlags = {
-	inAppAudit: boolean;
-	reorgSystemOverview: boolean;
 	predictModeling: boolean;
 	nqeEspresso: boolean;
 	topoLayoutVersioning: boolean;

@@ -15,8 +15,6 @@ type ForwardCredentialsPageState = ReturnType<typeof useForwardCredentialsPage>;
 
 type FeatureToggleField = {
 	key:
-		| "inAppAudit"
-		| "reorgSystemOverview"
 		| "predictModeling"
 		| "nqeEspresso"
 		| "topoLayoutVersioning"
@@ -26,16 +24,6 @@ type FeatureToggleField = {
 };
 
 const FEATURE_FIELDS: FeatureToggleField[] = [
-	{
-		key: "inAppAudit",
-		label: "In-app audit",
-		description: "Enable experimental in-app audit workflows.",
-	},
-	{
-		key: "reorgSystemOverview",
-		label: "System overview",
-		description: "Enable reorganized system overview surfaces.",
-	},
 	{
 		key: "predictModeling",
 		label: "Predict modeling",
@@ -64,8 +52,6 @@ export function ForwardTenantFeaturesCard(props: {
 	const { page } = props;
 	const [draft, setDraft] = useState(
 		page.tenantFeaturesQ.data?.features ?? {
-			inAppAudit: true,
-			reorgSystemOverview: true,
 			predictModeling: true,
 			nqeEspresso: true,
 			topoLayoutVersioning: true,
