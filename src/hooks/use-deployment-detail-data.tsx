@@ -127,9 +127,7 @@ export function useDeploymentDetailData(args: {
 		refetchOnWindowFocus: false,
 	});
 	const forwardNetworkID = String(
-		deploymentInfoQ.data?.forwardNetworkId ??
-			(deployment?.config ?? {})["forwardNetworkId"] ??
-			"",
+		deploymentInfoQ.data?.forwardNetworkId ?? "",
 	).trim();
 
 	const resourceEstimateQ = useQuery<DeploymentResourceEstimateResponse>({

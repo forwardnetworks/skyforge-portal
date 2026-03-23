@@ -17,6 +17,7 @@ type FeatureToggleField = {
 	key:
 		| "predictModeling"
 		| "nqeEspresso"
+		| "nqeSecurityRulesPanos"
 		| "topoLayoutVersioning"
 		| "networkMaps";
 	label: string;
@@ -33,6 +34,11 @@ const FEATURE_FIELDS: FeatureToggleField[] = [
 		key: "nqeEspresso",
 		label: "NQE Espresso",
 		description: "Enable NQE Espresso execution paths.",
+	},
+	{
+		key: "nqeSecurityRulesPanos",
+		label: "NQE security rules PAN-OS",
+		description: "Enable PAN-OS security rules support in NQE.",
 	},
 	{
 		key: "topoLayoutVersioning",
@@ -54,6 +60,7 @@ export function ForwardTenantFeaturesCard(props: {
 		page.tenantFeaturesQ.data?.features ?? {
 			predictModeling: true,
 			nqeEspresso: true,
+			nqeSecurityRulesPanos: true,
 			topoLayoutVersioning: true,
 			networkMaps: true,
 		},

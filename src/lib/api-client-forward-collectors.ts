@@ -85,6 +85,7 @@ export type ForwardTenantCredentialResponse = {
 export type ForwardTenantFeatureFlags = {
 	predictModeling: boolean;
 	nqeEspresso: boolean;
+	nqeSecurityRulesPanos: boolean;
 	topoLayoutVersioning: boolean;
 	networkMaps: boolean;
 };

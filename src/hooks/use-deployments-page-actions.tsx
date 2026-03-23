@@ -16,10 +16,7 @@ import {
 } from "../lib/deployment-actions";
 import { queryKeys } from "../lib/query-keys";
 import { forwardNetworkSessionHref } from "../lib/tool-launches";
-import {
-	deploymentForwardNetworkId,
-	resolveLifetimeSelection,
-} from "./deployments-page-utils";
+import { resolveLifetimeSelection } from "./deployments-page-utils";
 
 export function useDeploymentsPageActions(args: {
 	allowNoExpiry: boolean;
@@ -200,14 +197,12 @@ export function useDeploymentsPageActions(args: {
 
 	const openDeploymentInForward = useCallback(
 		async (deployment: UserScopeDeployment) => {
-			let forwardNetworkID = deploymentForwardNetworkId(deployment);
-			if (!forwardNetworkID) {
-				try {
-					const info = await getDeploymentInfo(deployment.userId, deployment.id);
-					forwardNetworkID = String(info.forwardNetworkId ?? "").trim();
-				} catch {
-					// If lookup fails, keep the primary message below.
-				}
+			let forwardNetworkID = "";
+			try {
+				const info = await getDeploymentInfo(deployment.userId, deployment.id);
+				forwardNetworkID = String(info.forwardNetworkId ?? "").trim();
+			} catch {
+				// If lookup fails, keep the primary message below.
 			}
 			if (!forwardNetworkID) {
 				toast.message("Forward network is not available yet");

@@ -29,6 +29,7 @@ export function DeploymentDetailHeader({
 		actionPending,
 	} = page;
 	if (!deployment) return null;
+	const forwardOpenHref = forwardNetworkSessionHref(forwardNetworkID);
 	return (
 		<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 			<div className="flex items-center gap-3">
@@ -73,16 +74,19 @@ export function DeploymentDetailHeader({
 				<Button
 					variant="outline"
 					size="sm"
-					disabled={!forwardNetworkID}
+					disabled={!forwardOpenHref}
 					title={
-						forwardNetworkID
+						forwardOpenHref
 							? "Open this deployment network in Forward"
 							: "Forward network is not available yet"
 					}
 					onClick={() => {
-						if (!forwardNetworkID) return;
-						const url = forwardNetworkSessionHref(forwardNetworkID);
-						const popup = window.open(url, "_blank", "noopener,noreferrer");
+						if (!forwardOpenHref) return;
+						const popup = window.open(
+							forwardOpenHref,
+							"_blank",
+							"noopener,noreferrer",
+						);
 						if (!popup) {
 							toast.error("Pop-up blocked", {
 								description:
