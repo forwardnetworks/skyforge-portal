@@ -7,7 +7,6 @@ export type UserServiceNowConfigResponse = {
 	instanceUrl?: string;
 	adminUsername?: string;
 	hasAdminPassword: boolean;
-	forwardCredentialSetId?: string;
 	tenantUsername?: string;
 	tenantProvisioned: boolean;
 	updatedAt?: ISO8601;
@@ -17,9 +16,7 @@ export type UserServiceNowConfigResponse = {
 	lastInstallFinishedAt?: ISO8601;
 };
 
-export type PutUserServiceNowConfigRequest = {
-	forwardCredentialSetId?: string;
-};
+export type PutUserServiceNowConfigRequest = Record<string, never>;
 
 export type RotateUserServiceNowTenantResponse = {
 	config?: UserServiceNowConfigResponse;

@@ -25,10 +25,6 @@ export function useAdminSettingsAuthServiceNow({
 		useState("");
 	const [serviceNowAdminPasswordDraft, setServiceNowAdminPasswordDraft] =
 		useState("");
-	const [
-		serviceNowBootstrapCredentialSetDraft,
-		setServiceNowBootstrapCredentialSetDraft,
-	] = useState("");
 
 	useEffect(() => {
 		if (!serviceNowGlobalConfig) return;
@@ -39,22 +35,13 @@ export function useAdminSettingsAuthServiceNow({
 			String(serviceNowGlobalConfig.adminUsername ?? ""),
 		);
 		setServiceNowAdminPasswordDraft("");
-		setServiceNowBootstrapCredentialSetDraft(
-			String(serviceNowGlobalConfig.bootstrapCredentialSet ?? ""),
-		);
-	}, [
-		serviceNowGlobalConfig?.instanceUrl,
-		serviceNowGlobalConfig?.adminUsername,
-		serviceNowGlobalConfig?.bootstrapCredentialSet,
-	]);
+	}, [serviceNowGlobalConfig?.instanceUrl, serviceNowGlobalConfig?.adminUsername]);
 
 	const saveServiceNowGlobalConfig = useMutation({
 		mutationFn: async () => {
 			const instanceUrl = serviceNowInstanceURLDraft.trim();
 			const adminUsername = serviceNowAdminUsernameDraft.trim();
 			const adminPassword = serviceNowAdminPasswordDraft.trim();
-			const bootstrapCredentialSet =
-				serviceNowBootstrapCredentialSetDraft.trim();
 			if (!instanceUrl) throw new Error("ServiceNow instance URL is required");
 			if (!adminUsername)
 				throw new Error("ServiceNow admin username is required");
@@ -65,7 +52,6 @@ export function useAdminSettingsAuthServiceNow({
 				instanceUrl,
 				adminUsername,
 				adminPassword: adminPassword || undefined,
-				bootstrapCredentialSet,
 			});
 		},
 		onSuccess: async () => {
@@ -89,16 +75,16 @@ export function useAdminSettingsAuthServiceNow({
 		mutationFn: async () => pushAdminServiceNowForwardConfig(),
 		onSuccess: async (resp) => {
 			if (resp.configured) {
-				toast.success("Pushed Forward app config into ServiceNow");
+				toast.success("Installed shared ServiceNow app assets");
 			} else {
-				toast.error("ServiceNow push did not complete", {
+				toast.error("ServiceNow shared asset install did not complete", {
 					description: resp.message,
 				});
 			}
 			await refetchServiceNowGlobalConfig();
 		},
 		onError: (e) => {
-			toast.error("Failed to push Forward app config", {
+			toast.error("Failed to install shared ServiceNow app assets", {
 				description: (e as Error).message,
 			});
 		},
@@ -111,8 +97,6 @@ export function useAdminSettingsAuthServiceNow({
 		setServiceNowAdminUsernameDraft,
 		serviceNowAdminPasswordDraft,
 		setServiceNowAdminPasswordDraft,
-		serviceNowBootstrapCredentialSetDraft,
-		setServiceNowBootstrapCredentialSetDraft,
 		saveServiceNowGlobalConfig,
 		pushServiceNowForwardConfig,
 	};

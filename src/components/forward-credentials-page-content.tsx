@@ -3,6 +3,7 @@ import { ForwardCredentialsAddCard } from "./forward-credentials-add-card";
 import { ForwardCredentialsManagedTenantCard } from "./forward-credentials-managed-tenant-card";
 import { ForwardCredentialsSavedCard } from "./forward-credentials-saved-card";
 import { ForwardTenantFeaturesCard } from "./forward-tenant-features-card";
+import { ForwardTenantPerformanceCard } from "./forward-tenant-performance-card";
 import { ForwardTenantRebuildCard } from "./forward-tenant-rebuild-card";
 
 type ForwardCredentialsPageState = ReturnType<typeof useForwardCredentialsPage>;
@@ -26,6 +27,7 @@ export function ForwardCredentialsPageContent(props: {
 
 			<ForwardCredentialsManagedTenantCard page={page} />
 			<ForwardTenantFeaturesCard page={page} />
+			<ForwardTenantPerformanceCard page={page} />
 			<ForwardTenantRebuildCard page={page} />
 			<ForwardCredentialsAddCard page={page} />
 			<ForwardCredentialsSavedCard page={page} />

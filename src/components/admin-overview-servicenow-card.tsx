@@ -16,7 +16,7 @@ export function AdminOverviewServiceNowCard(props: AdminOverviewTabProps) {
 			<CardHeader>
 				<CardTitle>ServiceNow Global Integration</CardTitle>
 				<CardDescription>
-					Global PDI settings and one-time app bootstrap controls.
+					Global PDI settings and shared app installation controls.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -56,16 +56,11 @@ export function AdminOverviewServiceNowCard(props: AdminOverviewTabProps) {
 							}
 						/>
 					</div>
-					<div className="space-y-2">
-						<Label>Bootstrap credential set (admin user)</Label>
-						<Input
-							value={props.serviceNowBootstrapCredentialSetDraft}
-							onChange={(e) =>
-								props.onServiceNowBootstrapCredentialSetChange(e.target.value)
-							}
-							placeholder="collector-config-id"
-						/>
-					</div>
+				</div>
+				<div className="text-xs text-muted-foreground">
+					User-specific Forward bindings are provisioned during each user's
+					ServiceNow setup. Shared asset installation does not use an admin
+					Forward credential set.
 				</div>
 				<div className="text-xs text-muted-foreground">
 					Current status:{" "}
@@ -90,7 +85,7 @@ export function AdminOverviewServiceNowCard(props: AdminOverviewTabProps) {
 							!props.serviceNowGlobalConfig?.configured
 						}
 					>
-						Push Forward app config
+						Install shared app assets
 					</Button>
 				</div>
 			</CardContent>

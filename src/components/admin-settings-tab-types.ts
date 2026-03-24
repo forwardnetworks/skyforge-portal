@@ -82,13 +82,11 @@ export type AdminOverviewTabProps = {
 	serviceNowInstanceURLDraft: string;
 	serviceNowAdminUsernameDraft: string;
 	serviceNowAdminPasswordDraft: string;
-	serviceNowBootstrapCredentialSetDraft: string;
 	saveServiceNowGlobalConfigPending: boolean;
 	pushServiceNowForwardConfigPending: boolean;
 	onServiceNowInstanceURLChange: (value: string) => void;
 	onServiceNowAdminUsernameChange: (value: string) => void;
 	onServiceNowAdminPasswordChange: (value: string) => void;
-	onServiceNowBootstrapCredentialSetChange: (value: string) => void;
 	onSaveServiceNowGlobalConfig: () => void;
 	onPushServiceNowForwardConfig: () => void;
 	teamsGlobalConfig?: AdminTeamsGlobalConfigResponse;

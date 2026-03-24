@@ -1,8 +1,11 @@
 import {
 	createUserForwardCollectorConfig,
+	generateUserScopeForwardNetworkPerformance,
 	getCurrentUserForwardTenantFeatures,
 	deleteUserForwardCollectorConfig,
 	getCurrentUserForwardTenantCredential,
+	listUserScopeForwardPerformanceNetworks,
+	listUserScopes,
 	listCurrentUserForwardTenantRebuildRuns,
 	listUserForwardCollectorConfigs,
 	putCurrentUserForwardTenantFeatures,
@@ -48,6 +51,7 @@ export function useForwardCredentialsPage() {
 	const tenantCredentialKey = ["forward", "org-credential"] as const;
 	const tenantFeaturesKey = ["forward", "org-features"] as const;
 	const tenantResetRunsKey = queryKeys.userForwardTenantRebuildRuns();
+	const userScopesKey = queryKeys.userScopes();
 
 	const collectorsQ = useQuery({
 		queryKey: collectorsKey,
@@ -68,6 +72,25 @@ export function useForwardCredentialsPage() {
 		queryKey: tenantFeaturesKey,
 		queryFn: getCurrentUserForwardTenantFeatures,
 		staleTime: 10_000,
+	});
+	const userScopesQ = useQuery({
+		queryKey: userScopesKey,
+		queryFn: listUserScopes,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const selectedUserScopeId = useMemo(
+		() => String(userScopesQ.data?.[0]?.id ?? ""),
+		[userScopesQ.data],
+	);
+	const tenantPerformanceNetworksKey =
+		queryKeys.userForwardPerformanceNetworks(selectedUserScopeId);
+	const tenantPerformanceNetworksQ = useQuery({
+		queryKey: tenantPerformanceNetworksKey,
+		queryFn: () => listUserScopeForwardPerformanceNetworks(selectedUserScopeId),
+		enabled: Boolean(selectedUserScopeId),
+		staleTime: 10_000,
+		retry: false,
 	});
 
 	const [customHost, setCustomHost] = useState("");
@@ -201,11 +224,50 @@ export function useForwardCredentialsPage() {
 			}),
 	});
 
+	const generateSyntheticPerformanceMutation = useMutation({
+		mutationFn: async (input: {
+			networkRef: string;
+			snapshotId?: string;
+			generationIntervalMins?: number;
+			healthyDeviceOdds?: number;
+			healthyInterfaceOdds?: number;
+		}) => {
+			if (!selectedUserScopeId) {
+				throw new Error("No user scope available");
+			}
+			return generateUserScopeForwardNetworkPerformance(
+				selectedUserScopeId,
+				input.networkRef,
+				{
+					snapshotId: input.snapshotId,
+					generationIntervalMins: input.generationIntervalMins,
+					healthyDeviceOdds: input.healthyDeviceOdds,
+					healthyInterfaceOdds: input.healthyInterfaceOdds,
+				},
+			);
+		},
+		onSuccess: async (resp) => {
+			toast.success("Synthetic performance data generated", {
+				description: `snapshot ${resp.snapshotId ?? "latest"}${resp.numDevices ? `, devices ${resp.numDevices}` : ""}`,
+			});
+			await queryClient.invalidateQueries({
+				queryKey: tenantPerformanceNetworksKey,
+			});
+		},
+		onError: (err) =>
+			toast.error("Failed to generate synthetic performance data", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
 	return {
 		collectorsQ,
 		tenantCredentialQ,
 		tenantResetRunsQ,
 		tenantFeaturesQ,
+		userScopesQ,
+		selectedUserScopeId,
+		tenantPerformanceNetworksQ,
 		customHost,
 		setCustomHost,
 		skipTlsVerify,
@@ -227,5 +289,6 @@ export function useForwardCredentialsPage() {
 		revealTenantCredentialMutation,
 		requestTenantResetMutation,
 		saveTenantFeaturesMutation,
+		generateSyntheticPerformanceMutation,
 	};
 }

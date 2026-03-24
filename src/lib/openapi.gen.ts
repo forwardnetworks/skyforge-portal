@@ -446,7 +446,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * PushAdminServiceNowForwardConfig performs admin-driven app/bootstrap push (admin
+         * PushAdminServiceNowForwardConfig installs shared ServiceNow app assets (admin
          *     only).
          */
         post: operations["POST:skyforge.PushAdminServiceNowForwardConfig"];
@@ -2294,6 +2294,30 @@ export interface paths {
          * @description managed Forward credential with password material included.
          */
         post: operations["POST:skyforge.RevealCurrentUserForwardTenantCredentialPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/org-features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserForwardTenantFeatures returns per-user experimental Forward org
+         *     feature flags.
+         */
+        get: operations["GET:skyforge.GetCurrentUserForwardTenantFeatures"];
+        /**
+         * PutCurrentUserForwardTenantFeatures upserts per-user experimental Forward org
+         *     feature flags.
+         */
+        put: operations["PUT:skyforge.PutCurrentUserForwardTenantFeatures"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4468,6 +4492,46 @@ export interface paths {
         get: operations["GET:skyforge.DeploymentUIEventsStream"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/forward-network-performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListUserScopeForwardPerformanceNetworks returns saved Forward networks with
+         *     latest processed snapshot metadata.
+         */
+        get: operations["GET:skyforge.ListUserScopeForwardPerformanceNetworks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/forward-network-performance/{networkRef}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * GenerateUserScopeForwardNetworkPerformance generates synthetic performance data
+         *     for a saved Forward network.
+         */
+        post: operations["POST:skyforge.GenerateUserScopeForwardNetworkPerformance"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9245,6 +9309,31 @@ export interface components {
             /** ok|degraded|missing */
             sourceStatus: string;
         };
+        "skyforge.ForwardPerformanceNetworkSummary": {
+            collectorConfigId: string;
+            credentialSource: string;
+            /** Format: int64 */
+            defaultGenerationIntervalMins: number;
+            defaultHealthyDeviceOdds: number;
+            defaultHealthyInterfaceOdds: number;
+            description: string;
+            error: string;
+            forwardNetworkId: string;
+            id: string;
+            latestProcessedSnapshotId: string;
+            latestProcessedSnapshotName: string;
+            latestProcessedSnapshotState: string;
+            name: string;
+            status: string;
+            userScopeId: string;
+        };
+        "skyforge.ForwardTenantFeatureFlags": {
+            networkMaps: boolean;
+            nqeEspresso: boolean;
+            nqeSecurityRulesPanos: boolean;
+            predictModeling: boolean;
+            topoLayoutVersioning: boolean;
+        };
         "skyforge.JSONMap": {
             [key: string]: Record<string, never>;
         };
@@ -9844,7 +9933,6 @@ export interface components {
         "skyforge.UserServiceNowConfigResponse": {
             adminUsername: string;
             configured: boolean;
-            forwardCredentialSetId: string;
             globalConfigured: boolean;
             hasAdminPassword: boolean;
             instanceUrl: string;
@@ -10978,7 +11066,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         adminUsername: string;
-                        bootstrapCredentialSet: string;
                         configured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
@@ -11001,7 +11088,6 @@ export interface operations {
                 "application/json": {
                     adminPassword: string;
                     adminUsername: string;
-                    bootstrapCredentialSet: string;
                     instanceUrl: string;
                 };
             };
@@ -11015,7 +11101,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         adminUsername: string;
-                        bootstrapCredentialSet: string;
                         configured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
@@ -14828,6 +14913,58 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetCurrentUserForwardTenantFeatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        features: components["schemas"]["skyforge.ForwardTenantFeatureFlags"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.PutCurrentUserForwardTenantFeatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    features: components["schemas"]["skyforge.ForwardTenantFeatureFlags"];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        features: components["schemas"]["skyforge.ForwardTenantFeatureFlags"];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.RequestCurrentUserForwardTenantRebuild": {
         parameters: {
             query?: never;
@@ -15148,7 +15285,6 @@ export interface operations {
                     "application/json": {
                         adminUsername: string;
                         configured: boolean;
-                        forwardCredentialSetId: string;
                         globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
@@ -15172,13 +15308,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    forwardCredentialSetId: string;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Success response */
             200: {
@@ -15189,7 +15319,6 @@ export interface operations {
                     "application/json": {
                         adminUsername: string;
                         configured: boolean;
-                        forwardCredentialSetId: string;
                         globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
@@ -19181,6 +19310,75 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.ListUserScopeForwardPerformanceNetworks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        networks: components["schemas"]["skyforge.ForwardPerformanceNetworkSummary"][];
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.GenerateUserScopeForwardNetworkPerformance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                networkRef: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    generationIntervalMins: number;
+                    healthyDeviceOdds: number;
+                    healthyInterfaceOdds: number;
+                    snapshotId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        forwardNetworkId: string;
+                        /** Format: int64 */
+                        numDevices: number;
+                        /** Format: int64 */
+                        numInterfaces: number;
+                        snapshotId: string;
+                        status: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.ListUserScopeForwardNetworks": {
         parameters: {
             query?: never;
@@ -22777,6 +22975,9 @@ export interface operations {
                     displayName: string;
                     email: string;
                     forwardEnabled: boolean;
+                    optionalOverrides: {
+                        [key: string]: string;
+                    };
                     sessionSecret: string;
                     skipTlsVerify: boolean;
                     supportPassword: string;
@@ -24792,7 +24993,6 @@ export interface operations {
                     "application/json": {
                         adminUsername: string;
                         configured: boolean;
-                        forwardCredentialSetId: string;
                         globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
@@ -24879,7 +25079,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         adminUsername: string;
-                        bootstrapCredentialSet: string;
                         configured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
@@ -24914,7 +25113,6 @@ export interface operations {
                     "application/json": {
                         adminPassword: string;
                         adminUsername: string;
-                        bootstrapCredentialSet: string;
                         instanceUrl: string;
                     };
                 };
@@ -25016,6 +25214,7 @@ export interface operations {
                     forwardPassword: string;
                     forwardUsername: string;
                     instanceUrl: string;
+                    tenantUsername: string;
                 };
             };
         };
@@ -25080,6 +25279,7 @@ export interface operations {
                     forwardPassword: string;
                     forwardUsername: string;
                     instanceUrl: string;
+                    tenantUsername: string;
                 };
             };
         };
@@ -25104,7 +25304,6 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    forwardCredentialSetId: string;
                     sessionSecret: string;
                     username: string;
                 };
@@ -25120,7 +25319,6 @@ export interface operations {
                     "application/json": {
                         adminUsername: string;
                         configured: boolean;
-                        forwardCredentialSetId: string;
                         globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
@@ -25149,7 +25347,6 @@ export interface operations {
                 "application/json": {
                     adminPassword: string;
                     adminUsername: string;
-                    bootstrapCredentialSet: string;
                     instanceUrl: string;
                     sessionSecret: string;
                 };
@@ -25164,7 +25361,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         adminUsername: string;
-                        bootstrapCredentialSet: string;
                         configured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;
@@ -25234,7 +25430,6 @@ export interface operations {
                     "application/json": {
                         adminUsername: string;
                         configured: boolean;
-                        forwardCredentialSetId: string;
                         globalConfigured: boolean;
                         hasAdminPassword: boolean;
                         instanceUrl: string;

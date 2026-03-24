@@ -8,13 +8,6 @@ import {
 	CardTitle,
 } from "./ui/card";
 import { Label } from "./ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "./ui/select";
 
 export function ServiceNowPageContent({
 	page,
@@ -27,10 +20,7 @@ export function ServiceNowPageContent({
 		setupQ,
 		pdiQ,
 		schemaQ,
-		collectorOptions,
 		instanceUrl,
-		forwardCredentialSetId,
-		setForwardCredentialSetId,
 		saveMutation,
 		rotateTenantMutation,
 		setupMutation,
@@ -41,7 +31,6 @@ export function ServiceNowPageContent({
 		setupStatus,
 		canResume,
 		isRunning,
-		selectedCredential,
 	} = page;
 
 	return (
@@ -49,8 +38,8 @@ export function ServiceNowPageContent({
 			<div>
 				<h1 className="text-2xl font-bold">ServiceNow</h1>
 				<p className="text-sm text-muted-foreground mt-1">
-					Global PDI is admin-managed. This page binds your tenant identity and
-					Forward credential set.
+					Global PDI is admin-managed. This page binds your tenant identity to
+					your managed Forward org credential.
 				</p>
 			</div>
 
@@ -58,8 +47,8 @@ export function ServiceNowPageContent({
 				<CardHeader>
 					<CardTitle>Tenant Binding</CardTitle>
 					<CardDescription>
-						Uses shared Forward credential sets from{" "}
-						<code>/dashboard/forward/credentials</code>.
+						Skyforge provisions a per-user ServiceNow tenant and uses your
+						managed Forward org credential for app setup and ticketing.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -82,25 +71,6 @@ export function ServiceNowPageContent({
 							</div>
 						</div>
 						<div className="space-y-2">
-							<Label>Forward credential set</Label>
-							<Select
-								value={forwardCredentialSetId || ""}
-								onValueChange={setForwardCredentialSetId}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Select saved credential set" />
-								</SelectTrigger>
-								<SelectContent>
-									{collectorOptions.map((collector) => (
-										<SelectItem key={collector.id} value={collector.id}>
-											{collector.name}
-											{collector.isDefault ? " (default)" : ""}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="space-y-2">
 							<Label>Global admin status</Label>
 							<div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
 								{cfg?.globalConfigured
@@ -109,11 +79,9 @@ export function ServiceNowPageContent({
 							</div>
 						</div>
 					</div>
-					{selectedCredential?.baseUrl ? (
-						<div className="text-xs text-muted-foreground">
-							Selected host: <code>{selectedCredential.baseUrl}</code>
-						</div>
-					) : null}
+					<div className="text-xs text-muted-foreground">
+						Forward source: your managed in-cluster org credential.
+					</div>
 					<div className="flex items-center gap-2 flex-wrap">
 						<Button
 							onClick={() => saveMutation.mutate()}
@@ -124,9 +92,7 @@ export function ServiceNowPageContent({
 						<Button
 							variant="outline"
 							onClick={() => rotateTenantMutation.mutate()}
-							disabled={
-								rotateTenantMutation.isPending || !cfg?.forwardCredentialSetId
-							}
+							disabled={rotateTenantMutation.isPending || !cfg?.configured}
 						>
 							Reset tenant password
 						</Button>

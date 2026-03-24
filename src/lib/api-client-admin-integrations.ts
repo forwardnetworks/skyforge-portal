@@ -5,7 +5,6 @@ export type AdminServiceNowGlobalConfigResponse = {
 	instanceUrl?: string;
 	adminUsername?: string;
 	hasAdminPassword: boolean;
-	bootstrapCredentialSet?: string;
 	updatedAt?: string;
 };
 
@@ -13,7 +12,6 @@ export type PutAdminServiceNowGlobalConfigRequest = {
 	instanceUrl: string;
 	adminUsername: string;
 	adminPassword?: string;
-	bootstrapCredentialSet?: string;
 };
 
 export type AdminServiceNowPushForwardConfigResponse = {
