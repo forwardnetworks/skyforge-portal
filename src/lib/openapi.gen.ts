@@ -372,6 +372,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/integrations/forward/demo-seeds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GetAdminForwardDemoSeedCatalog returns the admin-managed demo seed catalog. */
+        get: operations["GET:skyforge.GetAdminForwardDemoSeedCatalog"];
+        put?: never;
+        /** PutAdminForwardDemoSeed uploads or replaces a demo seed zip. */
+        post: operations["POST:skyforge.PutAdminForwardDemoSeed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/integrations/forward/demo-seeds/{seedID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DeleteAdminForwardDemoSeed removes a demo seed zip from the catalog. */
+        delete: operations["DELETE:skyforge.DeleteAdminForwardDemoSeed"];
+        options?: never;
+        head?: never;
+        /** PatchAdminForwardDemoSeed updates metadata for an existing demo seed. */
+        patch: operations["PATCH:skyforge.PatchAdminForwardDemoSeed"];
+        trace?: never;
+    };
     "/api/admin/integrations/forward/support-credential": {
         parameters: {
             query?: never;
@@ -6792,6 +6828,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/cron/forward/demo-org/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CronForwardDemoOrgNightlyReset queues nightly demo-org rebuilds for all known
+         *     users.
+         */
+        post: operations["POST:skyforge.CronForwardDemoOrgNightlyReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/cron/kne/orphans/cleanup": {
         parameters: {
             query?: never;
@@ -9149,6 +9205,18 @@ export interface components {
             summary: string;
             tags: string[];
         };
+        "skyforge.AdminForwardDemoSeedItem": {
+            contentSha256: string;
+            displayName: string;
+            enabled: boolean;
+            fileName: string;
+            id: string;
+            /** Format: int64 */
+            order: number;
+            /** Format: int64 */
+            sizeBytes: number;
+            uploadedAt: string;
+        };
         "skyforge.AdminSmokeRunCheck": {
             detail: string;
             name: string;
@@ -11177,6 +11245,128 @@ export interface operations {
                         effectiveUsername: string;
                         impersonating: boolean;
                         status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.GetAdminForwardDemoSeedCatalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        seeds: components["schemas"]["skyforge.AdminForwardDemoSeedItem"][];
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.PutAdminForwardDemoSeed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    contentBase64: string;
+                    displayName: string;
+                    enabled: boolean;
+                    fileName: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        seeds: components["schemas"]["skyforge.AdminForwardDemoSeedItem"][];
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeleteAdminForwardDemoSeed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                seedID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        seeds: components["schemas"]["skyforge.AdminForwardDemoSeedItem"][];
+                        updatedAt: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PATCH:skyforge.PatchAdminForwardDemoSeed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                seedID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    displayName: string;
+                    enabled: boolean;
+                    /** Format: int64 */
+                    order: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        seeds: components["schemas"]["skyforge.AdminForwardDemoSeedItem"][];
+                        updatedAt: string;
                     };
                 };
             };
@@ -24007,6 +24197,25 @@ export interface operations {
         };
     };
     "POST:skyforge.CronScaleIdleForwardCollectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CronForwardDemoOrgNightlyReset": {
         parameters: {
             query?: never;
             header?: never;

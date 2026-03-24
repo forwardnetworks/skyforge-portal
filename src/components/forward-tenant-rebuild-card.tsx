@@ -19,11 +19,11 @@ function tenantCopy(tenant: ManagedTenantKey) {
 		return {
 			title: "Demo Org Reset",
 			description:
-				"Restore or rebuild the curated demo org without touching deployment sync state.",
-			softLabel: "Restore demo",
-			hardLabel: "Hard rebuild demo",
+				"Destroy and recreate the curated demo org, then replay the admin-managed demo seed catalog.",
+			softLabel: "Rebuild from demo catalog",
+			hardLabel: "Destroy and recreate demo",
 			impact:
-				"This replaces the current demo org state. Deployment-backed networks and collector wiring are not touched.",
+				"This replaces the current demo org state, replays all enabled demo seed snapshots into Demo Network, and rotates the demo credential. Deployment-backed networks and collector wiring are not touched.",
 			allowCurated: true,
 		};
 	}

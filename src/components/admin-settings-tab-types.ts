@@ -6,6 +6,7 @@ import type {
 	AdminImpersonateStatusResponse,
 	AdminOIDCSettingsResponse,
 	AdminForwardTenantResetRun,
+	AdminForwardDemoSeedCatalogResponse,
 	AdminServiceNowGlobalConfigResponse,
 	AdminTeamsGlobalConfigResponse,
 	AdminUserRoleRecord,
@@ -89,6 +90,24 @@ export type AdminOverviewTabProps = {
 	onServiceNowAdminPasswordChange: (value: string) => void;
 	onSaveServiceNowGlobalConfig: () => void;
 	onPushServiceNowForwardConfig: () => void;
+	forwardDemoSeedCatalog?: AdminForwardDemoSeedCatalogResponse;
+	forwardDemoSeedCatalogLoading: boolean;
+	uploadForwardDemoSeedPending: boolean;
+	updateForwardDemoSeedPending: boolean;
+	deleteForwardDemoSeedPending: boolean;
+	onUploadForwardDemoSeed: (value: {
+		displayName: string;
+		fileName: string;
+		contentBase64: string;
+		enabled?: boolean;
+	}) => void;
+	onUpdateForwardDemoSeed: (value: {
+		seedID: string;
+		displayName?: string;
+		enabled?: boolean;
+		order?: number;
+	}) => void;
+	onDeleteForwardDemoSeed: (seedID: string) => void;
 	teamsGlobalConfig?: AdminTeamsGlobalConfigResponse;
 	teamsGlobalConfigLoading: boolean;
 	teamsEnabledDraft: boolean;

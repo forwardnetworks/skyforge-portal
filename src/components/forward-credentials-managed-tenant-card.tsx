@@ -17,7 +17,7 @@ function tenantCopy(tenant: ManagedTenantKey) {
 		return {
 			title: "Demo Org Credential",
 			description:
-				"Curated Forward demo org used by the default Forward launch path.",
+				"Curated Forward demo org used by the default Forward launch path. Credentials rotate whenever the nightly or manual demo rebuild runs.",
 			resetLabel: "Reset demo credential",
 		};
 	}

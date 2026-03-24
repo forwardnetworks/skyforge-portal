@@ -1,5 +1,6 @@
 import { AdminOverviewAuthCard } from "./admin-overview-auth-card";
 import { AdminOverviewConfigCard } from "./admin-overview-config-card";
+import { AdminOverviewForwardDemoSeedsCard } from "./admin-overview-forward-demo-seeds-card";
 import { AdminOverviewForwardSupportCard } from "./admin-overview-forward-support-card";
 import { AdminOverviewImpersonationCard } from "./admin-overview-impersonation-card";
 import { AdminOverviewOIDCCard } from "./admin-overview-oidc-card";
@@ -17,6 +18,7 @@ export function AdminOverviewTab(props: AdminOverviewTabProps) {
 			<AdminOverviewServiceNowCard {...props} />
 			<AdminOverviewTeamsCard {...props} />
 			<AdminOverviewForwardSupportCard {...props} />
+			<AdminOverviewForwardDemoSeedsCard {...props} />
 			<AdminOverviewConfigCard {...props} />
 			<AdminOverviewImpersonationCard {...props} />
 			<AdminOverviewQuickDeployCard {...props} />

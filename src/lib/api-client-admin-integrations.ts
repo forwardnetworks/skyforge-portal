@@ -55,9 +55,81 @@ export type AdminForwardSupportCredentialResponse = {
 	source?: string;
 };
 
+export type AdminForwardDemoSeedItem = {
+	id: string;
+	displayName: string;
+	fileName: string;
+	contentSha256?: string;
+	sizeBytes?: number;
+	enabled: boolean;
+	order: number;
+	uploadedAt?: string;
+};
+
+export type AdminForwardDemoSeedCatalogResponse = {
+	configured: boolean;
+	updatedAt?: string;
+	seeds: AdminForwardDemoSeedItem[];
+};
+
+export type PutAdminForwardDemoSeedRequest = {
+	displayName: string;
+	fileName: string;
+	contentBase64: string;
+	enabled?: boolean;
+};
+
+export type UpdateAdminForwardDemoSeedRequest = {
+	displayName?: string;
+	enabled?: boolean;
+	order?: number;
+};
+
 export async function getAdminServiceNowGlobalConfig(): Promise<AdminServiceNowGlobalConfigResponse> {
 	return apiFetch<AdminServiceNowGlobalConfigResponse>(
 		"/api/admin/integrations/servicenow/global-config",
+	);
+}
+
+export async function getAdminForwardDemoSeedCatalog(): Promise<AdminForwardDemoSeedCatalogResponse> {
+	return apiFetch<AdminForwardDemoSeedCatalogResponse>(
+		"/api/admin/integrations/forward/demo-seeds",
+	);
+}
+
+export async function putAdminForwardDemoSeed(
+	body: PutAdminForwardDemoSeedRequest,
+): Promise<AdminForwardDemoSeedCatalogResponse> {
+	return apiFetch<AdminForwardDemoSeedCatalogResponse>(
+		"/api/admin/integrations/forward/demo-seeds",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function patchAdminForwardDemoSeed(
+	seedID: string,
+	body: UpdateAdminForwardDemoSeedRequest,
+): Promise<AdminForwardDemoSeedCatalogResponse> {
+	return apiFetch<AdminForwardDemoSeedCatalogResponse>(
+		`/api/admin/integrations/forward/demo-seeds/${encodeURIComponent(seedID)}`,
+		{
+			method: "PATCH",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function deleteAdminForwardDemoSeed(
+	seedID: string,
+): Promise<AdminForwardDemoSeedCatalogResponse> {
+	return apiFetch<AdminForwardDemoSeedCatalogResponse>(
+		`/api/admin/integrations/forward/demo-seeds/${encodeURIComponent(seedID)}`,
+		{
+			method: "DELETE",
+		},
 	);
 }
 

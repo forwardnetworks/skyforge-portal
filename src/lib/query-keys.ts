@@ -182,6 +182,7 @@ export const queryKeys = {
 		] as const,
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
 	adminServiceNowGlobalConfig: () => ["adminServiceNowGlobalConfig"] as const,
+	adminForwardDemoSeedCatalog: () => ["adminForwardDemoSeedCatalog"] as const,
 	adminTeamsGlobalConfig: () => ["adminTeamsGlobalConfig"] as const,
 	adminForwardSupportCredential: () =>
 		["adminForwardSupportCredential"] as const,

@@ -2,6 +2,7 @@ import { type QueryClient, useQuery } from "@tanstack/react-query";
 import {
 	getAdminAuthSettings,
 	getAdminEffectiveConfig,
+	getAdminForwardDemoSeedCatalog,
 	getAdminOIDCSettings,
 	getAdminQuickDeployCatalog,
 	getAdminQuickDeployTemplateOptions,
@@ -11,6 +12,7 @@ import {
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import { useAdminSettingsAuthLocal } from "./use-admin-settings-auth-local";
+import { useAdminSettingsAuthForwardDemoSeeds } from "./use-admin-settings-auth-forward-demo-seeds";
 import { useAdminSettingsAuthOIDC } from "./use-admin-settings-auth-oidc";
 import { useAdminSettingsAuthQuickDeploy } from "./use-admin-settings-auth-quick-deploy";
 import { useAdminSettingsAuthServiceNow } from "./use-admin-settings-auth-servicenow";
@@ -76,6 +78,12 @@ export function useAdminSettingsAuth({
 		staleTime: 15_000,
 		retry: false,
 	});
+	const forwardDemoSeedCatalogQ = useQuery({
+		queryKey: queryKeys.adminForwardDemoSeedCatalog(),
+		queryFn: getAdminForwardDemoSeedCatalog,
+		staleTime: 15_000,
+		retry: false,
+	});
 	const teamsGlobalConfigQ = useQuery({
 		queryKey: queryKeys.adminTeamsGlobalConfig(),
 		queryFn: getAdminTeamsGlobalConfig,
@@ -104,6 +112,11 @@ export function useAdminSettingsAuth({
 		serviceNowGlobalConfig: serviceNowGlobalConfigQ.data,
 		refetchServiceNowGlobalConfig: serviceNowGlobalConfigQ.refetch,
 	});
+	const forwardDemoSeeds = useAdminSettingsAuthForwardDemoSeeds({
+		queryClient,
+		forwardDemoSeedCatalog: forwardDemoSeedCatalogQ.data,
+		refetchForwardDemoSeedCatalog: forwardDemoSeedCatalogQ.refetch,
+	});
 	const teams = useAdminSettingsAuthTeams({
 		queryClient,
 		teamsGlobalConfig: teamsGlobalConfigQ.data,
@@ -122,6 +135,8 @@ export function useAdminSettingsAuth({
 		...quickDeploy,
 		serviceNowGlobalConfigQ,
 		...serviceNow,
+		forwardDemoSeedCatalogQ,
+		...forwardDemoSeeds,
 		teamsGlobalConfigQ,
 		...teams,
 	};
