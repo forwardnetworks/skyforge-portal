@@ -29,6 +29,7 @@ import { normalizeUIExperienceMode } from "../lib/ui-experience";
 
 export type NavItem = {
 	id?: string;
+	parentId?: string;
 	order?: number;
 	label: string;
 	href: string;
@@ -99,6 +100,7 @@ function toolNavExperience(tool: ToolLaunchEntry): "both" | "advanced" {
 function navToolItem(tool: ToolLaunchEntry): NavItem {
 	return {
 		id: tool.id,
+		parentId: String(tool.navigationParentId ?? "").trim() || undefined,
 		order: tool.navigationOrder,
 		label: String(tool.navigationLabel).trim(),
 		href: tool.navigationHref,
@@ -113,6 +115,7 @@ function navToolItem(tool: ToolLaunchEntry): NavItem {
 function navEntryItem(entry: ToolNavigationEntry): NavItem {
 	return {
 		id: entry.id,
+		parentId: String(entry.navigationParentId ?? "").trim() || undefined,
 		order: entry.navigationOrder,
 		label: String(entry.label).trim(),
 		href: entry.navigationHref,
@@ -206,34 +209,65 @@ function createNavItems(
 			const children = [
 				...navEntryItemsForSection(entries, section.id),
 				...navToolItemsForSection(toolLaunches, section.id),
-			].sort((left, right) => {
-				const leftOrder = (entries ?? []).find(
-					(entry) => entry.id === left.id,
-				)?.navigationOrder;
-				const rightOrder = (entries ?? []).find(
-					(entry) => entry.id === right.id,
-				)?.navigationOrder;
-				const leftToolOrder = Object.values(toolLaunches ?? {}).find(
-					(tool) => tool.id === left.id,
-				)?.navigationOrder;
-				const rightToolOrder = Object.values(toolLaunches ?? {}).find(
-					(tool) => tool.id === right.id,
-				)?.navigationOrder;
-				return (
-					Number(leftOrder ?? leftToolOrder ?? 0) -
-					Number(rightOrder ?? rightToolOrder ?? 0)
-				);
-			});
+			];
+			const nestedChildren = nestNavItems(children);
 			return {
 				id: section.id,
 				order: section.order,
 				label: section.label,
 				href: "",
 				icon: toolNavIcon(section.icon),
-				children,
+				children: nestedChildren.sort((left, right) => {
+					const leftOrder = (entries ?? []).find(
+						(entry) => entry.id === left.id,
+					)?.navigationOrder;
+					const rightOrder = (entries ?? []).find(
+						(entry) => entry.id === right.id,
+					)?.navigationOrder;
+					const leftToolOrder = Object.values(toolLaunches ?? {}).find(
+						(tool) => tool.id === left.id,
+					)?.navigationOrder;
+					const rightToolOrder = Object.values(toolLaunches ?? {}).find(
+						(tool) => tool.id === right.id,
+					)?.navigationOrder;
+					return (
+						Number(leftOrder ?? leftToolOrder ?? 0) -
+						Number(rightOrder ?? rightToolOrder ?? 0)
+					);
+				}),
 			} satisfies NavItem;
 		});
 	return [...topLevelEntries, ...dynamicSections];
+}
+
+function nestNavItems(items: NavItem[]): NavItem[] {
+	const byID = new Map<string, NavItem>();
+	const rootItems: NavItem[] = [];
+	for (const item of items) {
+		const next = item.children
+			? { ...item, children: [...item.children] }
+			: { ...item };
+		if (next.id) {
+			byID.set(next.id, next);
+		}
+		rootItems.push(next);
+	}
+	const attached = new Set<string>();
+	for (const item of rootItems) {
+		const parentID = String(item.parentId ?? "").trim();
+		if (!parentID) {
+			continue;
+		}
+		const parent = byID.get(parentID);
+		if (!parent) {
+			continue;
+		}
+		parent.children = [...(parent.children ?? []), item];
+		attached.add(item.id ?? `${item.label}:${item.href}`);
+	}
+	return rootItems.filter(
+		(item) => !attached.has(item.id ?? `${item.label}:${item.href}`),
+	);
 }
 
 function filterNavItems(

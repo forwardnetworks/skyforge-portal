@@ -27,12 +27,20 @@ type CommandMenuSection = {
 };
 
 function flattenCommandSections(items: NavItem[]): CommandMenuSection[] {
+	const flattenChildren = (nodes: NavItem[]): NavItem[] =>
+		nodes.flatMap((node) => {
+			const children = node.children ? flattenChildren(node.children) : [];
+			if (!node.href) {
+				return children;
+			}
+			return [node, ...children];
+		});
 	const topLevel = items.filter((item) => !item.children && item.href);
 	const sections = items
 		.filter((item) => item.children && item.children.length > 0)
 		.map((item) => ({
 			label: item.label,
-			items: item.children?.filter((child) => child.href) ?? [],
+			items: flattenChildren(item.children ?? []),
 		}))
 		.filter((section) => section.items.length > 0);
 	return [

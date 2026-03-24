@@ -99,7 +99,7 @@ const toolEntries: ToolNavigationEntry[] = [
 	},
 	{
 		id: "forward-credentials",
-		label: "Credentials",
+		label: "Org Access",
 		navigationSection: "forward",
 		navigationOrder: 1,
 		navigationIcon: "settings",
@@ -246,6 +246,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "forward",
 		experience: "both",
 		navigationSection: "forward",
+		navigationParentId: "forward-credentials",
 		navigationLabel: "Demo Org",
 		navigationOrder: 10,
 		navigationIcon: "network",
@@ -259,6 +260,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "forward",
 		experience: "both",
 		navigationSection: "forward",
+		navigationParentId: "forward-credentials",
 		navigationLabel: "Deployment Org",
 		navigationOrder: 20,
 		navigationIcon: "network",
@@ -460,25 +462,25 @@ describe("side nav model", () => {
 			withAllowedTools(),
 		);
 		const forward = findGroup("Forward", items);
+		const orgAccess = forward?.children?.find((c) => c.label === "Org Access");
 
 		expect(forward).toBeDefined();
 		expect(forward?.children?.map((c) => c.label)).toEqual(
 			expect.arrayContaining([
-				"Credentials",
+				"Org Access",
 				"Collector",
-				"Demo Org",
-				"Deployment Org",
 				"Analytics",
 				"ServiceNow",
 			]),
 		);
-		const credentialItem = forward?.children?.find(
-			(c) => c.label === "Credentials",
-		);
+		expect(orgAccess?.children?.map((c) => c.label)).toEqual([
+			"Demo Org",
+			"Deployment Org",
+		]);
 		const collectorItem = forward?.children?.find(
 			(c) => c.label === "Collector",
 		);
-		expect(credentialItem?.href).toBe("/dashboard/forward/credentials");
+		expect(orgAccess?.href).toBe("/dashboard/forward/credentials");
 		expect(collectorItem?.href).toBe("/dashboard/forward/collectors");
 	});
 
@@ -652,6 +654,7 @@ describe("side nav model", () => {
 		);
 		const labels = items.map((item) => item.label);
 		const forward = findGroup("Forward", items);
+		const orgAccess = forward?.children?.find((child) => child.label === "Org Access");
 
 		expect(labels).toEqual([
 			"Dashboard",
@@ -663,8 +666,10 @@ describe("side nav model", () => {
 			"Settings",
 		]);
 		expect(forward?.children?.map((child) => child.label)).toEqual([
-			"Credentials",
+			"Org Access",
 			"Collector",
+		]);
+		expect(orgAccess?.children?.map((child) => child.label)).toEqual([
 			"Demo Org",
 			"Deployment Org",
 		]);

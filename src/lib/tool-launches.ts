@@ -10,6 +10,7 @@ export type ToolNavigationEntry = {
 	id: string;
 	label: string;
 	navigationSection: string;
+	navigationParentId?: string;
 	navigationOrder: number;
 	navigationIcon: string;
 	navigationHref: string;
@@ -77,6 +78,7 @@ export type ToolLaunchEntry = {
 	category?: string;
 	experience: string;
 	navigationSection: string;
+	navigationParentId?: string;
 	navigationLabel: string;
 	navigationOrder: number;
 	navigationIcon: string;

@@ -1,5 +1,5 @@
 import type { useForwardCredentialsPage } from "@/hooks/use-forward-credentials-page";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -10,6 +10,13 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "./ui/select";
 
 type ForwardCredentialsPageState = ReturnType<typeof useForwardCredentialsPage>;
 type ManagedTenantKey = "demo" | "primary";
@@ -24,73 +31,107 @@ type DraftByNetwork = Record<
 	}
 >;
 
-function tenantCopy(tenant: ManagedTenantKey) {
-	if (tenant === "demo") {
-		return {
-			title: "Demo Org Performance Data",
-			description:
-				"List demo-org networks and generate synthetic performance data for curated demos.",
-		};
+const managedTenantOptions: { label: string; value: ManagedTenantKey }[] = [
+	{ label: "Deployment Org", value: "primary" },
+	{ label: "Demo Org", value: "demo" },
+];
+
+function snapshotLabel(snapshot: {
+	id: string;
+	name?: string;
+	state?: string;
+}) {
+	const name = String(snapshot.name ?? "").trim();
+	if (name) {
+		return `${name} (${snapshot.id})`;
 	}
-	return {
-		title: "Deployment Org Performance Data",
-		description:
-			"List deployment-org networks and generate synthetic performance data after collection or on demand.",
-	};
+	return snapshot.id;
 }
 
 export function ForwardTenantPerformanceCard(props: {
 	page: ForwardCredentialsPageState;
-	tenant: ManagedTenantKey;
 }) {
-	const { page, tenant } = props;
+	const { page } = props;
+	const [tenant, setTenant] = useState<ManagedTenantKey>("primary");
 	const state = page.tenants[tenant];
-	const copy = tenantCopy(tenant);
 	const networks = state.performanceNetworksQ.data?.networks ?? [];
-	const [drafts, setDrafts] = useState<DraftByNetwork>({});
+	const [drafts, setDrafts] = useState<Record<ManagedTenantKey, DraftByNetwork>>({
+		demo: {},
+		primary: {},
+	});
 
 	useEffect(() => {
 		if (networks.length === 0) {
-			setDrafts({});
+			setDrafts((prev) => ({ ...prev, [tenant]: {} }));
 			return;
 		}
 		setDrafts((prev) => {
-			const next: DraftByNetwork = {};
+			const nextTenantDrafts: DraftByNetwork = {};
 			for (const network of networks) {
-				next[network.id] = {
-					snapshotId:
-						prev[network.id]?.snapshotId ??
-						String(network.latestProcessedSnapshotId ?? ""),
+				const prior = prev[tenant]?.[network.id];
+				const firstSnapshotId =
+					network.processedSnapshots?.[0]?.id ??
+					String(network.latestProcessedSnapshotId ?? "");
+				nextTenantDrafts[network.id] = {
+					snapshotId: prior?.snapshotId ?? firstSnapshotId,
 					generationIntervalMins:
-						prev[network.id]?.generationIntervalMins ??
+						prior?.generationIntervalMins ??
 						String(network.defaultGenerationIntervalMins ?? 10),
 					healthyDeviceOdds:
-						prev[network.id]?.healthyDeviceOdds ??
+						prior?.healthyDeviceOdds ??
 						String(network.defaultHealthyDeviceOdds ?? 0.8),
 					healthyInterfaceOdds:
-						prev[network.id]?.healthyInterfaceOdds ??
+						prior?.healthyInterfaceOdds ??
 						String(network.defaultHealthyInterfaceOdds ?? 0.8),
 				};
 			}
-			return next;
+			return { ...prev, [tenant]: nextTenantDrafts };
 		});
-	}, [networks]);
+	}, [networks, tenant]);
+
+	const cardDescription = useMemo(() => {
+		return tenant === "primary"
+			? "Generate synthetic performance data for the deployment org. This is the default path for post-collection generation."
+			: "Generate synthetic performance data for the demo org when you want to refresh curated demo telemetry.";
+	}, [tenant]);
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{copy.title}</CardTitle>
-				<CardDescription>{copy.description}</CardDescription>
+				<CardTitle>Performance Data</CardTitle>
+				<CardDescription>{cardDescription}</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				<div className="flex flex-wrap gap-2">
-					<Button
-						variant="outline"
-						onClick={() => void state.performanceNetworksQ.refetch()}
-						disabled={state.performanceNetworksQ.isFetching}
-					>
-						Reload networks
-					</Button>
+				<div className="grid gap-4 md:grid-cols-[minmax(0,220px)_1fr]">
+					<div className="space-y-2">
+						<Label>Forward org</Label>
+						<Select
+							value={tenant}
+							onValueChange={(value) =>
+								setTenant(value === "demo" ? "demo" : "primary")
+							}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Select Forward org" />
+							</SelectTrigger>
+							<SelectContent>
+								{managedTenantOptions.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<div className="flex items-end gap-2">
+						<Button
+							variant="outline"
+							onClick={() => void state.performanceNetworksQ.refetch()}
+							disabled={state.performanceNetworksQ.isFetching}
+						>
+							Reload networks
+						</Button>
+					</div>
 				</div>
 				{state.performanceNetworksQ.isLoading ? (
 					<div className="text-sm text-muted-foreground">
@@ -109,8 +150,10 @@ export function ForwardTenantPerformanceCard(props: {
 				) : null}
 				<div className="space-y-4">
 					{networks.map((network) => {
-						const draft = drafts[network.id] ?? {
-							snapshotId: String(network.latestProcessedSnapshotId ?? ""),
+						const draft = drafts[tenant]?.[network.id] ?? {
+							snapshotId:
+								network.processedSnapshots?.[0]?.id ??
+								String(network.latestProcessedSnapshotId ?? ""),
 							generationIntervalMins: String(
 								network.defaultGenerationIntervalMins ?? 10,
 							),
@@ -119,11 +162,14 @@ export function ForwardTenantPerformanceCard(props: {
 								network.defaultHealthyInterfaceOdds ?? 0.8,
 							),
 						};
+						const processedSnapshots = network.processedSnapshots ?? [];
 						const canGenerate =
 							network.status !== "error" &&
-							Boolean(network.forwardNetworkId.trim());
+							Boolean(network.forwardNetworkId.trim()) &&
+							Boolean(draft.snapshotId.trim());
+
 						return (
-							<div key={network.id} className="rounded border p-4 space-y-4">
+							<div key={network.id} className="space-y-4 rounded border p-4">
 								<div className="space-y-1">
 									<div className="font-medium">{network.name}</div>
 									<div className="text-xs text-muted-foreground">
@@ -153,20 +199,39 @@ export function ForwardTenantPerformanceCard(props: {
 								</div>
 								<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 									<div className="space-y-2">
-										<Label>Snapshot ID</Label>
-										<Input
+										<Label>Snapshot</Label>
+										<Select
 											value={draft.snapshotId}
-											onChange={(e) =>
+											onValueChange={(value) =>
 												setDrafts((prev) => ({
 													...prev,
-													[network.id]: {
-														...draft,
-														snapshotId: e.target.value,
+													[tenant]: {
+														...(prev[tenant] ?? {}),
+														[network.id]: {
+															...draft,
+															snapshotId: value,
+														},
 													},
 												}))
 											}
-											placeholder="latest processed snapshot"
-										/>
+										>
+											<SelectTrigger>
+												<SelectValue
+													placeholder={
+														processedSnapshots.length > 0
+															? "Select processed snapshot"
+															: "No processed snapshots"
+													}
+												/>
+											</SelectTrigger>
+											<SelectContent>
+												{processedSnapshots.map((snapshot) => (
+													<SelectItem key={snapshot.id} value={snapshot.id}>
+														{snapshotLabel(snapshot)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
 									</div>
 									<div className="space-y-2">
 										<Label>Generation interval mins</Label>
@@ -177,9 +242,12 @@ export function ForwardTenantPerformanceCard(props: {
 											onChange={(e) =>
 												setDrafts((prev) => ({
 													...prev,
-													[network.id]: {
-														...draft,
-														generationIntervalMins: e.target.value,
+													[tenant]: {
+														...(prev[tenant] ?? {}),
+														[network.id]: {
+															...draft,
+															generationIntervalMins: e.target.value,
+														},
 													},
 												}))
 											}
@@ -196,9 +264,12 @@ export function ForwardTenantPerformanceCard(props: {
 											onChange={(e) =>
 												setDrafts((prev) => ({
 													...prev,
-													[network.id]: {
-														...draft,
-														healthyDeviceOdds: e.target.value,
+													[tenant]: {
+														...(prev[tenant] ?? {}),
+														[network.id]: {
+															...draft,
+															healthyDeviceOdds: e.target.value,
+														},
 													},
 												}))
 											}
@@ -215,9 +286,12 @@ export function ForwardTenantPerformanceCard(props: {
 											onChange={(e) =>
 												setDrafts((prev) => ({
 													...prev,
-													[network.id]: {
-														...draft,
-														healthyInterfaceOdds: e.target.value,
+													[tenant]: {
+														...(prev[tenant] ?? {}),
+														[network.id]: {
+															...draft,
+															healthyInterfaceOdds: e.target.value,
+														},
 													},
 												}))
 											}
@@ -244,8 +318,8 @@ export function ForwardTenantPerformanceCard(props: {
 											})
 										}
 										disabled={
-											!canGenerate ||
-											page.generateSyntheticPerformanceMutation.isPending
+											page.generateSyntheticPerformanceMutation.isPending ||
+											!canGenerate
 										}
 									>
 										{page.generateSyntheticPerformanceMutation.isPending

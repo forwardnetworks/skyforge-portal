@@ -1,5 +1,11 @@
 import { apiFetch } from "./http";
 
+export type ForwardPerformanceSnapshotSummary = {
+	id: string;
+	name?: string;
+	state?: string;
+};
+
 export type ForwardPerformanceNetworkSummary = {
 	tenantKind?: string;
 	id: string;
@@ -12,6 +18,7 @@ export type ForwardPerformanceNetworkSummary = {
 	latestProcessedSnapshotId?: string;
 	latestProcessedSnapshotName?: string;
 	latestProcessedSnapshotState?: string;
+	processedSnapshots?: ForwardPerformanceSnapshotSummary[];
 	defaultGenerationIntervalMins: number;
 	defaultHealthyDeviceOdds: number;
 	defaultHealthyInterfaceOdds: number;

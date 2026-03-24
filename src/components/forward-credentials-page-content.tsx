@@ -26,14 +26,44 @@ export function ForwardCredentialsPageContent(props: {
 				</p>
 			</div>
 
-			<ForwardCredentialsManagedTenantCard page={page} tenant="demo" />
-			<ForwardTenantRebuildCard page={page} tenant="demo" />
-			<ForwardTenantPerformanceCard page={page} tenant="demo" />
+			<section id="demo-org" className="space-y-4">
+				<div className="space-y-1">
+					<h2 className="text-xl font-semibold tracking-tight">Demo Org</h2>
+					<p className="text-sm text-muted-foreground">
+						Curated demo org used by the default Forward launch path.
+					</p>
+				</div>
+				<ForwardCredentialsManagedTenantCard page={page} tenant="demo" />
+				<ForwardTenantRebuildCard page={page} tenant="demo" />
+			</section>
 
-			<ForwardCredentialsManagedTenantCard page={page} tenant="primary" />
-			<ForwardTenantFeaturesCard page={page} />
-			<ForwardTenantPerformanceCard page={page} tenant="primary" />
-			<ForwardTenantRebuildCard page={page} tenant="primary" />
+			<section id="deployment-org" className="space-y-4">
+				<div className="space-y-1">
+					<h2 className="text-xl font-semibold tracking-tight">
+						Deployment Org
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						Managed deployment-backed org used for sync and collector flows.
+					</p>
+				</div>
+				<ForwardCredentialsManagedTenantCard page={page} tenant="primary" />
+				<ForwardTenantFeaturesCard page={page} />
+				<ForwardTenantRebuildCard page={page} tenant="primary" />
+			</section>
+
+			<section id="performance-data" className="space-y-4">
+				<div className="space-y-1">
+					<h2 className="text-xl font-semibold tracking-tight">
+						Performance Data
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						Generate synthetic performance data for either managed Forward
+						org, defaulting to the deployment org.
+					</p>
+				</div>
+				<ForwardTenantPerformanceCard page={page} />
+			</section>
+
 			<ForwardCredentialsAddCard page={page} />
 			<ForwardCredentialsSavedCard page={page} />
 		</div>

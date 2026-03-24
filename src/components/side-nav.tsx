@@ -83,15 +83,23 @@ export function SideNav({
 		setExpanded((previous) => ({ ...previous, [groupID]: !previous[groupID] }));
 	};
 
+	const itemContainsActiveHref = (item: {
+		href: string;
+		children?: { href: string; children?: any[] }[];
+	}): boolean => {
+		if (isActiveHref(item.href)) {
+			return true;
+		}
+		return (item.children ?? []).some((child) => itemContainsActiveHref(child));
+	};
+
 	return (
 		<nav className="grid items-start gap-2">
 			<div className="space-y-2">
 				<div className="grid gap-1">
 					{items.map((item) => {
 						if (hasChildren(item)) {
-							const isChildActive = item.children.some((child) =>
-								isActiveHref(child.href),
-							);
+							const isChildActive = itemContainsActiveHref(item);
 
 							return collapsed ? (
 								<CollapsedNavGroup
