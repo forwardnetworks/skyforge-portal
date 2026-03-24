@@ -10,37 +10,54 @@ import {
 } from "./ui/card";
 
 type ForwardCredentialsPageState = ReturnType<typeof useForwardCredentialsPage>;
+type ManagedTenantKey = "demo" | "primary";
+
+function tenantCopy(tenant: ManagedTenantKey) {
+	if (tenant === "demo") {
+		return {
+			title: "Demo Org Credential",
+			description:
+				"Curated Forward demo org used by the default Forward launch path.",
+			resetLabel: "Reset demo credential",
+		};
+	}
+	return {
+		title: "Deployment Org Credential",
+		description:
+			"Managed Forward org used for deployment sync and in-cluster collector flows.",
+		resetLabel: "Reset deployment credential",
+	};
+}
 
 export function ForwardCredentialsManagedTenantCard(props: {
 	page: ForwardCredentialsPageState;
+	tenant: ManagedTenantKey;
 }) {
-	const { page } = props;
+	const { page, tenant } = props;
+	const state = page.tenants[tenant];
+	const copy = tenantCopy(tenant);
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Managed In-Cluster Org Credential</CardTitle>
-				<CardDescription>
-					Auto-provisioned org credential used for in-cluster Forward
-					flows.
-				</CardDescription>
+				<CardTitle>{copy.title}</CardTitle>
+				<CardDescription>{copy.description}</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">
-				{page.tenantCredentialQ.isLoading ? (
+				{state.credentialQ.isLoading ? (
 					<div className="text-sm text-muted-foreground">Loading…</div>
 				) : null}
-				{page.tenantCredentialQ.isError ? (
+				{state.credentialQ.isError ? (
 					<div className="text-sm text-destructive">
 						Failed to load managed credential.
 					</div>
 				) : null}
-				{page.tenantCredentialQ.data &&
-				!page.tenantCredentialQ.data.configured ? (
+				{state.credentialQ.data && !state.credentialQ.data.configured ? (
 					<div className="text-sm text-muted-foreground">
 						Managed credential is not configured yet.
 					</div>
 				) : null}
-				{page.tenantCredentialQ.data?.configured ? (
+				{state.credentialQ.data?.configured ? (
 					<div className="space-y-2">
 						<div className="grid gap-3 md:grid-cols-2">
 							<div className="space-y-1">
@@ -48,45 +65,45 @@ export function ForwardCredentialsManagedTenantCard(props: {
 									Forward username
 								</div>
 								<div className="break-all font-mono text-sm">
-									{page.tenantCredentialQ.data.username || "—"}
+									{state.credentialQ.data.username || "—"}
 								</div>
 							</div>
-								<div className="space-y-1">
-									<div className="text-xs text-muted-foreground">
-										Forward password
-									</div>
-									<div className="break-all font-mono text-sm">
-										{page.revealedTenantPassword
-											? page.revealedTenantPassword
-											: "••••••••••••••••"}
-									</div>
+							<div className="space-y-1">
+								<div className="text-xs text-muted-foreground">
+									Forward password
+								</div>
+								<div className="break-all font-mono text-sm">
+									{state.revealedPassword
+										? state.revealedPassword
+										: "••••••••••••••••"}
 								</div>
 							</div>
+						</div>
 						<div className="text-xs text-muted-foreground">
-							Org: {" "}
-							{page.tenantCredentialQ.data.orgName ||
-								page.tenantCredentialQ.data.orgId ||
+							Org:{" "}
+							{state.credentialQ.data.orgName ||
+								state.credentialQ.data.orgId ||
 								"—"}
 						</div>
-							<div className="flex flex-wrap gap-2">
-								<Button
-									variant="outline"
-									size="sm"
-									disabled={
-										!page.tenantCredentialQ.data.hasPassword ||
-										page.revealTenantCredentialMutation.isPending
-									}
-									onClick={() => page.revealTenantCredentialMutation.mutate()}
-								>
-									{page.revealTenantCredentialMutation.isPending
-										? "Revealing…"
-										: "Reveal password"}
-								</Button>
-								<Button
-									variant="outline"
+						<div className="flex flex-wrap gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={
+									!state.credentialQ.data.hasPassword ||
+									page.revealTenantCredentialMutation.isPending
+								}
+								onClick={() => page.revealTenantCredentialMutation.mutate(tenant)}
+							>
+								{page.revealTenantCredentialMutation.isPending
+									? "Revealing…"
+									: "Reveal password"}
+							</Button>
+							<Button
+								variant="outline"
 								size="sm"
 								onClick={() => {
-									const value = page.tenantCredentialQ.data?.username?.trim();
+									const value = state.credentialQ.data?.username?.trim();
 									if (!value) return;
 									void navigator.clipboard?.writeText(value);
 									toast.success("Forward username copied");
@@ -94,14 +111,14 @@ export function ForwardCredentialsManagedTenantCard(props: {
 							>
 								Copy username
 							</Button>
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => {
-										const value = page.revealedTenantPassword.trim();
-										if (!value) return;
-										void navigator.clipboard?.writeText(value);
-										toast.success("Forward password copied");
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => {
+									const value = state.revealedPassword.trim();
+									if (!value) return;
+									void navigator.clipboard?.writeText(value);
+									toast.success("Forward password copied");
 								}}
 							>
 								Copy password
@@ -110,13 +127,13 @@ export function ForwardCredentialsManagedTenantCard(props: {
 								variant="destructive"
 								size="sm"
 								disabled={page.resetTenantCredentialMutation.isPending}
-								onClick={() => page.resetTenantCredentialMutation.mutate()}
+								onClick={() => page.resetTenantCredentialMutation.mutate(tenant)}
 							>
-									{page.resetTenantCredentialMutation.isPending
-										? "Resetting…"
-										: "Reset managed credential"}
-								</Button>
-							</div>
+								{page.resetTenantCredentialMutation.isPending
+									? "Resetting…"
+									: copy.resetLabel}
+							</Button>
+						</div>
 					</div>
 				) : null}
 			</CardContent>

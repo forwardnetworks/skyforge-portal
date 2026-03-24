@@ -20,15 +20,20 @@ export function ForwardCredentialsPageContent(props: {
 					Forward Org Access
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Manage your in-cluster org credential, experimental org feature
-					flags, and any additional on-prem credential sets.
+					Manage your deployment and demo Forward orgs, experimental
+					deployment-org feature flags, and any additional on-prem
+					credential sets.
 				</p>
 			</div>
 
-			<ForwardCredentialsManagedTenantCard page={page} />
+			<ForwardCredentialsManagedTenantCard page={page} tenant="demo" />
+			<ForwardTenantRebuildCard page={page} tenant="demo" />
+			<ForwardTenantPerformanceCard page={page} tenant="demo" />
+
+			<ForwardCredentialsManagedTenantCard page={page} tenant="primary" />
 			<ForwardTenantFeaturesCard page={page} />
-			<ForwardTenantPerformanceCard page={page} />
-			<ForwardTenantRebuildCard page={page} />
+			<ForwardTenantPerformanceCard page={page} tenant="primary" />
+			<ForwardTenantRebuildCard page={page} tenant="primary" />
 			<ForwardCredentialsAddCard page={page} />
 			<ForwardCredentialsSavedCard page={page} />
 		</div>

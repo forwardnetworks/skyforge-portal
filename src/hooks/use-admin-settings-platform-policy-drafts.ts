@@ -136,6 +136,7 @@ export function useAdminSettingsPlatformPolicyDrafts({
 				throw new Error("Target user is required");
 			}
 			return requestAdminForwardTenantRebuild(platformPolicyTargetUser, {
+				tenantKind: "primary",
 				mode: adminForwardTenantResetMode,
 				reason: "",
 				metadata: {},

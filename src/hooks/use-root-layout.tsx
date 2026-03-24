@@ -135,7 +135,7 @@ export function useRootLayout() {
 		isProtectedRoute && !session.isLoading && !session.data?.authenticated;
 	const forwardClusterNavigationHref = useMemo(() => {
 		const href = String(
-			indexToolLaunches(toolCatalogQ.data?.tools)["forward-cluster"]
+			indexToolLaunches(toolCatalogQ.data?.tools)["forward-cluster-demo"]
 				?.navigationHref ?? "",
 		).trim();
 		return href;

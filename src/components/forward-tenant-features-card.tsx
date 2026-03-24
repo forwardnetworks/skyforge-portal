@@ -78,8 +78,9 @@ export function ForwardTenantFeaturesCard(props: {
 			<CardHeader>
 				<CardTitle>Experimental Features</CardTitle>
 				<CardDescription>
-					Control experimental Forward org features per user. Saving applies
-					these to the current managed org and to future rebuilds.
+					Control experimental features for the deployment Forward org.
+					Saving applies these to the current deployment org and future
+					deployment-org rebuilds.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">

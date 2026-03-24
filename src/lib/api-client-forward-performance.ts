@@ -1,6 +1,7 @@
 import { apiFetch } from "./http";
 
 export type ForwardPerformanceNetworkSummary = {
+	tenantKind?: string;
 	id: string;
 	userScopeId: string;
 	forwardNetworkId: string;
@@ -19,6 +20,7 @@ export type ForwardPerformanceNetworkSummary = {
 };
 
 export type ForwardPerformanceNetworksResponse = {
+	tenantKind?: string;
 	userScopeId: string;
 	networks: ForwardPerformanceNetworkSummary[];
 };
@@ -31,6 +33,7 @@ export type ForwardPerformanceGenerateRequest = {
 };
 
 export type ForwardPerformanceGenerateResponse = {
+	tenantKind?: string;
 	userScopeId: string;
 	forwardNetworkId: string;
 	snapshotId?: string;
@@ -38,6 +41,8 @@ export type ForwardPerformanceGenerateResponse = {
 	numDevices?: number;
 	numInterfaces?: number;
 };
+
+export type ManagedForwardTenantKind = "primary" | "demo";
 
 export async function listUserScopeForwardPerformanceNetworks(
 	userId: string,
@@ -54,6 +59,34 @@ export async function generateUserScopeForwardNetworkPerformance(
 ): Promise<ForwardPerformanceGenerateResponse> {
 	return apiFetch<ForwardPerformanceGenerateResponse>(
 		`/api/users/${encodeURIComponent(userId)}/forward-network-performance/${encodeURIComponent(networkRef)}/generate`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+function tenantPerformanceBasePath(tenantKind: ManagedForwardTenantKind): string {
+	return tenantKind === "demo"
+		? "/api/forward/demo-org/performance-networks"
+		: "/api/forward/org/performance-networks";
+}
+
+export async function listManagedForwardTenantPerformanceNetworks(
+	tenantKind: ManagedForwardTenantKind,
+): Promise<ForwardPerformanceNetworksResponse> {
+	return apiFetch<ForwardPerformanceNetworksResponse>(
+		tenantPerformanceBasePath(tenantKind),
+	);
+}
+
+export async function generateManagedForwardTenantPerformance(
+	tenantKind: ManagedForwardTenantKind,
+	networkRef: string,
+	body: ForwardPerformanceGenerateRequest,
+): Promise<ForwardPerformanceGenerateResponse> {
+	return apiFetch<ForwardPerformanceGenerateResponse>(
+		`${tenantPerformanceBasePath(tenantKind)}/${encodeURIComponent(networkRef)}/generate`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),

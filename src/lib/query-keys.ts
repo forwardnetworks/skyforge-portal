@@ -131,6 +131,12 @@ export const queryKeys = {
 	userIbmCredentials: () => ["userIbmCredentials"] as const,
 	userForwardCollectorConfigs: () => ["userForwardCollectorConfigs"] as const,
 	userForwardTenantRebuildRuns: () => ["userForwardTenantRebuildRuns"] as const,
+	userForwardTenantRebuildRunsByKind: (tenantKind: string) =>
+		["userForwardTenantRebuildRuns", tenantKind] as const,
+	userForwardManagedTenantCredential: (tenantKind: string) =>
+		["userForwardManagedTenantCredential", tenantKind] as const,
+	userForwardManagedTenantPerformanceNetworks: (tenantKind: string) =>
+		["userForwardManagedTenantPerformanceNetworks", tenantKind] as const,
 	userForwardCollectorConfigRuntime: (id: string) =>
 		["userForwardCollectorConfigRuntime", id] as const,
 	userForwardCollectorConfigLogs: (id: string) =>

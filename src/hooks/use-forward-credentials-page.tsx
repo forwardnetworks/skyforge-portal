@@ -1,27 +1,52 @@
 import {
 	createUserForwardCollectorConfig,
-	generateUserScopeForwardNetworkPerformance,
+	getCurrentUserForwardDemoTenantCredential,
+	getCurrentUserForwardTenantCredential,
 	getCurrentUserForwardTenantFeatures,
 	deleteUserForwardCollectorConfig,
-	getCurrentUserForwardTenantCredential,
-	listUserScopeForwardPerformanceNetworks,
-	listUserScopes,
+	listCurrentUserForwardDemoTenantRebuildRuns,
 	listCurrentUserForwardTenantRebuildRuns,
 	listUserForwardCollectorConfigs,
 	putCurrentUserForwardTenantFeatures,
-	revealCurrentUserForwardTenantCredentialPassword,
+	requestCurrentUserForwardDemoTenantRebuild,
 	requestCurrentUserForwardTenantRebuild,
+	resetCurrentUserForwardDemoTenantCredential,
 	resetCurrentUserForwardTenantCredential,
-} from "@/lib/api-client";
+	revealCurrentUserForwardDemoTenantCredentialPassword,
+	revealCurrentUserForwardTenantCredentialPassword,
+	type ForwardTenantCredentialResponse,
+	type ForwardTenantKind,
+	type ForwardTenantResetRunsResponse,
+} from "@/lib/api-client-forward-collectors";
+import {
+	generateManagedForwardTenantPerformance,
+	listManagedForwardTenantPerformanceNetworks,
+	type ForwardPerformanceNetworksResponse,
+	type ManagedForwardTenantKind,
+} from "@/lib/api-client-forward-performance";
 import { queryKeys } from "@/lib/query-keys";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useMutation,
+	useQuery,
+	useQueryClient,
+	type UseQueryResult,
+} from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type ForwardCredentialTarget = "in_cluster_org" | "custom_onprem";
+type ManagedTenantState = {
+	credentialQ: UseQueryResult<ForwardTenantCredentialResponse, Error>;
+	resetRunsQ: UseQueryResult<ForwardTenantResetRunsResponse, Error>;
+	performanceNetworksQ: UseQueryResult<ForwardPerformanceNetworksResponse, Error>;
+	revealedPassword: string;
+	confirmHardReset: boolean;
+};
 
 const FORWARD_IN_CLUSTER_ORG =
 	"https://fwd-appserver.forward.svc.cluster.local";
+
+const MANAGED_TENANT_KEYS: ManagedForwardTenantKind[] = ["demo", "primary"];
 
 function normalizeBaseURL(
 	target: ForwardCredentialTarget,
@@ -45,50 +70,59 @@ export function isInClusterCollectorBaseURL(value: string): boolean {
 	);
 }
 
+function tenantKindLabel(kind: ManagedForwardTenantKind): string {
+	return kind === "demo" ? "demo org" : "deployment org";
+}
+
+function tenantKindPath(kind: ManagedForwardTenantKind): ForwardTenantKind {
+	return kind === "demo" ? "demo" : "primary";
+}
+
 export function useForwardCredentialsPage() {
 	const queryClient = useQueryClient();
 	const collectorsKey = queryKeys.userForwardCollectorConfigs();
-	const tenantCredentialKey = ["forward", "org-credential"] as const;
 	const tenantFeaturesKey = ["forward", "org-features"] as const;
-	const tenantResetRunsKey = queryKeys.userForwardTenantRebuildRuns();
-	const userScopesKey = queryKeys.userScopes();
 
 	const collectorsQ = useQuery({
 		queryKey: collectorsKey,
 		queryFn: listUserForwardCollectorConfigs,
 		staleTime: 10_000,
 	});
-	const tenantCredentialQ = useQuery({
-		queryKey: tenantCredentialKey,
-		queryFn: getCurrentUserForwardTenantCredential,
-		staleTime: 10_000,
-	});
-	const tenantResetRunsQ = useQuery({
-		queryKey: tenantResetRunsKey,
-		queryFn: listCurrentUserForwardTenantRebuildRuns,
-		staleTime: 5_000,
-	});
 	const tenantFeaturesQ = useQuery({
 		queryKey: tenantFeaturesKey,
 		queryFn: getCurrentUserForwardTenantFeatures,
 		staleTime: 10_000,
 	});
-	const userScopesQ = useQuery({
-		queryKey: userScopesKey,
-		queryFn: listUserScopes,
-		staleTime: 30_000,
+
+	const demoCredentialQ = useQuery({
+		queryKey: queryKeys.userForwardManagedTenantCredential("demo"),
+		queryFn: getCurrentUserForwardDemoTenantCredential,
+		staleTime: 10_000,
+	});
+	const primaryCredentialQ = useQuery({
+		queryKey: queryKeys.userForwardManagedTenantCredential("primary"),
+		queryFn: getCurrentUserForwardTenantCredential,
+		staleTime: 10_000,
+	});
+	const demoResetRunsQ = useQuery({
+		queryKey: queryKeys.userForwardTenantRebuildRunsByKind("demo"),
+		queryFn: listCurrentUserForwardDemoTenantRebuildRuns,
+		staleTime: 5_000,
+	});
+	const primaryResetRunsQ = useQuery({
+		queryKey: queryKeys.userForwardTenantRebuildRunsByKind("primary"),
+		queryFn: listCurrentUserForwardTenantRebuildRuns,
+		staleTime: 5_000,
+	});
+	const demoPerformanceNetworksQ = useQuery({
+		queryKey: queryKeys.userForwardManagedTenantPerformanceNetworks("demo"),
+		queryFn: () => listManagedForwardTenantPerformanceNetworks("demo"),
+		staleTime: 10_000,
 		retry: false,
 	});
-	const selectedUserScopeId = useMemo(
-		() => String(userScopesQ.data?.[0]?.id ?? ""),
-		[userScopesQ.data],
-	);
-	const tenantPerformanceNetworksKey =
-		queryKeys.userForwardPerformanceNetworks(selectedUserScopeId);
-	const tenantPerformanceNetworksQ = useQuery({
-		queryKey: tenantPerformanceNetworksKey,
-		queryFn: () => listUserScopeForwardPerformanceNetworks(selectedUserScopeId),
-		enabled: Boolean(selectedUserScopeId),
+	const primaryPerformanceNetworksQ = useQuery({
+		queryKey: queryKeys.userForwardManagedTenantPerformanceNetworks("primary"),
+		queryFn: () => listManagedForwardTenantPerformanceNetworks("primary"),
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -97,8 +131,18 @@ export function useForwardCredentialsPage() {
 	const [skipTlsVerify, setSkipTlsVerify] = useState(false);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
-	const [revealedTenantPassword, setRevealedTenantPassword] = useState("");
-	const [confirmHardReset, setConfirmHardReset] = useState(false);
+	const [revealedPasswords, setRevealedPasswords] = useState<
+		Record<ManagedForwardTenantKind, string>
+	>({
+		demo: "",
+		primary: "",
+	});
+	const [confirmHardResetByTenant, setConfirmHardResetByTenant] = useState<
+		Record<ManagedForwardTenantKind, boolean>
+	>({
+		demo: false,
+		primary: false,
+	});
 	const tlsCheckboxDisabled = false;
 	const effectiveSkipTlsVerify = skipTlsVerify;
 
@@ -151,61 +195,101 @@ export function useForwardCredentialsPage() {
 	});
 
 	const resetTenantCredentialMutation = useMutation({
-		mutationFn: resetCurrentUserForwardTenantCredential,
-		onSuccess: async () => {
-			toast.success("Forward org credential reset");
-			setRevealedTenantPassword("");
-			await queryClient.invalidateQueries({ queryKey: tenantCredentialKey });
-			await queryClient.invalidateQueries({ queryKey: collectorsKey });
+		mutationFn: async (tenant: ManagedForwardTenantKind) =>
+			tenant === "demo"
+				? resetCurrentUserForwardDemoTenantCredential()
+				: resetCurrentUserForwardTenantCredential(),
+		onSuccess: async (_resp, tenant) => {
+			toast.success(`Forward ${tenantKindLabel(tenant)} credential reset`);
+			setRevealedPasswords((prev) => ({ ...prev, [tenant]: "" }));
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardManagedTenantCredential(tenant),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardManagedTenantPerformanceNetworks(tenant),
+			});
+			if (tenant === "primary") {
+				await queryClient.invalidateQueries({ queryKey: collectorsKey });
+			}
 		},
-		onError: (err) =>
-			toast.error("Failed to reset Forward org credential", {
+		onError: (err, tenant) =>
+			toast.error(`Failed to reset Forward ${tenantKindLabel(tenant)} credential`, {
 				description: err instanceof Error ? err.message : String(err),
-		}),
+			}),
 	});
 
 	const revealTenantCredentialMutation = useMutation({
-		mutationFn: revealCurrentUserForwardTenantCredentialPassword,
-		onSuccess: (resp) => {
+		mutationFn: async (tenant: ManagedForwardTenantKind) =>
+			tenant === "demo"
+				? revealCurrentUserForwardDemoTenantCredentialPassword()
+				: revealCurrentUserForwardTenantCredentialPassword(),
+		onSuccess: (resp, tenant) => {
 			const value = String(resp?.password ?? "").trim();
 			if (!value) {
 				toast.error("Managed credential password unavailable");
 				return;
 			}
-			setRevealedTenantPassword(value);
-			toast.success("Managed credential password revealed");
+			setRevealedPasswords((prev) => ({ ...prev, [tenant]: value }));
+			toast.success(`Managed ${tenantKindLabel(tenant)} password revealed`);
 		},
-		onError: (err) =>
-			toast.error("Failed to reveal managed credential password", {
+		onError: (err, tenant) =>
+			toast.error(`Failed to reveal ${tenantKindLabel(tenant)} password`, {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
 
 	const requestTenantResetMutation = useMutation({
-		mutationFn: async (mode: "soft-reset" | "hard-reset") =>
-			requestCurrentUserForwardTenantRebuild({
-				mode,
-				reason: "",
-				metadata: {},
-			}),
-		onSuccess: async (_run, mode) => {
+		mutationFn: async (input: {
+			tenant: ManagedForwardTenantKind;
+			mode: "soft-reset" | "hard-reset" | "curated-reset";
+		}) =>
+			input.tenant === "demo"
+				? requestCurrentUserForwardDemoTenantRebuild({
+						mode: input.mode,
+						tenantKind: tenantKindPath(input.tenant),
+						reason: "",
+						metadata: {},
+					})
+				: requestCurrentUserForwardTenantRebuild({
+						mode: input.mode,
+						tenantKind: tenantKindPath(input.tenant),
+						reason: "",
+						metadata: {},
+					}),
+		onSuccess: async (_run, input) => {
 			toast.success(
-				mode === "hard-reset"
-					? "Forward org rebuild queued"
-					: "Forward org resync queued",
+				input.mode === "hard-reset"
+					? `Forward ${tenantKindLabel(input.tenant)} rebuild queued`
+					: input.mode === "curated-reset"
+						? `Forward ${tenantKindLabel(input.tenant)} restore queued`
+						: `Forward ${tenantKindLabel(input.tenant)} resync queued`,
 			);
-			if (mode === "hard-reset") {
-				setConfirmHardReset(false);
+			if (input.mode === "hard-reset") {
+				setConfirmHardResetByTenant((prev) => ({
+					...prev,
+					[input.tenant]: false,
+				}));
 			}
-			await queryClient.invalidateQueries({ queryKey: tenantResetRunsKey });
-			await queryClient.invalidateQueries({ queryKey: tenantCredentialKey });
-			await queryClient.invalidateQueries({ queryKey: collectorsKey });
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardTenantRebuildRunsByKind(input.tenant),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardManagedTenantCredential(input.tenant),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardManagedTenantPerformanceNetworks(
+					input.tenant,
+				),
+			});
+			if (input.tenant === "primary") {
+				await queryClient.invalidateQueries({ queryKey: collectorsKey });
+			}
 		},
-		onError: (err, mode) =>
+		onError: (err, input) =>
 			toast.error(
-				mode === "hard-reset"
-					? "Failed to queue Forward org rebuild"
-					: "Failed to queue Forward org resync",
+				input.mode === "hard-reset"
+					? `Failed to queue Forward ${tenantKindLabel(input.tenant)} rebuild`
+					: `Failed to queue Forward ${tenantKindLabel(input.tenant)} reset`,
 				{
 					description: err instanceof Error ? err.message : String(err),
 				},
@@ -226,32 +310,27 @@ export function useForwardCredentialsPage() {
 
 	const generateSyntheticPerformanceMutation = useMutation({
 		mutationFn: async (input: {
+			tenant: ManagedForwardTenantKind;
 			networkRef: string;
 			snapshotId?: string;
 			generationIntervalMins?: number;
 			healthyDeviceOdds?: number;
 			healthyInterfaceOdds?: number;
-		}) => {
-			if (!selectedUserScopeId) {
-				throw new Error("No user scope available");
-			}
-			return generateUserScopeForwardNetworkPerformance(
-				selectedUserScopeId,
-				input.networkRef,
-				{
-					snapshotId: input.snapshotId,
-					generationIntervalMins: input.generationIntervalMins,
-					healthyDeviceOdds: input.healthyDeviceOdds,
-					healthyInterfaceOdds: input.healthyInterfaceOdds,
-				},
-			);
-		},
-		onSuccess: async (resp) => {
+		}) =>
+			generateManagedForwardTenantPerformance(input.tenant, input.networkRef, {
+				snapshotId: input.snapshotId,
+				generationIntervalMins: input.generationIntervalMins,
+				healthyDeviceOdds: input.healthyDeviceOdds,
+				healthyInterfaceOdds: input.healthyInterfaceOdds,
+			}),
+		onSuccess: async (resp, input) => {
 			toast.success("Synthetic performance data generated", {
 				description: `snapshot ${resp.snapshotId ?? "latest"}${resp.numDevices ? `, devices ${resp.numDevices}` : ""}`,
 			});
 			await queryClient.invalidateQueries({
-				queryKey: tenantPerformanceNetworksKey,
+				queryKey: queryKeys.userForwardManagedTenantPerformanceNetworks(
+					input.tenant,
+				),
 			});
 		},
 		onError: (err) =>
@@ -260,14 +339,41 @@ export function useForwardCredentialsPage() {
 			}),
 	});
 
+	const tenants = useMemo<Record<ManagedForwardTenantKind, ManagedTenantState>>(
+		() => ({
+			demo: {
+				credentialQ: demoCredentialQ,
+				resetRunsQ: demoResetRunsQ,
+				performanceNetworksQ: demoPerformanceNetworksQ,
+				revealedPassword: revealedPasswords.demo,
+				confirmHardReset: confirmHardResetByTenant.demo,
+			},
+			primary: {
+				credentialQ: primaryCredentialQ,
+				resetRunsQ: primaryResetRunsQ,
+				performanceNetworksQ: primaryPerformanceNetworksQ,
+				revealedPassword: revealedPasswords.primary,
+				confirmHardReset: confirmHardResetByTenant.primary,
+			},
+		}),
+		[
+			confirmHardResetByTenant.demo,
+			confirmHardResetByTenant.primary,
+			demoCredentialQ,
+			demoPerformanceNetworksQ,
+			demoResetRunsQ,
+			primaryCredentialQ,
+			primaryPerformanceNetworksQ,
+			primaryResetRunsQ,
+			revealedPasswords.demo,
+			revealedPasswords.primary,
+		],
+	);
+
 	return {
 		collectorsQ,
-		tenantCredentialQ,
-		tenantResetRunsQ,
 		tenantFeaturesQ,
-		userScopesQ,
-		selectedUserScopeId,
-		tenantPerformanceNetworksQ,
+		tenants,
 		customHost,
 		setCustomHost,
 		skipTlsVerify,
@@ -276,10 +382,18 @@ export function useForwardCredentialsPage() {
 		setUsername,
 		password,
 		setPassword,
-		revealedTenantPassword,
-		setRevealedTenantPassword,
-		confirmHardReset,
-		setConfirmHardReset,
+		setRevealedTenantPassword: (
+			tenant: ManagedForwardTenantKind,
+			value: string,
+		) => {
+			setRevealedPasswords((prev) => ({ ...prev, [tenant]: value }));
+		},
+		setConfirmHardReset: (
+			tenant: ManagedForwardTenantKind,
+			value: boolean,
+		) => {
+			setConfirmHardResetByTenant((prev) => ({ ...prev, [tenant]: value }));
+		},
 		tlsCheckboxDisabled,
 		effectiveSkipTlsVerify,
 		credentialSets,
@@ -290,5 +404,6 @@ export function useForwardCredentialsPage() {
 		requestTenantResetMutation,
 		saveTenantFeaturesMutation,
 		generateSyntheticPerformanceMutation,
+		managedTenantKeys: MANAGED_TENANT_KEYS,
 	};
 }

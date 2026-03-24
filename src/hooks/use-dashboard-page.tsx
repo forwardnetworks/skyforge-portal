@@ -98,7 +98,7 @@ export function useDashboardPage(): DashboardPageState {
 	const session = sessionQ.data;
 	const forwardClusterLaunchHref = useMemo(() => {
 		return (
-			indexToolLaunches(toolCatalogQ.data?.tools)["forward-cluster"]
+			indexToolLaunches(toolCatalogQ.data?.tools)["forward-cluster-demo"]
 				?.navigationHref ?? ""
 		);
 	}, [toolCatalogQ.data?.tools]);

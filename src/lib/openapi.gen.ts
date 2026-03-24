@@ -2220,6 +2220,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forward/demo-org-credential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetCurrentUserForwardDemoTenantCredential returns the current user's demo
+         *     Forward org credential.
+         */
+        get: operations["GET:skyforge.GetCurrentUserForwardDemoTenantCredential"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/demo-org-credential/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ResetCurrentUserForwardDemoTenantPassword rotates the current user's demo
+         *     Forward org password.
+         */
+        post: operations["POST:skyforge.ResetCurrentUserForwardDemoTenantPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/demo-org-credential/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RevealCurrentUserForwardDemoTenantCredentialPassword returns the current user's
+         * @description demo managed Forward credential with password material included.
+         */
+        post: operations["POST:skyforge.RevealCurrentUserForwardDemoTenantCredentialPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/demo-org/performance-networks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListCurrentUserForwardDemoTenantPerformanceNetworks returns demo-org Forward
+         *     networks with latest processed snapshot metadata.
+         */
+        get: operations["GET:skyforge.ListCurrentUserForwardDemoTenantPerformanceNetworks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/demo-org/performance-networks/{networkID}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * GenerateCurrentUserForwardDemoTenantPerformanceData generates synthetic
+         *     performance data for a demo-org Forward network.
+         */
+        post: operations["POST:skyforge.GenerateCurrentUserForwardDemoTenantPerformanceData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/demo-org/rebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RequestCurrentUserForwardDemoTenantRebuild requests a platform-managed Forward
+         *     demo org rebuild for the current user.
+         */
+        post: operations["POST:skyforge.RequestCurrentUserForwardDemoTenantRebuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/demo-org/rebuild/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListCurrentUserForwardDemoTenantRebuildRuns returns demo-org reset runs for the
+         *     current user.
+         */
+        get: operations["GET:skyforge.ListCurrentUserForwardDemoTenantRebuildRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/forward/networks/{networkID}/session": {
         parameters: {
             query?: never;
@@ -2248,8 +2388,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * GetCurrentUserForwardTenantCredential returns the current user's Forward org
-         *     credential.
+         * GetCurrentUserForwardTenantCredential returns the current user's deployment
+         *     Forward org credential.
          */
         get: operations["GET:skyforge.GetCurrentUserForwardTenantCredential"];
         put?: never;
@@ -2270,8 +2410,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ResetCurrentUserForwardTenantPassword rotates the current user's Forward org
-         *     password.
+         * ResetCurrentUserForwardTenantPassword rotates the current user's deployment
+         *     Forward org password.
          */
         post: operations["POST:skyforge.ResetCurrentUserForwardTenantPassword"];
         delete?: never;
@@ -2291,7 +2431,7 @@ export interface paths {
         put?: never;
         /**
          * RevealCurrentUserForwardTenantCredentialPassword returns the current user's
-         * @description managed Forward credential with password material included.
+         * @description deployment managed Forward credential with password material included.
          */
         post: operations["POST:skyforge.RevealCurrentUserForwardTenantCredentialPassword"];
         delete?: never;
@@ -2324,6 +2464,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forward/org/performance-networks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListCurrentUserForwardTenantPerformanceNetworks returns deployment-org Forward
+         *     networks with latest processed snapshot metadata.
+         */
+        get: operations["GET:skyforge.ListCurrentUserForwardTenantPerformanceNetworks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forward/org/performance-networks/{networkID}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * GenerateCurrentUserForwardTenantPerformanceData generates synthetic performance
+         *     data for a deployment-org Forward network.
+         */
+        post: operations["POST:skyforge.GenerateCurrentUserForwardTenantPerformanceData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/forward/org/rebuild": {
         parameters: {
             query?: never;
@@ -2334,8 +2514,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * RequestCurrentUserForwardTenantRebuild requests a platform-managed Forward org
-         *     rebuild for the current user.
+         * RequestCurrentUserForwardTenantRebuild requests a platform-managed Forward
+         *     deployment org rebuild for the current user.
          */
         post: operations["POST:skyforge.RequestCurrentUserForwardTenantRebuild"];
         delete?: never;
@@ -2351,7 +2531,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** ListCurrentUserForwardTenantRebuildRuns returns reset runs for the current user. */
+        /**
+         * ListCurrentUserForwardTenantRebuildRuns returns deployment-org reset runs for
+         *     the current user.
+         */
         get: operations["GET:skyforge.ListCurrentUserForwardTenantRebuildRuns"];
         put?: never;
         post?: never;
@@ -8695,6 +8878,7 @@ export interface components {
             updatedAt: string;
             userId: string;
         };
+        "forwardtenant.TenantKind": string;
         "platform.ForwardTenantResetBaseline": {
             capturedAt: string;
             deployments: components["schemas"]["platform.ForwardTenantResetBaselineDeployment"][];
@@ -8716,6 +8900,7 @@ export interface components {
             reason: string;
             requestedBy: string;
             status: string;
+            tenantKind: string;
             updatedAt: string;
             username: string;
         };
@@ -9325,6 +9510,7 @@ export interface components {
             latestProcessedSnapshotState: string;
             name: string;
             status: string;
+            tenantKind: string;
             userScopeId: string;
         };
         "skyforge.ForwardTenantFeatureFlags": {
@@ -10858,6 +11044,7 @@ export interface operations {
                     };
                     mode: string;
                     reason: string;
+                    tenantKind: string;
                 };
             };
         };
@@ -10879,6 +11066,7 @@ export interface operations {
                         reason: string;
                         requestedBy: string;
                         status: string;
+                        tenantKind: string;
                         updatedAt: string;
                         username: string;
                     };
@@ -14796,6 +14984,242 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.GetCurrentUserForwardDemoTenantCredential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        email: string;
+                        hasPassword: boolean;
+                        lastRotatedAt: string;
+                        orgId: string;
+                        orgName: string;
+                        password: string;
+                        source: string;
+                        tenantKind: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ResetCurrentUserForwardDemoTenantPassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        email: string;
+                        hasPassword: boolean;
+                        lastRotatedAt: string;
+                        orgId: string;
+                        orgName: string;
+                        password: string;
+                        source: string;
+                        tenantKind: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RevealCurrentUserForwardDemoTenantCredentialPassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: boolean;
+                        email: string;
+                        hasPassword: boolean;
+                        lastRotatedAt: string;
+                        orgId: string;
+                        orgName: string;
+                        password: string;
+                        source: string;
+                        tenantKind: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListCurrentUserForwardDemoTenantPerformanceNetworks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        networks: components["schemas"]["skyforge.ForwardPerformanceNetworkSummary"][];
+                        tenantKind: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.GenerateCurrentUserForwardDemoTenantPerformanceData": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                networkID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    generationIntervalMins: number;
+                    healthyDeviceOdds: number;
+                    healthyInterfaceOdds: number;
+                    snapshotId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        forwardNetworkId: string;
+                        /** Format: int64 */
+                        numDevices: number;
+                        /** Format: int64 */
+                        numInterfaces: number;
+                        snapshotId: string;
+                        status: string;
+                        tenantKind: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.RequestCurrentUserForwardDemoTenantRebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    metadata: {
+                        [key: string]: string;
+                    };
+                    mode: string;
+                    reason: string;
+                    tenantKind: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        baseline: components["schemas"]["platform.ForwardTenantResetBaseline"];
+                        createdAt: string;
+                        id: string;
+                        metadata: {
+                            [key: string]: string;
+                        };
+                        mode: string;
+                        reason: string;
+                        requestedBy: string;
+                        status: string;
+                        tenantKind: string;
+                        updatedAt: string;
+                        username: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListCurrentUserForwardDemoTenantRebuildRuns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        runs: components["schemas"]["platform.ForwardTenantResetRun"][];
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "GET:skyforge.ForwardNetworkSessionStart": {
         parameters: {
             query?: never;
@@ -14841,6 +15265,7 @@ export interface operations {
                         orgName: string;
                         password: string;
                         source: string;
+                        tenantKind: string;
                         updatedAt: string;
                         username: string;
                     };
@@ -14873,6 +15298,7 @@ export interface operations {
                         orgName: string;
                         password: string;
                         source: string;
+                        tenantKind: string;
                         updatedAt: string;
                         username: string;
                     };
@@ -14905,6 +15331,7 @@ export interface operations {
                         orgName: string;
                         password: string;
                         source: string;
+                        tenantKind: string;
                         updatedAt: string;
                         username: string;
                     };
@@ -14965,6 +15392,74 @@ export interface operations {
             default: components["responses"]["APIError"];
         };
     };
+    "GET:skyforge.ListCurrentUserForwardTenantPerformanceNetworks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        networks: components["schemas"]["skyforge.ForwardPerformanceNetworkSummary"][];
+                        tenantKind: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.GenerateCurrentUserForwardTenantPerformanceData": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                networkID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    generationIntervalMins: number;
+                    healthyDeviceOdds: number;
+                    healthyInterfaceOdds: number;
+                    snapshotId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        forwardNetworkId: string;
+                        /** Format: int64 */
+                        numDevices: number;
+                        /** Format: int64 */
+                        numInterfaces: number;
+                        snapshotId: string;
+                        status: string;
+                        tenantKind: string;
+                        userScopeId: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
     "POST:skyforge.RequestCurrentUserForwardTenantRebuild": {
         parameters: {
             query?: never;
@@ -14980,6 +15475,7 @@ export interface operations {
                     };
                     mode: string;
                     reason: string;
+                    tenantKind: string;
                 };
             };
         };
@@ -15001,6 +15497,7 @@ export interface operations {
                         reason: string;
                         requestedBy: string;
                         status: string;
+                        tenantKind: string;
                         updatedAt: string;
                         username: string;
                     };
@@ -19329,6 +19826,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         networks: components["schemas"]["skyforge.ForwardPerformanceNetworkSummary"][];
+                        tenantKind: string;
                         userScopeId: string;
                     };
                 };
@@ -19372,6 +19870,7 @@ export interface operations {
                         numInterfaces: number;
                         snapshotId: string;
                         status: string;
+                        tenantKind: string;
                         userScopeId: string;
                     };
                 };
@@ -22946,6 +23445,7 @@ export interface operations {
                     skipTlsVerify: boolean;
                     supportPassword: string;
                     supportUsername: string;
+                    tenantKind: components["schemas"]["forwardtenant.TenantKind"];
                     username: string;
                 };
             };
@@ -22982,6 +23482,7 @@ export interface operations {
                     skipTlsVerify: boolean;
                     supportPassword: string;
                     supportUsername: string;
+                    tenantKind: components["schemas"]["forwardtenant.TenantKind"];
                     username: string;
                 };
             };
@@ -23000,6 +23501,7 @@ export interface operations {
                         orgId: string;
                         orgName: string;
                         password: string;
+                        tenantKind: components["schemas"]["forwardtenant.TenantKind"];
                         /** Format: date-time */
                         updatedAt: string;
                         username: string;
@@ -23025,6 +23527,7 @@ export interface operations {
                     skipTlsVerify: boolean;
                     supportPassword: string;
                     supportUsername: string;
+                    tenantKind: components["schemas"]["forwardtenant.TenantKind"];
                     username: string;
                 };
             };
@@ -23043,6 +23546,7 @@ export interface operations {
                         orgId: string;
                         orgName: string;
                         password: string;
+                        tenantKind: components["schemas"]["forwardtenant.TenantKind"];
                         /** Format: date-time */
                         updatedAt: string;
                         username: string;
@@ -24155,6 +24659,7 @@ export interface operations {
                         reason: string;
                         requestedBy: string;
                         status: string;
+                        tenantKind: string;
                         updatedAt: string;
                         username: string;
                     };
@@ -24436,6 +24941,7 @@ export interface operations {
             content: {
                 "application/json": {
                     includeAll: boolean;
+                    tenantKind: string;
                     username: string;
                 };
             };
@@ -24690,6 +25196,7 @@ export interface operations {
                     mode: string;
                     reason: string;
                     requestedBy: string;
+                    tenantKind: string;
                     username: string;
                 };
             };
@@ -24712,6 +25219,7 @@ export interface operations {
                         reason: string;
                         requestedBy: string;
                         status: string;
+                        tenantKind: string;
                         updatedAt: string;
                         username: string;
                     };
@@ -24756,6 +25264,7 @@ export interface operations {
                         reason: string;
                         requestedBy: string;
                         status: string;
+                        tenantKind: string;
                         updatedAt: string;
                         username: string;
                     };

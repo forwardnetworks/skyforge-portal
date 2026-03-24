@@ -70,6 +70,7 @@ export type DeleteUserForwardCollectorConfigResponse = {
 };
 
 export type ForwardTenantCredentialResponse = {
+	tenantKind?: string;
 	configured: boolean;
 	orgId?: string;
 	orgName?: string;
@@ -81,6 +82,8 @@ export type ForwardTenantCredentialResponse = {
 	lastRotatedAt?: ISO8601;
 	source?: string;
 };
+
+export type ForwardTenantKind = "primary" | "demo";
 
 export type ForwardTenantFeatureFlags = {
 	predictModeling: boolean;
@@ -98,9 +101,12 @@ export type PutCurrentUserForwardTenantFeaturesRequest = {
 	features: ForwardTenantFeatureFlags;
 };
 
-export type RequestCurrentUserForwardTenantRebuildRequest = NonNullable<
-	operations["POST:skyforge.RequestCurrentUserForwardTenantRebuild"]["requestBody"]
->["content"]["application/json"];
+export type RequestCurrentUserForwardTenantRebuildRequest = {
+	mode: string;
+	reason?: string;
+	metadata?: Record<string, string>;
+	tenantKind?: ForwardTenantKind;
+};
 export type ForwardTenantResetRunsResponse =
 	operations["GET:skyforge.ListCurrentUserForwardTenantRebuildRuns"]["responses"][200]["content"]["application/json"];
 export type ForwardTenantResetRun =
@@ -136,6 +142,12 @@ export async function getCurrentUserForwardTenantCredential(): Promise<ForwardTe
 	);
 }
 
+export async function getCurrentUserForwardDemoTenantCredential(): Promise<ForwardTenantCredentialResponse> {
+	return apiFetch<ForwardTenantCredentialResponse>(
+		"/api/forward/demo-org-credential",
+	);
+}
+
 export async function resetCurrentUserForwardTenantCredential(): Promise<ForwardTenantCredentialResponse> {
 	return apiFetch<ForwardTenantCredentialResponse>(
 		"/api/forward/org-credential/reset",
@@ -143,9 +155,23 @@ export async function resetCurrentUserForwardTenantCredential(): Promise<Forward
 	);
 }
 
+export async function resetCurrentUserForwardDemoTenantCredential(): Promise<ForwardTenantCredentialResponse> {
+	return apiFetch<ForwardTenantCredentialResponse>(
+		"/api/forward/demo-org-credential/reset",
+		{ method: "POST", body: "{}" },
+	);
+}
+
 export async function revealCurrentUserForwardTenantCredentialPassword(): Promise<ForwardTenantCredentialResponse> {
 	return apiFetch<ForwardTenantCredentialResponse>(
 		"/api/forward/org-credential/reveal",
+		{ method: "POST", body: "{}" },
+	);
+}
+
+export async function revealCurrentUserForwardDemoTenantCredentialPassword(): Promise<ForwardTenantCredentialResponse> {
+	return apiFetch<ForwardTenantCredentialResponse>(
+		"/api/forward/demo-org-credential/reveal",
 		{ method: "POST", body: "{}" },
 	);
 }
@@ -172,9 +198,24 @@ export async function requestCurrentUserForwardTenantRebuild(
 	});
 }
 
+export async function requestCurrentUserForwardDemoTenantRebuild(
+	body: RequestCurrentUserForwardTenantRebuildRequest,
+): Promise<ForwardTenantResetRun> {
+	return apiFetch<ForwardTenantResetRun>("/api/forward/demo-org/rebuild", {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
 export async function listCurrentUserForwardTenantRebuildRuns(): Promise<ForwardTenantResetRunsResponse> {
 	return apiFetch<ForwardTenantResetRunsResponse>(
 		"/api/forward/org/rebuild/runs",
+	);
+}
+
+export async function listCurrentUserForwardDemoTenantRebuildRuns(): Promise<ForwardTenantResetRunsResponse> {
+	return apiFetch<ForwardTenantResetRunsResponse>(
+		"/api/forward/demo-org/rebuild/runs",
 	);
 }
 

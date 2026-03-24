@@ -1,5 +1,5 @@
 import type { useForwardCredentialsPage } from "@/hooks/use-forward-credentials-page";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -12,6 +12,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
 type ForwardCredentialsPageState = ReturnType<typeof useForwardCredentialsPage>;
+type ManagedTenantKey = "demo" | "primary";
 
 type DraftByNetwork = Record<
 	string,
@@ -23,11 +24,29 @@ type DraftByNetwork = Record<
 	}
 >;
 
+function tenantCopy(tenant: ManagedTenantKey) {
+	if (tenant === "demo") {
+		return {
+			title: "Demo Org Performance Data",
+			description:
+				"List demo-org networks and generate synthetic performance data for curated demos.",
+		};
+	}
+	return {
+		title: "Deployment Org Performance Data",
+		description:
+			"List deployment-org networks and generate synthetic performance data after collection or on demand.",
+	};
+}
+
 export function ForwardTenantPerformanceCard(props: {
 	page: ForwardCredentialsPageState;
+	tenant: ManagedTenantKey;
 }) {
-	const { page } = props;
-	const networks = page.tenantPerformanceNetworksQ.data?.networks ?? [];
+	const { page, tenant } = props;
+	const state = page.tenants[tenant];
+	const copy = tenantCopy(tenant);
+	const networks = state.performanceNetworksQ.data?.networks ?? [];
 	const [drafts, setDrafts] = useState<DraftByNetwork>({});
 
 	useEffect(() => {
@@ -39,7 +58,9 @@ export function ForwardTenantPerformanceCard(props: {
 			const next: DraftByNetwork = {};
 			for (const network of networks) {
 				next[network.id] = {
-					snapshotId: prev[network.id]?.snapshotId ?? String(network.latestProcessedSnapshotId ?? ""),
+					snapshotId:
+						prev[network.id]?.snapshotId ??
+						String(network.latestProcessedSnapshotId ?? ""),
 					generationIntervalMins:
 						prev[network.id]?.generationIntervalMins ??
 						String(network.defaultGenerationIntervalMins ?? 10),
@@ -55,48 +76,35 @@ export function ForwardTenantPerformanceCard(props: {
 		});
 	}, [networks]);
 
-	const scopeLabel = useMemo(
-		() => page.selectedUserScopeId || "no user scope available",
-		[page.selectedUserScopeId],
-	);
-
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Synthetic Performance Data</CardTitle>
-				<CardDescription>
-					List saved Forward networks for the active user scope and manually
-					generate synthetic performance data from the latest processed snapshot.
-					The same generation path now runs automatically after deployment
-					Forward sync and collection.
-				</CardDescription>
+				<CardTitle>{copy.title}</CardTitle>
+				<CardDescription>{copy.description}</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				<div className="text-xs text-muted-foreground">
-					User scope: <code>{scopeLabel}</code>
-				</div>
 				<div className="flex flex-wrap gap-2">
 					<Button
 						variant="outline"
-						onClick={() => void page.tenantPerformanceNetworksQ.refetch()}
-						disabled={page.tenantPerformanceNetworksQ.isFetching}
+						onClick={() => void state.performanceNetworksQ.refetch()}
+						disabled={state.performanceNetworksQ.isFetching}
 					>
 						Reload networks
 					</Button>
 				</div>
-				{page.tenantPerformanceNetworksQ.isLoading ? (
+				{state.performanceNetworksQ.isLoading ? (
 					<div className="text-sm text-muted-foreground">
 						Loading Forward networks…
 					</div>
 				) : null}
-				{page.tenantPerformanceNetworksQ.isError ? (
+				{state.performanceNetworksQ.isError ? (
 					<div className="text-sm text-destructive">
 						Failed to load Forward performance networks.
 					</div>
 				) : null}
-				{!page.tenantPerformanceNetworksQ.isLoading && networks.length === 0 ? (
+				{!state.performanceNetworksQ.isLoading && networks.length === 0 ? (
 					<div className="text-sm text-muted-foreground">
-						No saved Forward networks are available for this scope.
+						No Forward networks are available in this org.
 					</div>
 				) : null}
 				<div className="space-y-4">
@@ -220,6 +228,7 @@ export function ForwardTenantPerformanceCard(props: {
 									<Button
 										onClick={() =>
 											page.generateSyntheticPerformanceMutation.mutate({
+												tenant,
 												networkRef: network.id,
 												snapshotId: draft.snapshotId.trim() || undefined,
 												generationIntervalMins: Number.parseInt(

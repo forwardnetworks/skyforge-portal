@@ -240,16 +240,29 @@ const toolEntries: ToolNavigationEntry[] = [
 ];
 
 const toolLaunches: ToolLaunchMap = {
-	"forward-cluster": {
-		id: "forward-cluster",
-		title: "Forward Cluster",
+	"forward-cluster-demo": {
+		id: "forward-cluster-demo",
+		title: "Forward Demo Org",
 		category: "forward",
 		experience: "both",
 		navigationSection: "forward",
-		navigationLabel: "Cluster",
+		navigationLabel: "Demo Org",
 		navigationOrder: 10,
 		navigationIcon: "network",
-		navigationHref: "/api/forward/session",
+		navigationHref: "/api/forward/session?tenant=demo",
+		navigationMode: "direct",
+		launchMode: "new_tab",
+	},
+	"forward-cluster-deployment": {
+		id: "forward-cluster-deployment",
+		title: "Forward Deployment Org",
+		category: "forward",
+		experience: "both",
+		navigationSection: "forward",
+		navigationLabel: "Deployment Org",
+		navigationOrder: 20,
+		navigationIcon: "network",
+		navigationHref: "/api/forward/session?tenant=primary",
 		navigationMode: "direct",
 		launchMode: "new_tab",
 	},
@@ -453,7 +466,8 @@ describe("side nav model", () => {
 			expect.arrayContaining([
 				"Credentials",
 				"Collector",
-				"Cluster",
+				"Demo Org",
+				"Deployment Org",
 				"Analytics",
 				"ServiceNow",
 			]),
@@ -479,7 +493,9 @@ describe("side nav model", () => {
 		const toolsWithoutForward = Object.fromEntries(
 			Object.entries(withAllowedTools()).filter(
 				([id, tool]) =>
-					id !== "forward-cluster" && tool.navigationSection !== "forward",
+					id !== "forward-cluster-demo" &&
+					id !== "forward-cluster-deployment" &&
+					tool.navigationSection !== "forward",
 			),
 		);
 		const items = buildSideNavItems(
@@ -649,7 +665,8 @@ describe("side nav model", () => {
 		expect(forward?.children?.map((child) => child.label)).toEqual([
 			"Credentials",
 			"Collector",
-			"Cluster",
+			"Demo Org",
+			"Deployment Org",
 		]);
 		expect(labels).not.toContain("Observability");
 		expect(labels).not.toContain("Designer");
