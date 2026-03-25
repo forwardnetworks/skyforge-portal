@@ -115,11 +115,14 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 			role: "firewall",
 		});
 	}
-	if (lower.includes("vrnetlab/vr-fortios") || lower.includes("fortios")) {
+	if (
+		lower.includes("ghcr.io/forwardnetworks/kubevirt/fortios") ||
+		lower.includes("fortios")
+	) {
 		return mk({
 			label: "Firewall · Fortinet FortiOS",
 			category: "Firewalls",
-			kind: "vr-fortios",
+			kind: "fortios",
 			repo: clean,
 			vendor: "Fortinet",
 			model: "FortiOS",
