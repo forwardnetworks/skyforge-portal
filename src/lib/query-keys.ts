@@ -60,6 +60,10 @@ export const queryKeys = {
 		] as const,
 	userForwardNetworkCapacityPortfolio: (userId: string) =>
 		["userForwardNetworkCapacityPortfolio", userId] as const,
+	forwardNetworkSecurityInsights: (userId: string, networkRef: string) =>
+		["forwardNetworkSecurityInsights", userId, networkRef] as const,
+	forwardNetworkCloudInsights: (userId: string, networkRef: string) =>
+		["forwardNetworkCloudInsights", userId, networkRef] as const,
 	forwardNetworkCapacityGrowth: (
 		userId: string,
 		networkRef: string,

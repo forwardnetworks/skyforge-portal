@@ -2,15 +2,20 @@ import {
 	type ForwardNetworkCapacityCoverageResponse,
 	type ForwardNetworkCapacityInventoryResponse,
 	type ForwardNetworkCapacitySnapshotDeltaResponse,
+	type ForwardNetworkInsightResultResponse,
 	type ForwardNetworkCapacityUpgradeCandidatesResponse,
+	getForwardNetworkCloudInsights,
 	getForwardNetworkCapacityCoverage,
 	getForwardNetworkCapacityInventory,
 	getForwardNetworkCapacitySnapshotDelta,
 	getForwardNetworkCapacitySummary,
 	getForwardNetworkCapacityUnhealthyDevices,
 	getForwardNetworkCapacityUpgradeCandidates,
+	getForwardNetworkSecurityInsights,
 	listUserScopeForwardNetworks,
 	refreshForwardNetworkCapacityRollups,
+	runForwardNetworkCloudInsights,
+	runForwardNetworkSecurityInsights,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -102,6 +107,22 @@ export function useForwardNetworkCapacityPageData(args: {
 			staleTime: 30_000,
 		});
 
+	const securityInsights = useQuery<ForwardNetworkInsightResultResponse>({
+		queryKey: queryKeys.forwardNetworkSecurityInsights(ownerUserId, networkRefId),
+		queryFn: () => getForwardNetworkSecurityInsights(ownerUserId, networkRefId),
+		enabled: Boolean(ownerUserId && networkRefId),
+		retry: false,
+		staleTime: 30_000,
+	});
+
+	const cloudInsights = useQuery<ForwardNetworkInsightResultResponse>({
+		queryKey: queryKeys.forwardNetworkCloudInsights(ownerUserId, networkRefId),
+		queryFn: () => getForwardNetworkCloudInsights(ownerUserId, networkRefId),
+		enabled: Boolean(ownerUserId && networkRefId),
+		retry: false,
+		staleTime: 30_000,
+	});
+
 	const forwardNetworkId = String(
 		summary.data?.forwardNetworkId ?? inventory.data?.forwardNetworkId ?? "",
 	);
@@ -169,6 +190,18 @@ export function useForwardNetworkCapacityPageData(args: {
 				queryKey: queryKeys.userForwardNetworkCapacityPortfolio(ownerUserId),
 			});
 			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkSecurityInsights(
+					ownerUserId,
+					networkRefId,
+				),
+			});
+			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkCloudInsights(
+					ownerUserId,
+					networkRefId,
+				),
+			});
+			await qc.invalidateQueries({
 				queryKey: ["forwardNetworkCapacityGrowth", ownerUserId, networkRefId],
 			});
 		},
@@ -182,6 +215,45 @@ export function useForwardNetworkCapacityPageData(args: {
 		onSuccess: (resp) => setUnhealthyDevices(resp.body),
 		onError: (e) =>
 			toast.error("Failed to load unhealthy devices", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runSecurityInsights = useMutation({
+		mutationFn: async () =>
+			runForwardNetworkSecurityInsights(ownerUserId, networkRefId),
+		onSuccess: async (resp) => {
+			toast.success("Security insights completed", {
+				description: `Run ${String(resp.run?.id ?? "")}`.trim(),
+			});
+			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkSecurityInsights(
+					ownerUserId,
+					networkRefId,
+				),
+			});
+		},
+		onError: (e) =>
+			toast.error("Failed to run security insights", {
+				description: (e as Error).message,
+			}),
+	});
+
+	const runCloudInsights = useMutation({
+		mutationFn: async () => runForwardNetworkCloudInsights(ownerUserId, networkRefId),
+		onSuccess: async (resp) => {
+			toast.success("Cloud insights completed", {
+				description: `Run ${String(resp.run?.id ?? "")}`.trim(),
+			});
+			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkCloudInsights(
+					ownerUserId,
+					networkRefId,
+				),
+			});
+		},
+		onError: (e) =>
+			toast.error("Failed to run cloud insights", {
 				description: (e as Error).message,
 			}),
 	});
@@ -228,10 +300,14 @@ export function useForwardNetworkCapacityPageData(args: {
 		coverage,
 		snapshotDelta,
 		upgradeCandidates,
+		securityInsights,
+		cloudInsights,
 		forwardNetworkId,
 		ifaceInvIndex,
 		refresh,
 		loadUnhealthyDevices,
+		runSecurityInsights,
+		runCloudInsights,
 		groupingOptions,
 		windowDays,
 		rollups,

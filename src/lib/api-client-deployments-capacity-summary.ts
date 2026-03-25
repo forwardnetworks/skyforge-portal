@@ -199,3 +199,82 @@ export async function getUserScopeForwardNetworkCapacityPortfolio(
 		`/api/users/${encodeURIComponent(userId)}/capacity/forward-networks/portfolio`,
 	);
 }
+
+export type ForwardNetworkInsightSummary = {
+	checks: number;
+	totalFindings: number;
+	high: number;
+	medium: number;
+	low: number;
+};
+
+export type ForwardNetworkInsightCheckResult = {
+	checkId: string;
+	title?: string;
+	category?: string;
+	severity?: string;
+	findings: number;
+};
+
+export type ForwardNetworkInsightResultResponse = {
+	userId: string;
+	networkRef: string;
+	forwardNetworkId: string;
+	insightType: string;
+	packId: string;
+	snapshotId?: string;
+	asOf?: string;
+	status: string;
+	summary: ForwardNetworkInsightSummary;
+	checks: ForwardNetworkInsightCheckResult[];
+};
+
+export type ForwardNetworkInsightRunResponse = ForwardNetworkInsightResultResponse & {
+	run: { id: number };
+};
+
+export async function getForwardNetworkSecurityInsights(
+	userId: string,
+	networkRef: string,
+): Promise<ForwardNetworkInsightResultResponse> {
+	return apiFetch<ForwardNetworkInsightResultResponse>(
+		`/api/users/${encodeURIComponent(userId)}/forward-networks/${encodeURIComponent(networkRef)}/insights/security`,
+	);
+}
+
+export async function runForwardNetworkSecurityInsights(
+	userId: string,
+	networkRef: string,
+	snapshotId?: string,
+): Promise<ForwardNetworkInsightRunResponse> {
+	return apiFetch<ForwardNetworkInsightRunResponse>(
+		`/api/users/${encodeURIComponent(userId)}/forward-networks/${encodeURIComponent(networkRef)}/insights/security/run`,
+		{
+			method: "POST",
+			body: JSON.stringify(snapshotId ? { snapshotId } : {}),
+		},
+	);
+}
+
+export async function getForwardNetworkCloudInsights(
+	userId: string,
+	networkRef: string,
+): Promise<ForwardNetworkInsightResultResponse> {
+	return apiFetch<ForwardNetworkInsightResultResponse>(
+		`/api/users/${encodeURIComponent(userId)}/forward-networks/${encodeURIComponent(networkRef)}/insights/cloud`,
+	);
+}
+
+export async function runForwardNetworkCloudInsights(
+	userId: string,
+	networkRef: string,
+	snapshotId?: string,
+): Promise<ForwardNetworkInsightRunResponse> {
+	return apiFetch<ForwardNetworkInsightRunResponse>(
+		`/api/users/${encodeURIComponent(userId)}/forward-networks/${encodeURIComponent(networkRef)}/insights/cloud/run`,
+		{
+			method: "POST",
+			body: JSON.stringify(snapshotId ? { snapshotId } : {}),
+		},
+	);
+}
