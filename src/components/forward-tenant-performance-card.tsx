@@ -54,7 +54,10 @@ export function ForwardTenantPerformanceCard(props: {
 	const { page } = props;
 	const [tenant, setTenant] = useState<ManagedTenantKey>("primary");
 	const state = page.tenants[tenant];
-	const networks = state.performanceNetworksQ.data?.networks ?? [];
+	const networks = useMemo(
+		() => state.performanceNetworksQ.data?.networks ?? [],
+		[state.performanceNetworksQ.data?.networks],
+	);
 	const [drafts, setDrafts] = useState<Record<ManagedTenantKey, DraftByNetwork>>({
 		demo: {},
 		primary: {},
@@ -62,13 +65,19 @@ export function ForwardTenantPerformanceCard(props: {
 
 	useEffect(() => {
 		if (networks.length === 0) {
-			setDrafts((prev) => ({ ...prev, [tenant]: {} }));
+			setDrafts((prev) => {
+				if (Object.keys(prev[tenant] ?? {}).length === 0) {
+					return prev;
+				}
+				return { ...prev, [tenant]: {} };
+			});
 			return;
 		}
 		setDrafts((prev) => {
+			const currentTenantDrafts = prev[tenant] ?? {};
 			const nextTenantDrafts: DraftByNetwork = {};
 			for (const network of networks) {
-				const prior = prev[tenant]?.[network.id];
+				const prior = currentTenantDrafts[network.id];
 				const firstSnapshotId =
 					network.processedSnapshots?.[0]?.id ??
 					String(network.latestProcessedSnapshotId ?? "");
@@ -84,6 +93,21 @@ export function ForwardTenantPerformanceCard(props: {
 						prior?.healthyInterfaceOdds ??
 						String(network.defaultHealthyInterfaceOdds ?? 0.8),
 				};
+			}
+			const unchanged =
+				Object.keys(currentTenantDrafts).length ===
+					Object.keys(nextTenantDrafts).length &&
+				Object.entries(nextTenantDrafts).every(([networkId, draft]) => {
+					const current = currentTenantDrafts[networkId];
+					return (
+						current?.snapshotId === draft.snapshotId &&
+						current?.generationIntervalMins === draft.generationIntervalMins &&
+						current?.healthyDeviceOdds === draft.healthyDeviceOdds &&
+						current?.healthyInterfaceOdds === draft.healthyInterfaceOdds
+					);
+				});
+			if (unchanged) {
+				return prev;
 			}
 			return { ...prev, [tenant]: nextTenantDrafts };
 		});

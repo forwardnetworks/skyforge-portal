@@ -931,6 +931,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/tasks/ephemeral-runtimes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListAdminEphemeralRuntimeNamespaces returns orphan-prone ephemeral KNE runtime
+         *     namespaces (admin only).
+         */
+        get: operations["GET:skyforge.ListAdminEphemeralRuntimeNamespaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/tasks/ephemeral-runtimes/cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * CleanupAdminEphemeralRuntimeNamespaces deletes eligible ephemeral KNE runtime
+         *     namespaces (admin only).
+         */
+        post: operations["POST:skyforge.CleanupAdminEphemeralRuntimeNamespaces"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/tasks/ephemeral-runtimes/finalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ForceFinalizeAdminEphemeralRuntimeNamespaces clears namespace finalizers for
+         *     stuck, labeled ephemeral runtimes (admin only).
+         */
+        post: operations["POST:skyforge.ForceFinalizeAdminEphemeralRuntimeNamespaces"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/tasks/reconcile": {
         parameters: {
             query?: never;
@@ -4097,6 +4157,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/deployments/{deploymentID}/browser/{node}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:skyforge.DeploymentNodeBrowserProxyGet"];
+        put: operations["PUT:skyforge.DeploymentNodeBrowserProxyPut"];
+        post: operations["POST:skyforge.DeploymentNodeBrowserProxyPost"];
+        delete: operations["DELETE:skyforge.DeploymentNodeBrowserProxyDelete"];
+        options: operations["OPTIONS:skyforge.DeploymentNodeBrowserProxyOptions"];
+        head: operations["HEAD:skyforge.DeploymentNodeBrowserProxyHead"];
+        patch: operations["PATCH:skyforge.DeploymentNodeBrowserProxyPatch"];
+        trace?: never;
+    };
+    "/api/users/{id}/deployments/{deploymentID}/browser/{node}/{rest}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GET:skyforge.DeploymentNodeBrowserProxyGetAny"];
+        put: operations["PUT:skyforge.DeploymentNodeBrowserProxyPutAny"];
+        post: operations["POST:skyforge.DeploymentNodeBrowserProxyPostAny"];
+        delete: operations["DELETE:skyforge.DeploymentNodeBrowserProxyDeleteAny"];
+        options: operations["OPTIONS:skyforge.DeploymentNodeBrowserProxyOptionsAny"];
+        head: operations["HEAD:skyforge.DeploymentNodeBrowserProxyHeadAny"];
+        patch: operations["PATCH:skyforge.DeploymentNodeBrowserProxyPatchAny"];
         trace?: never;
     };
     "/api/users/{id}/deployments/{deploymentID}/capacity/growth": {
@@ -9205,6 +9297,41 @@ export interface components {
             summary: string;
             tags: string[];
         };
+        "skyforge.AdminEphemeralRuntimeNamespaceRecord": {
+            active: boolean;
+            createdAt: string;
+            deletionTimestamp: string;
+            deploymentId: string;
+            eligibleForCleanup: boolean;
+            eligibleForForceFinalize: boolean;
+            errors: string[];
+            expired: boolean;
+            expiresAt: string;
+            finalizers: string[];
+            namespace: string;
+            owner: string;
+            phase: string;
+            purpose: string;
+            resourceCounts: components["schemas"]["skyforge.AdminEphemeralRuntimeResourceCounts"];
+            topologyName: string;
+            userScopeId: string;
+        };
+        "skyforge.AdminEphemeralRuntimeResourceCounts": {
+            /** Format: int64 */
+            configMaps: number;
+            /** Format: int64 */
+            jobs: number;
+            /** Format: int64 */
+            pods: number;
+            /** Format: int64 */
+            services: number;
+            /** Format: int64 */
+            topologies: number;
+            /** Format: int64 */
+            virtualMachineInstances: number;
+            /** Format: int64 */
+            virtualMachines: number;
+        };
         "skyforge.AdminForwardDemoSeedItem": {
             contentSha256: string;
             displayName: string;
@@ -9383,6 +9510,21 @@ export interface components {
             ipv6Routes: number;
             vrf: string;
         };
+        "skyforge.CleanupAdminEphemeralRuntimeNamespaceResult": {
+            active: boolean;
+            eligibleForCleanup: boolean;
+            eligibleForForceFinalize: boolean;
+            errors: string[];
+            namespace: string;
+            /** Format: int64 */
+            orphanCleanupAttempts: number;
+            /** Format: int64 */
+            topologiesDeleted: number;
+            /** Format: int64 */
+            topologiesFound: number;
+            /** Format: int64 */
+            topologyOwnersFound: number;
+        };
         "skyforge.CompositePlanPreviewBinding": {
             as: string;
             fromOutput: string;
@@ -9517,6 +9659,12 @@ export interface components {
             /** gitea owner/repo */
             repo: string;
         };
+        "skyforge.ForceFinalizeAdminEphemeralRuntimeNamespaceResult": {
+            eligibleForForceFinalize: boolean;
+            errors: string[];
+            finalized: boolean;
+            namespace: string;
+        };
         "skyforge.ForwardAnalyticsNetwork": {
             collectorConfigId: string;
             /** Format: date-time */
@@ -9577,9 +9725,15 @@ export interface components {
             latestProcessedSnapshotName: string;
             latestProcessedSnapshotState: string;
             name: string;
+            processedSnapshots: components["schemas"]["skyforge.ForwardPerformanceSnapshotSummary"][];
             status: string;
             tenantKind: string;
             userScopeId: string;
+        };
+        "skyforge.ForwardPerformanceSnapshotSummary": {
+            id: string;
+            name: string;
+            state: string;
         };
         "skyforge.ForwardTenantFeatureFlags": {
             networkMaps: boolean;
@@ -9936,6 +10090,7 @@ export interface components {
             navigationMode: string;
             /** Format: int64 */
             navigationOrder: number;
+            navigationParentId: string;
             navigationSection: string;
             requiredCapabilities: string[];
             supportsWake: boolean;
@@ -9963,6 +10118,7 @@ export interface components {
             navigationIcon: string;
             /** Format: int64 */
             navigationOrder: number;
+            navigationParentId: string;
             navigationSection: string;
         };
         "skyforge.ToolCatalogRouteEntry": {
@@ -12479,6 +12635,127 @@ export interface operations {
                         workerEnabled: boolean;
                         /** Format: int64 */
                         workerHeartbeatAgeSec: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListAdminEphemeralRuntimeNamespaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: int64 */
+                        active: number;
+                        /** Format: int64 */
+                        eligibleForCleanup: number;
+                        /** Format: int64 */
+                        eligibleForForceFinalize: number;
+                        /** Format: int64 */
+                        expired: number;
+                        /** Format: int64 */
+                        inactive: number;
+                        items: components["schemas"]["skyforge.AdminEphemeralRuntimeNamespaceRecord"][];
+                        resourceTotals: components["schemas"]["skyforge.AdminEphemeralRuntimeResourceCounts"];
+                        status: string;
+                        /** Format: int64 */
+                        terminating: number;
+                        /** Format: int64 */
+                        total: number;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.CleanupAdminEphemeralRuntimeNamespaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    dryRun: boolean;
+                    namespaces: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dryRun: boolean;
+                        errors: string[];
+                        namespaceResults: components["schemas"]["skyforge.CleanupAdminEphemeralRuntimeNamespaceResult"][];
+                        /** Format: int64 */
+                        namespacesCleaned: number;
+                        /** Format: int64 */
+                        namespacesConsidered: number;
+                        /** Format: int64 */
+                        namespacesSelected: number;
+                        /** Format: int64 */
+                        skippedActive: number;
+                        /** Format: int64 */
+                        skippedIneligible: number;
+                        status: string;
+                    };
+                };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.ForceFinalizeAdminEphemeralRuntimeNamespaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    namespaces: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        errors: string[];
+                        namespaceResults: components["schemas"]["skyforge.ForceFinalizeAdminEphemeralRuntimeNamespaceResult"][];
+                        /** Format: int64 */
+                        namespacesConsidered: number;
+                        /** Format: int64 */
+                        namespacesFinalized: number;
+                        /** Format: int64 */
+                        namespacesSelected: number;
+                        /** Format: int64 */
+                        skippedIneligible: number;
+                        status: string;
                     };
                 };
             };
@@ -18891,6 +19168,335 @@ export interface operations {
                         warnings: string[];
                     };
                 };
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.DeploymentNodeBrowserProxyGet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.DeploymentNodeBrowserProxyPut": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.DeploymentNodeBrowserProxyPost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeploymentNodeBrowserProxyDelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "OPTIONS:skyforge.DeploymentNodeBrowserProxyOptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "HEAD:skyforge.DeploymentNodeBrowserProxyHead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PATCH:skyforge.DeploymentNodeBrowserProxyPatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.DeploymentNodeBrowserProxyGetAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PUT:skyforge.DeploymentNodeBrowserProxyPutAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "POST:skyforge.DeploymentNodeBrowserProxyPostAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "DELETE:skyforge.DeploymentNodeBrowserProxyDeleteAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "OPTIONS:skyforge.DeploymentNodeBrowserProxyOptionsAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "HEAD:skyforge.DeploymentNodeBrowserProxyHeadAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "PATCH:skyforge.DeploymentNodeBrowserProxyPatchAny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                deploymentID: string;
+                node: string;
+                rest: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["APIError"];
         };

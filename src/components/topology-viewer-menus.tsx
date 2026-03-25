@@ -27,12 +27,14 @@ export function TopologyViewerMenus({
 				onInterfaces={page.openInterfaces}
 				onInterfacesNewTab={() => page.openNodeActionTab("interfaces")}
 				onSaveConfig={page.saveConfigForNode}
-				onRunningConfig={page.openRunningConfig}
-				onRunningConfigNewTab={() => page.openNodeActionTab("running-config")}
-				onCopyManagementIP={page.copyManagementIP}
-				onCopyNodeName={page.copyNodeName}
-				onCopySshCommand={page.copySshCommand}
-			/>
+					onRunningConfig={page.openRunningConfig}
+					onRunningConfigNewTab={() => page.openNodeActionTab("running-config")}
+					onCopyManagementIP={page.copyManagementIP}
+					onCopyNodeName={page.copyNodeName}
+					onCopySshCommand={page.copySshCommand}
+					onOpenBrowser={page.openBrowser}
+					onCopyBrowserURL={page.copyBrowserURL}
+				/>
 
 			<TopologyViewerEdgeMenu
 				edgeMenu={page.edgeMenu}

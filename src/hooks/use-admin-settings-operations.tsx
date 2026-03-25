@@ -1,11 +1,16 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-	type AdminTenantPodCleanupResponse,
-	adminCleanupTenantPods,
-	adminImpersonateStart,
+	import {
+		type AdminEphemeralRuntimeCleanupResponse,
+		type AdminEphemeralRuntimeFinalizeResponse,
+		type AdminTenantPodCleanupResponse,
+		adminCleanupEphemeralRuntimes,
+		adminCleanupTenantPods,
+		adminForceFinalizeEphemeralRuntimes,
+		adminImpersonateStart,
 	adminImpersonateStop,
+	adminListEphemeralRuntimes,
 	getAdminForwardSupportCredential,
 	getAdminImpersonateStatus,
 	reconcileQueuedTasks,
@@ -119,6 +124,77 @@ export function useAdminSettingsOperations({
 		},
 	});
 
+	const adminEphemeralRuntimesQ = useQuery({
+		queryKey: queryKeys.adminEphemeralRuntimes(),
+		queryFn: adminListEphemeralRuntimes,
+		staleTime: 10_000,
+		retry: false,
+	});
+	const [cleanupEphemeralRuntimesResult, setCleanupEphemeralRuntimesResult] =
+		useState<AdminEphemeralRuntimeCleanupResponse | null>(null);
+	const [
+		forceFinalizeEphemeralRuntimesResult,
+		setForceFinalizeEphemeralRuntimesResult,
+	] = useState<AdminEphemeralRuntimeFinalizeResponse | null>(null);
+	const cleanupEphemeralRuntimes = useMutation({
+		mutationFn: async (namespaces?: string[]) =>
+			adminCleanupEphemeralRuntimes({
+				namespaces:
+					namespaces && namespaces.length > 0 ? namespaces : undefined,
+			}),
+		onSuccess: (res, namespaces) => {
+			setCleanupEphemeralRuntimesResult(res);
+			toast.success("Ephemeral runtime cleanup complete", {
+				description: `Selected ${res.namespacesSelected}, cleaned ${res.namespacesCleaned}, skipped active ${res.skippedActive}`,
+			});
+			void adminEphemeralRuntimesQ.refetch();
+			if (
+				res.status !== "ok" &&
+				res.errors &&
+				res.errors.length > 0 &&
+				(!namespaces || namespaces.length <= 1)
+			) {
+				toast.error("Some runtime cleanup actions failed", {
+					description: res.errors[0],
+				});
+			}
+		},
+		onError: (e) => {
+			toast.error("Failed to clean ephemeral runtimes", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	const forceFinalizeEphemeralRuntimes = useMutation({
+		mutationFn: async (namespaces?: string[]) =>
+			adminForceFinalizeEphemeralRuntimes({
+				namespaces:
+					namespaces && namespaces.length > 0 ? namespaces : undefined,
+			}),
+		onSuccess: (res, namespaces) => {
+			setForceFinalizeEphemeralRuntimesResult(res);
+			toast.success("Ephemeral runtime finalization complete", {
+				description: `Selected ${res.namespacesSelected}, finalized ${res.namespacesFinalized}, skipped ineligible ${res.skippedIneligible}`,
+			});
+			void adminEphemeralRuntimesQ.refetch();
+			if (
+				res.status !== "ok" &&
+				res.errors &&
+				res.errors.length > 0 &&
+				(!namespaces || namespaces.length <= 1)
+			) {
+				toast.error("Some runtime finalization actions failed", {
+					description: res.errors[0],
+				});
+			}
+		},
+		onError: (e) => {
+			toast.error("Failed to finalize ephemeral runtimes", {
+				description: (e as Error).message,
+			});
+		},
+	});
+
 	const [impersonateTarget, setImpersonateTarget] = useState("");
 	const impersonateUserOptions = useMemo(() => {
 		const users = new Set(knownUsersFromScopes);
@@ -166,7 +242,12 @@ export function useAdminSettingsOperations({
 		revealAdminForwardSupportCredentialMutation,
 		reconcileQueued,
 		reconcileRunning,
-		cleanupScopeMode,
+			adminEphemeralRuntimesQ,
+			cleanupEphemeralRuntimesResult,
+			cleanupEphemeralRuntimes,
+			forceFinalizeEphemeralRuntimesResult,
+			forceFinalizeEphemeralRuntimes,
+			cleanupScopeMode,
 		setCleanupScopeMode,
 		cleanupScopeID,
 		setCleanupScopeID,

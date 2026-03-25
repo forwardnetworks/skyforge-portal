@@ -1,4 +1,5 @@
 import type { AdminTasksTabProps } from "./admin-settings-tab-types";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -149,6 +150,242 @@ export function AdminTasksTab(props: AdminTasksTabProps) {
 								) : null}
 							</div>
 						) : null}
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Ephemeral runtime cleanup</CardTitle>
+					<CardDescription>
+						Inspect and delete stale KNE smoke and runtime namespaces before
+						they build up enough control-plane churn to hurt embedded etcd.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="flex flex-wrap items-center gap-2 text-sm">
+						<Badge variant="secondary">
+							total {props.adminEphemeralRuntimeSummary.total}
+						</Badge>
+						<Badge variant="outline">
+							active {props.adminEphemeralRuntimeSummary.active}
+						</Badge>
+						<Badge variant="outline">
+							inactive {props.adminEphemeralRuntimeSummary.inactive}
+						</Badge>
+						<Badge variant="outline">
+							expired {props.adminEphemeralRuntimeSummary.expired}
+						</Badge>
+						<Badge variant="outline">
+							eligible {props.adminEphemeralRuntimeSummary.eligibleForCleanup}
+						</Badge>
+						<Badge variant="outline">
+							finalize{" "}
+							{props.adminEphemeralRuntimeSummary.eligibleForForceFinalize}
+						</Badge>
+						<Badge variant="outline">
+							terminating {props.adminEphemeralRuntimeSummary.terminating}
+						</Badge>
+						<Badge variant="outline">
+							pods {props.adminEphemeralRuntimeSummary.resourceTotals.pods}
+						</Badge>
+						<Badge variant="outline">
+							vms {props.adminEphemeralRuntimeSummary.resourceTotals.virtualMachines}
+						</Badge>
+						<Badge variant="outline">
+							vmis{" "}
+							{
+								props.adminEphemeralRuntimeSummary.resourceTotals
+									.virtualMachineInstances
+							}
+						</Badge>
+					</div>
+
+						<div className="flex flex-wrap gap-2">
+						<Button
+							variant="outline"
+							disabled={props.adminEphemeralRuntimesLoading}
+							onClick={props.onRefreshEphemeralRuntimes}
+						>
+							Refresh inventory
+						</Button>
+							<Button
+								variant="destructive"
+								disabled={
+								props.cleanupEphemeralRuntimesPending ||
+								props.adminEphemeralRuntimeSummary.eligibleForCleanup === 0
+								}
+								onClick={props.onCleanupEligibleEphemeralRuntimes}
+							>
+							{props.cleanupEphemeralRuntimesPending
+								? "Running…"
+								: "Delete all eligible"}
+							</Button>
+							<Button
+								variant="outline"
+								disabled={
+									props.forceFinalizeEphemeralRuntimesPending ||
+									props.adminEphemeralRuntimeSummary.eligibleForForceFinalize === 0
+								}
+								onClick={props.onForceFinalizeEligibleEphemeralRuntimes}
+							>
+								{props.forceFinalizeEphemeralRuntimesPending
+									? "Running…"
+									: "Force finalize stuck"}
+							</Button>
+						</div>
+
+						{props.cleanupEphemeralRuntimesResult ? (
+						<div className="rounded-md border bg-muted/40 p-3 text-xs">
+							<div>
+								selected=
+								{props.cleanupEphemeralRuntimesResult.namespacesSelected} cleaned=
+								{props.cleanupEphemeralRuntimesResult.namespacesCleaned} skipped
+								active=
+								{props.cleanupEphemeralRuntimesResult.skippedActive} skipped
+								ineligible=
+								{props.cleanupEphemeralRuntimesResult.skippedIneligible}
+							</div>
+							{props.cleanupEphemeralRuntimesResult.errors?.length ? (
+								<div className="mt-2 text-amber-600">
+									{props.cleanupEphemeralRuntimesResult.errors.join(" | ")}
+								</div>
+						) : null}
+						{props.forceFinalizeEphemeralRuntimesResult ? (
+							<div className="rounded-md border bg-muted/40 p-3 text-xs">
+								<div>
+									selected=
+									{
+										props.forceFinalizeEphemeralRuntimesResult
+											.namespacesSelected
+									} finalized=
+									{
+										props.forceFinalizeEphemeralRuntimesResult
+											.namespacesFinalized
+									} skipped ineligible=
+									{
+										props.forceFinalizeEphemeralRuntimesResult
+											.skippedIneligible
+									}
+								</div>
+								{props.forceFinalizeEphemeralRuntimesResult.errors?.length ? (
+									<div className="mt-2 text-amber-600">
+										{props.forceFinalizeEphemeralRuntimesResult.errors.join(
+											" | ",
+										)}
+									</div>
+								) : null}
+							</div>
+						) : null}
+						</div>
+					) : null}
+
+					<div className="space-y-3">
+						{props.adminEphemeralRuntimes.length === 0 ? (
+							<div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+								No ephemeral runtime namespaces are currently visible.
+							</div>
+						) : (
+							props.adminEphemeralRuntimes.map((item) => {
+								const summaryBits = [
+									`pods ${item.resourceCounts.pods}`,
+									`svc ${item.resourceCounts.services}`,
+									`jobs ${item.resourceCounts.jobs}`,
+									`topologies ${item.resourceCounts.topologies}`,
+									`vms ${item.resourceCounts.virtualMachines}`,
+									`vmis ${item.resourceCounts.virtualMachineInstances}`,
+								];
+								return (
+									<div
+										key={item.namespace}
+										className="rounded-md border p-3 text-sm"
+									>
+										<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+											<div className="space-y-2">
+												<div className="font-medium">{item.namespace}</div>
+												<div className="flex flex-wrap gap-2">
+													<Badge variant="secondary">{item.purpose}</Badge>
+													<Badge
+														variant={item.active ? "secondary" : "outline"}
+													>
+														{item.active ? "active" : "inactive"}
+													</Badge>
+														{item.eligibleForCleanup ? (
+															<Badge variant="destructive">eligible</Badge>
+														) : null}
+														{item.eligibleForForceFinalize ? (
+															<Badge variant="outline">force-finalize</Badge>
+														) : null}
+														{item.expired ? (
+														<Badge variant="outline">expired</Badge>
+													) : null}
+													{item.deletionTimestamp ? (
+														<Badge variant="outline">terminating</Badge>
+													) : null}
+												</div>
+												<div className="text-xs text-muted-foreground">
+													phase={item.phase}
+													{item.createdAt ? ` created=${item.createdAt}` : ""}
+													{item.expiresAt ? ` expires=${item.expiresAt}` : ""}
+													{item.owner ? ` owner=${item.owner}` : ""}
+													{item.deploymentId
+														? ` deployment=${item.deploymentId}`
+														: ""}
+													{item.topologyName
+														? ` topology=${item.topologyName}`
+														: ""}
+												</div>
+												<div className="text-xs text-muted-foreground">
+													{summaryBits.join(" · ")}
+												</div>
+												{item.finalizers?.length ? (
+													<div className="text-xs text-amber-600">
+														finalizers: {item.finalizers.join(", ")}
+													</div>
+												) : null}
+												{item.errors?.length ? (
+													<div className="text-xs text-amber-600">
+														{item.errors.join(" | ")}
+													</div>
+												) : null}
+											</div>
+												<div className="flex flex-col gap-2">
+													<Button
+														variant="destructive"
+														size="sm"
+														disabled={
+															props.cleanupEphemeralRuntimesPending ||
+															!item.eligibleForCleanup
+														}
+														onClick={() =>
+															props.onCleanupEphemeralRuntimeNamespace(
+																item.namespace,
+															)
+														}
+													>
+														Delete
+													</Button>
+													<Button
+														variant="outline"
+														size="sm"
+														disabled={
+															props.forceFinalizeEphemeralRuntimesPending ||
+															!item.eligibleForForceFinalize
+														}
+														onClick={() =>
+															props.onForceFinalizeEphemeralRuntimeNamespace(
+																item.namespace,
+															)
+														}
+													>
+														Force finalize
+													</Button>
+												</div>
+											</div>
+										</div>
+								);
+							})
+						)}
 					</div>
 				</CardContent>
 			</Card>

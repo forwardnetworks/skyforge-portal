@@ -7,6 +7,10 @@ import type {
 	AdminOIDCSettingsResponse,
 	AdminForwardTenantResetRun,
 	AdminForwardDemoSeedCatalogResponse,
+	AdminEphemeralRuntimeCleanupResponse,
+	AdminEphemeralRuntimeFinalizeResponse,
+	AdminEphemeralRuntimeNamespaceRecord,
+	AdminEphemeralRuntimeResourceCounts,
 	AdminServiceNowGlobalConfigResponse,
 	AdminTeamsGlobalConfigResponse,
 	AdminUserRoleRecord,
@@ -131,6 +135,16 @@ export type AdminOverviewTabProps = {
 	adminForwardSupportPassword: string;
 	revealAdminForwardSupportCredentialPending: boolean;
 	onRevealAdminForwardSupportCredentialPassword: () => void;
+	adminEphemeralRuntimeSummary?: {
+		total: number;
+		active: number;
+		inactive: number;
+		expired: number;
+		eligibleForCleanup: number;
+		eligibleForForceFinalize: number;
+		terminating: number;
+		resourceTotals: AdminEphemeralRuntimeResourceCounts;
+	};
 };
 
 export type AdminAuditTabProps = {
@@ -158,6 +172,27 @@ export type AdminTasksTabProps = {
 	onPreviewCleanup: () => void;
 	onRunCleanup: () => void;
 	cleanupResult: AdminTenantPodCleanupResponse | null;
+	adminEphemeralRuntimesLoading: boolean;
+	adminEphemeralRuntimes: AdminEphemeralRuntimeNamespaceRecord[];
+	adminEphemeralRuntimeSummary: {
+		total: number;
+		active: number;
+		inactive: number;
+		expired: number;
+		eligibleForCleanup: number;
+		eligibleForForceFinalize: number;
+		terminating: number;
+		resourceTotals: AdminEphemeralRuntimeResourceCounts;
+	};
+	cleanupEphemeralRuntimesPending: boolean;
+	cleanupEphemeralRuntimesResult: AdminEphemeralRuntimeCleanupResponse | null;
+	forceFinalizeEphemeralRuntimesPending: boolean;
+	forceFinalizeEphemeralRuntimesResult: AdminEphemeralRuntimeFinalizeResponse | null;
+	onRefreshEphemeralRuntimes: () => void;
+	onCleanupEligibleEphemeralRuntimes: () => void;
+	onCleanupEphemeralRuntimeNamespace: (namespace: string) => void;
+	onForceFinalizeEligibleEphemeralRuntimes: () => void;
+	onForceFinalizeEphemeralRuntimeNamespace: (namespace: string) => void;
 };
 
 export type AdminUsersTabProps = {

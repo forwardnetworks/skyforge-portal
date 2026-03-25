@@ -43,6 +43,7 @@ export function useForwardAnalyticsPage({ userId }: { userId?: string }) {
 
 	useEffect(() => {
 		const nextUserId = String(userId ?? "");
+		if (!nextUserId) return;
 		if (nextUserId === selectedUserScopeId) return;
 		setSelectedUserScopeId(nextUserId);
 	}, [userId, selectedUserScopeId]);

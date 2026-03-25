@@ -9,6 +9,8 @@ import type {
 } from "./use-topology-viewer-surface-primitives";
 
 export function useTopologyViewerSurfaceDialogCoordination(args: {
+	userId?: string;
+	deploymentId?: string;
 	nodeMenu: { x: number; y: number; node: Node } | null;
 	setNodeMenu: React.Dispatch<
 		React.SetStateAction<{ x: number; y: number; node: Node } | null>
@@ -65,8 +67,10 @@ export function useTopologyViewerSurfaceDialogCoordination(args: {
 	>;
 	setImpairOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-	const {
-		nodeMenu,
+		const {
+			userId,
+			deploymentId,
+			nodeMenu,
 		setNodeMenu,
 		edgeMenu,
 		setEdgeMenu,
@@ -104,8 +108,10 @@ export function useTopologyViewerSurfaceDialogCoordination(args: {
 		);
 		closeNodeMenu();
 	};
-	const nodeEdgeActions = useTopologyViewerNodeEdgeActions({
-		nodeMenu,
+		const nodeEdgeActions = useTopologyViewerNodeEdgeActions({
+			userId,
+			deploymentId,
+			nodeMenu,
 		edgeMenu,
 		captureEdge,
 		selectedEdge,

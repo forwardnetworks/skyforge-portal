@@ -123,9 +123,29 @@ export function buildAdminOverviewTabProps(
 		adminForwardSupportPassword: page.adminForwardSupportPassword,
 		revealAdminForwardSupportCredentialPending:
 			page.revealAdminForwardSupportCredentialMutation.isPending,
-		onRevealAdminForwardSupportCredentialPassword: () =>
-			page.revealAdminForwardSupportCredentialMutation.mutate(),
-	};
+			onRevealAdminForwardSupportCredentialPassword: () =>
+				page.revealAdminForwardSupportCredentialMutation.mutate(),
+			adminEphemeralRuntimeSummary: {
+				total: page.adminEphemeralRuntimesQ.data?.total ?? 0,
+				active: page.adminEphemeralRuntimesQ.data?.active ?? 0,
+				inactive: page.adminEphemeralRuntimesQ.data?.inactive ?? 0,
+				expired: page.adminEphemeralRuntimesQ.data?.expired ?? 0,
+				eligibleForCleanup:
+					page.adminEphemeralRuntimesQ.data?.eligibleForCleanup ?? 0,
+				eligibleForForceFinalize:
+					page.adminEphemeralRuntimesQ.data?.eligibleForForceFinalize ?? 0,
+				terminating: page.adminEphemeralRuntimesQ.data?.terminating ?? 0,
+				resourceTotals: page.adminEphemeralRuntimesQ.data?.resourceTotals ?? {
+					pods: 0,
+					services: 0,
+					jobs: 0,
+					configMaps: 0,
+					topologies: 0,
+					virtualMachines: 0,
+					virtualMachineInstances: 0,
+				},
+			},
+		};
 }
 
 export function buildAdminAuditTabProps(
@@ -165,7 +185,49 @@ export function buildAdminTasksTabProps(
 		onPreviewCleanup: () => page.cleanupTenantPods.mutate(true),
 		onRunCleanup: () => page.cleanupTenantPods.mutate(false),
 		cleanupResult: page.cleanupResult,
-	};
+		adminEphemeralRuntimesLoading: page.adminEphemeralRuntimesQ.isLoading,
+		adminEphemeralRuntimes:
+			page.adminEphemeralRuntimesQ.data?.items ?? [],
+			adminEphemeralRuntimeSummary: {
+				total: page.adminEphemeralRuntimesQ.data?.total ?? 0,
+				active: page.adminEphemeralRuntimesQ.data?.active ?? 0,
+				inactive: page.adminEphemeralRuntimesQ.data?.inactive ?? 0,
+				expired: page.adminEphemeralRuntimesQ.data?.expired ?? 0,
+				eligibleForCleanup:
+					page.adminEphemeralRuntimesQ.data?.eligibleForCleanup ?? 0,
+				eligibleForForceFinalize:
+					page.adminEphemeralRuntimesQ.data?.eligibleForForceFinalize ?? 0,
+				terminating: page.adminEphemeralRuntimesQ.data?.terminating ?? 0,
+				resourceTotals: page.adminEphemeralRuntimesQ.data?.resourceTotals ?? {
+					pods: 0,
+					services: 0,
+					jobs: 0,
+					configMaps: 0,
+					topologies: 0,
+					virtualMachines: 0,
+					virtualMachineInstances: 0,
+				},
+			},
+			cleanupEphemeralRuntimesPending:
+				page.cleanupEphemeralRuntimes.isPending,
+			cleanupEphemeralRuntimesResult:
+				page.cleanupEphemeralRuntimesResult,
+			forceFinalizeEphemeralRuntimesPending:
+				page.forceFinalizeEphemeralRuntimes.isPending,
+			forceFinalizeEphemeralRuntimesResult:
+				page.forceFinalizeEphemeralRuntimesResult,
+			onRefreshEphemeralRuntimes: () => {
+				void page.adminEphemeralRuntimesQ.refetch();
+			},
+			onCleanupEligibleEphemeralRuntimes: () =>
+				page.cleanupEphemeralRuntimes.mutate(undefined),
+			onCleanupEphemeralRuntimeNamespace: (namespace) =>
+				page.cleanupEphemeralRuntimes.mutate([namespace]),
+			onForceFinalizeEligibleEphemeralRuntimes: () =>
+				page.forceFinalizeEphemeralRuntimes.mutate(undefined),
+			onForceFinalizeEphemeralRuntimeNamespace: (namespace) =>
+				page.forceFinalizeEphemeralRuntimes.mutate([namespace]),
+		};
 }
 
 export function buildAdminUsersTabProps(

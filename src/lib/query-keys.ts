@@ -186,6 +186,7 @@ export const queryKeys = {
 	adminTeamsGlobalConfig: () => ["adminTeamsGlobalConfig"] as const,
 	adminForwardSupportCredential: () =>
 		["adminForwardSupportCredential"] as const,
+	adminEphemeralRuntimes: () => ["adminEphemeralRuntimes"] as const,
 	adminPlatformOverview: () => ["adminPlatformOverview"] as const,
 	adminPlatformRuntimePolicy: () => ["adminPlatformRuntimePolicy"] as const,
 	adminPlatformReservations: () => ["adminPlatformReservations"] as const,

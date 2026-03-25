@@ -1,8 +1,11 @@
 import type { LinkCaptureResponse } from "@/lib/api-client";
+import { SKYFORGE_PROXY_ROOT } from "@/lib/api-client";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
 export function useTopologyViewerNodeEdgeActions(args: {
+	userId?: string;
+	deploymentId?: string;
 	nodeMenu: { node: any } | null;
 	edgeMenu: { edge: any } | null;
 	captureEdge: { id: string; label?: string } | null;
@@ -61,6 +64,8 @@ export function useTopologyViewerNodeEdgeActions(args: {
 }) {
 	const {
 		nodeMenu,
+		userId,
+		deploymentId,
 		edgeMenu,
 		captureEdge,
 		selectedEdge,
@@ -187,6 +192,31 @@ export function useTopologyViewerNodeEdgeActions(args: {
 		closeNodeMenu();
 	}, [closeNodeMenu, copyText, nodeMenu]);
 
+	const openBrowser = useCallback(() => {
+		const node = String(nodeMenu?.node?.id ?? "").trim();
+		if (!userId || !deploymentId || !node) {
+			toast.error("Browser access unavailable");
+			return;
+		}
+		const base = `${window.location.protocol}//${window.location.host}${SKYFORGE_PROXY_ROOT}/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/browser/${encodeURIComponent(node)}/`;
+		window.open(base, "_blank", "noopener,noreferrer");
+		closeNodeMenu();
+	}, [closeNodeMenu, deploymentId, nodeMenu?.node?.id, userId]);
+
+	const copyBrowserURL = useCallback(() => {
+		const node = String(nodeMenu?.node?.id ?? "").trim();
+		const value =
+			userId && deploymentId && node
+				? `${window.location.protocol}//${window.location.host}${SKYFORGE_PROXY_ROOT}/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/browser/${encodeURIComponent(node)}/`
+				: "";
+		copyText(
+			value,
+			"Copied proxied browser URL",
+			"Browser access unavailable",
+		);
+		closeNodeMenu();
+	}, [closeNodeMenu, copyText, deploymentId, nodeMenu?.node?.id, userId]);
+
 	const saveConfigForNode = useCallback(() => {
 		saveConfig.mutate(String(nodeMenu?.node.id));
 		closeNodeMenu();
@@ -245,10 +275,12 @@ export function useTopologyViewerNodeEdgeActions(args: {
 		openInterfaces,
 		saveConfigForNode,
 		openRunningConfig,
-		copyManagementIP,
-		copyNodeName,
-		copySshCommand,
-		toggleLinkAdmin,
+			copyManagementIP,
+			copyNodeName,
+			copySshCommand,
+			openBrowser,
+			copyBrowserURL,
+			toggleLinkAdmin,
 		openCapture,
 		downloadLastPcap,
 		openImpairment,

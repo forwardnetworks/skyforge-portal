@@ -23,6 +23,8 @@ export function TopologyViewerNodeMenu(props: {
 	onCopyManagementIP: () => void;
 	onCopyNodeName: () => void;
 	onCopySshCommand: () => void;
+	onOpenBrowser: () => void;
+	onCopyBrowserURL: () => void;
 }) {
 	if (!props.nodeMenu || !props.userId || !props.deploymentId) return null;
 	const nodeLabel = String(
@@ -50,15 +52,23 @@ export function TopologyViewerNodeMenu(props: {
 					>
 						Open terminal…
 					</Button>
-					<Button
-						size="sm"
-						variant="outline"
-						className="w-full"
-						disabled={!props.enableTerminal}
-						onClick={props.onOpenTerminalNewTab}
-					>
-						Open terminal (new tab)
-					</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							className="w-full"
+							disabled={!props.enableTerminal}
+							onClick={props.onOpenTerminalNewTab}
+						>
+							Open terminal (new tab)
+						</Button>
+						<Button
+							size="sm"
+							variant="secondary"
+							className="w-full"
+							onClick={props.onOpenBrowser}
+						>
+							Open web UI/API
+						</Button>
 					<Button
 						size="sm"
 						variant="secondary"
@@ -148,14 +158,22 @@ export function TopologyViewerNodeMenu(props: {
 					>
 						Copy node name
 					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						className="w-full"
-						onClick={props.onCopySshCommand}
-					>
-						Copy SSH command
-					</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							className="w-full"
+							onClick={props.onCopySshCommand}
+						>
+							Copy SSH command
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							className="w-full"
+							onClick={props.onCopyBrowserURL}
+						>
+							Copy proxied browser URL
+						</Button>
 					<Button
 						size="sm"
 						variant="ghost"
