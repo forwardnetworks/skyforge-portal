@@ -11,7 +11,7 @@ export function ForwardAnalyticsPagePortfolioCard({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Capacity portfolio</CardTitle>
+				<CardTitle>Network insights portfolio</CardTitle>
 				<CardDescription>
 					Quick cross-network view (util_* max &gt;= 85%).
 				</CardDescription>
@@ -29,7 +29,8 @@ export function ForwardAnalyticsPagePortfolioCard({
 					</div>
 				) : page.portfolioItems.length === 0 ? (
 					<div className="text-sm text-muted-foreground">
-						No portfolio data yet. Save a network and run a Capacity refresh.
+						No portfolio data yet. Save a network and run a Network Insights
+						refresh.
 					</div>
 				) : (
 					<div className="overflow-x-auto">

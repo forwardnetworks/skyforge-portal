@@ -12,7 +12,8 @@ export function ForwardAnalyticsPageSavedCard({
 			<CardHeader>
 				<CardTitle>Saved networks</CardTitle>
 				<CardDescription>
-					Open Capacity to compute rollups and explore inventory/perf data.
+					Open Network Insights to compute rollups and explore inventory and
+					performance data.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">
@@ -38,7 +39,7 @@ export function ForwardAnalyticsPageSavedCard({
 									params={{ networkRef: network.id }}
 									search={{ userId: page.selectedUserScopeId } as never}
 								>
-									Capacity
+									Insights
 								</Link>
 							</Button>
 							<Button

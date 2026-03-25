@@ -10,7 +10,7 @@ export function ForwardNetworkCapacityInterfacesTab({
 	return (
 		<Card>
 			<CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-				<CardTitle className="text-base">Interface Capacity</CardTitle>
+				<CardTitle className="text-base">Interface Insights</CardTitle>
 				<ForwardNetworkCapacityInterfacesToolbar page={page} />
 			</CardHeader>
 			<CardContent className="space-y-3">

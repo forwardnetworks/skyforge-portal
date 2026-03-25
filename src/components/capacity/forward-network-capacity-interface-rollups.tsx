@@ -1,5 +1,6 @@
 import { DataTable } from "@/components/ui/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { forwardNetworkInsightsEmptyText } from "./forward-network-insights-messaging";
 import type { ForwardNetworkCapacityInterfacesTabProps } from "./forward-network-capacity-interface-tab-types";
 
 export function ForwardNetworkCapacityInterfaceRollups({
@@ -31,7 +32,7 @@ export function ForwardNetworkCapacityInterfaceRollups({
 			rows={page.ifaceRows}
 			getRowId={(r) => r.id}
 			onRowClick={(r) => page.setSelectedIface(r)}
-			emptyText="No rollups for this window/metric yet. Click Refresh to enqueue."
+			emptyText={forwardNetworkInsightsEmptyText(page)}
 		/>
 	);
 }

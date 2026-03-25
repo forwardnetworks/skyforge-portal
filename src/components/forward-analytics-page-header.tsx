@@ -18,8 +18,8 @@ export function ForwardAnalyticsPageHeader({
 			<div>
 				<h1 className="text-2xl font-bold tracking-tight">Forward Analytics</h1>
 				<p className="text-muted-foreground text-sm">
-					Save one or more Forward network IDs per user scope, then open Capacity
-					views against them.
+					Save one or more Forward networks per user scope, then open Network
+					Insights views against them.
 				</p>
 			</div>
 			<div className="flex items-center gap-3">

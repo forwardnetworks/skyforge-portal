@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import type { ForwardNetworkCapacityPageState } from "@/hooks/use-forward-network-capacity-page";
 import type { ForwardNetworkCapacityUpgradeCandidate } from "@/lib/api-client";
+import { forwardNetworkInsightsEmptyText } from "./forward-network-insights-messaging";
 
 export function ForwardNetworkCapacityScorecardTab({
 	page,
@@ -193,7 +194,7 @@ export function ForwardNetworkCapacityScorecardTab({
 						}
 						rows={top}
 						getRowId={(r) => `${r.scopeType}:${r.device}:${r.name}`}
-						emptyText="No upgrade candidates yet. Click Refresh to enqueue rollups."
+						emptyText={forwardNetworkInsightsEmptyText(page)}
 						maxHeightClassName="max-h-[320px]"
 						minWidthClassName="min-w-0"
 					/>

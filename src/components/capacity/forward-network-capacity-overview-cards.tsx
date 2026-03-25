@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ForwardNetworkInsightsStatusBanner } from "./forward-network-insights-messaging";
 import type { ForwardNetworkCapacityPageContentProps } from "./forward-network-capacity-page-shared";
 import { ForwardNetworkCapacityAsOfBadge } from "./forward-network-capacity-header";
 
@@ -7,63 +8,66 @@ export function ForwardNetworkCapacityOverviewCards({
 	page,
 }: ForwardNetworkCapacityPageContentProps) {
 	return (
-		<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-			<Card>
-				<CardHeader className="pb-2">
-					<CardTitle className="text-sm">As Of</CardTitle>
-				</CardHeader>
-				<CardContent className="text-sm">
-					<div className="font-mono text-xs">
-						{page.summary.data?.asOf ?? page.inventory.data?.asOf ?? "—"}
-					</div>
-					<div className="mt-2 flex items-center gap-2">
-						<ForwardNetworkCapacityAsOfBadge page={page} />
-						<Badge variant="outline" className="font-mono text-xs">
-							{page.forwardNetworkId || "no-forward"}
-						</Badge>
-					</div>
-				</CardContent>
-			</Card>
-			<Card>
-				<CardHeader className="pb-2">
-					<CardTitle className="text-sm">Hot Interfaces</CardTitle>
-				</CardHeader>
-				<CardContent className="text-sm">
-					<div className="text-2xl font-semibold">{page.overview.above}</div>
-					<div className="mt-1 text-xs text-muted-foreground">
-						util_* max &gt;= 85%
-					</div>
-				</CardContent>
-			</Card>
-			<Card>
-				<CardHeader className="pb-2">
-					<CardTitle className="text-sm">Soonest Saturation</CardTitle>
-				</CardHeader>
-				<CardContent className="text-sm">
-					{page.overview.soonest?.forecastCrossingTs ? (
-						<div className="space-y-1">
-							<div className="font-mono text-xs">
-								{page.overview.soonest.forecastCrossingTs}
-							</div>
-							<div className="text-xs text-muted-foreground">
-								{String(page.overview.soonest.details?.["deviceName"] ?? "")}{" "}
-								{String(page.overview.soonest.details?.["interfaceName"] ?? "")}{" "}
-								{String(page.overview.soonest.details?.["direction"] ?? "")}
-							</div>
+		<div className="space-y-4">
+			<ForwardNetworkInsightsStatusBanner page={page} />
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+				<Card>
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm">As Of</CardTitle>
+					</CardHeader>
+					<CardContent className="text-sm">
+						<div className="font-mono text-xs">
+							{page.summary.data?.asOf ?? page.inventory.data?.asOf ?? "—"}
 						</div>
-					) : (
-						<div className="text-sm text-muted-foreground">—</div>
-					)}
-				</CardContent>
-			</Card>
-			<Card>
-				<CardHeader className="pb-2">
-					<CardTitle className="text-sm">Coverage</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-1 text-sm">
-					<ForwardNetworkCapacityCoverage page={page} />
-				</CardContent>
-			</Card>
+						<div className="mt-2 flex items-center gap-2">
+							<ForwardNetworkCapacityAsOfBadge page={page} />
+							<Badge variant="outline" className="font-mono text-xs">
+								{page.forwardNetworkId || "no-forward"}
+							</Badge>
+						</div>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm">Hot Interfaces</CardTitle>
+					</CardHeader>
+					<CardContent className="text-sm">
+						<div className="text-2xl font-semibold">{page.overview.above}</div>
+						<div className="mt-1 text-xs text-muted-foreground">
+							util_* max &gt;= 85%
+						</div>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm">Soonest Saturation</CardTitle>
+					</CardHeader>
+					<CardContent className="text-sm">
+						{page.overview.soonest?.forecastCrossingTs ? (
+							<div className="space-y-1">
+								<div className="font-mono text-xs">
+									{page.overview.soonest.forecastCrossingTs}
+								</div>
+								<div className="text-xs text-muted-foreground">
+									{String(page.overview.soonest.details?.["deviceName"] ?? "")}{" "}
+									{String(page.overview.soonest.details?.["interfaceName"] ?? "")}{" "}
+									{String(page.overview.soonest.details?.["direction"] ?? "")}
+								</div>
+							</div>
+						) : (
+							<div className="text-sm text-muted-foreground">—</div>
+						)}
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm">Data Readiness</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-1 text-sm">
+						<ForwardNetworkCapacityCoverage page={page} />
+					</CardContent>
+				</Card>
+			</div>
 		</div>
 	);
 }

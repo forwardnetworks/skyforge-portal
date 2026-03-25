@@ -12,7 +12,7 @@ export function ForwardNetworkCapacityRawTab({
 		<div className="space-y-4">
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-base">Raw Rollups</CardTitle>
+					<CardTitle className="text-base">Raw Performance Rollups</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-2">
 					{page.summary.isLoading ? (

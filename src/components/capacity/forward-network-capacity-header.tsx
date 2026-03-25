@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw, TrendingUp } from "lucide-react";
+import { forwardNetworkInsightsEmptyText } from "./forward-network-insights-messaging";
 import type { ForwardNetworkCapacityPageContentProps } from "./forward-network-capacity-page-shared";
 
 export function ForwardNetworkCapacityHeader({
@@ -31,7 +32,7 @@ export function ForwardNetworkCapacityHeader({
 				</Link>
 				<div>
 					<h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-						<TrendingUp className="h-5 w-5" /> Capacity
+						<TrendingUp className="h-5 w-5" /> Network Insights
 					</h1>
 					<p className="mt-1 text-sm text-muted-foreground">
 						Forward network:{" "}
@@ -137,7 +138,7 @@ export function ForwardNetworkCapacityHeader({
 					title={
 						!page.forwardNetworkId
 							? "Load the saved Forward network first"
-							: "Enqueue a background rollup task"
+							: forwardNetworkInsightsEmptyText(page)
 					}
 				>
 					<RefreshCw className="mr-2 h-4 w-4" />
@@ -163,7 +164,7 @@ export function ForwardNetworkCapacityMissingUser() {
 				>
 					<ArrowLeft className="h-4 w-4" />
 				</Link>
-				<h1 className="text-2xl font-bold tracking-tight">Capacity</h1>
+				<h1 className="text-2xl font-bold tracking-tight">Network Insights</h1>
 			</div>
 			<div className="rounded-lg border p-6 text-sm text-muted-foreground">
 				User is required.

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ForwardNetworkCapacityPageState } from "@/hooks/use-forward-network-capacity-page";
+import { forwardNetworkInsightsEmptyText } from "./forward-network-insights-messaging";
 
 export function ForwardNetworkCapacityDevicesTab({
 	page,
@@ -25,7 +26,7 @@ export function ForwardNetworkCapacityDevicesTab({
 	return (
 		<Card>
 			<CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-				<CardTitle className="text-base">Device Capacity</CardTitle>
+				<CardTitle className="text-base">Device Insights</CardTitle>
 				<div className="flex flex-col gap-2 md:flex-row md:items-center">
 					<Input
 						placeholder="Filter (device / vendor / os)…"
@@ -161,7 +162,7 @@ export function ForwardNetworkCapacityDevicesTab({
 						rows={page.deviceRows}
 						getRowId={(r) => r.id}
 						onRowClick={(r) => page.setSelectedDevice(r)}
-						emptyText="No rollups for this window/metric yet. Click Refresh to enqueue."
+						emptyText={forwardNetworkInsightsEmptyText(page)}
 					/>
 				)}
 			</CardContent>
