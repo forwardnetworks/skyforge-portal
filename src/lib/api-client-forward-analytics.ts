@@ -27,6 +27,17 @@ export type ForwardAnalyticsListNetworksResponse = {
 	networks: ForwardAnalyticsNetwork[];
 };
 
+export type ForwardAnalyticsAvailableNetwork = {
+	id: string;
+	name: string;
+};
+
+export type ForwardAnalyticsAvailableNetworksResponse = {
+	collectorConfigId?: string;
+	credentialSource?: string;
+	networks: ForwardAnalyticsAvailableNetwork[];
+};
+
 // Saved Forward analytics networks used by capacity tooling and Teams bindings.
 
 export async function createUserScopeForwardNetwork(
@@ -47,6 +58,20 @@ export async function listUserScopeForwardNetworks(
 ): Promise<ForwardAnalyticsListNetworksResponse> {
 	return apiFetch<ForwardAnalyticsListNetworksResponse>(
 		`/api/users/${encodeURIComponent(userId)}/forward-networks`,
+	);
+}
+
+export async function listUserScopeForwardAvailableNetworks(
+	userId: string,
+	collectorConfigId?: string,
+): Promise<ForwardAnalyticsAvailableNetworksResponse> {
+	const qs = new URLSearchParams();
+	if (collectorConfigId?.trim()) {
+		qs.set("collectorConfigId", collectorConfigId.trim());
+	}
+	const suffix = qs.toString();
+	return apiFetch<ForwardAnalyticsAvailableNetworksResponse>(
+		`/api/users/${encodeURIComponent(userId)}/forward-network-options${suffix ? `?${suffix}` : ""}`,
 	);
 }
 

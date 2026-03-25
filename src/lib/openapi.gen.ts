@@ -4809,6 +4809,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/forward-network-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListUserScopeForwardAvailableNetworks lists Forward networks reachable through
+         * @description the selected collector credential set so the UI can offer a network picker instead of requiring raw id entry.
+         */
+        get: operations["GET:skyforge.ListUserScopeForwardAvailableNetworks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{id}/forward-network-performance": {
         parameters: {
             query?: never;
@@ -9664,6 +9684,10 @@ export interface components {
             errors: string[];
             finalized: boolean;
             namespace: string;
+        };
+        "skyforge.ForwardAnalyticsAvailableNetwork": {
+            id: string;
+            name: string;
         };
         "skyforge.ForwardAnalyticsNetwork": {
             collectorConfigId: string;
@@ -20599,6 +20623,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["APIError"];
+        };
+    };
+    "GET:skyforge.ListUserScopeForwardAvailableNetworks": {
+        parameters: {
+            query: {
+                collectorConfigId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        collectorConfigId: string;
+                        credentialSource: string;
+                        networks: components["schemas"]["skyforge.ForwardAnalyticsAvailableNetwork"][];
+                    };
+                };
             };
             default: components["responses"]["APIError"];
         };

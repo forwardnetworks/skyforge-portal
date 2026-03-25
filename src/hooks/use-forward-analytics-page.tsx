@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type {
+	ForwardAnalyticsAvailableNetwork,
 	ForwardAnalyticsNetwork,
 	SkyforgeUserScope,
 } from "../lib/api-client";
@@ -11,6 +12,7 @@ import {
 	deleteUserScopeForwardNetwork,
 	getUserScopeForwardNetworkCapacityPortfolio,
 	listUserForwardCollectorConfigs,
+	listUserScopeForwardAvailableNetworks,
 	listUserScopeForwardNetworks,
 	listUserScopes,
 } from "../lib/api-client";
@@ -98,6 +100,32 @@ export function useForwardAnalyticsPage({ userId }: { userId?: string }) {
 	const [description, setDescription] = useState("");
 	const [collectorConfigId, setCollectorConfigId] =
 		useState<string>("__default__");
+	const [lastAutoName, setLastAutoName] = useState("");
+
+	const normalizedCollectorConfigId =
+		collectorConfigId && collectorConfigId !== "__default__"
+			? collectorConfigId
+			: "";
+
+	const availableNetworksQ = useQuery({
+		queryKey: queryKeys.userForwardAvailableNetworks(
+			selectedUserScopeId,
+			normalizedCollectorConfigId,
+		),
+		queryFn: () =>
+			listUserScopeForwardAvailableNetworks(
+				selectedUserScopeId,
+				normalizedCollectorConfigId || undefined,
+			),
+		enabled: Boolean(selectedUserScopeId),
+		staleTime: 10_000,
+		retry: false,
+	});
+	const availableNetworks = useMemo(
+		() =>
+			(availableNetworksQ.data?.networks ?? []) as ForwardAnalyticsAvailableNetwork[],
+		[availableNetworksQ.data?.networks],
+	);
 
 	const createM = useMutation({
 		mutationFn: async () => {
@@ -153,6 +181,28 @@ export function useForwardAnalyticsPage({ userId }: { userId?: string }) {
 			}),
 	});
 
+	const handleCollectorConfigChange = (next: string) => {
+		if (name.trim() && name === lastAutoName) {
+			setName("");
+		}
+		setCollectorConfigId(next);
+		setForwardNetworkId("");
+		setLastAutoName("");
+	};
+
+	const handleForwardNetworkChange = (nextId: string) => {
+		setForwardNetworkId(nextId);
+		const selected = availableNetworks.find((network) => network.id === nextId);
+		if (!selected) {
+			setLastAutoName("");
+			return;
+		}
+		if (!name.trim() || name === lastAutoName) {
+			setName(selected.name);
+		}
+		setLastAutoName(selected.name);
+	};
+
 	return {
 		navigate,
 		userScopes,
@@ -170,6 +220,10 @@ export function useForwardAnalyticsPage({ userId }: { userId?: string }) {
 		setDescription,
 		collectorConfigId,
 		setCollectorConfigId,
+		availableNetworksQ,
+		availableNetworks,
+		handleCollectorConfigChange,
+		handleForwardNetworkChange,
 		createM,
 		deleteM,
 	};

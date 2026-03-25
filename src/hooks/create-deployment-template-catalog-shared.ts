@@ -14,6 +14,7 @@ export const fallbackNetlabDeviceOptions = [
 	"linux",
 	"sros",
 	"vmx",
+	"vsrx",
 ];
 
 export function getEffectiveTemplateSource(

@@ -35,13 +35,72 @@ export function ForwardAnalyticsPageAddCard({
 						/>
 					</div>
 					<div className="space-y-2">
-						<Label>Forward Network ID</Label>
-						<Input
-							value={page.forwardNetworkId}
-							onChange={(e) => page.setForwardNetworkId(e.target.value)}
-							placeholder="abc123..."
-						/>
+						<Label>Forward collector config</Label>
+						<Select
+							value={page.collectorConfigId}
+							onValueChange={page.handleCollectorConfigChange}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Use my default Forward config" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="__default__">Use my default</SelectItem>
+								{page.collectors.map((collector) => (
+									<SelectItem
+										key={String(collector.id)}
+										value={String(collector.id)}
+									>
+										{String(collector.name ?? collector.id)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
+				</div>
+				<div className="space-y-2">
+					<Label>Forward network</Label>
+					<Select
+						value={page.forwardNetworkId}
+						onValueChange={page.handleForwardNetworkChange}
+						disabled={
+							page.availableNetworksQ.isLoading ||
+							page.availableNetworks.length === 0
+						}
+					>
+						<SelectTrigger>
+							<SelectValue
+								placeholder={
+									page.availableNetworksQ.isLoading
+										? "Loading Forward networks..."
+										: page.availableNetworks.length === 0
+											? "No Forward networks available"
+											: "Select a Forward network"
+								}
+							/>
+						</SelectTrigger>
+						<SelectContent>
+							{page.availableNetworks.map((network) => (
+								<SelectItem key={network.id} value={network.id}>
+									{network.name === network.id
+										? network.id
+										: `${network.name} (${network.id})`}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					{page.availableNetworksQ.isError ? (
+						<p className="text-sm text-destructive">
+							Failed to load Forward networks for the selected collector.
+						</p>
+					) : null}
+					{!page.availableNetworksQ.isLoading &&
+					!page.availableNetworksQ.isError &&
+					page.availableNetworks.length === 0 ? (
+						<p className="text-sm text-muted-foreground">
+							The selected collector credentials do not currently expose any
+							Forward networks.
+						</p>
+					) : null}
 				</div>
 				<div className="space-y-2">
 					<Label>Description (optional)</Label>
@@ -51,32 +110,14 @@ export function ForwardAnalyticsPageAddCard({
 						placeholder="Notes for humans"
 					/>
 				</div>
-				<div className="space-y-2">
-					<Label>Forward collector config (optional)</Label>
-					<Select
-						value={page.collectorConfigId}
-						onValueChange={page.setCollectorConfigId}
-					>
-						<SelectTrigger>
-							<SelectValue placeholder="Use my default Forward config" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="__default__">Use my default</SelectItem>
-							{page.collectors.map((collector) => (
-								<SelectItem
-									key={String(collector.id)}
-									value={String(collector.id)}
-								>
-									{String(collector.name ?? collector.id)}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
 				<div className="flex items-center gap-2">
 					<Button
 						onClick={() => page.createM.mutate()}
-						disabled={!page.selectedUserScopeId || page.createM.isPending}
+						disabled={
+							!page.selectedUserScopeId ||
+							page.createM.isPending ||
+							!page.forwardNetworkId
+						}
 					>
 						<Plus className="mr-2 h-4 w-4" />
 						Save network

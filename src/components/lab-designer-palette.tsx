@@ -100,15 +100,14 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 		});
 	}
 	if (
-		lower.includes("vrnetlab/juniper_vsrx") ||
-		lower.includes("vr-vsrx") ||
+		lower.includes("ghcr.io/forwardnetworks/kubevirt/juniper_vsrx") ||
 		lower.includes("vsrx") ||
 		lower.includes("/srx")
 	) {
 		return mk({
 			label: "Firewall · Juniper SRX",
 			category: "Firewalls",
-			kind: "vr-vsrx",
+			kind: "vsrx",
 			repo: clean,
 			vendor: "Juniper",
 			model: "SRX",
