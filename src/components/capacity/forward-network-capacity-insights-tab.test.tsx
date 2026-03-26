@@ -118,4 +118,26 @@ describe("ForwardNetworkCapacityInsightsTab", () => {
 
 		expect(screen.getByText("No cloud findings in 7d window.")).toBeInTheDocument();
 	});
+
+	it("renders cost not-run state", () => {
+		render(
+			<ForwardNetworkCapacityInsightsTab
+				kind="cost"
+				page={
+					{
+						costInsights: {
+							isLoading: false,
+							isError: false,
+							data: { status: "not-run", checks: [] },
+						},
+						runCostInsights: { isPending: false, mutate: vi.fn() },
+					} as never
+				}
+			/>,
+		);
+
+		expect(
+			screen.getByText("No cost insights run yet for this network."),
+		).toBeInTheDocument();
+	});
 });

@@ -1,9 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataTable } from "@/components/ui/data-table";
+import {
+	DataTable,
+	type DataTableColumn,
+} from "@/components/ui/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ForwardNetworkCapacityPageState } from "@/hooks/use-forward-network-capacity-page";
+import type { ForwardNetworkInsightCheckResult } from "@/lib/api-client";
 import { formatFreshnessAge } from "./forward-network-capacity-freshness";
 
 export function ForwardNetworkCapacityInsightsTab({
@@ -11,13 +15,60 @@ export function ForwardNetworkCapacityInsightsTab({
 	kind,
 }: {
 	page: ForwardNetworkCapacityPageState;
-	kind: "security" | "cloud";
+	kind: "security" | "cloud" | "cost";
 }) {
-	const q = kind === "security" ? page.securityInsights : page.cloudInsights;
-	const run = kind === "security" ? page.runSecurityInsights : page.runCloudInsights;
-	const title = kind === "security" ? "Security Insights" : "Cloud Insights";
+	const q =
+		kind === "security"
+			? page.securityInsights
+			: kind === "cloud"
+				? page.cloudInsights
+				: page.costInsights;
+	const run =
+		kind === "security"
+			? page.runSecurityInsights
+			: kind === "cloud"
+				? page.runCloudInsights
+				: page.runCostInsights;
+	const title =
+		kind === "security"
+			? "Security Insights"
+			: kind === "cloud"
+				? "Cloud Insights"
+				: "Cost Insights";
 	const summary = q.data?.summary;
 	const checks = q.data?.checks ?? [];
+	const columns: Array<DataTableColumn<ForwardNetworkInsightCheckResult>> = [
+		{
+			id: "checkId",
+			header: "Check",
+			cell: (r) => (
+				<div className="text-xs">
+					<div className="font-medium">{r.title || r.checkId}</div>
+					<div className="text-muted-foreground font-mono">{r.checkId}</div>
+				</div>
+			),
+			width: 420,
+		},
+		{
+			id: "category",
+			header: "Category",
+			cell: (r) => <span className="text-xs">{r.category || "-"}</span>,
+			width: 180,
+		},
+		{
+			id: "severity",
+			header: "Severity",
+			cell: (r) => <span className="text-xs uppercase">{r.severity || "-"}</span>,
+			width: 120,
+		},
+		{
+			id: "findings",
+			header: "Findings",
+			align: "right",
+			cell: (r) => <span className="font-mono text-xs">{r.findings}</span>,
+			width: 110,
+		},
+	];
 
 	return (
 		<Card>
@@ -58,40 +109,10 @@ export function ForwardNetworkCapacityInsightsTab({
 							</div>
 						) : null}
 						<DataTable
-							columns={[
-								{
-									id: "checkId",
-									header: "Check",
-									cell: (r) => (
-										<div className="text-xs">
-											<div className="font-medium">{r.title || r.checkId}</div>
-											<div className="text-muted-foreground font-mono">{r.checkId}</div>
-										</div>
-									),
-									width: 420,
-								},
-								{
-									id: "category",
-									header: "Category",
-									cell: (r) => <span className="text-xs">{r.category || "-"}</span>,
-									width: 180,
-								},
-								{
-									id: "severity",
-									header: "Severity",
-									cell: (r) => <span className="text-xs uppercase">{r.severity || "-"}</span>,
-									width: 120,
-								},
-								{
-									id: "findings",
-									header: "Findings",
-									align: "right",
-									cell: (r) => <span className="font-mono text-xs">{r.findings}</span>,
-									width: 110,
-								},
-							]}
-							rows={checks as any[]}
-							emptyMessage="No results."
+							columns={columns}
+							rows={checks}
+							getRowId={(r) => r.checkId}
+							emptyText="No results."
 						/>
 					</>
 				)}

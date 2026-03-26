@@ -4,6 +4,7 @@ import {
 	type ForwardNetworkCapacitySnapshotDeltaResponse,
 	type ForwardNetworkInsightResultResponse,
 	type ForwardNetworkCapacityUpgradeCandidatesResponse,
+	getForwardNetworkCostInsights,
 	getForwardNetworkCloudInsights,
 	getForwardNetworkCapacityCoverage,
 	getForwardNetworkCapacityInventory,
@@ -14,6 +15,7 @@ import {
 	getForwardNetworkSecurityInsights,
 	listUserScopeForwardNetworks,
 	refreshForwardNetworkCapacityRollups,
+	runForwardNetworkCostInsights,
 	runForwardNetworkCloudInsights,
 	runForwardNetworkSecurityInsights,
 } from "@/lib/api-client";
@@ -123,6 +125,14 @@ export function useForwardNetworkCapacityPageData(args: {
 		staleTime: 30_000,
 	});
 
+	const costInsights = useQuery<ForwardNetworkInsightResultResponse>({
+		queryKey: queryKeys.forwardNetworkCostInsights(ownerUserId, networkRefId),
+		queryFn: () => getForwardNetworkCostInsights(ownerUserId, networkRefId),
+		enabled: Boolean(ownerUserId && networkRefId),
+		retry: false,
+		staleTime: 30_000,
+	});
+
 	const forwardNetworkId = String(
 		summary.data?.forwardNetworkId ?? inventory.data?.forwardNetworkId ?? "",
 	);
@@ -202,6 +212,12 @@ export function useForwardNetworkCapacityPageData(args: {
 				),
 			});
 			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkCostInsights(
+					ownerUserId,
+					networkRefId,
+				),
+			});
+			await qc.invalidateQueries({
 				queryKey: ["forwardNetworkCapacityGrowth", ownerUserId, networkRefId],
 			});
 		},
@@ -258,6 +274,25 @@ export function useForwardNetworkCapacityPageData(args: {
 			}),
 	});
 
+	const runCostInsights = useMutation({
+		mutationFn: async () => runForwardNetworkCostInsights(ownerUserId, networkRefId),
+		onSuccess: async (resp) => {
+			toast.success("Cost insights completed", {
+				description: `Run ${String(resp.run?.id ?? "")}`.trim(),
+			});
+			await qc.invalidateQueries({
+				queryKey: queryKeys.forwardNetworkCostInsights(
+					ownerUserId,
+					networkRefId,
+				),
+			});
+		},
+		onError: (e) =>
+			toast.error("Failed to run cost insights", {
+				description: (e as Error).message,
+			}),
+	});
+
 	const groupingOptions = useMemo(() => {
 		const devices = inventory.data?.devices ?? [];
 		const ifaceVrfs = inventory.data?.interfaceVrfs ?? [];
@@ -302,12 +337,14 @@ export function useForwardNetworkCapacityPageData(args: {
 		upgradeCandidates,
 		securityInsights,
 		cloudInsights,
+		costInsights,
 		forwardNetworkId,
 		ifaceInvIndex,
 		refresh,
 		loadUnhealthyDevices,
 		runSecurityInsights,
 		runCloudInsights,
+		runCostInsights,
 		groupingOptions,
 		windowDays,
 		rollups,

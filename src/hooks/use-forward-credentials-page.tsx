@@ -20,6 +20,7 @@ import {
 } from "@/lib/api-client-forward-collectors";
 import {
 	generateManagedForwardTenantPerformance,
+	injectManagedForwardTenantSnapshotDataFile,
 	listManagedForwardTenantPerformanceNetworks,
 	type ForwardPerformanceNetworksResponse,
 	type ManagedForwardTenantKind,
@@ -339,6 +340,49 @@ export function useForwardCredentialsPage() {
 			}),
 	});
 
+	const injectSnapshotDataFileMutation = useMutation({
+		mutationFn: async (input: {
+			tenant: ManagedForwardTenantKind;
+			networkRef: string;
+			snapshotId?: string;
+			pricingSourceUrl?: string;
+			dataFileName: string;
+			nqeName?: string;
+			description?: string;
+			storedFileName?: string;
+			fileTypeProto?: string;
+			schemaFields?: string[];
+			content: string;
+			snapshotNote?: string;
+		}) =>
+			injectManagedForwardTenantSnapshotDataFile(input.tenant, input.networkRef, {
+				snapshotId: input.snapshotId,
+				pricingSourceUrl: input.pricingSourceUrl,
+				dataFileName: input.dataFileName,
+				nqeName: input.nqeName,
+				description: input.description,
+				storedFileName: input.storedFileName,
+				fileTypeProto: input.fileTypeProto,
+				schemaFields: input.schemaFields,
+				content: input.content,
+				snapshotNote: input.snapshotNote,
+			}),
+		onSuccess: async (resp, input) => {
+			toast.success("Snapshot data file injected", {
+				description: `new snapshot ${resp.injectedSnapshotId}`,
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardManagedTenantPerformanceNetworks(
+					input.tenant,
+				),
+			});
+		},
+		onError: (err) =>
+			toast.error("Failed to inject data file into snapshot", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
 	const tenants = useMemo<Record<ManagedForwardTenantKind, ManagedTenantState>>(
 		() => ({
 			demo: {
@@ -404,6 +448,7 @@ export function useForwardCredentialsPage() {
 		requestTenantResetMutation,
 		saveTenantFeaturesMutation,
 		generateSyntheticPerformanceMutation,
+		injectSnapshotDataFileMutation,
 		managedTenantKeys: MANAGED_TENANT_KEYS,
 	};
 }

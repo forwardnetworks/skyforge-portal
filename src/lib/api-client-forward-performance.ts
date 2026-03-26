@@ -49,6 +49,31 @@ export type ForwardPerformanceGenerateResponse = {
 	numInterfaces?: number;
 };
 
+export type ForwardSnapshotDataFileInjectRequest = {
+	snapshotId?: string;
+	dataFileId?: string;
+	pricingSourceUrl?: string;
+	dataFileName: string;
+	nqeName?: string;
+	description?: string;
+	storedFileName?: string;
+	fileTypeProto?: string;
+	schemaFields?: string[];
+	content: string;
+	snapshotNote?: string;
+};
+
+export type ForwardSnapshotDataFileInjectResponse = {
+	tenantKind?: string;
+	forwardNetworkId: string;
+	sourceSnapshotId: string;
+	injectedSnapshotId: string;
+	dataFileId: string;
+	dataFileName: string;
+	nqeName: string;
+	status: string;
+};
+
 export type ManagedForwardTenantKind = "primary" | "demo";
 
 export async function listUserScopeForwardPerformanceNetworks(
@@ -94,6 +119,20 @@ export async function generateManagedForwardTenantPerformance(
 ): Promise<ForwardPerformanceGenerateResponse> {
 	return apiFetch<ForwardPerformanceGenerateResponse>(
 		`${tenantPerformanceBasePath(tenantKind)}/${encodeURIComponent(networkRef)}/generate`,
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function injectManagedForwardTenantSnapshotDataFile(
+	tenantKind: ManagedForwardTenantKind,
+	networkRef: string,
+	body: ForwardSnapshotDataFileInjectRequest,
+): Promise<ForwardSnapshotDataFileInjectResponse> {
+	return apiFetch<ForwardSnapshotDataFileInjectResponse>(
+		`${tenantPerformanceBasePath(tenantKind)}/${encodeURIComponent(networkRef)}/inject-data-file`,
 		{
 			method: "POST",
 			body: JSON.stringify(body),

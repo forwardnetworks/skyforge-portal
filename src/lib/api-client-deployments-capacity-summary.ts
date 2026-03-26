@@ -278,3 +278,26 @@ export async function runForwardNetworkCloudInsights(
 		},
 	);
 }
+
+export async function getForwardNetworkCostInsights(
+	userId: string,
+	networkRef: string,
+): Promise<ForwardNetworkInsightResultResponse> {
+	return apiFetch<ForwardNetworkInsightResultResponse>(
+		`/api/users/${encodeURIComponent(userId)}/forward-networks/${encodeURIComponent(networkRef)}/insights/cost`,
+	);
+}
+
+export async function runForwardNetworkCostInsights(
+	userId: string,
+	networkRef: string,
+	snapshotId?: string,
+): Promise<ForwardNetworkInsightRunResponse> {
+	return apiFetch<ForwardNetworkInsightRunResponse>(
+		`/api/users/${encodeURIComponent(userId)}/forward-networks/${encodeURIComponent(networkRef)}/insights/cost/run`,
+		{
+			method: "POST",
+			body: JSON.stringify(snapshotId ? { snapshotId } : {}),
+		},
+	);
+}

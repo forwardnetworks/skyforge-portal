@@ -10,6 +10,7 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -28,6 +29,12 @@ type DraftByNetwork = Record<
 		generationIntervalMins: string;
 		healthyDeviceOdds: string;
 		healthyInterfaceOdds: string;
+		injectDataFileName: string;
+		injectNqeName: string;
+		injectDescription: string;
+		injectPricingSourceUrl: string;
+		injectSchemaFields: string;
+		injectContent: string;
 	}
 >;
 
@@ -92,6 +99,17 @@ export function ForwardTenantPerformanceCard(props: {
 					healthyInterfaceOdds:
 						prior?.healthyInterfaceOdds ??
 						String(network.defaultHealthyInterfaceOdds ?? 0.8),
+					injectDataFileName:
+						prior?.injectDataFileName ?? "cloud-pricing.json",
+					injectNqeName: prior?.injectNqeName ?? "cloud_pricing",
+					injectDescription:
+						prior?.injectDescription ?? "Cloud price list for cost optimization",
+					injectPricingSourceUrl:
+						prior?.injectPricingSourceUrl ?? "",
+					injectSchemaFields:
+						prior?.injectSchemaFields ??
+						"provider,service,sku,region,hourlyUsd",
+					injectContent: prior?.injectContent ?? "[]",
 				};
 			}
 			const unchanged =
@@ -103,7 +121,13 @@ export function ForwardTenantPerformanceCard(props: {
 						current?.snapshotId === draft.snapshotId &&
 						current?.generationIntervalMins === draft.generationIntervalMins &&
 						current?.healthyDeviceOdds === draft.healthyDeviceOdds &&
-						current?.healthyInterfaceOdds === draft.healthyInterfaceOdds
+						current?.healthyInterfaceOdds === draft.healthyInterfaceOdds &&
+						current?.injectDataFileName === draft.injectDataFileName &&
+						current?.injectNqeName === draft.injectNqeName &&
+						current?.injectDescription === draft.injectDescription &&
+						current?.injectPricingSourceUrl === draft.injectPricingSourceUrl &&
+						current?.injectSchemaFields === draft.injectSchemaFields &&
+						current?.injectContent === draft.injectContent
 					);
 				});
 			if (unchanged) {
@@ -185,12 +209,24 @@ export function ForwardTenantPerformanceCard(props: {
 							healthyInterfaceOdds: String(
 								network.defaultHealthyInterfaceOdds ?? 0.8,
 							),
+							injectDataFileName: "cloud-pricing.json",
+							injectNqeName: "cloud_pricing",
+							injectDescription: "Cloud price list for cost optimization",
+							injectPricingSourceUrl: "",
+							injectSchemaFields:
+								"provider,service,sku,region,hourlyUsd",
+							injectContent: "[]",
 						};
 						const processedSnapshots = network.processedSnapshots ?? [];
 						const canGenerate =
 							network.status !== "error" &&
 							Boolean(network.forwardNetworkId.trim()) &&
 							Boolean(draft.snapshotId.trim());
+						const canInject =
+							canGenerate &&
+							Boolean(draft.injectDataFileName.trim()) &&
+							(Boolean(draft.injectPricingSourceUrl.trim()) ||
+								Boolean(draft.injectContent.trim()));
 
 						return (
 							<div key={network.id} className="space-y-4 rounded border p-4">
@@ -322,6 +358,123 @@ export function ForwardTenantPerformanceCard(props: {
 										/>
 									</div>
 								</div>
+								<div className="space-y-3 rounded border p-3">
+									<div className="text-sm font-medium">
+										Inject snapshot data file
+									</div>
+									<div className="grid gap-4 md:grid-cols-2">
+										<div className="space-y-2">
+											<Label>Data file name</Label>
+											<Input
+												value={draft.injectDataFileName}
+												onChange={(e) =>
+													setDrafts((prev) => ({
+														...prev,
+														[tenant]: {
+															...(prev[tenant] ?? {}),
+															[network.id]: {
+																...draft,
+																injectDataFileName: e.target.value,
+															},
+														},
+													}))
+												}
+											/>
+										</div>
+										<div className="space-y-2">
+											<Label>NQE name</Label>
+											<Input
+												value={draft.injectNqeName}
+												onChange={(e) =>
+													setDrafts((prev) => ({
+														...prev,
+														[tenant]: {
+															...(prev[tenant] ?? {}),
+															[network.id]: {
+																...draft,
+																injectNqeName: e.target.value,
+															},
+														},
+													}))
+												}
+											/>
+										</div>
+										<div className="space-y-2">
+											<Label>Description</Label>
+											<Input
+												value={draft.injectDescription}
+												onChange={(e) =>
+													setDrafts((prev) => ({
+														...prev,
+														[tenant]: {
+															...(prev[tenant] ?? {}),
+															[network.id]: {
+																...draft,
+																injectDescription: e.target.value,
+															},
+														},
+													}))
+												}
+											/>
+										</div>
+										<div className="space-y-2">
+											<Label>Pricing source URL</Label>
+											<Input
+												placeholder="https://... (used by connector + injection)"
+												value={draft.injectPricingSourceUrl}
+												onChange={(e) =>
+													setDrafts((prev) => ({
+														...prev,
+														[tenant]: {
+															...(prev[tenant] ?? {}),
+															[network.id]: {
+																...draft,
+																injectPricingSourceUrl: e.target.value,
+															},
+														},
+													}))
+												}
+											/>
+										</div>
+										<div className="space-y-2">
+											<Label>Schema fields (comma-separated)</Label>
+											<Input
+												value={draft.injectSchemaFields}
+												onChange={(e) =>
+													setDrafts((prev) => ({
+														...prev,
+														[tenant]: {
+															...(prev[tenant] ?? {}),
+															[network.id]: {
+																...draft,
+																injectSchemaFields: e.target.value,
+															},
+														},
+													}))
+												}
+											/>
+										</div>
+									</div>
+									<div className="space-y-2">
+										<Label>JSON content</Label>
+										<Textarea
+											rows={6}
+											value={draft.injectContent}
+											onChange={(e) =>
+												setDrafts((prev) => ({
+													...prev,
+													[tenant]: {
+														...(prev[tenant] ?? {}),
+														[network.id]: {
+															...draft,
+															injectContent: e.target.value,
+														},
+													},
+												}))
+											}
+										/>
+									</div>
+								</div>
 								<div className="flex flex-wrap gap-2">
 									<Button
 										onClick={() =>
@@ -349,6 +502,35 @@ export function ForwardTenantPerformanceCard(props: {
 										{page.generateSyntheticPerformanceMutation.isPending
 											? "Generating…"
 											: "Generate performance data"}
+									</Button>
+									<Button
+										variant="secondary"
+										onClick={() =>
+											page.injectSnapshotDataFileMutation.mutate({
+												tenant,
+												networkRef: network.id,
+												snapshotId: draft.snapshotId.trim() || undefined,
+												pricingSourceUrl:
+													draft.injectPricingSourceUrl.trim() || undefined,
+												dataFileName: draft.injectDataFileName.trim(),
+												nqeName: draft.injectNqeName.trim() || undefined,
+												description:
+													draft.injectDescription.trim() || undefined,
+												schemaFields: draft.injectSchemaFields
+													.split(",")
+													.map((v) => v.trim())
+													.filter((v) => v.length > 0),
+												content: draft.injectContent,
+											})
+										}
+										disabled={
+											page.injectSnapshotDataFileMutation.isPending ||
+											!canInject
+										}
+									>
+										{page.injectSnapshotDataFileMutation.isPending
+											? "Injecting…"
+											: "Inject data file snapshot"}
 									</Button>
 								</div>
 							</div>

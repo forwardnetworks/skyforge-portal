@@ -24,6 +24,7 @@ export function ForwardNetworkCapacityTabs({
 				<TabsTrigger value="plan">Upgrade Planning</TabsTrigger>
 				<TabsTrigger value="security">Security</TabsTrigger>
 				<TabsTrigger value="cloud">Cloud</TabsTrigger>
+				<TabsTrigger value="cost">Cost</TabsTrigger>
 				<TabsTrigger value="routing">Routing/BGP</TabsTrigger>
 				<TabsTrigger value="changes">Changes</TabsTrigger>
 				<TabsTrigger value="health">Health</TabsTrigger>
@@ -49,6 +50,9 @@ export function ForwardNetworkCapacityTabs({
 			</TabsContent>
 			<TabsContent value="cloud" className="space-y-4">
 				<ForwardNetworkCapacityInsightsTab page={page} kind="cloud" />
+			</TabsContent>
+			<TabsContent value="cost" className="space-y-4">
+				<ForwardNetworkCapacityInsightsTab page={page} kind="cost" />
 			</TabsContent>
 			<TabsContent value="routing" className="space-y-4">
 				<ForwardNetworkCapacityRoutingTab page={page} />
