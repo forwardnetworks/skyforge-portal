@@ -62,9 +62,7 @@ export function useCreateDeploymentCreateMutation(
 				}
 				if (Object.keys(envMap).length > 0) config.environment = envMap;
 			}
-			if (
-				["kne_netlab", "kne_containerlab", "terraform"].includes(normalizedKind)
-			) {
+			if (["kne_netlab", "kne_raw", "terraform"].includes(normalizedKind)) {
 				const cid = String(values.forwardCollectorId ?? "none").trim();
 				if (cid && cid !== "none") {
 					config.forwardEnabled = true;
@@ -96,10 +94,7 @@ export function useCreateDeploymentCreateMutation(
 				const debugFlags = String(values.netlabInitialDebug ?? "").trim();
 				if (debugFlags) config.netlabInitialDebug = debugFlags;
 			}
-			if (
-				normalizedKind === "kne_containerlab" ||
-				normalizedKind === "terraform"
-			) {
+			if (normalizedKind === "kne_raw" || normalizedKind === "terraform") {
 				config.templateSource = toAPITemplateSource(effectiveSource);
 				if (
 					(effectiveSource === "external" || effectiveSource === "custom") &&

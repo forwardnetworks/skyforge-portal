@@ -8,9 +8,9 @@ import type {
 
 export type DeploymentKind =
 	| "kne_netlab"
+	| "kne_raw"
 	| "netlab"
 	| "containerlab"
-	| "kne_containerlab"
 	| "terraform";
 export type TemplateSource = "user" | "blueprints" | "external" | "custom";
 export type DeploymentMode = "in_cluster" | "byos";
@@ -22,7 +22,7 @@ export function deploymentKindToSpec(kind: DeploymentKind): {
 	switch (kind) {
 		case "kne_netlab":
 			return { family: "kne", engine: "netlab" };
-		case "kne_containerlab":
+		case "kne_raw":
 			return { family: "kne", engine: "containerlab" };
 		case "netlab":
 			return { family: "byos", engine: "netlab" };
@@ -52,8 +52,9 @@ export function applyDeploymentModeToKind(
 		case "kne_netlab":
 			return mode === "byos" ? "netlab" : "kne_netlab";
 		case "containerlab":
-		case "kne_containerlab":
-			return mode === "byos" ? "containerlab" : "kne_containerlab";
+			return mode === "byos" ? "containerlab" : "kne_raw";
+		case "kne_raw":
+			return mode === "byos" ? "containerlab" : "kne_raw";
 		default:
 			return kind;
 	}
@@ -82,9 +83,9 @@ export const formSchema = z.object({
 	name: z.string().min(1, "Deployment name is required").max(100),
 	kind: z.enum([
 		"kne_netlab",
+		"kne_raw",
 		"netlab",
 		"containerlab",
-		"kne_containerlab",
 		"terraform",
 	]),
 	source: z.enum([USER_REPO_SOURCE, "blueprints", "external", "custom"]),

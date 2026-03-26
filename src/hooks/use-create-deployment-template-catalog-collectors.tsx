@@ -12,7 +12,7 @@ import type { DeploymentKind } from "./create-deployment-shared";
 
 const collectorKinds: DeploymentKind[] = [
 	"kne_netlab",
-	"kne_containerlab",
+	"kne_raw",
 	"terraform",
 ];
 

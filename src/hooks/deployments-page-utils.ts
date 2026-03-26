@@ -125,7 +125,7 @@ export function formatDeploymentType(deployment: UserScopeDeployment): string {
 		.toLowerCase();
 	if (family === "kne" && engine === "netlab") return "Netlab (KNE)";
 	if (family === "kne" && engine === "containerlab") {
-		return "Containerlab (KNE)";
+		return "KNE (Raw)";
 	}
 	if (family === "kne") return "KNE";
 	if (family === "byos" && engine === "netlab") return "Netlab (BYOS)";
@@ -200,10 +200,7 @@ function matchesDeploymentTypeFilter(
 		);
 	}
 	if (typeFilter === "containerlab") {
-		return (
-			(family === "kne" && engine === "containerlab") ||
-			(family === "byos" && engine === "containerlab")
-		);
+		return family === "byos" && engine === "containerlab";
 	}
 	if (typeFilter === "terraform") return family === "terraform";
 	return true;

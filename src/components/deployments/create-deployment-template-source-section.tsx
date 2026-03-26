@@ -82,7 +82,8 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 									disabled={
 										!externalAllowed ||
 										(watchKind !== "containerlab" &&
-											watchKind !== "kne_containerlab" &&
+											watchKind !== "kne_netlab" &&
+											watchKind !== "kne_raw" &&
 											watchKind !== "terraform")
 									}
 								>
@@ -93,8 +94,8 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 									disabled={
 										watchKind !== "netlab" &&
 										watchKind !== "kne_netlab" &&
-										watchKind !== "containerlab" &&
-										watchKind !== "kne_containerlab"
+										watchKind !== "kne_raw" &&
+										watchKind !== "containerlab"
 									}
 								>
 									One-shot repo URL
@@ -103,7 +104,8 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 						</Select>
 						{!externalAllowed &&
 							(watchKind === "containerlab" ||
-								watchKind === "kne_containerlab" ||
+								watchKind === "kne_netlab" ||
+								watchKind === "kne_raw" ||
 								watchKind === "terraform") && (
 								<FormDescription>
 									No external repos configured in My Settings.

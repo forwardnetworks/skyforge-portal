@@ -62,6 +62,7 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 							</FormControl>
 							<SelectContent>
 								<SelectItem value="kne_netlab">Netlab</SelectItem>
+								<SelectItem value="kne_raw">KNE (Raw)</SelectItem>
 								{byosNetlabEnabled && (
 									<SelectItem value="netlab">Netlab (BYOS)</SelectItem>
 								)}
@@ -70,7 +71,6 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 										Containerlab (BYOS)
 									</SelectItem>
 								)}
-								<SelectItem value="kne_containerlab">Containerlab</SelectItem>
 								<SelectItem value="terraform">Terraform</SelectItem>
 							</SelectContent>
 						</Select>
@@ -173,7 +173,7 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 				)}
 			/>
 
-			{["kne_netlab", "kne_containerlab", "terraform"].includes(watchKind) && (
+			{["kne_netlab", "kne_raw", "terraform"].includes(watchKind) && (
 				<FormField
 					control={form.control}
 					name="forwardCollectorId"

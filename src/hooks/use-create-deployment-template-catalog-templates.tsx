@@ -86,7 +86,7 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 				case "kne_netlab":
 					return getUserScopeNetlabTemplates(scopeId, query);
 				case "containerlab":
-				case "kne_containerlab":
+				case "kne_raw":
 					return getUserScopeContainerlabTemplates(scopeId, query);
 				case "terraform":
 					return getUserScopeTerraformTemplates(scopeId, query);
@@ -150,7 +150,7 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 				templateRepoId,
 			);
 			if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
-			if (watchKind === "containerlab" || watchKind === "kne_containerlab") {
+			if (watchKind === "containerlab" || watchKind === "kne_raw") {
 				return getUserScopeContainerlabTemplate(scopeId, {
 					...query,
 					file: templateName,
@@ -167,8 +167,8 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 			Boolean(templateName) &&
 			(watchKind === "netlab" ||
 				watchKind === "kne_netlab" ||
-				watchKind === "containerlab" ||
-				watchKind === "kne_containerlab"),
+				watchKind === "kne_raw" ||
+				watchKind === "containerlab"),
 		retry: false,
 		staleTime: 30_000,
 	});
