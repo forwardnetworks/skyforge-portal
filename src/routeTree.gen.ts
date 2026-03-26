@@ -49,6 +49,7 @@ import { Route as DashboardDeploymentsNewRouteImport } from './routes/dashboard/
 import { Route as DashboardDeploymentsCompositeRouteImport } from './routes/dashboard/deployments/composite'
 import { Route as AdminInfobloxConsoleRouteImport } from './routes/admin/infoblox.console'
 import { Route as DashboardDeploymentsDeploymentIdIndexRouteImport } from './routes/dashboard/deployments/$deploymentId.index'
+import { Route as DashboardForwardAnalyticsNetworkRefInsightsRouteImport } from './routes/dashboard/forward-analytics/$networkRef.insights'
 import { Route as DashboardForwardAnalyticsNetworkRefCapacityRouteImport } from './routes/dashboard/forward-analytics/$networkRef.capacity'
 import { Route as DashboardDeploymentsDeploymentIdMapRouteImport } from './routes/dashboard/deployments/$deploymentId.map'
 import { Route as DashboardDeploymentsDeploymentIdCapacityRouteImport } from './routes/dashboard/deployments/$deploymentId.capacity'
@@ -260,6 +261,12 @@ const DashboardDeploymentsDeploymentIdIndexRoute =
     path: '/dashboard/deployments/$deploymentId/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DashboardForwardAnalyticsNetworkRefInsightsRoute =
+  DashboardForwardAnalyticsNetworkRefInsightsRouteImport.update({
+    id: '/dashboard/forward-analytics/$networkRef/insights',
+    path: '/dashboard/forward-analytics/$networkRef/insights',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardForwardAnalyticsNetworkRefCapacityRoute =
   DashboardForwardAnalyticsNetworkRefCapacityRouteImport.update({
     id: '/dashboard/forward-analytics/$networkRef/capacity',
@@ -322,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-analytics/$networkRef/capacity': typeof DashboardForwardAnalyticsNetworkRefCapacityRoute
+  '/dashboard/forward-analytics/$networkRef/insights': typeof DashboardForwardAnalyticsNetworkRefInsightsRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -366,6 +374,7 @@ export interface FileRoutesByTo {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-analytics/$networkRef/capacity': typeof DashboardForwardAnalyticsNetworkRefCapacityRoute
+  '/dashboard/forward-analytics/$networkRef/insights': typeof DashboardForwardAnalyticsNetworkRefInsightsRoute
   '/dashboard/deployments/$deploymentId': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRoutesById {
@@ -412,6 +421,7 @@ export interface FileRoutesById {
   '/dashboard/deployments/$deploymentId/capacity': typeof DashboardDeploymentsDeploymentIdCapacityRoute
   '/dashboard/deployments/$deploymentId/map': typeof DashboardDeploymentsDeploymentIdMapRoute
   '/dashboard/forward-analytics/$networkRef/capacity': typeof DashboardForwardAnalyticsNetworkRefCapacityRoute
+  '/dashboard/forward-analytics/$networkRef/insights': typeof DashboardForwardAnalyticsNetworkRefInsightsRoute
   '/dashboard/deployments/$deploymentId/': typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -459,6 +469,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-analytics/$networkRef/capacity'
+    | '/dashboard/forward-analytics/$networkRef/insights'
     | '/dashboard/deployments/$deploymentId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-analytics/$networkRef/capacity'
+    | '/dashboard/forward-analytics/$networkRef/insights'
     | '/dashboard/deployments/$deploymentId'
   id:
     | '__root__'
@@ -548,6 +560,7 @@ export interface FileRouteTypes {
     | '/dashboard/deployments/$deploymentId/capacity'
     | '/dashboard/deployments/$deploymentId/map'
     | '/dashboard/forward-analytics/$networkRef/capacity'
+    | '/dashboard/forward-analytics/$networkRef/insights'
     | '/dashboard/deployments/$deploymentId/'
   fileRoutesById: FileRoutesById
 }
@@ -591,6 +604,7 @@ export interface RootRouteChildren {
   DashboardDeploymentsDeploymentIdCapacityRoute: typeof DashboardDeploymentsDeploymentIdCapacityRoute
   DashboardDeploymentsDeploymentIdMapRoute: typeof DashboardDeploymentsDeploymentIdMapRoute
   DashboardForwardAnalyticsNetworkRefCapacityRoute: typeof DashboardForwardAnalyticsNetworkRefCapacityRoute
+  DashboardForwardAnalyticsNetworkRefInsightsRoute: typeof DashboardForwardAnalyticsNetworkRefInsightsRoute
   DashboardDeploymentsDeploymentIdIndexRoute: typeof DashboardDeploymentsDeploymentIdIndexRoute
 }
 
@@ -876,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDeploymentsDeploymentIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/forward-analytics/$networkRef/insights': {
+      id: '/dashboard/forward-analytics/$networkRef/insights'
+      path: '/dashboard/forward-analytics/$networkRef/insights'
+      fullPath: '/dashboard/forward-analytics/$networkRef/insights'
+      preLoaderRoute: typeof DashboardForwardAnalyticsNetworkRefInsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/forward-analytics/$networkRef/capacity': {
       id: '/dashboard/forward-analytics/$networkRef/capacity'
       path: '/dashboard/forward-analytics/$networkRef/capacity'
@@ -958,6 +979,8 @@ const rootRouteChildren: RootRouteChildren = {
     DashboardDeploymentsDeploymentIdMapRoute,
   DashboardForwardAnalyticsNetworkRefCapacityRoute:
     DashboardForwardAnalyticsNetworkRefCapacityRoute,
+  DashboardForwardAnalyticsNetworkRefInsightsRoute:
+    DashboardForwardAnalyticsNetworkRefInsightsRoute,
   DashboardDeploymentsDeploymentIdIndexRoute:
     DashboardDeploymentsDeploymentIdIndexRoute,
 }

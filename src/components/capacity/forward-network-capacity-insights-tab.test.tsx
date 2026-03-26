@@ -59,6 +59,7 @@ describe("ForwardNetworkCapacityInsightsTab", () => {
 				kind="security"
 				page={
 					{
+						windowLabel: "24h",
 						securityInsights: {
 							isLoading: false,
 							isError: false,
@@ -91,5 +92,30 @@ describe("ForwardNetworkCapacityInsightsTab", () => {
 
 		expect(screen.getByText(/As of 2026-03-25T16:00:00Z \(2h ago\)/)).toBeInTheDocument();
 		expect(screen.getByText("Checks: 1")).toBeInTheDocument();
+	});
+
+	it("renders empty message with selected window", () => {
+		render(
+			<ForwardNetworkCapacityInsightsTab
+				kind="cloud"
+				page={
+					{
+						windowLabel: "7d",
+						cloudInsights: {
+							isLoading: false,
+							isError: false,
+							data: {
+								status: "success",
+								summary: { checks: 0, totalFindings: 0, high: 0, medium: 0, low: 0 },
+								checks: [],
+							},
+						},
+						runCloudInsights: { isPending: false, mutate: vi.fn() },
+					} as never
+				}
+			/>,
+		);
+
+		expect(screen.getByText("No cloud findings in 7d window.")).toBeInTheDocument();
 	});
 });

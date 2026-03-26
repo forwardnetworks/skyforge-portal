@@ -55,7 +55,7 @@ export function ForwardAnalyticsPagePortfolioCard({
 												<div className="flex items-center gap-2">
 													<Button asChild variant="link" className="h-auto p-0">
 														<Link
-															to="/dashboard/forward-analytics/$networkRef/capacity"
+															to="/dashboard/forward-analytics/$networkRef/insights"
 															params={{ networkRef: String(item.networkRef) }}
 															search={{ userId: page.selectedUserScopeId } as never}
 														>

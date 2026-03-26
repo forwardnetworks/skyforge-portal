@@ -52,6 +52,11 @@ export function ForwardNetworkCapacityInsightsTab({
 								</span>
 							) : null}
 						</div>
+						{checks.length === 0 ? (
+							<div className="text-muted-foreground text-sm">
+								No {kind} findings in {page.windowLabel} window.
+							</div>
+						) : null}
 						<DataTable
 							columns={[
 								{
@@ -86,7 +91,7 @@ export function ForwardNetworkCapacityInsightsTab({
 								},
 							]}
 							rows={checks as any[]}
-							emptyMessage={`No ${kind} findings.`}
+							emptyMessage="No results."
 						/>
 					</>
 				)}
