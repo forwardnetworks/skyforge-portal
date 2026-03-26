@@ -16,7 +16,7 @@ export function ForwardNetworkCapacityTcamCard(props: {
 	return (
 		<Card>
 			<CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-				<CardTitle className="text-base">Hardware Capacity (TCAM)</CardTitle>
+				<CardTitle className="text-base">Hardware Insights (TCAM)</CardTitle>
 				<div className="text-xs text-muted-foreground">
 					Derived from Forward CUSTOM command outputs. Configure a TCAM command
 					collection to populate.

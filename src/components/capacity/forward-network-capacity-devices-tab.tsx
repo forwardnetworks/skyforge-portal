@@ -78,7 +78,7 @@ export function ForwardNetworkCapacityDevicesTab({
 								r.samples ?? 0,
 							]);
 							downloadText(
-								`capacity_devices_${page.networkRefId}_${page.windowLabel}_${page.deviceMetric}.csv`,
+								`insights_devices_${page.networkRefId}_${page.windowLabel}_${page.deviceMetric}.csv`,
 								"text/csv",
 								toCSV(headers, rows),
 							);

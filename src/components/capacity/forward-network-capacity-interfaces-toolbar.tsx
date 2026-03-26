@@ -77,7 +77,7 @@ export function ForwardNetworkCapacityInterfacesToolbar({
 						r.samples ?? 0,
 					]);
 					downloadText(
-						`capacity_interfaces_${page.networkRefId}_${page.windowLabel}_${page.ifaceMetric}.csv`,
+						`insights_interfaces_${page.networkRefId}_${page.windowLabel}_${page.ifaceMetric}.csv`,
 						"text/csv",
 						toCSV(headers, rows),
 					);
