@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
 import { ForwardNetworkInsightsStatusBanner } from "./forward-network-insights-messaging";
 import type { ForwardNetworkCapacityPageContentProps } from "./forward-network-capacity-page-shared";
+import { formatFreshnessAge } from "./forward-network-capacity-freshness";
 import { ForwardNetworkCapacityAsOfBadge } from "./forward-network-capacity-header";
 
 export function ForwardNetworkCapacityOverviewCards({
@@ -10,6 +12,20 @@ export function ForwardNetworkCapacityOverviewCards({
 	return (
 		<div className="space-y-4">
 			<ForwardNetworkInsightsStatusBanner page={page} />
+			{page.summary.data?.stale ? (
+				<Card className="border-destructive/40 bg-destructive/5">
+					<CardContent className="flex items-center gap-2 pt-6 text-sm text-destructive">
+						<AlertTriangle className="h-4 w-4" />
+						<span>
+							Data is stale (
+							{formatFreshnessAge(
+								page.summary.data?.asOf ?? page.inventory.data?.asOf,
+							)}
+							). Use Refresh to enqueue new rollups and insight runs.
+						</span>
+					</CardContent>
+				</Card>
+			) : null}
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
 				<Card>
 					<CardHeader className="pb-2">
@@ -18,6 +34,12 @@ export function ForwardNetworkCapacityOverviewCards({
 					<CardContent className="text-sm">
 						<div className="font-mono text-xs">
 							{page.summary.data?.asOf ?? page.inventory.data?.asOf ?? "—"}
+						</div>
+						<div className="mt-1 text-xs text-muted-foreground">
+							Age:{" "}
+							{formatFreshnessAge(
+								page.summary.data?.asOf ?? page.inventory.data?.asOf,
+							)}
 						</div>
 						<div className="mt-2 flex items-center gap-2">
 							<ForwardNetworkCapacityAsOfBadge page={page} />

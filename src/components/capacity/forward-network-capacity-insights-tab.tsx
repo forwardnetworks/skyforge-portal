@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ForwardNetworkCapacityPageState } from "@/hooks/use-forward-network-capacity-page";
+import { formatFreshnessAge } from "./forward-network-capacity-freshness";
 
 export function ForwardNetworkCapacityInsightsTab({
 	page,
@@ -46,7 +47,9 @@ export function ForwardNetworkCapacityInsightsTab({
 							<Badge variant="secondary">Medium: {summary?.medium ?? 0}</Badge>
 							<Badge variant="outline">Low: {summary?.low ?? 0}</Badge>
 							{q.data?.asOf ? (
-								<span className="text-muted-foreground ml-auto font-mono">As of {q.data.asOf}</span>
+								<span className="text-muted-foreground ml-auto font-mono">
+									As of {q.data.asOf} ({formatFreshnessAge(q.data.asOf)})
+								</span>
 							) : null}
 						</div>
 						<DataTable

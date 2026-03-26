@@ -18,10 +18,10 @@ export function ForwardAnalyticsPageAddCard({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Add Forward network</CardTitle>
+				<CardTitle>Add Forward Network</CardTitle>
 				<CardDescription>
-					These networks are used as the scope for capacity rollups and live perf
-					drilldowns.
+					These networks are used as the scope for Network Insights rollups and
+					live performance drilldowns.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
