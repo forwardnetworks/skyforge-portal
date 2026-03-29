@@ -19,7 +19,10 @@ type FeatureToggleField = {
 		| "nqeEspresso"
 		| "nqeSecurityRulesPanos"
 		| "topoLayoutVersioning"
-		| "networkMaps";
+		| "networkMaps"
+		| "aiAllowed"
+		| "predictAiAssist"
+		| "aiChats";
 	label: string;
 	description: string;
 };
@@ -50,6 +53,21 @@ const FEATURE_FIELDS: FeatureToggleField[] = [
 		label: "Network maps",
 		description: "Enable network maps experiences.",
 	},
+	{
+		key: "aiAllowed",
+		label: "AI enabled",
+		description: "Enable NQE Assist AI and related AI-backed workflows.",
+	},
+	{
+		key: "predictAiAssist",
+		label: "Predict AI assist",
+		description: "Enable Predict AI assistant flows.",
+	},
+	{
+		key: "aiChats",
+		label: "AI chats",
+		description: "Enable AI chat experiences where supported by profile and model config.",
+	},
 ];
 
 export function ForwardTenantFeaturesCard(props: {
@@ -63,6 +81,9 @@ export function ForwardTenantFeaturesCard(props: {
 			nqeSecurityRulesPanos: true,
 			topoLayoutVersioning: true,
 			networkMaps: true,
+			aiAllowed: true,
+			predictAiAssist: true,
+			aiChats: true,
 		},
 	);
 

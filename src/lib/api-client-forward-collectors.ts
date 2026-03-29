@@ -91,6 +91,9 @@ export type ForwardTenantFeatureFlags = {
 	nqeSecurityRulesPanos: boolean;
 	topoLayoutVersioning: boolean;
 	networkMaps: boolean;
+	aiAllowed: boolean;
+	predictAiAssist: boolean;
+	aiChats: boolean;
 };
 
 export type ForwardTenantFeaturesResponse = {
