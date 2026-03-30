@@ -47,6 +47,8 @@ export function useUserSettingsAwsCredentials() {
 	const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
 	const [awsSsoStartUrl, setAwsSsoStartUrl] = useState("");
 	const [awsSsoRegion, setAwsSsoRegion] = useState("");
+	const [awsSsoAccountId, setAwsSsoAccountId] = useState("");
+	const [awsSsoRoleName, setAwsSsoRoleName] = useState("");
 	const [awsSsoSession, setAwsSsoSession] = useState<{
 		requestId: string;
 		verificationUriComplete: string;
@@ -61,6 +63,10 @@ export function useUserSettingsAwsCredentials() {
 			userAwsSsoQ.data?.startUrl ?? awsSsoConfigQ.data?.startUrl ?? "";
 		const configuredRegion =
 			userAwsSsoQ.data?.region ?? awsSsoConfigQ.data?.region ?? "";
+		const configuredAccountId =
+			userAwsSsoQ.data?.accountId ?? awsSsoConfigQ.data?.accountId ?? "";
+		const configuredRoleName =
+			userAwsSsoQ.data?.roleName ?? awsSsoConfigQ.data?.roleName ?? "";
 
 		if (!awsSsoStartUrl && configuredStartUrl) {
 			setAwsSsoStartUrl(configuredStartUrl);
@@ -68,13 +74,25 @@ export function useUserSettingsAwsCredentials() {
 		if (!awsSsoRegion && configuredRegion) {
 			setAwsSsoRegion(configuredRegion);
 		}
+		if (!awsSsoAccountId && configuredAccountId) {
+			setAwsSsoAccountId(configuredAccountId);
+		}
+		if (!awsSsoRoleName && configuredRoleName) {
+			setAwsSsoRoleName(configuredRoleName);
+		}
 	}, [
 		userAwsSsoQ.data?.startUrl,
 		userAwsSsoQ.data?.region,
+		userAwsSsoQ.data?.accountId,
+		userAwsSsoQ.data?.roleName,
 		awsSsoConfigQ.data?.startUrl,
 		awsSsoConfigQ.data?.region,
+		awsSsoConfigQ.data?.accountId,
+		awsSsoConfigQ.data?.roleName,
 		awsSsoStartUrl,
 		awsSsoRegion,
+		awsSsoAccountId,
+		awsSsoRoleName,
 	]);
 
 	const saveAwsStaticM = useMutation({
@@ -117,16 +135,8 @@ export function useUserSettingsAwsCredentials() {
 			putUserAWSSSOCredentials({
 				startUrl: awsSsoStartUrl.trim(),
 				region: awsSsoRegion.trim(),
-				accountId: (
-					userAwsSsoQ.data?.accountId ??
-					awsSsoConfigQ.data?.accountId ??
-					""
-				).trim(),
-				roleName: (
-					userAwsSsoQ.data?.roleName ??
-					awsSsoConfigQ.data?.roleName ??
-					""
-				).trim(),
+				accountId: awsSsoAccountId.trim(),
+				roleName: awsSsoRoleName.trim(),
 			}),
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
@@ -238,6 +248,10 @@ export function useUserSettingsAwsCredentials() {
 		setAwsSsoStartUrl,
 		awsSsoRegion,
 		setAwsSsoRegion,
+		awsSsoAccountId,
+		setAwsSsoAccountId,
+		awsSsoRoleName,
+		setAwsSsoRoleName,
 		awsSsoSession,
 		awsSsoPollStatus,
 		saveAwsStaticM,

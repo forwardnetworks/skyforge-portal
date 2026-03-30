@@ -30,6 +30,16 @@ export function UserSettingsAwsSsoCredentialsCard(props: {
 				value={page.awsSsoRegion}
 				onChange={(e) => page.setAwsSsoRegion(e.target.value)}
 			/>
+			<Input
+				placeholder="Account ID"
+				value={page.awsSsoAccountId}
+				onChange={(e) => page.setAwsSsoAccountId(e.target.value)}
+			/>
+			<Input
+				placeholder="Role name"
+				value={page.awsSsoRoleName}
+				onChange={(e) => page.setAwsSsoRoleName(e.target.value)}
+			/>
 			{page.awsSsoStatusQ.data?.lastAuthenticatedAt ? (
 				<div className="text-xs text-muted-foreground">
 					Last authenticated:{" "}
@@ -72,7 +82,9 @@ export function UserSettingsAwsSsoCredentialsCard(props: {
 					disabled={
 						page.saveAwsSsoConfigM.isPending ||
 						!page.awsSsoStartUrl.trim() ||
-						!page.awsSsoRegion.trim()
+						!page.awsSsoRegion.trim() ||
+						!page.awsSsoAccountId.trim() ||
+						!page.awsSsoRoleName.trim()
 					}
 				>
 					Save settings
@@ -81,7 +93,10 @@ export function UserSettingsAwsSsoCredentialsCard(props: {
 					type="button"
 					onClick={() => page.startAwsSsoM.mutate()}
 					disabled={
-						!page.awsSsoConfigQ.data?.configured ||
+						!(
+							page.userAwsSsoQ.data?.configured ||
+							page.awsSsoConfigQ.data?.configured
+						) ||
 						page.startAwsSsoM.isPending ||
 						!!page.awsSsoSession
 					}
