@@ -68,7 +68,10 @@ export type AwsSsoConfigResponse = {
 
 export type AwsSsoStatusResponse = {
 	configured: boolean;
+	status: string;
 	connected: boolean;
+	reauthRequired?: boolean;
+	statusMessage?: string;
 	user: string;
 	expiresAt?: ISO8601;
 	lastAuthenticatedAt?: ISO8601;

@@ -6,18 +6,34 @@ export function UserSettingsAwsSsoCredentialsCard(props: {
 	page: UserSettingsPageState;
 }) {
 	const { page } = props;
+	const awsSsoConfigured =
+		page.userAwsSsoQ.data?.configured || page.awsSsoConfigQ.data?.configured;
+	const awsSsoStatus = page.awsSsoStatusQ.data?.status ?? "not_configured";
+	const awsSsoStatusLabel = awsSsoConfigured
+		? page.awsSsoStatusQ.data?.statusMessage ??
+			(awsSsoStatus === "connected"
+				? "Connected"
+				: awsSsoStatus === "reauth_required"
+					? "Reauthentication required"
+					: "Not connected")
+		: "Not configured";
+	const awsConnectLabel =
+		awsSsoStatus === "connected" || awsSsoStatus === "reauth_required"
+			? "Reconnect"
+			: "Connect";
 
 	return (
 		<div className="rounded border p-4 space-y-3">
 			<div className="flex items-center justify-between">
 				<div className="text-sm font-medium">AWS (SSO)</div>
-				<div className="text-xs text-muted-foreground">
-					{page.userAwsSsoQ.data?.configured ||
-					page.awsSsoConfigQ.data?.configured
-						? page.awsSsoStatusQ.data?.connected
-							? "Connected"
-							: "Not connected"
-						: "Not configured"}
+				<div
+					className={
+						awsSsoStatus === "reauth_required"
+							? "text-xs text-amber-600"
+							: "text-xs text-muted-foreground"
+					}
+				>
+					{awsSsoStatusLabel}
 				</div>
 			</div>
 			<Input
@@ -52,6 +68,12 @@ export function UserSettingsAwsSsoCredentialsCard(props: {
 				<div className="text-xs text-muted-foreground">
 					Expires:{" "}
 					<span className="font-mono">{page.awsSsoStatusQ.data.expiresAt}</span>
+				</div>
+			) : null}
+			{page.awsSsoStatusQ.data?.reauthRequired ? (
+				<div className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800">
+					The stored AWS SSO session can no longer mint credentials. Reconnect
+					before launching AWS-backed automations.
 				</div>
 			) : null}
 			{page.awsSsoSession ? (
@@ -93,15 +115,10 @@ export function UserSettingsAwsSsoCredentialsCard(props: {
 					type="button"
 					onClick={() => page.startAwsSsoM.mutate()}
 					disabled={
-						!(
-							page.userAwsSsoQ.data?.configured ||
-							page.awsSsoConfigQ.data?.configured
-						) ||
-						page.startAwsSsoM.isPending ||
-						!!page.awsSsoSession
+						!awsSsoConfigured || page.startAwsSsoM.isPending || !!page.awsSsoSession
 					}
 				>
-					Connect
+					{awsConnectLabel}
 				</Button>
 				<Button
 					type="button"

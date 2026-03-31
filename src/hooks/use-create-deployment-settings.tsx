@@ -3,9 +3,11 @@ import { useEffect, useMemo } from "react";
 import type { UseFormSetValue } from "react-hook-form";
 import type { z } from "zod";
 import {
+	type AwsSsoStatusResponse,
 	type DashboardSnapshot,
 	type DeploymentLifetimePolicyResponse,
 	type SkyforgeUserScope,
+	getAwsSsoStatus,
 	getDashboardSnapshot,
 	getDeploymentLifetimePolicy,
 	getSession,
@@ -75,6 +77,12 @@ export function useCreateDeploymentSettings(args: {
 	const lifetimePolicyQ = useQuery<DeploymentLifetimePolicyResponse>({
 		queryKey: queryKeys.deploymentLifetimePolicy(),
 		queryFn: getDeploymentLifetimePolicy,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const awsSsoStatusQ = useQuery<AwsSsoStatusResponse>({
+		queryKey: queryKeys.awsSsoStatus(),
+		queryFn: getAwsSsoStatus,
 		staleTime: 30_000,
 		retry: false,
 	});
@@ -227,6 +235,7 @@ export function useCreateDeploymentSettings(args: {
 
 		return {
 		dash,
+		awsSsoStatusQ,
 		driverSummary,
 		effectiveUsername,
 		expiryAction,
