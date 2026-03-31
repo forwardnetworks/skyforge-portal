@@ -16,6 +16,7 @@ export default defineConfig({
 				manualChunks(id) {
 					if (!id.includes("node_modules")) return;
 					if (id.includes("@tanstack")) return "tanstack";
+					if (id.includes("@xyflow/react")) return "xyflow";
 					if (id.includes("react")) return "react";
 					if (id.includes("framer-motion") || id.includes("motion"))
 						return "motion";

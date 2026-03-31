@@ -1,4 +1,5 @@
 import type {
+	DeploymentMap,
 	DeploymentInventoryResponse,
 	DeploymentNodeInterfacesResponse,
 	DeploymentTopology,
@@ -192,6 +193,15 @@ export async function getDeploymentTopology(
 ): Promise<DeploymentTopology> {
 	return apiFetch<DeploymentTopology>(
 		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/topology`,
+	);
+}
+
+export async function getDeploymentMap(
+	userId: string,
+	deploymentId: string,
+): Promise<DeploymentMap> {
+	return apiFetch<DeploymentMap>(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/map`,
 	);
 }
 

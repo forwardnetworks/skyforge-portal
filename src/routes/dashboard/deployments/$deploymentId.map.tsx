@@ -2,16 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink, Hammer } from "lucide-react";
 import { useMemo } from "react";
+import { DeploymentMapTerraformViewerLazy } from "../../../components/deployment-map-terraform-viewer-lazy";
 import { TopologyViewer } from "../../../components/topology-viewer";
 import { Badge } from "../../../components/ui/badge";
 import { buttonVariants } from "../../../components/ui/button";
 import { EmptyState } from "../../../components/ui/empty-state";
 import { Skeleton } from "../../../components/ui/skeleton";
 import {
+	type DeploymentMap,
 	type DashboardSnapshot,
 	type UserScopeDeployment,
-	getDeploymentTopology,
+	getDeploymentMap,
 } from "../../../lib/api-client";
+import { deploymentMapToTopology } from "../../../lib/deployment-map-utils";
 import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { queryKeys } from "../../../lib/query-keys";
 
@@ -47,8 +50,6 @@ function DeploymentMapPage() {
 		.trim()
 		.toLowerCase();
 	const isKNEDeployment = deploymentFamily === "kne";
-	const hasTopologyView =
-		deploymentFamily === "kne" || deploymentFamily === "byos";
 	const deploymentTypeLabel =
 		deploymentFamily && deploymentEngine
 			? `${deploymentFamily}/${deploymentEngine}`
@@ -56,16 +57,23 @@ function DeploymentMapPage() {
 	const status =
 		deployment?.activeTaskStatus ?? deployment?.lastStatus ?? "unknown";
 
-	const topology = useQuery({
-		queryKey: queryKeys.deploymentTopology(userId, deploymentId),
+	const mapQ = useQuery({
+		queryKey: queryKeys.deploymentMap(userId, deploymentId),
 		queryFn: async () => {
 			if (!deployment) throw new Error("deployment not found");
-			return getDeploymentTopology(deployment.userId, deployment.id);
+			return getDeploymentMap(deployment.userId, deployment.id);
 		},
-		enabled: !!deployment && hasTopologyView,
+		enabled: !!deployment,
 		retry: false,
 		staleTime: 10_000,
 	});
+
+	const topologyFromMap = useMemo(() => {
+		if (!mapQ.data || mapQ.data.kind !== "topology") {
+			return null;
+		}
+		return deploymentMapToTopology(mapQ.data);
+	}, [mapQ.data]);
 
 	if (!deployment) {
 		if (snap.isLoading || snap.isFetching) {
@@ -86,6 +94,36 @@ function DeploymentMapPage() {
 				<EmptyState
 					title="Deployment not found"
 					description="This deployment may have been deleted or you don't have access."
+					action={{ label: "Back", onClick: () => window.close() }}
+				/>
+			</div>
+		);
+	}
+
+	if (mapQ.isLoading && !mapQ.data) {
+		return (
+			<div className="h-screen w-screen p-6">
+				<div className="flex items-center gap-3">
+					<Skeleton className="h-9 w-9" />
+					<Skeleton className="h-8 w-64" />
+				</div>
+				<div className="mt-6">
+					<Skeleton className="h-[75vh] w-full" />
+				</div>
+			</div>
+		);
+	}
+
+	if (mapQ.isError || !mapQ.data) {
+		return (
+			<div className="h-screen w-screen p-6">
+				<EmptyState
+					title="Map is not available"
+					description={
+						mapQ.error instanceof Error
+							? mapQ.error.message
+							: "This deployment does not have a map yet."
+					}
 					action={{ label: "Back", onClick: () => window.close() }}
 				/>
 			</div>
@@ -148,13 +186,20 @@ function DeploymentMapPage() {
 
 			<div className="flex-1 min-h-0 p-3">
 				<div className="h-full">
-					<TopologyViewer
-						topology={topology.data}
-						userId={deployment.userId}
-						deploymentId={deployment.id}
-						enableTerminal={isKNEDeployment}
-						fullHeight
-					/>
+					{mapQ.data.kind === "terraform" ? (
+						<DeploymentMapTerraformViewerLazy
+							map={mapQ.data}
+							deploymentId={deployment.id}
+						/>
+					) : (
+						<TopologyViewer
+							topology={topologyFromMap}
+							userId={deployment.userId}
+							deploymentId={deployment.id}
+							enableTerminal={isKNEDeployment}
+							fullHeight
+						/>
+					)}
 				</div>
 			</div>
 		</div>

@@ -69,6 +69,82 @@ export type DeploymentTopology = {
 	}>;
 };
 
+export type DeploymentMapCapabilities = {
+	nodeActions?: string[];
+	edgeActions?: string[];
+	inventoryKind?: string;
+	liveStats?: boolean;
+	inspector?: boolean;
+};
+
+export type DeploymentMapLegendItem = {
+	key: string;
+	label: string;
+};
+
+export type DeploymentMapNode = {
+	id: string;
+	label: string;
+	class?: string;
+	provider?: string;
+	resourceType?: string;
+	resourceAddress?: string;
+	status?: string;
+	primaryValue?: string;
+	region?: string;
+	zone?: string;
+	mgmtIp?: string;
+	podName?: string;
+	networkId?: string;
+	peerNetworkId?: string;
+	subnetRole?: string;
+	vpcId?: string;
+	gatewayKind?: string;
+	routeTargetKind?: string;
+	isDefaultRoute?: boolean;
+	routeTableId?: string;
+	routeTableIds?: string[];
+	subnetId?: string;
+	subnetIds?: string[];
+	securityGroups?: string[];
+	scheme?: string;
+	destinationCidr?: string;
+	routeTargetValue?: string;
+	mapPublicIpOnLaunch?: boolean;
+	availableIpAddressCount?: number;
+	details?: JSONMap;
+};
+
+export type DeploymentMapEdge = {
+	id: string;
+	source: string;
+	target: string;
+	kind?: string;
+	label?: string;
+	details?: JSONMap;
+};
+
+export type DeploymentMapUnmappedRecord = {
+	provider?: string;
+	resourceType?: string;
+	resourceAddress?: string;
+	reason?: string;
+};
+
+export type DeploymentMap = {
+	generatedAt: ISO8601;
+	source: string;
+	kind: string;
+	userId?: string;
+	deploymentId?: string;
+	artifactKey?: string;
+	capabilities: DeploymentMapCapabilities;
+	legend?: DeploymentMapLegendItem[];
+	nodes: DeploymentMapNode[];
+	edges: DeploymentMapEdge[];
+	unmappedResources?: DeploymentMapUnmappedRecord[];
+};
+
 export type LinkImpairmentRequest = {
 	edgeId: string;
 	action: "set" | "clear";

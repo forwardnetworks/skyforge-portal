@@ -1,4 +1,5 @@
 import {
+	type DeploymentMap,
 	type DeploymentInfoResponse,
 	type DashboardSnapshot,
 	type DeploymentResourceEstimateResponse,
@@ -6,6 +7,7 @@ import {
 	getDeploymentInfo,
 	type UserScopeDeployment,
 	getDeploymentResourceEstimate,
+	getDeploymentMap,
 	getDeploymentTopology,
 	listUserForwardCollectorConfigs,
 } from "@/lib/api-client";
@@ -115,6 +117,17 @@ export function useDeploymentDetailData(args: {
 		staleTime: 10_000,
 	});
 
+	const deploymentMap = useQuery<DeploymentMap>({
+		queryKey: queryKeys.deploymentMap(userId, deploymentId),
+		queryFn: async () => {
+			if (!deployment) throw new Error("deployment not found");
+			return getDeploymentMap(deployment.userId, deployment.id);
+		},
+		enabled: Boolean(deployment),
+		retry: false,
+		staleTime: 10_000,
+	});
+
 	const deploymentInfoQ = useQuery<DeploymentInfoResponse>({
 		queryKey: ["deployment-info", userId, deploymentId],
 		queryFn: async () => {
@@ -190,6 +203,7 @@ export function useDeploymentDetailData(args: {
 		deployment,
 		deploymentEngine,
 		deploymentInfoQ,
+		deploymentMap,
 		deploymentId,
 		deploymentType,
 		destroyDialogOpen,

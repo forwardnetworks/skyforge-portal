@@ -3,6 +3,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { Cloud, Laptop, Network, Server } from "lucide-react";
 
+function semanticBadgeLabel(value: string) {
+	const normalized = value.trim().toLowerCase();
+	switch (normalized) {
+		case "internet-gateway":
+			return "internet";
+		case "nat-gateway":
+			return "nat";
+		case "transit-gateway":
+			return "transit";
+		case "vpn-gateway":
+			return "vpn";
+		case "virtual-appliance":
+			return "appliance";
+		case "internal-load-balancer":
+			return "internal lb";
+		case "vpc-peering":
+			return "peering";
+		case "network-interface":
+			return "eni";
+		case "default-route":
+			return "default route";
+		case "internet-facing":
+			return "public lb";
+		default:
+			return normalized.replaceAll("-", " ");
+	}
+}
+
 function CustomNode({ data }: NodeProps) {
 	const Icon =
 		data.icon === "switch"
@@ -20,6 +48,39 @@ function CustomNode({ data }: NodeProps) {
 				: "destructive";
 	const highlight = Boolean((data as any)?.highlight);
 	const vendor = String((data as any)?.vendor ?? "");
+	const resourceClass = String((data as any)?.class ?? "").trim();
+	const region = String((data as any)?.region ?? "").trim();
+	const zone = String((data as any)?.zone ?? "").trim();
+	const subnetRole = String((data as any)?.subnetRole ?? "").trim();
+	const gatewayKind = String((data as any)?.gatewayKind ?? "").trim();
+	const routeTargetKind = String((data as any)?.routeTargetKind ?? "").trim();
+	const isDefaultRoute = String((data as any)?.isDefaultRoute ?? "").trim();
+	const scheme = String((data as any)?.scheme ?? "").trim();
+	const networkId = String((data as any)?.networkId ?? "").trim();
+	const peerNetworkId = String((data as any)?.peerNetworkId ?? "").trim();
+	const metadataLine = [resourceClass, zone || region]
+		.map((value) => value.trim())
+		.filter(Boolean)
+		.join(" • ");
+	const provider = vendor.trim().toLowerCase();
+	const semanticBadges = (() => {
+		const values =
+			provider === "azure"
+				? [subnetRole, gatewayKind, routeTargetKind, scheme, isDefaultRoute]
+				: provider === "gcp"
+					? [subnetRole, gatewayKind, routeTargetKind, scheme, isDefaultRoute]
+					: [subnetRole, gatewayKind, routeTargetKind, isDefaultRoute, scheme];
+		if (resourceClass === "network" && peerNetworkId) {
+			values.unshift("peering");
+		}
+		if ((resourceClass === "subnet" || resourceClass === "compute") && networkId) {
+			values.push("network attached");
+		}
+		return values
+			.map((value) => semanticBadgeLabel(String(value)))
+			.filter(Boolean)
+			.slice(0, 3);
+	})();
 
 	const VendorMark = ({ vendor }: { vendor: string }) => {
 		const v = String(vendor).toLowerCase();
@@ -93,6 +154,48 @@ function CustomNode({ data }: NodeProps) {
 				</div>
 			);
 		}
+		if (v === "aws") {
+			return (
+				<div
+					className="h-6 min-w-6 rounded-md flex items-center justify-center px-1 text-[10px] font-bold"
+					title="AWS"
+					style={{
+						background: "rgba(255, 153, 0, 0.14)",
+						color: "rgb(255, 153, 0)",
+					}}
+				>
+					AWS
+				</div>
+			);
+		}
+		if (v === "azure") {
+			return (
+				<div
+					className="h-6 min-w-6 rounded-md flex items-center justify-center px-1 text-[10px] font-bold"
+					title="Azure"
+					style={{
+						background: "rgba(0, 120, 212, 0.14)",
+						color: "rgb(0, 120, 212)",
+					}}
+				>
+					AZ
+				</div>
+			);
+		}
+		if (v === "gcp") {
+			return (
+				<div
+					className="h-6 min-w-6 rounded-md flex items-center justify-center px-1 text-[10px] font-bold"
+					title="GCP"
+					style={{
+						background: "rgba(66, 133, 244, 0.14)",
+						color: "rgb(66, 133, 244)",
+					}}
+				>
+					GCP
+				</div>
+			);
+		}
 		return (
 			<div
 				className="h-6 w-6 rounded-md flex items-center justify-center bg-muted text-[11px] font-bold"
@@ -127,6 +230,27 @@ function CustomNode({ data }: NodeProps) {
 				<CardTitle className="text-sm font-bold truncate">
 					{String(data.label)}
 				</CardTitle>
+				<div className="text-[11px] text-muted-foreground mt-1 truncate">
+					{String((data as any)?.kind ?? "")}
+				</div>
+				{metadataLine ? (
+					<div className="text-[11px] text-muted-foreground truncate">
+						{metadataLine}
+					</div>
+				) : null}
+				{semanticBadges.length > 0 ? (
+					<div className="mt-2 flex flex-wrap gap-1">
+						{semanticBadges.map((value) => (
+							<Badge
+								key={value}
+								variant="outline"
+								className="h-5 text-[10px]"
+							>
+								{value}
+							</Badge>
+						))}
+					</div>
+				) : null}
 				<div className="text-xs text-muted-foreground mt-1 truncate font-mono">
 					{String(data.ip || "10.0.0.x")}
 				</div>
@@ -145,6 +269,25 @@ function CustomNode({ data }: NodeProps) {
 	);
 }
 
+function LaneBandNode({ data }: NodeProps) {
+	return (
+		<div
+			className="h-full w-full rounded-[28px] border border-dashed shadow-sm"
+			style={{
+				background: String((data as any)?.background ?? "rgba(148, 163, 184, 0.08)"),
+				borderColor: String((data as any)?.borderColor ?? "rgba(148, 163, 184, 0.22)"),
+			}}
+		>
+			<div className="px-4 py-3">
+				<div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+					{String((data as any)?.label ?? "")}
+				</div>
+			</div>
+		</div>
+	);
+}
+
 export const topologyViewerNodeTypes = {
 	custom: CustomNode,
+	"lane-band": LaneBandNode,
 };

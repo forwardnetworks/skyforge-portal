@@ -10,6 +10,8 @@ export const queryKeys = {
 	runLifecycle: (runId: string) => ["runLifecycle", runId] as const,
 	deploymentTopology: (userId: string, deploymentId: string) =>
 		["deploymentTopology", userId, deploymentId] as const,
+	deploymentMap: (userId: string, deploymentId: string) =>
+		["deploymentMap", userId, deploymentId] as const,
 	deploymentUIEvents: (userId: string, deploymentId: string) =>
 		["deploymentUIEvents", userId, deploymentId] as const,
 	deploymentCapacitySummary: (userId: string, deploymentId: string) =>
