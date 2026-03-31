@@ -18,6 +18,7 @@ export function RunDetailPageContent(props: {
 		canCancel,
 		deployFailureCategories,
 		deployTimeline,
+		execution,
 		handleCancel,
 		handleClear,
 		handleLogin,
@@ -31,6 +32,8 @@ export function RunDetailPageContent(props: {
 		runId,
 		snap,
 	} = props.page;
+	const metadataItems = buildRunMetadataItems(run, execution);
+	const executionItems = buildExecutionItems(provenance);
 
 	return (
 		<div className="space-y-6 p-6">
@@ -98,62 +101,30 @@ export function RunDetailPageContent(props: {
 				</CardHeader>
 				<CardContent>
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-						<Meta label="Type" value={String(run?.tpl_alias ?? "")} />
-						<Meta label="Status" value={String(run?.status ?? "")} />
-						<Meta
-							label="User"
-							value={String(
-								(run as { userId?: unknown } | undefined)?.userId ?? "",
-							)}
-						/>
-						<Meta label="Created" value={String(run?.created ?? "")} />
-						<Meta label="Started" value={String(run?.start ?? "")} />
-						<Meta label="Finished" value={String(run?.end ?? "")} />
+						{metadataItems.map((item) => (
+							<Meta key={item.label} label={item.label} value={item.value} />
+						))}
 					</div>
 				</CardContent>
 			</Card>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Source Of Truth</CardTitle>
-					<CardDescription>
-						Netlab catalog {"->"} node resolution {"->"} kne apply
-						policy
-					</CardDescription>
+					<CardTitle>Execution Details</CardTitle>
+					<CardDescription>{execution.sourceDescription}</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
-					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-						<Meta label="Source Chain" value={provenance.sourceOfTruth} />
-						<Meta label="Catalog Source" value={provenance.catalogSource} />
-						<Meta
-							label="Catalog Device Count"
-							value={String(provenance.catalogDeviceCount)}
-						/>
-						<Meta label="Netlab Contract" value={provenance.contractVersion} />
-						<Meta
-							label="Netlab Runtime Version"
-							value={provenance.runtimeVersion}
-						/>
-						<Meta
-							label="Resolved Nodes"
-							value={`${provenance.resolvedNodes}/${provenance.totalNodes}`}
-						/>
-						<Meta
-							label="Unresolved Nodes"
-							value={String(provenance.unresolvedNodes)}
-						/>
-						<Meta label="Connectivity Mode" value={provenance.connectivity} />
-						<Meta label="Expose Type" value={provenance.exposeType} />
-						<Meta
-							label="Files From ConfigMap Nodes"
-							value={String(provenance.filesFromConfigMapNodeCount)}
-						/>
-						<Meta
-							label="Deploy Payload SHA256"
-							value={provenance.payloadSha256}
-						/>
-						<Meta label="Bundle SHA256" value={provenance.bundleSha256} />
-					</div>
+					{executionItems.length === 0 ? (
+						<div className="text-muted-foreground text-sm">
+							No execution-specific provenance has been recorded for this run yet.
+						</div>
+					) : (
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+							{executionItems.map((item) => (
+								<Meta key={item.label} label={item.label} value={item.value} />
+							))}
+						</div>
+					)}
 					{nodeSample.length > 0 && (
 						<div className="space-y-2">
 							<div className="font-medium text-sm">Node Resolution Sample</div>
@@ -200,10 +171,8 @@ export function RunDetailPageContent(props: {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Bring-up timeline</CardTitle>
-					<CardDescription>
-						Phase checkpoints emitted directly by the KNE deploy engine.
-					</CardDescription>
+					<CardTitle>Execution Timeline</CardTitle>
+					<CardDescription>{execution.timelineDescription}</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -272,7 +241,7 @@ export function RunDetailPageContent(props: {
 						</div>
 					</div>
 					<CardDescription>
-						Structured task events emitted by native engine phases.
+						{execution.lifecycleDescription}
 					</CardDescription>
 					{deployFailureCategories.length > 0 && (
 						<div className="flex flex-wrap gap-2 pt-2">
@@ -335,6 +304,85 @@ function Meta(props: { label: string; value: string }) {
 			<div className="break-all font-medium text-sm">{props.value || "—"}</div>
 		</div>
 	);
+}
+
+function buildRunMetadataItems(
+	run: Record<string, unknown> | undefined,
+	execution: RunDetailPageState["execution"],
+): Array<{ label: string; value: string }> {
+	const items = [
+		{ label: "Type", value: String(run?.tpl_alias ?? "") },
+		{ label: "Status", value: String(run?.status ?? "") },
+		{
+			label: "User",
+			value: String((run as { userId?: unknown } | undefined)?.userId ?? ""),
+		},
+		{ label: "Deployment", value: execution.deploymentName || execution.deploymentId },
+		{ label: "Family", value: execution.family },
+		{ label: "Engine", value: execution.engine },
+		{ label: "Created", value: String(run?.created ?? "") },
+		{ label: "Started", value: String(run?.start ?? "") },
+		{ label: "Finished", value: String(run?.end ?? "") },
+	];
+	return items.filter((item) => item.value);
+}
+
+function buildExecutionItems(
+	provenance: RunDetailPageState["provenance"],
+): Array<{ label: string; value: string }> {
+	const items: Array<{ label: string; value: string }> = [];
+
+	if (provenance.sourceOfTruth && provenance.sourceOfTruth !== "—") {
+		items.push({ label: "Source Chain", value: provenance.sourceOfTruth });
+	}
+	if (provenance.catalogSource && provenance.catalogSource !== "—") {
+		items.push({ label: "Template Source", value: provenance.catalogSource });
+	}
+	if (provenance.catalogDeviceCount > 0) {
+		items.push({
+			label: "Catalog Item Count",
+			value: String(provenance.catalogDeviceCount),
+		});
+	}
+	if (provenance.contractVersion && provenance.contractVersion !== "—") {
+		items.push({ label: "Execution Contract", value: provenance.contractVersion });
+	}
+	if (provenance.runtimeVersion && provenance.runtimeVersion !== "—") {
+		items.push({ label: "Runtime Version", value: provenance.runtimeVersion });
+	}
+	if (provenance.totalNodes > 0) {
+		items.push({
+			label: "Resolved Nodes",
+			value: `${provenance.resolvedNodes}/${provenance.totalNodes}`,
+		});
+		items.push({
+			label: "Unresolved Nodes",
+			value: String(provenance.unresolvedNodes),
+		});
+	}
+	if (provenance.connectivity && provenance.connectivity !== "—") {
+		items.push({ label: "Connectivity Mode", value: provenance.connectivity });
+	}
+	if (provenance.exposeType && provenance.exposeType !== "—") {
+		items.push({ label: "Expose Type", value: provenance.exposeType });
+	}
+	if (provenance.filesFromConfigMapNodeCount > 0) {
+		items.push({
+			label: "Files From ConfigMap Nodes",
+			value: String(provenance.filesFromConfigMapNodeCount),
+		});
+	}
+	if (provenance.payloadSha256 && provenance.payloadSha256 !== "—") {
+		items.push({
+			label: "Deploy Payload SHA256",
+			value: provenance.payloadSha256,
+		});
+	}
+	if (provenance.bundleSha256 && provenance.bundleSha256 !== "—") {
+		items.push({ label: "Bundle SHA256", value: provenance.bundleSha256 });
+	}
+
+	return items;
 }
 
 function prettyJson(value: unknown): string {

@@ -91,9 +91,12 @@ export function buildAdminOverviewTabProps(
 		forwardDemoSeedCatalogLoading: page.forwardDemoSeedCatalogQ.isLoading,
 		uploadForwardDemoSeedPending: page.uploadForwardDemoSeed.isPending,
 		updateForwardDemoSeedPending: page.updateForwardDemoSeed.isPending,
+		saveForwardDemoSeedConfigPending: page.saveForwardDemoSeedConfig.isPending,
 		deleteForwardDemoSeedPending: page.deleteForwardDemoSeed.isPending,
 		onUploadForwardDemoSeed: (value) => page.uploadForwardDemoSeed.mutate(value),
 		onUpdateForwardDemoSeed: (value) => page.updateForwardDemoSeed.mutate(value),
+		onSaveForwardDemoSeedConfig: (value) =>
+			page.saveForwardDemoSeedConfig.mutate(value),
 		onDeleteForwardDemoSeed: (seedID) =>
 			page.deleteForwardDemoSeed.mutate(seedID),
 		teamsGlobalConfig: page.teamsGlobalConfigQ.data,

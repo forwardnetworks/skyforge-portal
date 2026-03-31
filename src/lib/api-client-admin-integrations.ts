@@ -57,7 +57,7 @@ export type AdminForwardSupportCredentialResponse = {
 
 export type AdminForwardDemoSeedItem = {
 	id: string;
-	displayName: string;
+	note: string;
 	fileName: string;
 	contentSha256?: string;
 	sizeBytes?: number;
@@ -69,20 +69,26 @@ export type AdminForwardDemoSeedItem = {
 export type AdminForwardDemoSeedCatalogResponse = {
 	configured: boolean;
 	updatedAt?: string;
+	networkName?: string;
 	seeds: AdminForwardDemoSeedItem[];
 };
 
 export type PutAdminForwardDemoSeedRequest = {
-	displayName: string;
+	note: string;
+	networkName?: string;
 	fileName: string;
 	contentBase64: string;
 	enabled?: boolean;
 };
 
 export type UpdateAdminForwardDemoSeedRequest = {
-	displayName?: string;
+	note?: string;
 	enabled?: boolean;
 	order?: number;
+};
+
+export type UpdateAdminForwardDemoSeedConfigRequest = {
+	networkName: string;
 };
 
 export async function getAdminServiceNowGlobalConfig(): Promise<AdminServiceNowGlobalConfigResponse> {
@@ -115,6 +121,18 @@ export async function patchAdminForwardDemoSeed(
 ): Promise<AdminForwardDemoSeedCatalogResponse> {
 	return apiFetch<AdminForwardDemoSeedCatalogResponse>(
 		`/api/admin/integrations/forward/demo-seeds/${encodeURIComponent(seedID)}`,
+		{
+			method: "PATCH",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function patchAdminForwardDemoSeedConfig(
+	body: UpdateAdminForwardDemoSeedConfigRequest,
+): Promise<AdminForwardDemoSeedCatalogResponse> {
+	return apiFetch<AdminForwardDemoSeedCatalogResponse>(
+		"/api/admin/integrations/forward/demo-seed-config",
 		{
 			method: "PATCH",
 			body: JSON.stringify(body),

@@ -55,12 +55,31 @@ export type ValidateUserScopeNetlabTemplateRequest = {
 	environment?: JSONMap;
 };
 
+export type ValidateUserScopeTerraformTemplateRequest = {
+	cloud?: string;
+	source?: string;
+	repo?: string;
+	dir?: string;
+	template: string;
+	environment?: JSONMap;
+};
+
 export async function validateUserScopeNetlabTemplate(
 	userId: string,
 	body: ValidateUserScopeNetlabTemplateRequest,
 ): Promise<UserScopeRunResponse> {
 	return apiFetch<UserScopeRunResponse>(
 		`/api/users/${encodeURIComponent(userId)}/netlab/validate`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function validateUserScopeTerraformTemplate(
+	userId: string,
+	body: ValidateUserScopeTerraformTemplateRequest,
+): Promise<UserScopeRunResponse> {
+	return apiFetch<UserScopeRunResponse>(
+		`/api/users/${encodeURIComponent(userId)}/terraform/validate`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }

@@ -1,6 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { validateUserScopeNetlabTemplate } from "../lib/api-client";
+import {
+	validateUserScopeNetlabTemplate,
+	validateUserScopeTerraformTemplate,
+} from "../lib/api-client";
 import { toAPITemplateSource } from "./create-deployment-shared";
 import type { CreateDeploymentMutationsArgs } from "./use-create-deployment-mutations-types";
 
@@ -11,6 +14,7 @@ export function useCreateDeploymentValidateMutation(
 		navigate,
 		form,
 		watchUserScopeId,
+		watchKind,
 		watchTemplate,
 		watchTemplateRepoId,
 		effectiveSource,
@@ -47,14 +51,26 @@ export function useCreateDeploymentValidateMutation(
 				body.repo = watchTemplateRepoId;
 			}
 			if (templatesDir) body.dir = templatesDir;
+			if (watchKind === "terraform") {
+				body.cloud = inferTerraformCloudFromTemplate(watchTemplate, templatesDir);
+				return validateUserScopeTerraformTemplate(watchUserScopeId, body);
+			}
 			return validateUserScopeNetlabTemplate(watchUserScopeId, body);
 		},
 		onSuccess: async (res: any) => {
 			const runId = String(res?.task?.id ?? res?.task?.task_id ?? "").trim();
-			toast.success("Validation queued", {
-				description: runId
-					? `Run ${runId} started.`
-					: "Validation run started.",
+			const title =
+				watchKind === "terraform" ? "Terraform plan queued" : "Validation queued";
+			const description =
+				watchKind === "terraform"
+					? runId
+						? `Plan run ${runId} started.`
+						: "Terraform plan started."
+					: runId
+						? `Run ${runId} started.`
+						: "Validation run started.";
+			toast.success(title, {
+				description,
 			});
 			if (runId) {
 				navigate({ to: "/dashboard/runs/$runId", params: { runId } });
@@ -66,4 +82,23 @@ export function useCreateDeploymentValidateMutation(
 			});
 		},
 	});
+}
+
+function inferTerraformCloudFromTemplate(
+	template: string,
+	templatesDir?: string,
+): string | undefined {
+	const candidates = [`${templatesDir ?? ""}/${template}`, template];
+	for (const candidate of candidates) {
+		const parts = String(candidate)
+			.split("/")
+			.map((part) => part.trim().toLowerCase())
+			.filter(Boolean);
+		for (const part of parts) {
+			if (part === "aws" || part === "azure" || part === "gcp") {
+				return part;
+			}
+		}
+	}
+	return undefined;
 }

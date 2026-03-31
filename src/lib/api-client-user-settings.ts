@@ -77,6 +77,21 @@ export type AwsSsoStatusResponse = {
 	lastAuthenticatedAt?: ISO8601;
 };
 
+export type AwsTerraformReadinessResponse = {
+	configured: boolean;
+	status: string;
+	ready: boolean;
+	connected: boolean;
+	reauthRequired?: boolean;
+	missingAccountRole?: boolean;
+	statusMessage?: string;
+	user: string;
+	accountId?: string;
+	roleName?: string;
+	expiresAt?: ISO8601;
+	lastAuthenticatedAt?: ISO8601;
+};
+
 export type AwsSsoStartResponse = {
 	requestId: string;
 	verificationUriComplete: string;
@@ -104,6 +119,12 @@ export async function getAwsSsoConfig(): Promise<AwsSsoConfigResponse> {
 
 export async function getAwsSsoStatus(): Promise<AwsSsoStatusResponse> {
 	return apiFetch<AwsSsoStatusResponse>("/api/aws/sso/status");
+}
+
+export async function getAwsTerraformReadiness(): Promise<AwsTerraformReadinessResponse> {
+	return apiFetch<AwsTerraformReadinessResponse>(
+		"/api/cloud/aws/terraform-readiness",
+	);
 }
 
 export async function startAwsSso(): Promise<AwsSsoStartResponse> {

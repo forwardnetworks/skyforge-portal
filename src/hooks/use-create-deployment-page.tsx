@@ -93,7 +93,7 @@ export function useCreateDeploymentPage(userId?: string) {
 		});
 	}, [data.userSettingsQ.data?.defaultEnv, form, setValue]);
 
-	const { mutation, validateNetlabTemplate } = useCreateDeploymentMutations({
+	const { mutation, validateTemplate } = useCreateDeploymentMutations({
 			navigate,
 			queryClient,
 			form,
@@ -145,6 +145,12 @@ export function useCreateDeploymentPage(userId?: string) {
 		terraformProviders: data.terraformProviders,
 		terraformProviderFilter,
 		setTerraformProviderFilter,
+		awsSsoStatusQ: data.awsSsoStatusQ,
+		awsTerraformReadinessQ: data.awsTerraformReadinessQ,
+		userAwsSsoQ: data.userAwsSsoQ,
+		awsSsoSession: data.awsSsoSession,
+		awsSsoPollStatus: data.awsSsoPollStatus,
+		startAwsSsoM: data.startAwsSsoM,
 		templatePreviewOpen,
 		setTemplatePreviewOpen,
 		templatePreviewQ: data.templatePreviewQ,
@@ -152,7 +158,7 @@ export function useCreateDeploymentPage(userId?: string) {
 		templateEstimatePending: data.templateEstimatePending,
 		templateEstimateQ: data.templateEstimateQ,
 		mutation,
-		validateNetlabTemplate,
+		validateTemplate,
 		variableGroups: data.variableGroups,
 		fields,
 		netlabDeviceOptions: data.netlabDeviceOptions,

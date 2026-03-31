@@ -98,19 +98,22 @@ export type AdminOverviewTabProps = {
 	forwardDemoSeedCatalogLoading: boolean;
 	uploadForwardDemoSeedPending: boolean;
 	updateForwardDemoSeedPending: boolean;
+	saveForwardDemoSeedConfigPending: boolean;
 	deleteForwardDemoSeedPending: boolean;
 	onUploadForwardDemoSeed: (value: {
-		displayName: string;
+		note: string;
+		networkName?: string;
 		fileName: string;
 		contentBase64: string;
 		enabled?: boolean;
 	}) => void;
 	onUpdateForwardDemoSeed: (value: {
 		seedID: string;
-		displayName?: string;
+		note?: string;
 		enabled?: boolean;
 		order?: number;
 	}) => void;
+	onSaveForwardDemoSeedConfig: (value: { networkName: string }) => void;
 	onDeleteForwardDemoSeed: (seedID: string) => void;
 	teamsGlobalConfig?: AdminTeamsGlobalConfigResponse;
 	teamsGlobalConfigLoading: boolean;

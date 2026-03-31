@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
 import { Button } from "./ui/button";
 import {
@@ -33,9 +33,14 @@ function formatBytes(value?: number) {
 export function AdminOverviewForwardDemoSeedsCard(
 	props: AdminOverviewTabProps,
 ) {
-	const [displayName, setDisplayName] = useState("");
+	const [note, setNote] = useState("");
+	const [networkName, setNetworkName] = useState("");
 	const [enabled, setEnabled] = useState(true);
 	const [file, setFile] = useState<File | null>(null);
+
+	useEffect(() => {
+		setNetworkName(props.forwardDemoSeedCatalog?.networkName ?? "");
+	}, [props.forwardDemoSeedCatalog?.networkName]);
 
 	const seeds = useMemo(
 		() =>
@@ -63,12 +68,37 @@ export function AdminOverviewForwardDemoSeedsCard(
 							? "configured"
 							: "not configured"}
 				</div>
+				<div className="grid gap-4 md:grid-cols-[1.2fr_auto]">
+					<div className="space-y-2">
+						<Label>Network name</Label>
+						<Input
+							value={networkName}
+							onChange={(e) => setNetworkName(e.target.value)}
+							placeholder="Demo Network"
+						/>
+					</div>
+					<div className="flex items-end">
+						<Button
+							variant="outline"
+							onClick={() =>
+								props.onSaveForwardDemoSeedConfig({
+									networkName: networkName.trim() || "Demo Network",
+								})
+							}
+							disabled={props.saveForwardDemoSeedConfigPending}
+						>
+							{props.saveForwardDemoSeedConfigPending
+								? "Saving…"
+								: "Save network"}
+						</Button>
+					</div>
+				</div>
 				<div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
 					<div className="space-y-2">
-						<Label>Display name</Label>
+						<Label>Note</Label>
 						<Input
-							value={displayName}
-							onChange={(e) => setDisplayName(e.target.value)}
+							value={note}
+							onChange={(e) => setNote(e.target.value)}
 							placeholder="Core demo baseline"
 						/>
 					</div>
@@ -94,12 +124,13 @@ export function AdminOverviewForwardDemoSeedsCard(
 							if (!file) return;
 							const contentBase64 = await fileToBase64(file);
 							props.onUploadForwardDemoSeed({
-								displayName: displayName.trim() || file.name.replace(/\.zip$/i, ""),
+								note: note.trim() || file.name.replace(/\.zip$/i, ""),
+								networkName: networkName.trim() || "Demo Network",
 								fileName: file.name,
 								contentBase64,
 								enabled,
 							});
-							setDisplayName("");
+							setNote("");
 							setFile(null);
 						}}
 						disabled={!file || props.uploadForwardDemoSeedPending}
@@ -121,7 +152,7 @@ export function AdminOverviewForwardDemoSeedsCard(
 									className="flex flex-col gap-3 rounded border p-3 md:flex-row md:items-center md:justify-between"
 								>
 									<div className="space-y-1">
-										<div className="font-medium">{seed.displayName}</div>
+										<div className="font-medium">{seed.note}</div>
 										<div className="text-xs text-muted-foreground">
 											{seed.fileName} · {formatBytes(seed.sizeBytes)} ·{" "}
 											{seed.enabled ? "enabled" : "disabled"}

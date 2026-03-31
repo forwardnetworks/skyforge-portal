@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
 	deleteAdminForwardDemoSeed,
 	patchAdminForwardDemoSeed,
+	patchAdminForwardDemoSeedConfig,
 	putAdminForwardDemoSeed,
 	type AdminForwardDemoSeedCatalogResponse,
 } from "../lib/api-client";
@@ -40,12 +41,12 @@ export function useAdminSettingsAuthForwardDemoSeeds({
 	const updateForwardDemoSeed = useMutation({
 		mutationFn: async (input: {
 			seedID: string;
-			displayName?: string;
+			note?: string;
 			enabled?: boolean;
 			order?: number;
 		}) =>
 			patchAdminForwardDemoSeed(input.seedID, {
-				displayName: input.displayName,
+				note: input.note,
 				enabled: input.enabled,
 				order: input.order,
 			}),
@@ -59,6 +60,24 @@ export function useAdminSettingsAuthForwardDemoSeeds({
 		},
 		onError: (e) => {
 			toast.error("Failed to update demo seed", {
+				description: (e as Error).message,
+			});
+		},
+	});
+
+	const saveForwardDemoSeedConfig = useMutation({
+		mutationFn: patchAdminForwardDemoSeedConfig,
+		onSuccess: async () => {
+			toast.success("Demo network name updated");
+			await Promise.all([
+				refetchForwardDemoSeedCatalog(),
+				queryClient.invalidateQueries({
+					queryKey: queryKeys.adminForwardDemoSeedCatalog(),
+				}),
+			]);
+		},
+		onError: (e) => {
+			toast.error("Failed to update demo seed config", {
 				description: (e as Error).message,
 			});
 		},
@@ -86,6 +105,7 @@ export function useAdminSettingsAuthForwardDemoSeeds({
 		forwardDemoSeedCatalog,
 		uploadForwardDemoSeed,
 		updateForwardDemoSeed,
+		saveForwardDemoSeedConfig,
 		deleteForwardDemoSeed,
 	};
 }

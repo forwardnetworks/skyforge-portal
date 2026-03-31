@@ -69,6 +69,10 @@ export function useRunDetailPage(args: { runId: string }) {
 		[lifecycleEntries],
 	);
 	const nodeSample = provenance.nodeResolutionSample.slice(0, 10);
+	const execution = useMemo(
+		() => buildRunExecutionContext(run, snap.data?.deployments ?? []),
+		[run, snap.data?.deployments],
+	);
 
 	const loginHref = buildLoginUrl(
 		window.location.pathname + window.location.search,
@@ -138,6 +142,7 @@ export function useRunDetailPage(args: { runId: string }) {
 		handleCancel,
 		handleClear,
 		handleLogin,
+		execution,
 		lifecycle,
 		lifecycleRecent,
 		logs,
@@ -151,6 +156,16 @@ export function useRunDetailPage(args: { runId: string }) {
 }
 
 export type RunDetailPageState = ReturnType<typeof useRunDetailPage>;
+
+export type RunExecutionContext = {
+	deploymentId: string;
+	deploymentName: string;
+	family: string;
+	engine: string;
+	sourceDescription: string;
+	timelineDescription: string;
+	lifecycleDescription: string;
+};
 
 export type RunProvenance = {
 	sourceOfTruth: string;
@@ -229,6 +244,89 @@ function buildRunProvenance(run: JSONMap | undefined): RunProvenance {
 		payloadSha256: asString(applySummary.payloadSha256 ?? "—"),
 		nodeResolutionSample: sample,
 	};
+}
+
+function buildRunExecutionContext(
+	run: JSONMap | undefined,
+	deployments: DashboardSnapshot["deployments"],
+): RunExecutionContext {
+	const deploymentId = asString(run?.deploymentId);
+	const deployment = deployments.find(
+		(entry) => String(entry.id ?? "") === deploymentId,
+	);
+	const taskType = asString(run?.tpl_alias).toLowerCase();
+
+	let family = asString(run?.family || deployment?.family).toLowerCase();
+	let engine = asString(run?.engine || deployment?.engine).toLowerCase();
+
+	if (!family) {
+		if (asRecord(run?.kneApplySummary)) {
+			family = "kne";
+		} else if (taskType.includes("terraform")) {
+			family = "terraform";
+		}
+	}
+	if (!engine) {
+		if (taskType.includes("terraform")) {
+			engine = "terraform";
+		} else if (taskType.includes("containerlab")) {
+			engine = "containerlab";
+		} else if (
+			asRecord(run?.netlabContract) ||
+			asRecord(run?.netlabCatalogProvenance) ||
+			asRecord(run?.netlabNodeResolutionSummary)
+		) {
+			engine = "netlab";
+		}
+	}
+
+	return {
+		deploymentId,
+		deploymentName: String(deployment?.name ?? "").trim(),
+		family,
+		engine,
+		sourceDescription: describeExecutionDetails(family, engine),
+		timelineDescription: describeExecutionTimeline(family, engine),
+		lifecycleDescription: "Structured task events emitted by runtime phases.",
+	};
+}
+
+function describeExecutionDetails(family: string, engine: string): string {
+	if (family === "terraform") {
+		return "Template, runtime, and deployment metadata captured during Terraform execution.";
+	}
+	if (family === "kne" && engine === "netlab") {
+		return "Template catalog, node resolution, and deployment policy captured during KNE execution.";
+	}
+	if (family === "byos" && engine === "netlab") {
+		return "Template and runtime metadata captured during BYOS execution.";
+	}
+	if (family === "byos" && engine === "containerlab") {
+		return "Runtime and deployment metadata captured during BYOS execution.";
+	}
+	if (engine) {
+		return `Runtime and deployment metadata captured during ${engine} execution.`;
+	}
+	if (family) {
+		return `Runtime and deployment metadata captured during ${family} execution.`;
+	}
+	return "Runtime and deployment metadata captured during task execution.";
+}
+
+function describeExecutionTimeline(family: string, engine: string): string {
+	if (family === "terraform") {
+		return "Phase checkpoints emitted directly by the Terraform runtime.";
+	}
+	if (family === "kne" && engine) {
+		return `Phase checkpoints emitted directly by the KNE ${engine} runtime.`;
+	}
+	if (engine) {
+		return `Phase checkpoints emitted directly by the ${engine} runtime.`;
+	}
+	if (family) {
+		return `Phase checkpoints emitted directly by the ${family} runtime.`;
+	}
+	return "Phase checkpoints emitted directly by the active runtime.";
 }
 
 function summarizeKneDeployFailures(

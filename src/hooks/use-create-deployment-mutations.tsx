@@ -6,7 +6,7 @@ export function useCreateDeploymentMutations(
 	args: CreateDeploymentMutationsArgs,
 ) {
 	const mutation = useCreateDeploymentCreateMutation(args);
-	const validateNetlabTemplate = useCreateDeploymentValidateMutation(args);
+	const validateTemplate = useCreateDeploymentValidateMutation(args);
 
-	return { mutation, validateNetlabTemplate };
+	return { mutation, validateTemplate };
 }

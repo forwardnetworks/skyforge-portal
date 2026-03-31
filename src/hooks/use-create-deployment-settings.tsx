@@ -1,18 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import type { UseFormSetValue } from "react-hook-form";
 import type { z } from "zod";
 import {
 	type AwsSsoStatusResponse,
+	type AwsSsoStartResponse,
 	type DashboardSnapshot,
 	type DeploymentLifetimePolicyResponse,
 	type SkyforgeUserScope,
+	getAwsTerraformReadiness,
 	getAwsSsoStatus,
 	getDashboardSnapshot,
 	getDeploymentLifetimePolicy,
 	getSession,
+	getUserAWSSSOCredentials,
 	getUserSettings,
 	listUserScopes,
+	pollAwsSso,
+	startAwsSso,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import {
@@ -45,6 +51,7 @@ export function useCreateDeploymentSettings(args: {
 		watchTemplate,
 		watchUserScopeId,
 	} = args;
+	const queryClientLive = useQueryClient();
 	const scopeId = watchUserScopeId ?? "";
 
 	const dash = useQuery<DashboardSnapshot | null>({
@@ -85,6 +92,39 @@ export function useCreateDeploymentSettings(args: {
 		queryFn: getAwsSsoStatus,
 		staleTime: 30_000,
 		retry: false,
+	});
+	const awsTerraformReadinessQ = useQuery({
+		queryKey: queryKeys.awsTerraformReadiness(),
+		queryFn: getAwsTerraformReadiness,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const userAwsSsoQ = useQuery({
+		queryKey: queryKeys.userAwsSsoCredentials(),
+		queryFn: getUserAWSSSOCredentials,
+		staleTime: 30_000,
+		retry: false,
+	});
+	const [awsSsoSession, setAwsSsoSession] = useState<AwsSsoStartResponse | null>(
+		null,
+	);
+	const [awsSsoPollStatus, setAwsSsoPollStatus] = useState<string>("");
+
+	const startAwsSsoM = useMutation({
+		mutationFn: startAwsSso,
+		onSuccess: (resp) => {
+			setAwsSsoSession(resp);
+			setAwsSsoPollStatus("pending");
+			window.open(
+				resp.verificationUriComplete,
+				"_blank",
+				"noopener,noreferrer",
+			);
+		},
+		onError: (err: unknown) =>
+			toast.error("Failed to start AWS SSO", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
 	});
 
 	const allUserScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
@@ -233,9 +273,69 @@ export function useCreateDeploymentSettings(args: {
 		setValue("name", `${base}-${ts}`);
 	}, [setValue, watchKind, watchTemplate]);
 
-		return {
+	useEffect(() => {
+		if (!awsSsoSession?.requestId) return;
+
+		let cancelled = false;
+		let timeout: ReturnType<typeof setTimeout> | null = null;
+
+		const pollOnce = async () => {
+			try {
+				const resp = await pollAwsSso({ requestId: awsSsoSession.requestId });
+				if (cancelled) return;
+
+				setAwsSsoPollStatus(resp.status);
+				if (resp.status === "ok") {
+					setAwsSsoSession(null);
+					await queryClientLive.invalidateQueries({
+						queryKey: queryKeys.awsSsoStatus(),
+					});
+					await queryClientLive.invalidateQueries({
+						queryKey: queryKeys.awsTerraformReadiness(),
+					});
+					toast.success("AWS SSO connected");
+					return;
+				}
+				if (resp.status === "pending") {
+					timeout = setTimeout(
+						pollOnce,
+						Math.max(1, awsSsoSession.intervalSeconds) * 1000,
+					);
+					return;
+				}
+
+				setAwsSsoSession(null);
+				toast.error("AWS SSO authorization did not complete", {
+					description: resp.status,
+				});
+			} catch (err) {
+				if (cancelled) return;
+				setAwsSsoSession(null);
+				toast.error("AWS SSO polling failed", {
+					description: err instanceof Error ? err.message : String(err),
+				});
+			}
+		};
+
+		timeout = setTimeout(
+			pollOnce,
+			Math.max(1, awsSsoSession.intervalSeconds) * 1000,
+		);
+
+		return () => {
+			cancelled = true;
+			if (timeout) clearTimeout(timeout);
+		};
+	}, [awsSsoSession, queryClientLive]);
+
+	return {
 		dash,
 		awsSsoStatusQ,
+		awsTerraformReadinessQ,
+		userAwsSsoQ,
+		awsSsoSession,
+		awsSsoPollStatus,
+		startAwsSsoM,
 		driverSummary,
 		effectiveUsername,
 		expiryAction,

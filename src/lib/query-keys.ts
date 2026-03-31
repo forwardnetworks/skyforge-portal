@@ -136,6 +136,7 @@ export const queryKeys = {
 	userAwsSsoCredentials: () => ["userAwsSsoCredentials"] as const,
 	awsSsoConfig: () => ["awsSsoConfig"] as const,
 	awsSsoStatus: () => ["awsSsoStatus"] as const,
+	awsTerraformReadiness: () => ["awsTerraformReadiness"] as const,
 	userAzureCredentials: () => ["userAzureCredentials"] as const,
 	userGcpCredentials: () => ["userGcpCredentials"] as const,
 	userIbmCredentials: () => ["userIbmCredentials"] as const,

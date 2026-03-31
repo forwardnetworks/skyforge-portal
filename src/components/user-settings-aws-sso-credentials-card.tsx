@@ -70,6 +70,18 @@ export function UserSettingsAwsSsoCredentialsCard(props: {
 					<span className="font-mono">{page.awsSsoStatusQ.data.expiresAt}</span>
 				</div>
 			) : null}
+			{page.userAwsSsoQ.data?.accountId ? (
+				<div className="text-xs text-muted-foreground">
+					Account:{" "}
+					<span className="font-mono">{page.userAwsSsoQ.data.accountId}</span>
+				</div>
+			) : null}
+			{page.userAwsSsoQ.data?.roleName ? (
+				<div className="text-xs text-muted-foreground">
+					Role:{" "}
+					<span className="font-mono">{page.userAwsSsoQ.data.roleName}</span>
+				</div>
+			) : null}
 			{page.awsSsoStatusQ.data?.reauthRequired ? (
 				<div className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800">
 					The stored AWS SSO session can no longer mint credentials. Reconnect

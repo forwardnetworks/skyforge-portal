@@ -36,8 +36,37 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 		setTemplatePreviewOpen,
 		selectedTemplateEstimate,
 		templateEstimatePending,
-		validateNetlabTemplate,
+		validateTemplate,
+		awsSsoStatusQ,
+		awsTerraformReadinessQ,
 	} = page;
+	const selectedTerraformProvider = String(
+		watchTemplate?.split("/")[0] ||
+			(terraformProviderFilter !== "all" ? terraformProviderFilter : ""),
+	)
+		.trim()
+		.toLowerCase();
+	const awsTerraformReadiness = awsTerraformReadinessQ.data;
+	const awsReadinessStatus =
+		awsTerraformReadiness?.status ?? awsSsoStatusQ.data?.status ?? "not_configured";
+	const awsValidateBlocked =
+		watchKind === "terraform" &&
+		selectedTerraformProvider === "aws" &&
+		!(awsTerraformReadiness?.ready ?? awsReadinessStatus === "connected");
+	const awsStatusLabel =
+		awsTerraformReadiness?.statusMessage ??
+		awsSsoStatusQ.data?.statusMessage ??
+		(awsReadinessStatus === "reauth_required"
+			? "Reauthentication required"
+			: awsReadinessStatus === "missing_account_role"
+				? "AWS account ID and role name are required"
+				: awsReadinessStatus === "not_connected"
+				? "Not connected"
+				: "Not configured");
+	const awsValidateBlockedMessage =
+		awsReadinessStatus === "missing_account_role"
+			? "AWS Terraform validate runs a real Terraform plan and is blocked until AWS account ID and role name are saved."
+			: "AWS Terraform validate runs a real Terraform plan and is blocked until AWS SSO is connected.";
 
 	return (
 		<>
@@ -51,6 +80,7 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 							{(watchKind === "netlab" ||
 								watchKind === "kne_netlab" ||
 								watchKind === "kne_raw" ||
+								watchKind === "terraform" ||
 								watchKind === "containerlab") && (
 								<div className="flex items-center gap-2">
 									<Button
@@ -62,20 +92,26 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 									>
 										View
 									</Button>
-									{watchKind === "netlab" || watchKind === "kne_netlab" ? (
+									{watchKind === "netlab" ||
+									watchKind === "kne_netlab" ||
+									watchKind === "terraform" ? (
 										<Button
 											type="button"
 											variant="outline"
 											size="sm"
 											disabled={
-												!watchTemplate || validateNetlabTemplate.isPending
+												!watchTemplate ||
+												validateTemplate.isPending ||
+												awsValidateBlocked
 											}
-											onClick={() => validateNetlabTemplate.mutate()}
+											onClick={() => validateTemplate.mutate()}
 										>
-											{validateNetlabTemplate.isPending ? (
+											{validateTemplate.isPending ? (
 												<>
 													<Loader2 className="mr-2 h-3 w-3 animate-spin" />{" "}
-													Validating…
+													{watchKind === "terraform"
+														? "Planning…"
+														: "Validating…"}
 												</>
 											) : (
 												"Validate"
@@ -91,6 +127,25 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 									Terraform templates are grouped by provider (folder name).
 									Select a provider to filter the template list.
 								</div>
+								{selectedTerraformProvider === "aws" ? (
+									<div className="text-xs text-muted-foreground">
+										AWS SSO:{" "}
+										<span
+											className={
+												awsValidateBlocked
+													? "text-amber-700 font-medium"
+													: "text-emerald-700 font-medium"
+											}
+										>
+											{awsStatusLabel}
+										</span>
+									</div>
+								) : null}
+								{awsValidateBlocked ? (
+									<div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-900">
+										{awsValidateBlockedMessage}
+									</div>
+								) : null}
 								<Select
 									value={terraformProviderFilter}
 									onValueChange={(v) => setTerraformProviderFilter(v)}
