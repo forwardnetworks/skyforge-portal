@@ -7,21 +7,22 @@ import {
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import type {
-	AdminAuditSectionProps,
-	AdminConfigSectionProps,
 	AdminForwardSectionProps,
 	AdminIdentitySectionProps,
 	AdminIntegrationsSectionProps,
 	AdminRuntimeSectionProps,
-	AdminTasksSectionProps,
-	AdminUsersSectionProps,
 } from "../components/settings-section-types";
 import { useAdminSettingsAudit } from "./use-admin-settings-audit";
+import {
+	buildRuntimeSummary,
+	useAdminSettingsMaintenanceSection,
+} from "./use-admin-settings-maintenance-section";
 import { useAdminSettingsAuth } from "./use-admin-settings-auth";
 import { useAdminSettingsOperations } from "./use-admin-settings-operations";
 import { useAdminSettingsPlatformPolicyDrafts } from "./use-admin-settings-platform-policy-drafts";
 import { useAdminSettingsPlatformPolicyUserSelection } from "./use-admin-settings-platform-policy-selection";
 import { useAdminSettingsUsersAccess } from "./use-admin-settings-users-access";
+import { useAdminSettingsUsersSection } from "./use-admin-settings-users-section";
 
 function collectKnownUsers(
 	scopes: {
@@ -49,45 +50,6 @@ function collectKnownUsers(
 		}
 	}
 	return Array.from(users).sort((a, b) => a.localeCompare(b));
-}
-
-function buildRuntimeSummary(data: {
-	total?: number;
-	active?: number;
-	inactive?: number;
-	expired?: number;
-	eligibleForCleanup?: number;
-	eligibleForForceFinalize?: number;
-	terminating?: number;
-	resourceTotals?: {
-		pods?: number;
-		services?: number;
-		jobs?: number;
-		configMaps?: number;
-		topologies?: number;
-		virtualMachines?: number;
-		virtualMachineInstances?: number;
-	};
-} | null | undefined) {
-	return {
-		total: data?.total ?? 0,
-		active: data?.active ?? 0,
-		inactive: data?.inactive ?? 0,
-		expired: data?.expired ?? 0,
-		eligibleForCleanup: data?.eligibleForCleanup ?? 0,
-		eligibleForForceFinalize: data?.eligibleForForceFinalize ?? 0,
-		terminating: data?.terminating ?? 0,
-		resourceTotals: {
-			pods: data?.resourceTotals?.pods ?? 0,
-			services: data?.resourceTotals?.services ?? 0,
-			jobs: data?.resourceTotals?.jobs ?? 0,
-			configMaps: data?.resourceTotals?.configMaps ?? 0,
-			topologies: data?.resourceTotals?.topologies ?? 0,
-			virtualMachines: data?.resourceTotals?.virtualMachines ?? 0,
-			virtualMachineInstances:
-				data?.resourceTotals?.virtualMachineInstances ?? 0,
-		},
-	};
 }
 
 function useAdminSettingsBaseData() {
@@ -332,236 +294,6 @@ function useAdminSettingsRuntimeSection(args: {
 	);
 }
 
-function useAdminSettingsConfigSection(args: {
-	auth: ReturnType<typeof useAdminSettingsAuth>;
-}): AdminConfigSectionProps {
-	const { auth } = args;
-	return useMemo(
-		() => ({
-			config: auth.cfgQ.data,
-			configLoading: auth.cfgQ.isLoading,
-		}),
-		[auth.cfgQ.data, auth.cfgQ.isLoading],
-	);
-}
-
-function useAdminSettingsAuditSection(args: {
-	audit: ReturnType<typeof useAdminSettingsAudit>;
-}): AdminAuditSectionProps {
-	const { audit } = args;
-	return useMemo(
-		() => ({
-			auditLimit: audit.auditLimit,
-			onAuditLimitChange: audit.setAuditLimit,
-			auditTimestamp: audit.auditQ.data?.timestamp,
-			auditEvents: audit.auditQ.data?.events ?? [],
-			auditColumns: audit.auditColumns,
-			auditLoading: audit.auditQ.isLoading,
-		}),
-		[audit],
-	);
-}
-
-function useAdminSettingsTasksSection(args: {
-	allUserScopes: ReturnType<typeof useAdminSettingsBaseData>["allUserScopes"];
-	ops: ReturnType<typeof useAdminSettingsOperations>;
-}): AdminTasksSectionProps {
-	const { allUserScopes, ops } = args;
-	return useMemo(
-		() => ({
-			reconcileQueuedPending: ops.reconcileQueued.isPending,
-			reconcileRunningPending: ops.reconcileRunning.isPending,
-			onReconcileQueued: () => ops.reconcileQueued.mutate(200),
-			onReconcileRunning: () =>
-				ops.reconcileRunning.mutate({
-					limit: 50,
-					hardMaxRuntimeMinutes: 12 * 60,
-					maxIdleMinutes: 120,
-				}),
-			cleanupScopeMode: ops.cleanupScopeMode,
-			onCleanupScopeModeChange: ops.setCleanupScopeMode,
-			cleanupScopeID: ops.cleanupScopeID,
-			onCleanupScopeIDChange: ops.setCleanupScopeID,
-			cleanupNamespace: ops.cleanupNamespace,
-			onCleanupNamespaceChange: ops.setCleanupNamespace,
-			allUserScopes,
-			cleanupTenantPodsPending: ops.cleanupTenantPods.isPending,
-			onPreviewCleanup: () => ops.cleanupTenantPods.mutate(true),
-			onRunCleanup: () => ops.cleanupTenantPods.mutate(false),
-			cleanupResult: ops.cleanupResult,
-			adminEphemeralRuntimesLoading: ops.adminEphemeralRuntimesQ.isLoading,
-			adminEphemeralRuntimes: ops.adminEphemeralRuntimesQ.data?.items ?? [],
-			adminEphemeralRuntimeSummary: buildRuntimeSummary(
-				ops.adminEphemeralRuntimesQ.data,
-			),
-			cleanupEphemeralRuntimesPending:
-				ops.cleanupEphemeralRuntimes.isPending,
-			cleanupEphemeralRuntimesResult:
-				ops.cleanupEphemeralRuntimesResult,
-			forceFinalizeEphemeralRuntimesPending:
-				ops.forceFinalizeEphemeralRuntimes.isPending,
-			forceFinalizeEphemeralRuntimesResult:
-				ops.forceFinalizeEphemeralRuntimesResult,
-			onRefreshEphemeralRuntimes: () => {
-				void ops.adminEphemeralRuntimesQ.refetch();
-			},
-			onCleanupEligibleEphemeralRuntimes: () =>
-				ops.cleanupEphemeralRuntimes.mutate(undefined),
-			onCleanupEphemeralRuntimeNamespace: (namespace) =>
-				ops.cleanupEphemeralRuntimes.mutate([namespace]),
-			onForceFinalizeEligibleEphemeralRuntimes: () =>
-				ops.forceFinalizeEphemeralRuntimes.mutate(undefined),
-			onForceFinalizeEphemeralRuntimeNamespace: (namespace) =>
-				ops.forceFinalizeEphemeralRuntimes.mutate([namespace]),
-		}),
-		[allUserScopes, ops],
-	);
-}
-
-function useAdminSettingsUsersSection(args: {
-	usersAccess: ReturnType<typeof useAdminSettingsUsersAccess>;
-	platformSelection: ReturnType<typeof useAdminSettingsPlatformPolicyUserSelection>;
-	platformDrafts: ReturnType<typeof useAdminSettingsPlatformPolicyDrafts>;
-}): AdminUsersSectionProps {
-	const { usersAccess, platformSelection, platformDrafts } = args;
-	return useMemo(
-		() => ({
-			manageUsername: usersAccess.manageUsername,
-			manageInitialRole: usersAccess.manageInitialRole,
-			availableRbacRoles: usersAccess.availableRbacRoles,
-			createManagedUserPending: usersAccess.createManagedUser.isPending,
-			onManageUsernameChange: usersAccess.setManageUsername,
-			onManageInitialRoleChange: usersAccess.setManageInitialRole,
-			onCreateManagedUser: () => usersAccess.createManagedUser.mutate(),
-			deleteManagedUserQuery: usersAccess.deleteManagedUserQuery,
-			deleteManagedUser: usersAccess.deleteManagedUser,
-			filteredManagedDeleteUsers: usersAccess.filteredManagedDeleteUsers,
-			deleteManagedUserPending:
-				usersAccess.deleteManagedUserMutation.isPending,
-			onDeleteManagedUserQueryChange: usersAccess.setDeleteManagedUserQuery,
-			onDeleteManagedUserChange: usersAccess.setDeleteManagedUser,
-			onDeleteManagedUser: () =>
-				usersAccess.deleteManagedUserMutation.mutate(),
-			rbacUserQuery: usersAccess.rbacUserQuery,
-			rbacTargetUser: usersAccess.rbacTargetUser,
-			rbacTargetRole: usersAccess.rbacTargetRole,
-			filteredRbacKnownUsers: usersAccess.filteredRbacKnownUsers,
-			upsertRbacRolePending: usersAccess.upsertRbacRole.isPending,
-			onRbacUserQueryChange: usersAccess.setRbacUserQuery,
-			onRbacTargetUserChange: usersAccess.setRbacTargetUser,
-			onRbacTargetRoleChange: usersAccess.setRbacTargetRole,
-			onUpsertRbacRole: () => usersAccess.upsertRbacRole.mutate(),
-			adminUserRolesLoading: usersAccess.adminUserRolesQ.isLoading,
-			filteredRbacRows: usersAccess.filteredRbacRows,
-			revokeRbacRolePending: usersAccess.revokeRbacRole.isPending,
-			onRevokeRbacRole: (payload) =>
-				usersAccess.revokeRbacRole.mutate(payload),
-			apiPermTargetUser: usersAccess.apiPermTargetUser,
-			rbacKnownUsers: usersAccess.rbacKnownUsers,
-			apiPermFilter: usersAccess.apiPermFilter,
-			apiDraftOverrideCount: usersAccess.apiDraftOverrideCount,
-			apiCatalogLoading: usersAccess.apiCatalogQ.isLoading,
-			userApiPermsLoading: usersAccess.userApiPermsQ.isLoading,
-			filteredApiCatalogEntries: usersAccess.filteredApiCatalogEntries,
-			apiPermDraft: usersAccess.apiPermDraft,
-			saveUserApiPermissionsPending:
-				usersAccess.saveUserApiPermissions.isPending,
-			onApiPermTargetUserChange: usersAccess.setApiPermTargetUser,
-			onApiPermFilterChange: usersAccess.setApiPermFilter,
-			onReloadUserApiPerms: () => {
-				void usersAccess.userApiPermsQ.refetch();
-			},
-			onSaveUserApiPermissions: () =>
-				usersAccess.saveUserApiPermissions.mutate(),
-			onApiPermDraftChange: (key, nextDecision) => {
-				usersAccess.setApiPermDraft((prev) => {
-					if (nextDecision === "inherit") {
-						const next = { ...prev };
-						delete next[key];
-						return next;
-					}
-					return { ...prev, [key]: nextDecision };
-				});
-			},
-			apiPermissionKey: usersAccess.apiPermissionKey,
-			purgeUserQuery: usersAccess.purgeUserQuery,
-			purgeUsername: usersAccess.purgeUsername,
-			filteredPurgeUserOptions: usersAccess.filteredPurgeUserOptions,
-			purgeUserPending: usersAccess.purgeUser.isPending,
-			onPurgeUserQueryChange: usersAccess.setPurgeUserQuery,
-			onPurgeUsernameChange: usersAccess.setPurgeUsername,
-			onPurgeUser: () => usersAccess.purgeUser.mutate(),
-			platformPolicyUserQuery: platformSelection.platformPolicyUserQuery,
-			platformPolicyTargetUser: platformSelection.platformPolicyTargetUser,
-			filteredPlatformPolicyUsers:
-				platformSelection.filteredPlatformPolicyUsers,
-			platformPolicySearchMatches:
-				platformSelection.platformPolicySearchMatches,
-			platformPolicySearchCount:
-				platformSelection.platformPolicySearchCount,
-			platformPolicyLoading: platformDrafts.platformPolicyQ.isLoading,
-			platformPolicyProfiles:
-				platformDrafts.platformPolicyQ.data?.profiles ?? [],
-			platformPolicyOperatingModes:
-				platformDrafts.platformPolicyQ.data?.operatingModes ?? [],
-			platformPolicyPrimaryOperatingMode:
-				platformDrafts.platformPolicyQ.data?.primaryOperatingMode ?? "",
-			platformPolicyCapabilities:
-				platformDrafts.platformPolicyQ.data?.capabilities ?? [],
-			platformPolicyQuota: platformDrafts.platformPolicyQ.data?.quota ?? null,
-			platformProfileDraft: platformDrafts.platformProfileDraft,
-			platformQuotaDraft: platformDrafts.platformQuotaDraft,
-			platformPolicyDerivedCapabilities:
-				platformDrafts.platformPolicyDerivedCapabilities,
-			platformQuotaValidationErrors:
-				platformDrafts.platformQuotaValidationErrors,
-			platformQuotaHasErrors: platformDrafts.platformQuotaHasErrors,
-			savePlatformProfilesPending:
-				platformDrafts.savePlatformProfiles.isPending,
-			savePlatformQuotaPending:
-				platformDrafts.savePlatformQuota.isPending,
-			adminForwardTenantResetRunsLoading:
-				platformDrafts.adminForwardTenantResetRunsQ.isLoading,
-			adminForwardTenantResetRuns:
-				platformDrafts.adminForwardTenantResetRunsQ.data?.runs ?? [],
-			adminForwardTenantResetMode:
-				platformDrafts.adminForwardTenantResetMode,
-			adminForwardTenantResetConfirm:
-				platformDrafts.adminForwardTenantResetConfirm,
-			requestAdminForwardTenantResetPending:
-				platformDrafts.requestAdminForwardTenantReset.isPending,
-			onPlatformPolicyUserQueryChange:
-				platformSelection.setPlatformPolicyUserQuery,
-			onPlatformPolicyTargetUserChange:
-				platformSelection.setPlatformPolicyTargetUser,
-			onPlatformProfileToggle: (profile, enabled) => {
-				platformDrafts.setPlatformProfileDraft((prev) => {
-					if (enabled) {
-						return prev.includes(profile) ? prev : [...prev, profile];
-					}
-					return prev.filter((item) => item !== profile);
-				});
-			},
-			onPlatformQuotaDraftChange: (field, value) => {
-				platformDrafts.setPlatformQuotaDraft((prev) => ({
-					...prev,
-					[field]: value,
-				}));
-			},
-			onSavePlatformProfiles: () =>
-				platformDrafts.savePlatformProfiles.mutate(),
-			onSavePlatformQuota: () => platformDrafts.savePlatformQuota.mutate(),
-			onAdminForwardTenantResetModeChange:
-				platformDrafts.setAdminForwardTenantResetMode,
-			onAdminForwardTenantResetConfirmChange:
-				platformDrafts.setAdminForwardTenantResetConfirm,
-			onRequestAdminForwardTenantReset: () =>
-				platformDrafts.requestAdminForwardTenantReset.mutate(),
-		}),
-		[usersAccess, platformSelection, platformDrafts],
-	);
-}
-
 export function useAdminSettingsPage() {
 	const base = useAdminSettingsBaseData();
 	const auth = useAdminSettingsAuth({
@@ -597,14 +329,12 @@ export function useAdminSettingsPage() {
 		platformSelection,
 		platformDrafts,
 	});
-	const maintenance = {
-		config: useAdminSettingsConfigSection({ auth }),
-		audit: useAdminSettingsAuditSection({ audit }),
-		tasks: useAdminSettingsTasksSection({
-			allUserScopes: base.allUserScopes,
-			ops,
-		}),
-	};
+	const maintenance = useAdminSettingsMaintenanceSection({
+		auth,
+		audit,
+		allUserScopes: base.allUserScopes,
+		ops,
+	});
 
 	return {
 		identity,
