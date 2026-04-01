@@ -338,3 +338,19 @@ export type AdminUsersSectionProps = {
 	onAdminForwardTenantResetConfirmChange: (value: string) => void;
 	onRequestAdminForwardTenantReset: () => void;
 };
+
+
+export type AdminMaintenanceSectionProps = {
+	config: AdminConfigSectionProps;
+	audit: AdminAuditSectionProps;
+	tasks: AdminTasksSectionProps;
+};
+
+export type SettingsAdminSectionProps = {
+	identity: AdminIdentitySectionProps;
+	integrations: AdminIntegrationsSectionProps;
+	forward: AdminForwardSectionProps;
+	runtime: AdminRuntimeSectionProps;
+	users: AdminUsersSectionProps;
+	maintenance: AdminMaintenanceSectionProps;
+};
