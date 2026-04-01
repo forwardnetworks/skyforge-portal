@@ -1,5 +1,5 @@
 import { Users } from "lucide-react";
-import type { AdminUsersTabProps } from "./admin-settings-tab-types";
+import type { AdminUsersSectionProps } from "./settings-section-types";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -17,7 +17,7 @@ import {
 	SelectValue,
 } from "./ui/select";
 
-export function AdminPurgeUserCard(props: AdminUsersTabProps) {
+export function AdminPurgeUserCard(props: AdminUsersSectionProps) {
 	return (
 		<Card variant="danger">
 			<CardHeader>

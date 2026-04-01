@@ -18,12 +18,6 @@ import {
 } from "../lib/settings-sections";
 import { cn } from "../lib/utils";
 import { useCatalogRouteAccess } from "../hooks/use-catalog-route-access";
-import {
-	buildAdminAuditTabProps,
-	buildAdminOverviewTabProps,
-	buildAdminTasksTabProps,
-	buildAdminUsersTabProps,
-} from "./admin/-admin-settings-tab-props";
 
 const settingsSearchSchema = z.object({
 	section: z
@@ -117,12 +111,7 @@ function SettingsAdminPage(props: {
 	const sectionDefinition =
 		props.sections.find((entry) => entry.id === props.section) ??
 		props.sections[0];
-	const adminProps = {
-		overview: buildAdminOverviewTabProps(adminPage),
-		users: buildAdminUsersTabProps(adminPage),
-		tasks: buildAdminTasksTabProps(adminPage),
-		audit: buildAdminAuditTabProps(adminPage),
-	};
+	const adminProps = adminPage;
 
 	return (
 		<SettingsShell

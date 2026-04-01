@@ -1,5 +1,5 @@
 import { Shield, UserCog } from "lucide-react";
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminIdentitySectionProps } from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -17,7 +17,7 @@ import {
 	SelectValue,
 } from "./ui/select";
 
-export function AdminOverviewImpersonationCard(props: AdminOverviewTabProps) {
+export function AdminOverviewImpersonationCard(props: AdminIdentitySectionProps) {
 	return (
 		<Card>
 			<CardHeader>

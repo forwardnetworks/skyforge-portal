@@ -1,4 +1,4 @@
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminConfigSectionProps } from "./settings-section-types";
 import {
 	Card,
 	CardContent,
@@ -9,7 +9,7 @@ import {
 import { EmptyState } from "./ui/empty-state";
 import { Skeleton } from "./ui/skeleton";
 
-export function AdminOverviewConfigCard(props: AdminOverviewTabProps) {
+export function AdminOverviewConfigCard(props: AdminConfigSectionProps) {
 	return (
 		<Card>
 			<CardHeader>

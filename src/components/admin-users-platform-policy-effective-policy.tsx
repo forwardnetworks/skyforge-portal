@@ -1,9 +1,9 @@
-import type { AdminUsersTabProps } from "./admin-settings-tab-types";
+import type { AdminUsersSectionProps } from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import { formatPlatformMode, PolicyStat } from "./admin-users-platform-policy-shared";
 
 type Props = Pick<
-	AdminUsersTabProps,
+	AdminUsersSectionProps,
 	| "platformPolicyProfiles"
 	| "platformPolicyOperatingModes"
 	| "platformPolicyPrimaryOperatingMode"

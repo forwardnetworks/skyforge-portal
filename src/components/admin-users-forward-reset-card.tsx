@@ -1,4 +1,4 @@
-import type { AdminUsersTabProps } from "./admin-settings-tab-types";
+import type { AdminUsersSectionProps } from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -42,7 +42,7 @@ function tenantResetBadgeVariant(status?: string): "secondary" | "default" | "de
 	}
 }
 
-export function AdminUsersForwardResetCard(props: AdminUsersTabProps) {
+export function AdminUsersForwardResetCard(props: AdminUsersSectionProps) {
 	const {
 		platformPolicyTargetUser,
 		adminForwardTenantResetRunsLoading,

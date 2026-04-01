@@ -1,4 +1,4 @@
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminIntegrationsSectionProps } from "./settings-section-types";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -11,7 +11,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 
-export function AdminOverviewTeamsCard(props: AdminOverviewTabProps) {
+export function AdminOverviewTeamsCard(props: AdminIntegrationsSectionProps) {
 	return (
 		<Card>
 			<CardHeader>

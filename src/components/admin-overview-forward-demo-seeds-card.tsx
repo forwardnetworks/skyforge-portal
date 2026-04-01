@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminForwardSectionProps } from "./settings-section-types";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -31,7 +31,7 @@ function formatBytes(value?: number) {
 }
 
 export function AdminOverviewForwardDemoSeedsCard(
-	props: AdminOverviewTabProps,
+	props: AdminForwardSectionProps,
 ) {
 	const [note, setNote] = useState("");
 	const [networkName, setNetworkName] = useState("");

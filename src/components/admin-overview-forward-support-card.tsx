@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminForwardSectionProps } from "./settings-section-types";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -9,7 +9,7 @@ import {
 	CardTitle,
 } from "./ui/card";
 
-export function AdminOverviewForwardSupportCard(props: AdminOverviewTabProps) {
+export function AdminOverviewForwardSupportCard(props: AdminForwardSectionProps) {
 	const revealedPassword = props.adminForwardSupportPassword.trim();
 	const maskedPassword = "••••••••••••••••";
 

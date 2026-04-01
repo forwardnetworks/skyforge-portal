@@ -1,4 +1,4 @@
-import type { AdminUsersTabProps } from "./admin-settings-tab-types";
+import type { AdminUsersSectionProps } from "./settings-section-types";
 import { Checkbox } from "./ui/checkbox";
 import { Button } from "./ui/button";
 import {
@@ -8,7 +8,7 @@ import {
 import { Badge } from "./ui/badge";
 
 type Props = Pick<
-	AdminUsersTabProps,
+	AdminUsersSectionProps,
 	| "platformProfileDraft"
 	| "platformPolicyDerivedCapabilities"
 	| "onPlatformProfileToggle"

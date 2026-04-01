@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminForwardSectionProps } from "./settings-section-types";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -27,7 +27,7 @@ const platformProfileOptions = [
 	"admin",
 ] as const;
 
-export function AdminOverviewQuickDeployCard(props: AdminOverviewTabProps) {
+export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
 	const { onAllowedProfilesChange } = props;
 
 	return (

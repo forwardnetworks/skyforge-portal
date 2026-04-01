@@ -6,6 +6,16 @@ import {
 	listUserScopes,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
+import type {
+	AdminAuditSectionProps,
+	AdminConfigSectionProps,
+	AdminForwardSectionProps,
+	AdminIdentitySectionProps,
+	AdminIntegrationsSectionProps,
+	AdminRuntimeSectionProps,
+	AdminTasksSectionProps,
+	AdminUsersSectionProps,
+} from "../components/settings-section-types";
 import { useAdminSettingsAudit } from "./use-admin-settings-audit";
 import { useAdminSettingsAuth } from "./use-admin-settings-auth";
 import { useAdminSettingsOperations } from "./use-admin-settings-operations";
@@ -41,7 +51,46 @@ function collectKnownUsers(
 	return Array.from(users).sort((a, b) => a.localeCompare(b));
 }
 
-export function useAdminSettingsPage() {
+function buildRuntimeSummary(data: {
+	total?: number;
+	active?: number;
+	inactive?: number;
+	expired?: number;
+	eligibleForCleanup?: number;
+	eligibleForForceFinalize?: number;
+	terminating?: number;
+	resourceTotals?: {
+		pods?: number;
+		services?: number;
+		jobs?: number;
+		configMaps?: number;
+		topologies?: number;
+		virtualMachines?: number;
+		virtualMachineInstances?: number;
+	};
+} | null | undefined) {
+	return {
+		total: data?.total ?? 0,
+		active: data?.active ?? 0,
+		inactive: data?.inactive ?? 0,
+		expired: data?.expired ?? 0,
+		eligibleForCleanup: data?.eligibleForCleanup ?? 0,
+		eligibleForForceFinalize: data?.eligibleForForceFinalize ?? 0,
+		terminating: data?.terminating ?? 0,
+		resourceTotals: {
+			pods: data?.resourceTotals?.pods ?? 0,
+			services: data?.resourceTotals?.services ?? 0,
+			jobs: data?.resourceTotals?.jobs ?? 0,
+			configMaps: data?.resourceTotals?.configMaps ?? 0,
+			topologies: data?.resourceTotals?.topologies ?? 0,
+			virtualMachines: data?.resourceTotals?.virtualMachines ?? 0,
+			virtualMachineInstances:
+				data?.resourceTotals?.virtualMachineInstances ?? 0,
+		},
+	};
+}
+
+function useAdminSettingsBaseData() {
 	const queryClient = useQueryClient();
 	const sessionQ = useQuery({
 		queryKey: queryKeys.session(),
@@ -76,44 +125,494 @@ export function useAdminSettingsPage() {
 		});
 		return (mine[0]?.id ?? allUserScopes[0]?.id ?? "").trim();
 	}, [allUserScopes, effectiveUsername]);
-
-	const adminAuth = useAdminSettingsAuth({
-		queryClient,
-		adminScopeID,
-	});
-
 	const knownUsersFromScopes = useMemo(
 		() => collectKnownUsers(allUserScopes),
 		[allUserScopes],
 	);
-	const adminOps = useAdminSettingsOperations({
-		knownUsersFromScopes,
-	});
-	const adminUsersAccess = useAdminSettingsUsersAccess({
-		knownUsersFromScopes,
-		adminUserRolesQ,
-		userScopesQ,
-		sessionQ,
-	});
-	const platformPolicyUserSelection =
-		useAdminSettingsPlatformPolicyUserSelection({
-			userOptions: adminUsersAccess.rbacKnownUsers,
-		});
-	const platformPolicyDrafts = useAdminSettingsPlatformPolicyDrafts({
-		platformPolicyTargetUser:
-			platformPolicyUserSelection.platformPolicyTargetUser,
-	});
-	const auditState = useAdminSettingsAudit();
 
 	return {
+		queryClient,
 		sessionQ,
+		userScopesQ,
 		allUserScopes,
-		...auditState,
-		...adminAuth,
-		...adminOps,
-		...adminUsersAccess,
-		...platformPolicyUserSelection,
-		...platformPolicyDrafts,
+		adminUserRolesQ,
+		adminScopeID,
+		knownUsersFromScopes,
+	};
+}
+
+function useAdminSettingsIdentitySection(args: {
+	sessionQ: ReturnType<typeof useAdminSettingsBaseData>["sessionQ"];
+	auth: ReturnType<typeof useAdminSettingsAuth>;
+	ops: ReturnType<typeof useAdminSettingsOperations>;
+}): AdminIdentitySectionProps {
+	const { sessionQ, auth, ops } = args;
+	return useMemo(
+		() => ({
+			authSettings: auth.authSettingsQ.data,
+			authSettingsLoading: auth.authSettingsQ.isLoading,
+			authProviderDraft: auth.authProviderDraft,
+			breakGlassEnabledDraft: auth.breakGlassEnabledDraft,
+			breakGlassLabelDraft: auth.breakGlassLabelDraft,
+			saveAuthSettingsPending: auth.saveAuthSettings.isPending,
+			onAuthProviderChange: auth.setAuthProviderDraft,
+			onBreakGlassEnabledChange: auth.setBreakGlassEnabledDraft,
+			onBreakGlassLabelChange: auth.setBreakGlassLabelDraft,
+			onSaveAuthSettings: () => auth.saveAuthSettings.mutate(),
+			oidcSettings: auth.oidcSettingsQ.data,
+			oidcSettingsLoading: auth.oidcSettingsQ.isLoading,
+			oidcEnabledDraft: auth.oidcEnabledDraft,
+			oidcIssuerDraft: auth.oidcIssuerDraft,
+			oidcDiscoveryDraft: auth.oidcDiscoveryDraft,
+			oidcClientIDDraft: auth.oidcClientIDDraft,
+			oidcClientSecretDraft: auth.oidcClientSecretDraft,
+			oidcRedirectDraft: auth.oidcRedirectDraft,
+			saveOIDCSettingsPending: auth.saveOIDCSettings.isPending,
+			onOidcEnabledChange: auth.setOidcEnabledDraft,
+			onOidcIssuerChange: auth.setOidcIssuerDraft,
+			onOidcDiscoveryChange: auth.setOidcDiscoveryDraft,
+			onOidcClientIdChange: auth.setOidcClientIDDraft,
+			onOidcClientSecretChange: auth.setOidcClientSecretDraft,
+			onOidcRedirectChange: auth.setOidcRedirectDraft,
+			onSaveOIDCSettings: () => auth.saveOIDCSettings.mutate(),
+			impersonateStatus: ops.impersonateStatusQ.data,
+			sessionUsername: sessionQ.data?.username,
+			impersonateUserOptions: ops.impersonateUserOptions,
+			impersonateTarget: ops.impersonateTarget,
+			impersonateStartPending: ops.impersonateStart.isPending,
+			impersonateStopPending: ops.impersonateStop.isPending,
+			onImpersonateTargetChange: ops.setImpersonateTarget,
+			onImpersonateStart: () => ops.impersonateStart.mutate(),
+			onImpersonateStop: () => ops.impersonateStop.mutate(),
+		}),
+		[sessionQ.data?.username, auth, ops],
+	);
+}
+
+function useAdminSettingsIntegrationsSection(args: {
+	auth: ReturnType<typeof useAdminSettingsAuth>;
+}): AdminIntegrationsSectionProps {
+	const { auth } = args;
+	return useMemo(
+		() => ({
+			serviceNowGlobalConfig: auth.serviceNowGlobalConfigQ.data,
+			serviceNowGlobalConfigLoading: auth.serviceNowGlobalConfigQ.isLoading,
+			serviceNowInstanceURLDraft: auth.serviceNowInstanceURLDraft,
+			serviceNowAdminUsernameDraft: auth.serviceNowAdminUsernameDraft,
+			serviceNowAdminPasswordDraft: auth.serviceNowAdminPasswordDraft,
+			saveServiceNowGlobalConfigPending:
+				auth.saveServiceNowGlobalConfig.isPending,
+			pushServiceNowForwardConfigPending:
+				auth.pushServiceNowForwardConfig.isPending,
+			onServiceNowInstanceURLChange: auth.setServiceNowInstanceURLDraft,
+			onServiceNowAdminUsernameChange: auth.setServiceNowAdminUsernameDraft,
+			onServiceNowAdminPasswordChange: auth.setServiceNowAdminPasswordDraft,
+			onSaveServiceNowGlobalConfig: () =>
+				auth.saveServiceNowGlobalConfig.mutate(),
+			onPushServiceNowForwardConfig: () =>
+				auth.pushServiceNowForwardConfig.mutate(),
+			teamsGlobalConfig: auth.teamsGlobalConfigQ.data,
+			teamsGlobalConfigLoading: auth.teamsGlobalConfigQ.isLoading,
+			teamsEnabledDraft: auth.teamsEnabledDraft,
+			teamsDisplayNameDraft: auth.teamsDisplayNameDraft,
+			teamsPublicBaseURLDraft: auth.teamsPublicBaseURLDraft,
+			teamsInboundSecretDraft: auth.teamsInboundSecretDraft,
+			teamsTestWebhookURLDraft: auth.teamsTestWebhookURLDraft,
+			saveTeamsGlobalConfigPending: auth.saveTeamsGlobalConfig.isPending,
+			testTeamsOutgoingPending: auth.testTeamsOutgoing.isPending,
+			onTeamsEnabledChange: auth.setTeamsEnabledDraft,
+			onTeamsDisplayNameChange: auth.setTeamsDisplayNameDraft,
+			onTeamsPublicBaseURLChange: auth.setTeamsPublicBaseURLDraft,
+			onTeamsInboundSecretChange: auth.setTeamsInboundSecretDraft,
+			onTeamsTestWebhookURLChange: auth.setTeamsTestWebhookURLDraft,
+			onSaveTeamsGlobalConfig: () => auth.saveTeamsGlobalConfig.mutate(),
+			onTestTeamsOutgoing: () => auth.testTeamsOutgoing.mutate(),
+		}),
+		[auth],
+	);
+}
+
+function useAdminSettingsForwardSection(args: {
+	auth: ReturnType<typeof useAdminSettingsAuth>;
+	ops: ReturnType<typeof useAdminSettingsOperations>;
+}): AdminForwardSectionProps {
+	const { auth, ops } = args;
+	return useMemo(
+		() => ({
+			quickDeploySource: auth.quickDeployCatalogQ.data?.source,
+			quickDeployRepo:
+				auth.quickDeployTemplateOptionsQ.data?.repo ??
+				auth.quickDeployCatalogQ.data?.repo,
+			quickDeployBranch:
+				auth.quickDeployTemplateOptionsQ.data?.branch ??
+				auth.quickDeployCatalogQ.data?.branch,
+			quickDeployDir:
+				auth.quickDeployTemplateOptionsQ.data?.dir ??
+				auth.quickDeployCatalogQ.data?.dir,
+			selectedQuickDeployOption: auth.selectedQuickDeployOption,
+			availableQuickDeployTemplates: auth.availableQuickDeployTemplates,
+			quickDeployTemplates: auth.quickDeployTemplates,
+			quickDeployLookupFailed:
+				auth.blueprintNetlabTemplatesQ.isError ||
+				auth.quickDeployTemplateOptionsQ.isError,
+			quickDeployCatalogLoading: auth.quickDeployCatalogQ.isLoading,
+			saveQuickDeployCatalogPending: auth.saveQuickDeployCatalog.isPending,
+			hasQuickDeployTemplateRows: auth.hasQuickDeployTemplateRows,
+			onSelectedQuickDeployOptionChange: auth.setSelectedQuickDeployOption,
+			onAddQuickDeployTemplateFromOption:
+				auth.addQuickDeployTemplateFromOption,
+			onQuickDeployTemplateFieldChange: auth.upsertQuickDeployTemplateField,
+			onRemoveQuickDeployTemplate: auth.removeQuickDeployTemplate,
+			onAddQuickDeployTemplate: auth.addQuickDeployTemplate,
+			onAllowedProfilesChange: (index, value) =>
+				auth.upsertQuickDeployTemplateField(index, "allowedProfiles", value),
+			onSaveQuickDeployCatalog: () => auth.saveQuickDeployCatalog.mutate(),
+			forwardDemoSeedCatalog: auth.forwardDemoSeedCatalogQ.data,
+			forwardDemoSeedCatalogLoading: auth.forwardDemoSeedCatalogQ.isLoading,
+			uploadForwardDemoSeedPending: auth.uploadForwardDemoSeed.isPending,
+			updateForwardDemoSeedPending: auth.updateForwardDemoSeed.isPending,
+			saveForwardDemoSeedConfigPending:
+				auth.saveForwardDemoSeedConfig.isPending,
+			deleteForwardDemoSeedPending: auth.deleteForwardDemoSeed.isPending,
+			onUploadForwardDemoSeed: (value) =>
+				auth.uploadForwardDemoSeed.mutate(value),
+			onUpdateForwardDemoSeed: (value) =>
+				auth.updateForwardDemoSeed.mutate(value),
+			onSaveForwardDemoSeedConfig: (value) =>
+				auth.saveForwardDemoSeedConfig.mutate(value),
+			onDeleteForwardDemoSeed: (seedID) =>
+				auth.deleteForwardDemoSeed.mutate(seedID),
+			adminForwardSupportCredentialLoading:
+				ops.adminForwardSupportCredentialQ.isLoading,
+			adminForwardSupportCredentialConfigured:
+				ops.adminForwardSupportCredentialQ.data?.configured ?? false,
+			adminForwardSupportUsername:
+				ops.adminForwardSupportCredentialQ.data?.username ?? "",
+			adminForwardSupportHasPassword:
+				ops.adminForwardSupportCredentialQ.data?.hasPassword ?? false,
+			adminForwardSupportPassword: ops.adminForwardSupportPassword,
+			revealAdminForwardSupportCredentialPending:
+				ops.revealAdminForwardSupportCredentialMutation.isPending,
+			onRevealAdminForwardSupportCredentialPassword: () =>
+				ops.revealAdminForwardSupportCredentialMutation.mutate(),
+		}),
+		[auth, ops],
+	);
+}
+
+function useAdminSettingsRuntimeSection(args: {
+	auth: ReturnType<typeof useAdminSettingsAuth>;
+	ops: ReturnType<typeof useAdminSettingsOperations>;
+}): AdminRuntimeSectionProps {
+	const { auth, ops } = args;
+	return useMemo(
+		() => ({
+			config: auth.cfgQ.data,
+			configLoading: auth.cfgQ.isLoading,
+			hetznerBurstStatus: auth.hetznerBurstStatusQ.data,
+			hetznerBurstStatusLoading: auth.hetznerBurstStatusQ.isLoading,
+			hetznerBurstRuntimePolicy: auth.hetznerBurstRuntimePolicyQ.data,
+			hetznerBurstRuntimePolicyLoading:
+				auth.hetznerBurstRuntimePolicyQ.isLoading,
+			hetznerBurstEnabledDraft: auth.hetznerBurstEnabledDraft,
+			hetznerBurstProvisioningEnabledDraft:
+				auth.hetznerBurstProvisioningEnabledDraft,
+			saveHetznerBurstRuntimePolicyPending:
+				auth.saveHetznerBurstRuntimePolicy.isPending,
+			onHetznerBurstEnabledChange: auth.setHetznerBurstEnabledDraft,
+			onHetznerBurstProvisioningEnabledChange:
+				auth.setHetznerBurstProvisioningEnabledDraft,
+			onSaveHetznerBurstRuntimePolicy: () =>
+				auth.saveHetznerBurstRuntimePolicy.mutate(),
+			adminEphemeralRuntimeSummary: buildRuntimeSummary(
+				ops.adminEphemeralRuntimesQ.data,
+			),
+		}),
+		[auth, ops.adminEphemeralRuntimesQ.data],
+	);
+}
+
+function useAdminSettingsConfigSection(args: {
+	auth: ReturnType<typeof useAdminSettingsAuth>;
+}): AdminConfigSectionProps {
+	const { auth } = args;
+	return useMemo(
+		() => ({
+			config: auth.cfgQ.data,
+			configLoading: auth.cfgQ.isLoading,
+		}),
+		[auth.cfgQ.data, auth.cfgQ.isLoading],
+	);
+}
+
+function useAdminSettingsAuditSection(args: {
+	audit: ReturnType<typeof useAdminSettingsAudit>;
+}): AdminAuditSectionProps {
+	const { audit } = args;
+	return useMemo(
+		() => ({
+			auditLimit: audit.auditLimit,
+			onAuditLimitChange: audit.setAuditLimit,
+			auditTimestamp: audit.auditQ.data?.timestamp,
+			auditEvents: audit.auditQ.data?.events ?? [],
+			auditColumns: audit.auditColumns,
+			auditLoading: audit.auditQ.isLoading,
+		}),
+		[audit],
+	);
+}
+
+function useAdminSettingsTasksSection(args: {
+	allUserScopes: ReturnType<typeof useAdminSettingsBaseData>["allUserScopes"];
+	ops: ReturnType<typeof useAdminSettingsOperations>;
+}): AdminTasksSectionProps {
+	const { allUserScopes, ops } = args;
+	return useMemo(
+		() => ({
+			reconcileQueuedPending: ops.reconcileQueued.isPending,
+			reconcileRunningPending: ops.reconcileRunning.isPending,
+			onReconcileQueued: () => ops.reconcileQueued.mutate(200),
+			onReconcileRunning: () =>
+				ops.reconcileRunning.mutate({
+					limit: 50,
+					hardMaxRuntimeMinutes: 12 * 60,
+					maxIdleMinutes: 120,
+				}),
+			cleanupScopeMode: ops.cleanupScopeMode,
+			onCleanupScopeModeChange: ops.setCleanupScopeMode,
+			cleanupScopeID: ops.cleanupScopeID,
+			onCleanupScopeIDChange: ops.setCleanupScopeID,
+			cleanupNamespace: ops.cleanupNamespace,
+			onCleanupNamespaceChange: ops.setCleanupNamespace,
+			allUserScopes,
+			cleanupTenantPodsPending: ops.cleanupTenantPods.isPending,
+			onPreviewCleanup: () => ops.cleanupTenantPods.mutate(true),
+			onRunCleanup: () => ops.cleanupTenantPods.mutate(false),
+			cleanupResult: ops.cleanupResult,
+			adminEphemeralRuntimesLoading: ops.adminEphemeralRuntimesQ.isLoading,
+			adminEphemeralRuntimes: ops.adminEphemeralRuntimesQ.data?.items ?? [],
+			adminEphemeralRuntimeSummary: buildRuntimeSummary(
+				ops.adminEphemeralRuntimesQ.data,
+			),
+			cleanupEphemeralRuntimesPending:
+				ops.cleanupEphemeralRuntimes.isPending,
+			cleanupEphemeralRuntimesResult:
+				ops.cleanupEphemeralRuntimesResult,
+			forceFinalizeEphemeralRuntimesPending:
+				ops.forceFinalizeEphemeralRuntimes.isPending,
+			forceFinalizeEphemeralRuntimesResult:
+				ops.forceFinalizeEphemeralRuntimesResult,
+			onRefreshEphemeralRuntimes: () => {
+				void ops.adminEphemeralRuntimesQ.refetch();
+			},
+			onCleanupEligibleEphemeralRuntimes: () =>
+				ops.cleanupEphemeralRuntimes.mutate(undefined),
+			onCleanupEphemeralRuntimeNamespace: (namespace) =>
+				ops.cleanupEphemeralRuntimes.mutate([namespace]),
+			onForceFinalizeEligibleEphemeralRuntimes: () =>
+				ops.forceFinalizeEphemeralRuntimes.mutate(undefined),
+			onForceFinalizeEphemeralRuntimeNamespace: (namespace) =>
+				ops.forceFinalizeEphemeralRuntimes.mutate([namespace]),
+		}),
+		[allUserScopes, ops],
+	);
+}
+
+function useAdminSettingsUsersSection(args: {
+	usersAccess: ReturnType<typeof useAdminSettingsUsersAccess>;
+	platformSelection: ReturnType<typeof useAdminSettingsPlatformPolicyUserSelection>;
+	platformDrafts: ReturnType<typeof useAdminSettingsPlatformPolicyDrafts>;
+}): AdminUsersSectionProps {
+	const { usersAccess, platformSelection, platformDrafts } = args;
+	return useMemo(
+		() => ({
+			manageUsername: usersAccess.manageUsername,
+			manageInitialRole: usersAccess.manageInitialRole,
+			availableRbacRoles: usersAccess.availableRbacRoles,
+			createManagedUserPending: usersAccess.createManagedUser.isPending,
+			onManageUsernameChange: usersAccess.setManageUsername,
+			onManageInitialRoleChange: usersAccess.setManageInitialRole,
+			onCreateManagedUser: () => usersAccess.createManagedUser.mutate(),
+			deleteManagedUserQuery: usersAccess.deleteManagedUserQuery,
+			deleteManagedUser: usersAccess.deleteManagedUser,
+			filteredManagedDeleteUsers: usersAccess.filteredManagedDeleteUsers,
+			deleteManagedUserPending:
+				usersAccess.deleteManagedUserMutation.isPending,
+			onDeleteManagedUserQueryChange: usersAccess.setDeleteManagedUserQuery,
+			onDeleteManagedUserChange: usersAccess.setDeleteManagedUser,
+			onDeleteManagedUser: () =>
+				usersAccess.deleteManagedUserMutation.mutate(),
+			rbacUserQuery: usersAccess.rbacUserQuery,
+			rbacTargetUser: usersAccess.rbacTargetUser,
+			rbacTargetRole: usersAccess.rbacTargetRole,
+			filteredRbacKnownUsers: usersAccess.filteredRbacKnownUsers,
+			upsertRbacRolePending: usersAccess.upsertRbacRole.isPending,
+			onRbacUserQueryChange: usersAccess.setRbacUserQuery,
+			onRbacTargetUserChange: usersAccess.setRbacTargetUser,
+			onRbacTargetRoleChange: usersAccess.setRbacTargetRole,
+			onUpsertRbacRole: () => usersAccess.upsertRbacRole.mutate(),
+			adminUserRolesLoading: usersAccess.adminUserRolesQ.isLoading,
+			filteredRbacRows: usersAccess.filteredRbacRows,
+			revokeRbacRolePending: usersAccess.revokeRbacRole.isPending,
+			onRevokeRbacRole: (payload) =>
+				usersAccess.revokeRbacRole.mutate(payload),
+			apiPermTargetUser: usersAccess.apiPermTargetUser,
+			rbacKnownUsers: usersAccess.rbacKnownUsers,
+			apiPermFilter: usersAccess.apiPermFilter,
+			apiDraftOverrideCount: usersAccess.apiDraftOverrideCount,
+			apiCatalogLoading: usersAccess.apiCatalogQ.isLoading,
+			userApiPermsLoading: usersAccess.userApiPermsQ.isLoading,
+			filteredApiCatalogEntries: usersAccess.filteredApiCatalogEntries,
+			apiPermDraft: usersAccess.apiPermDraft,
+			saveUserApiPermissionsPending:
+				usersAccess.saveUserApiPermissions.isPending,
+			onApiPermTargetUserChange: usersAccess.setApiPermTargetUser,
+			onApiPermFilterChange: usersAccess.setApiPermFilter,
+			onReloadUserApiPerms: () => {
+				void usersAccess.userApiPermsQ.refetch();
+			},
+			onSaveUserApiPermissions: () =>
+				usersAccess.saveUserApiPermissions.mutate(),
+			onApiPermDraftChange: (key, nextDecision) => {
+				usersAccess.setApiPermDraft((prev) => {
+					if (nextDecision === "inherit") {
+						const next = { ...prev };
+						delete next[key];
+						return next;
+					}
+					return { ...prev, [key]: nextDecision };
+				});
+			},
+			apiPermissionKey: usersAccess.apiPermissionKey,
+			purgeUserQuery: usersAccess.purgeUserQuery,
+			purgeUsername: usersAccess.purgeUsername,
+			filteredPurgeUserOptions: usersAccess.filteredPurgeUserOptions,
+			purgeUserPending: usersAccess.purgeUser.isPending,
+			onPurgeUserQueryChange: usersAccess.setPurgeUserQuery,
+			onPurgeUsernameChange: usersAccess.setPurgeUsername,
+			onPurgeUser: () => usersAccess.purgeUser.mutate(),
+			platformPolicyUserQuery: platformSelection.platformPolicyUserQuery,
+			platformPolicyTargetUser: platformSelection.platformPolicyTargetUser,
+			filteredPlatformPolicyUsers:
+				platformSelection.filteredPlatformPolicyUsers,
+			platformPolicySearchMatches:
+				platformSelection.platformPolicySearchMatches,
+			platformPolicySearchCount:
+				platformSelection.platformPolicySearchCount,
+			platformPolicyLoading: platformDrafts.platformPolicyQ.isLoading,
+			platformPolicyProfiles:
+				platformDrafts.platformPolicyQ.data?.profiles ?? [],
+			platformPolicyOperatingModes:
+				platformDrafts.platformPolicyQ.data?.operatingModes ?? [],
+			platformPolicyPrimaryOperatingMode:
+				platformDrafts.platformPolicyQ.data?.primaryOperatingMode ?? "",
+			platformPolicyCapabilities:
+				platformDrafts.platformPolicyQ.data?.capabilities ?? [],
+			platformPolicyQuota: platformDrafts.platformPolicyQ.data?.quota ?? null,
+			platformProfileDraft: platformDrafts.platformProfileDraft,
+			platformQuotaDraft: platformDrafts.platformQuotaDraft,
+			platformPolicyDerivedCapabilities:
+				platformDrafts.platformPolicyDerivedCapabilities,
+			platformQuotaValidationErrors:
+				platformDrafts.platformQuotaValidationErrors,
+			platformQuotaHasErrors: platformDrafts.platformQuotaHasErrors,
+			savePlatformProfilesPending:
+				platformDrafts.savePlatformProfiles.isPending,
+			savePlatformQuotaPending:
+				platformDrafts.savePlatformQuota.isPending,
+			adminForwardTenantResetRunsLoading:
+				platformDrafts.adminForwardTenantResetRunsQ.isLoading,
+			adminForwardTenantResetRuns:
+				platformDrafts.adminForwardTenantResetRunsQ.data?.runs ?? [],
+			adminForwardTenantResetMode:
+				platformDrafts.adminForwardTenantResetMode,
+			adminForwardTenantResetConfirm:
+				platformDrafts.adminForwardTenantResetConfirm,
+			requestAdminForwardTenantResetPending:
+				platformDrafts.requestAdminForwardTenantReset.isPending,
+			onPlatformPolicyUserQueryChange:
+				platformSelection.setPlatformPolicyUserQuery,
+			onPlatformPolicyTargetUserChange:
+				platformSelection.setPlatformPolicyTargetUser,
+			onPlatformProfileToggle: (profile, enabled) => {
+				platformDrafts.setPlatformProfileDraft((prev) => {
+					if (enabled) {
+						return prev.includes(profile) ? prev : [...prev, profile];
+					}
+					return prev.filter((item) => item !== profile);
+				});
+			},
+			onPlatformQuotaDraftChange: (field, value) => {
+				platformDrafts.setPlatformQuotaDraft((prev) => ({
+					...prev,
+					[field]: value,
+				}));
+			},
+			onSavePlatformProfiles: () =>
+				platformDrafts.savePlatformProfiles.mutate(),
+			onSavePlatformQuota: () => platformDrafts.savePlatformQuota.mutate(),
+			onAdminForwardTenantResetModeChange:
+				platformDrafts.setAdminForwardTenantResetMode,
+			onAdminForwardTenantResetConfirmChange:
+				platformDrafts.setAdminForwardTenantResetConfirm,
+			onRequestAdminForwardTenantReset: () =>
+				platformDrafts.requestAdminForwardTenantReset.mutate(),
+		}),
+		[usersAccess, platformSelection, platformDrafts],
+	);
+}
+
+export function useAdminSettingsPage() {
+	const base = useAdminSettingsBaseData();
+	const auth = useAdminSettingsAuth({
+		queryClient: base.queryClient,
+		adminScopeID: base.adminScopeID,
+	});
+	const ops = useAdminSettingsOperations({
+		knownUsersFromScopes: base.knownUsersFromScopes,
+	});
+	const usersAccess = useAdminSettingsUsersAccess({
+		knownUsersFromScopes: base.knownUsersFromScopes,
+		adminUserRolesQ: base.adminUserRolesQ,
+		userScopesQ: base.userScopesQ,
+		sessionQ: base.sessionQ,
+	});
+	const platformSelection = useAdminSettingsPlatformPolicyUserSelection({
+		userOptions: usersAccess.rbacKnownUsers,
+	});
+	const platformDrafts = useAdminSettingsPlatformPolicyDrafts({
+		platformPolicyTargetUser: platformSelection.platformPolicyTargetUser,
+	});
+	const audit = useAdminSettingsAudit();
+	const identity = useAdminSettingsIdentitySection({
+		sessionQ: base.sessionQ,
+		auth,
+		ops,
+	});
+	const integrations = useAdminSettingsIntegrationsSection({ auth });
+	const forward = useAdminSettingsForwardSection({ auth, ops });
+	const runtime = useAdminSettingsRuntimeSection({ auth, ops });
+	const users = useAdminSettingsUsersSection({
+		usersAccess,
+		platformSelection,
+		platformDrafts,
+	});
+	const maintenance = {
+		config: useAdminSettingsConfigSection({ auth }),
+		audit: useAdminSettingsAuditSection({ audit }),
+		tasks: useAdminSettingsTasksSection({
+			allUserScopes: base.allUserScopes,
+			ops,
+		}),
+	};
+
+	return {
+		identity,
+		integrations,
+		forward,
+		runtime,
+		users,
+		maintenance,
 	};
 }
 

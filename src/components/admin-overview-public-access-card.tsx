@@ -1,4 +1,4 @@
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminRuntimeSectionProps } from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import {
 	Card,
@@ -19,7 +19,7 @@ function providerLabel(provider: string) {
 	}
 }
 
-export function AdminOverviewPublicAccessCard(props: AdminOverviewTabProps) {
+export function AdminOverviewPublicAccessCard(props: AdminRuntimeSectionProps) {
 	const cfg = props.config;
 	const tunnel = cfg?.publicTunnel;
 	const provider = tunnel?.provider ?? "none";

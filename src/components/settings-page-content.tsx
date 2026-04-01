@@ -1,9 +1,13 @@
 import type {
-	AdminAuditTabProps,
-	AdminOverviewTabProps,
-	AdminTasksTabProps,
-	AdminUsersTabProps,
-} from "./admin-settings-tab-types";
+	AdminAuditSectionProps,
+	AdminConfigSectionProps,
+	AdminForwardSectionProps,
+	AdminIdentitySectionProps,
+	AdminIntegrationsSectionProps,
+	AdminRuntimeSectionProps,
+	AdminTasksSectionProps,
+	AdminUsersSectionProps,
+} from "./settings-section-types";
 import { AdminOverviewAuthCard } from "./admin-overview-auth-card";
 import { AdminOverviewConfigCard } from "./admin-overview-config-card";
 import { AdminOverviewPublicAccessCard } from "./admin-overview-public-access-card";
@@ -48,10 +52,16 @@ import type {
 } from "../lib/settings-sections";
 
 type SettingsAdminSectionProps = {
-	overview: AdminOverviewTabProps;
-	users: AdminUsersTabProps;
-	tasks: AdminTasksTabProps;
-	audit: AdminAuditTabProps;
+	identity: AdminIdentitySectionProps;
+	integrations: AdminIntegrationsSectionProps;
+	forward: AdminForwardSectionProps;
+	runtime: AdminRuntimeSectionProps;
+	users: AdminUsersSectionProps;
+	maintenance: {
+		config: AdminConfigSectionProps;
+		audit: AdminAuditSectionProps;
+		tasks: AdminTasksSectionProps;
+	};
 };
 
 export function SettingsSectionContent(props: {
@@ -91,35 +101,35 @@ function renderSectionBody(args: {
 			if (!adminProps) return null;
 			return (
 				<>
-					<AdminOverviewAuthCard {...adminProps.overview} />
-					<AdminOverviewOIDCCard {...adminProps.overview} />
-					<AdminOverviewImpersonationCard {...adminProps.overview} />
+					<AdminOverviewAuthCard {...adminProps.identity} />
+					<AdminOverviewOIDCCard {...adminProps.identity} />
+					<AdminOverviewImpersonationCard {...adminProps.identity} />
 				</>
 			);
 		case "integrations":
 			if (!adminProps) return null;
 			return (
 				<>
-					<AdminOverviewTeamsCard {...adminProps.overview} />
-					<AdminOverviewServiceNowCard {...adminProps.overview} />
+					<AdminOverviewTeamsCard {...adminProps.integrations} />
+					<AdminOverviewServiceNowCard {...adminProps.integrations} />
 				</>
 			);
 		case "forward":
 			if (!adminProps) return null;
 			return (
 				<>
-					<AdminOverviewForwardSupportCard {...adminProps.overview} />
-					<AdminOverviewForwardDemoSeedsCard {...adminProps.overview} />
-					<AdminOverviewQuickDeployCard {...adminProps.overview} />
+					<AdminOverviewForwardSupportCard {...adminProps.forward} />
+					<AdminOverviewForwardDemoSeedsCard {...adminProps.forward} />
+					<AdminOverviewQuickDeployCard {...adminProps.forward} />
 				</>
 			);
 		case "runtime":
 			if (!adminProps) return null;
 			return (
 				<>
-					<AdminOverviewHetznerBurstCard {...adminProps.overview} />
-					<AdminOverviewRuntimePressureCard {...adminProps.overview} />
-					<AdminOverviewPublicAccessCard {...adminProps.overview} />
+					<AdminOverviewHetznerBurstCard {...adminProps.runtime} />
+					<AdminOverviewRuntimePressureCard {...adminProps.runtime} />
+					<AdminOverviewPublicAccessCard {...adminProps.runtime} />
 				</>
 			);
 		case "users":
@@ -138,9 +148,9 @@ function renderSectionBody(args: {
 			if (!adminProps) return null;
 			return (
 				<>
-					<AdminOverviewConfigCard {...adminProps.overview} />
-					<AdminAuditSection {...adminProps.audit} />
-					<AdminMaintenanceSection {...adminProps.tasks} />
+					<AdminOverviewConfigCard {...adminProps.maintenance.config} />
+					<AdminAuditSection {...adminProps.maintenance.audit} />
+					<AdminMaintenanceSection {...adminProps.maintenance.tasks} />
 				</>
 			);
 		default:
@@ -148,7 +158,7 @@ function renderSectionBody(args: {
 	}
 }
 
-function AdminAuditSection(props: AdminAuditTabProps) {
+function AdminAuditSection(props: AdminAuditSectionProps) {
 	return (
 		<Card>
 			<CardHeader>
@@ -180,7 +190,7 @@ function AdminAuditSection(props: AdminAuditTabProps) {
 	);
 }
 
-function AdminMaintenanceSection(props: AdminTasksTabProps) {
+function AdminMaintenanceSection(props: AdminTasksSectionProps) {
 	return (
 		<>
 			<Card>
@@ -404,17 +414,17 @@ function AdminMaintenanceSection(props: AdminTasksTabProps) {
 					</div>
 					{props.cleanupEphemeralRuntimesResult ? (
 						<div className="rounded-md border bg-muted/40 p-3 text-xs">
-							cleaned={props.cleanupEphemeralRuntimesResult.cleanedNamespaces}{" "}
-							errors=
-							{props.cleanupEphemeralRuntimesResult.errors.length}
+							cleaned=
+							{props.cleanupEphemeralRuntimesResult.namespacesCleaned} errors=
+							{props.cleanupEphemeralRuntimesResult.errors?.length ?? 0}
 						</div>
 					) : null}
 					{props.forceFinalizeEphemeralRuntimesResult ? (
 						<div className="rounded-md border bg-muted/40 p-3 text-xs">
 							finalized=
-							{props.forceFinalizeEphemeralRuntimesResult.finalizedNamespaces}{" "}
+							{props.forceFinalizeEphemeralRuntimesResult.namespacesFinalized}{" "}
 							errors=
-							{props.forceFinalizeEphemeralRuntimesResult.errors.length}
+							{props.forceFinalizeEphemeralRuntimesResult.errors?.length ?? 0}
 						</div>
 					) : null}
 					<div className="space-y-2">
@@ -426,7 +436,7 @@ function AdminMaintenanceSection(props: AdminTasksTabProps) {
 								<div className="space-y-1 text-sm">
 									<div className="font-medium">{runtime.namespace}</div>
 									<div className="text-muted-foreground">
-										state={runtime.state} scope={runtime.scopeSlug} owner=
+										phase={runtime.phase} scope={runtime.userScopeId ?? "—"} owner=
 										{runtime.owner}
 									</div>
 								</div>

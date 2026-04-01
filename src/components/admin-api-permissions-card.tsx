@@ -1,4 +1,4 @@
-import type { AdminUsersTabProps } from "./admin-settings-tab-types";
+import type { AdminUsersSectionProps } from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -19,7 +19,7 @@ import {
 } from "./ui/select";
 import { Skeleton } from "./ui/skeleton";
 
-export function AdminApiPermissionsCard(props: AdminUsersTabProps) {
+export function AdminApiPermissionsCard(props: AdminUsersSectionProps) {
 	return (
 		<Card>
 			<CardHeader>

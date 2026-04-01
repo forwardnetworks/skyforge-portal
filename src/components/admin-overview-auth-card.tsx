@@ -1,4 +1,4 @@
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminIdentitySectionProps } from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -18,7 +18,7 @@ import {
 } from "./ui/select";
 import { Skeleton } from "./ui/skeleton";
 
-export function AdminOverviewAuthCard(props: AdminOverviewTabProps) {
+export function AdminOverviewAuthCard(props: AdminIdentitySectionProps) {
 	const authSaveDisabled =
 		props.saveAuthSettingsPending ||
 		props.authSettingsLoading ||

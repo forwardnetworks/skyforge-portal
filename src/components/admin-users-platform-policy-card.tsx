@@ -1,11 +1,11 @@
-import type { AdminUsersTabProps } from "./admin-settings-tab-types";
+import type { AdminUsersSectionProps } from "./settings-section-types";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AdminUsersPlatformPolicyEffectivePolicy } from "./admin-users-platform-policy-effective-policy";
 import { AdminUsersPlatformPolicyProfilesCard } from "./admin-users-platform-policy-profiles-card";
 import { AdminUsersPlatformPolicyQuotaCard } from "./admin-users-platform-policy-quota-card";
 import { AdminUsersPlatformPolicyUserSelector } from "./admin-users-platform-policy-user-selector";
 
-export function AdminUsersPlatformPolicyCard(props: AdminUsersTabProps) {
+export function AdminUsersPlatformPolicyCard(props: AdminUsersSectionProps) {
 	return (
 		<Card>
 			<CardHeader>

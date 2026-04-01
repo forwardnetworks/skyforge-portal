@@ -24,7 +24,7 @@ import type { DataTableColumn } from "./ui/data-table";
 
 type QuickDeployField = keyof QuickDeployTemplate;
 
-export type AdminOverviewTabProps = {
+export type AdminIdentitySectionProps = {
 	authSettings?: AdminAuthSettingsResponse;
 	authSettingsLoading: boolean;
 	authProviderDraft: "local" | "okta";
@@ -51,8 +51,6 @@ export type AdminOverviewTabProps = {
 	onOidcClientSecretChange: (value: string) => void;
 	onOidcRedirectChange: (value: string) => void;
 	onSaveOIDCSettings: () => void;
-	config?: AdminEffectiveConfigResponse;
-	configLoading: boolean;
 	impersonateStatus?: AdminImpersonateStatusResponse;
 	sessionUsername?: string;
 	impersonateUserOptions: string[];
@@ -62,6 +60,40 @@ export type AdminOverviewTabProps = {
 	onImpersonateTargetChange: (value: string) => void;
 	onImpersonateStart: () => void;
 	onImpersonateStop: () => void;
+};
+
+export type AdminIntegrationsSectionProps = {
+	serviceNowGlobalConfig?: AdminServiceNowGlobalConfigResponse;
+	serviceNowGlobalConfigLoading: boolean;
+	serviceNowInstanceURLDraft: string;
+	serviceNowAdminUsernameDraft: string;
+	serviceNowAdminPasswordDraft: string;
+	saveServiceNowGlobalConfigPending: boolean;
+	pushServiceNowForwardConfigPending: boolean;
+	onServiceNowInstanceURLChange: (value: string) => void;
+	onServiceNowAdminUsernameChange: (value: string) => void;
+	onServiceNowAdminPasswordChange: (value: string) => void;
+	onSaveServiceNowGlobalConfig: () => void;
+	onPushServiceNowForwardConfig: () => void;
+	teamsGlobalConfig?: AdminTeamsGlobalConfigResponse;
+	teamsGlobalConfigLoading: boolean;
+	teamsEnabledDraft: boolean;
+	teamsDisplayNameDraft: string;
+	teamsPublicBaseURLDraft: string;
+	teamsInboundSecretDraft: string;
+	teamsTestWebhookURLDraft: string;
+	saveTeamsGlobalConfigPending: boolean;
+	testTeamsOutgoingPending: boolean;
+	onTeamsEnabledChange: (enabled: boolean) => void;
+	onTeamsDisplayNameChange: (value: string) => void;
+	onTeamsPublicBaseURLChange: (value: string) => void;
+	onTeamsInboundSecretChange: (value: string) => void;
+	onTeamsTestWebhookURLChange: (value: string) => void;
+	onSaveTeamsGlobalConfig: () => void;
+	onTestTeamsOutgoing: () => void;
+};
+
+export type AdminForwardSectionProps = {
 	quickDeploySource?: string;
 	quickDeployRepo?: string;
 	quickDeployBranch?: string;
@@ -84,18 +116,6 @@ export type AdminOverviewTabProps = {
 	onAddQuickDeployTemplate: () => void;
 	onAllowedProfilesChange: (index: number, value: string) => void;
 	onSaveQuickDeployCatalog: () => void;
-	serviceNowGlobalConfig?: AdminServiceNowGlobalConfigResponse;
-	serviceNowGlobalConfigLoading: boolean;
-	serviceNowInstanceURLDraft: string;
-	serviceNowAdminUsernameDraft: string;
-	serviceNowAdminPasswordDraft: string;
-	saveServiceNowGlobalConfigPending: boolean;
-	pushServiceNowForwardConfigPending: boolean;
-	onServiceNowInstanceURLChange: (value: string) => void;
-	onServiceNowAdminUsernameChange: (value: string) => void;
-	onServiceNowAdminPasswordChange: (value: string) => void;
-	onSaveServiceNowGlobalConfig: () => void;
-	onPushServiceNowForwardConfig: () => void;
 	forwardDemoSeedCatalog?: AdminForwardDemoSeedCatalogResponse;
 	forwardDemoSeedCatalogLoading: boolean;
 	uploadForwardDemoSeedPending: boolean;
@@ -117,22 +137,6 @@ export type AdminOverviewTabProps = {
 	}) => void;
 	onSaveForwardDemoSeedConfig: (value: { networkName: string }) => void;
 	onDeleteForwardDemoSeed: (seedID: string) => void;
-	teamsGlobalConfig?: AdminTeamsGlobalConfigResponse;
-	teamsGlobalConfigLoading: boolean;
-	teamsEnabledDraft: boolean;
-	teamsDisplayNameDraft: string;
-	teamsPublicBaseURLDraft: string;
-	teamsInboundSecretDraft: string;
-	teamsTestWebhookURLDraft: string;
-	saveTeamsGlobalConfigPending: boolean;
-	testTeamsOutgoingPending: boolean;
-	onTeamsEnabledChange: (enabled: boolean) => void;
-	onTeamsDisplayNameChange: (value: string) => void;
-	onTeamsPublicBaseURLChange: (value: string) => void;
-	onTeamsInboundSecretChange: (value: string) => void;
-	onTeamsTestWebhookURLChange: (value: string) => void;
-	onSaveTeamsGlobalConfig: () => void;
-	onTestTeamsOutgoing: () => void;
 	adminForwardSupportCredentialLoading: boolean;
 	adminForwardSupportCredentialConfigured: boolean;
 	adminForwardSupportUsername: string;
@@ -140,16 +144,14 @@ export type AdminOverviewTabProps = {
 	adminForwardSupportPassword: string;
 	revealAdminForwardSupportCredentialPending: boolean;
 	onRevealAdminForwardSupportCredentialPassword: () => void;
-	hetznerBurstStatus?: AdminHetznerBurstStatusResponse;
-	hetznerBurstStatusLoading: boolean;
-	hetznerBurstRuntimePolicy?: AdminHetznerBurstRuntimePolicyResponse;
-	hetznerBurstRuntimePolicyLoading: boolean;
-	hetznerBurstEnabledDraft: boolean;
-	hetznerBurstProvisioningEnabledDraft: boolean;
-	saveHetznerBurstRuntimePolicyPending: boolean;
-	onHetznerBurstEnabledChange: (enabled: boolean) => void;
-	onHetznerBurstProvisioningEnabledChange: (enabled: boolean) => void;
-	onSaveHetznerBurstRuntimePolicy: () => void;
+};
+
+export type AdminConfigSectionProps = {
+	config?: AdminEffectiveConfigResponse;
+	configLoading: boolean;
+};
+
+export type AdminRuntimeSummaryProps = {
 	adminEphemeralRuntimeSummary?: {
 		total: number;
 		active: number;
@@ -162,7 +164,21 @@ export type AdminOverviewTabProps = {
 	};
 };
 
-export type AdminAuditTabProps = {
+export type AdminRuntimeSectionProps = AdminConfigSectionProps &
+	AdminRuntimeSummaryProps & {
+		hetznerBurstStatus?: AdminHetznerBurstStatusResponse;
+		hetznerBurstStatusLoading: boolean;
+		hetznerBurstRuntimePolicy?: AdminHetznerBurstRuntimePolicyResponse;
+		hetznerBurstRuntimePolicyLoading: boolean;
+		hetznerBurstEnabledDraft: boolean;
+		hetznerBurstProvisioningEnabledDraft: boolean;
+		saveHetznerBurstRuntimePolicyPending: boolean;
+		onHetznerBurstEnabledChange: (enabled: boolean) => void;
+		onHetznerBurstProvisioningEnabledChange: (enabled: boolean) => void;
+		onSaveHetznerBurstRuntimePolicy: () => void;
+	};
+
+export type AdminAuditSectionProps = {
 	auditLimit: string;
 	onAuditLimitChange: (value: string) => void;
 	auditTimestamp?: string;
@@ -171,7 +187,7 @@ export type AdminAuditTabProps = {
 	auditLoading: boolean;
 };
 
-export type AdminTasksTabProps = {
+export type AdminTasksSectionProps = {
 	reconcileQueuedPending: boolean;
 	reconcileRunningPending: boolean;
 	onReconcileQueued: () => void;
@@ -210,7 +226,7 @@ export type AdminTasksTabProps = {
 	onForceFinalizeEphemeralRuntimeNamespace: (namespace: string) => void;
 };
 
-export type AdminUsersTabProps = {
+export type AdminUsersSectionProps = {
 	manageUsername: string;
 	manageInitialRole: string;
 	availableRbacRoles: string[];
@@ -292,9 +308,7 @@ export type AdminUsersTabProps = {
 	};
 	platformPolicyDerivedCapabilities: string[];
 	platformQuotaValidationErrors: Record<
-		| "maxConcurrentLabs"
-		|"maxPersistentLabs"
-		|"maxPersistentHours",
+		"maxConcurrentLabs" | "maxPersistentLabs" | "maxPersistentHours",
 		string
 	>;
 	platformQuotaHasErrors: boolean;

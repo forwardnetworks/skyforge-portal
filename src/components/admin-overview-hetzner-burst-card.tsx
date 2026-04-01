@@ -1,4 +1,4 @@
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminRuntimeSectionProps } from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -23,7 +23,7 @@ function statusVariant(status: string) {
 	}
 }
 
-export function AdminOverviewHetznerBurstCard(props: AdminOverviewTabProps) {
+export function AdminOverviewHetznerBurstCard(props: AdminRuntimeSectionProps) {
 	const status = props.hetznerBurstStatus;
 	const runtime = props.hetznerBurstRuntimePolicy;
 	const loading =

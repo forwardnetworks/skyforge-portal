@@ -1,8 +1,8 @@
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminRuntimeSectionProps } from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
-export function AdminOverviewRuntimePressureCard(props: AdminOverviewTabProps) {
+export function AdminOverviewRuntimePressureCard(props: AdminRuntimeSectionProps) {
 	const summary = props.adminEphemeralRuntimeSummary;
 	if (!summary) return null;
 	return (

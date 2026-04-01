@@ -1,4 +1,4 @@
-import type { AdminOverviewTabProps } from "./admin-settings-tab-types";
+import type { AdminIdentitySectionProps } from "./settings-section-types";
 import { Button } from "./ui/button";
 import {
 	Card,
@@ -17,7 +17,7 @@ import {
 } from "./ui/select";
 import { Skeleton } from "./ui/skeleton";
 
-export function AdminOverviewOIDCCard(props: AdminOverviewTabProps) {
+export function AdminOverviewOIDCCard(props: AdminIdentitySectionProps) {
 	return (
 		<Card>
 			<CardHeader>

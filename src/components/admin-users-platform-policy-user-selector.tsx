@@ -1,4 +1,4 @@
-import type { AdminUsersTabProps } from "./admin-settings-tab-types";
+import type { AdminUsersSectionProps } from "./settings-section-types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -11,7 +11,7 @@ import {
 } from "./ui/select";
 
 type Props = Pick<
-	AdminUsersTabProps,
+	AdminUsersSectionProps,
 	| "platformPolicyUserQuery"
 	| "onPlatformPolicyUserQueryChange"
 	| "platformPolicySearchMatches"
