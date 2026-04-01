@@ -1,8 +1,33 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { emptyGuidedCompositeDraft } from "@/lib/composite-guided-plan";
 import { CompositePlansPageContent } from "./composite-plans-page-content";
 
 function buildPage(overrides: Record<string, unknown> = {}) {
+	const guidedDraft = emptyGuidedCompositeDraft();
+	guidedDraft.id = "plan-1";
+	guidedDraft.name = "terraform-netlab-reference";
+	guidedDraft.workflowInputs = [
+		{ key: "region", value: "us-east-1" },
+		{ key: "netlab_server", value: "user:server-1" },
+	];
+	guidedDraft.workflowInputBindings = [
+		{
+			sourceInput: "region",
+			targetKind: "terraformVar",
+			targetKey: "region",
+			sensitive: false,
+		},
+	];
+	guidedDraft.terraformOutputBindings = [
+		{
+			terraformOutput: "vpn_peer_ip",
+			targetKind: "netlabEnv",
+			targetKey: "VPN_PEER_IP",
+			sensitive: false,
+		},
+	];
+
 	return {
 		createMutation: { isPending: false },
 		updateMutation: { isPending: false },
@@ -13,19 +38,25 @@ function buildPage(overrides: Record<string, unknown> = {}) {
 		selectedPlanId: "",
 		setSelectedPlanId: vi.fn(),
 		userScopes: [{ id: "u-1", name: "scope-1", slug: "scope-1" }],
+		selectedScope: { id: "u-1", name: "scope-1", slug: "scope-1" },
 		selectedUserScopeId: "u-1",
 		navigate: vi.fn(),
+		editorMode: "guided",
+		setEditorMode: vi.fn(),
+		guidedModeReason: "",
 		draft: {
 			id: "plan-1",
 			name: "composite-test",
-			inputsJson: "{}",
+			inputs: [],
 			stages: [],
 			bindings: [],
 			outputs: [],
 		},
 		setDraft: vi.fn(),
-		runInputsJson: "{}",
-		setRunInputsJson: vi.fn(),
+		guidedDraft,
+		setGuidedDraft: vi.fn(),
+		runInputs: [],
+		setRunInputs: vi.fn(),
 		addStage: vi.fn(),
 		removeStage: vi.fn(),
 		addBinding: vi.fn(),
@@ -51,6 +82,21 @@ function buildPage(overrides: Record<string, unknown> = {}) {
 }
 
 describe("CompositePlansPageContent", () => {
+	it("renders the guided terraform-plus-netlab authoring flow", () => {
+		const page = buildPage();
+		render(<CompositePlansPageContent page={page} />);
+
+		expect(screen.getByText("Workflow Inputs")).toBeInTheDocument();
+		expect(screen.getByText("Terraform Output Hand-offs")).toBeInTheDocument();
+		expect(screen.getByText("How Values Flow")).toBeInTheDocument();
+		expect(
+			screen.getByText("workflow.region -> terraform.var.region"),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("terraform.vpn_peer_ip -> netlab.env.VPN_PEER_IP"),
+		).toBeInTheDocument();
+	});
+
 	it("renders composite run history and stage evidence panels", () => {
 		const page = buildPage({
 			compositeRuns: [
@@ -80,7 +126,7 @@ describe("CompositePlansPageContent", () => {
 		expect(screen.getByTestId("composite-run-history")).toBeInTheDocument();
 		expect(screen.getByTestId("composite-run-101")).toBeInTheDocument();
 		expect(screen.getByTestId("composite-stage-evidence")).toBeInTheDocument();
-		expect(screen.getByText(/reserve • baremetal\/reserve/i)).toBeInTheDocument();
+		expect(screen.getByText(/reserve - baremetal\/reserve/i)).toBeInTheDocument();
 	});
 
 	it("selects run from history", () => {

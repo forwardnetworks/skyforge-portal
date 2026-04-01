@@ -20,6 +20,16 @@ import {
 	runUserScopeCompositePlan,
 	updateUserScopeCompositePlan,
 } from "../lib/api-client";
+import {
+	compositePlanToGuidedDraft,
+	emptyGuidedCompositeDraft,
+	guidedDraftToCompositeRequest,
+	keyValueEntriesFromRecord,
+	keyValueRecordFromEntries,
+	type CompositeEditorMode,
+	type GuidedCompositeDraft,
+	type KeyValueEntry,
+} from "../lib/composite-guided-plan";
 import type { TaskLifecycleEntry } from "../lib/run-lifecycle-events";
 import { useRunLifecycleEvents } from "../lib/run-lifecycle-events";
 import { queryKeys } from "../lib/query-keys";
@@ -30,7 +40,7 @@ const LAST_SCOPE_KEY = "skyforge.lastUserScopeId.composite";
 type DraftPlan = {
 	id?: string;
 	name: string;
-	inputsJson: string;
+	inputs: KeyValueEntry[];
 	stages: CompositePlanStage[];
 	bindings: CompositePlanBinding[];
 	outputs: CompositePlanOutputRef[];
@@ -90,7 +100,7 @@ function emptyOutputRef(): CompositePlanOutputRef {
 function emptyDraft(): DraftPlan {
 	return {
 		name: "",
-		inputsJson: "{}",
+		inputs: [],
 		stages: [emptyStage()],
 		bindings: [],
 		outputs: [],
@@ -101,10 +111,15 @@ export function useCompositePlansPage(userId?: string) {
 	const navigate = useNavigate();
 	const qc = useQueryClient();
 	const [selectedPlanId, setSelectedPlanId] = useState("");
+	const [editorMode, setEditorModeState] = useState<CompositeEditorMode>("guided");
+	const [guidedModeReason, setGuidedModeReason] = useState("");
 	const [draft, setDraft] = useState<DraftPlan>(emptyDraft());
+	const [guidedDraft, setGuidedDraft] = useState<GuidedCompositeDraft>(
+		emptyGuidedCompositeDraft(),
+	);
 	const [previewWarnings, setPreviewWarnings] = useState<string[]>([]);
 	const [previewErrors, setPreviewErrors] = useState<string[]>([]);
-	const [runInputsJson, setRunInputsJson] = useState("{}");
+	const [runInputs, setRunInputs] = useState<KeyValueEntry[]>([]);
 	const [selectedRunId, setSelectedRunId] = useState("");
 
 	const sessionQ = useQuery({
@@ -205,8 +220,18 @@ export function useCompositePlansPage(userId?: string) {
 		const selected = plans.find((plan) => plan.id === selectedPlanId);
 		if (!selected) return;
 		setDraft(toDraft(selected));
+		const compatibility = compositePlanToGuidedDraft(selected);
+		if (compatibility.guided) {
+			setGuidedDraft(compatibility.guided);
+			setEditorModeState("guided");
+			setGuidedModeReason("");
+		} else {
+			setGuidedModeReason(compatibility.reason);
+			setEditorModeState("advanced");
+		}
 		setPreviewWarnings([]);
 		setPreviewErrors([]);
+		setRunInputs([]);
 	}, [plans, selectedPlanId]);
 
 	const selectedScope = useMemo(
@@ -214,11 +239,13 @@ export function useCompositePlansPage(userId?: string) {
 		[selectedUserScopeId, userScopes],
 	);
 
+	const buildRequest = () =>
+		editorMode === "guided"
+			? guidedDraftToCompositeRequest(guidedDraft)
+			: draftToRequest(draft);
+
 	const previewMutation = useMutation({
-		mutationFn: async () => {
-			const request = draftToRequest(draft);
-			return previewUserScopeCompositePlan(selectedUserScopeId, request);
-		},
+		mutationFn: async () => previewUserScopeCompositePlan(selectedUserScopeId, buildRequest()),
 		onSuccess: (preview) => {
 			setPreviewWarnings(preview.warnings ?? []);
 			setPreviewErrors([]);
@@ -231,15 +258,10 @@ export function useCompositePlansPage(userId?: string) {
 	});
 
 	const createMutation = useMutation({
-		mutationFn: async () => {
-			const request = draftToRequest(draft);
-			return createUserScopeCompositePlan(selectedUserScopeId, request);
-		},
+		mutationFn: async () => createUserScopeCompositePlan(selectedUserScopeId, buildRequest()),
 		onSuccess: async (plan) => {
 			setSelectedPlanId(plan.id);
-			await qc.invalidateQueries({
-				queryKey: queryKeys.compositePlans(selectedUserScopeId),
-			});
+			await qc.invalidateQueries({ queryKey: queryKeys.compositePlans(selectedUserScopeId) });
 			toast.success("Composite plan created");
 		},
 		onError: (error) => {
@@ -251,14 +273,13 @@ export function useCompositePlansPage(userId?: string) {
 
 	const updateMutation = useMutation({
 		mutationFn: async () => {
-			const request = draftToRequest(draft);
-			if (!draft.id) throw new Error("select a saved plan before updating");
-			return updateUserScopeCompositePlan(selectedUserScopeId, draft.id, request);
+			const request = buildRequest();
+			const planId = String(requestPlanId(editorMode, draft, guidedDraft) ?? "").trim();
+			if (!planId) throw new Error("select a saved plan before updating");
+			return updateUserScopeCompositePlan(selectedUserScopeId, planId, request);
 		},
 		onSuccess: async () => {
-			await qc.invalidateQueries({
-				queryKey: queryKeys.compositePlans(selectedUserScopeId),
-			});
+			await qc.invalidateQueries({ queryKey: queryKeys.compositePlans(selectedUserScopeId) });
 			toast.success("Composite plan updated");
 		},
 		onError: (error) => {
@@ -270,15 +291,17 @@ export function useCompositePlansPage(userId?: string) {
 
 	const deleteMutation = useMutation({
 		mutationFn: async () => {
-			if (!draft.id) throw new Error("select a saved plan before deleting");
-			return deleteUserScopeCompositePlan(selectedUserScopeId, draft.id);
+			const planId = String(requestPlanId(editorMode, draft, guidedDraft) ?? "").trim();
+			if (!planId) throw new Error("select a saved plan before deleting");
+			return deleteUserScopeCompositePlan(selectedUserScopeId, planId);
 		},
 		onSuccess: async () => {
 			setSelectedPlanId("");
 			setDraft(emptyDraft());
-			await qc.invalidateQueries({
-				queryKey: queryKeys.compositePlans(selectedUserScopeId),
-			});
+			setGuidedDraft(emptyGuidedCompositeDraft());
+			setEditorModeState("guided");
+			setGuidedModeReason("");
+			await qc.invalidateQueries({ queryKey: queryKeys.compositePlans(selectedUserScopeId) });
 			toast.success("Composite plan deleted");
 		},
 		onError: (error) => {
@@ -290,24 +313,17 @@ export function useCompositePlansPage(userId?: string) {
 
 	const runMutation = useMutation({
 		mutationFn: async () => {
-			const planId = draft.id?.trim();
+			const planId = String(requestPlanId(editorMode, draft, guidedDraft) ?? "").trim();
 			if (!planId) throw new Error("save the plan before running");
-			const runInputs = parseJsonMap(runInputsJson);
 			return runUserScopeCompositePlan(selectedUserScopeId, planId, {
-				inputs: runInputs,
+				inputs: keyValueRecordFromEntries(runInputs),
 			});
 		},
 		onSuccess: (response) => {
 			const taskId = String(response.task?.id ?? response.task?.taskId ?? "").trim();
-			void qc.invalidateQueries({
-				queryKey: queryKeys.compositeRuns(selectedUserScopeId),
-			});
+			void qc.invalidateQueries({ queryKey: queryKeys.compositeRuns(selectedUserScopeId) });
 			if (taskId) setSelectedRunId(taskId);
-			toast.success(
-				taskId
-					? `Composite run queued (task ${taskId})`
-					: "Composite run queued",
-			);
+			toast.success(taskId ? `Composite run queued (task ${taskId})` : "Composite run queued");
 		},
 		onError: (error) => {
 			toast.error("Failed to run composite plan", {
@@ -315,6 +331,29 @@ export function useCompositePlansPage(userId?: string) {
 			});
 		},
 	});
+
+	const setEditorMode = (mode: CompositeEditorMode) => {
+		if (mode === editorMode) return;
+		if (mode === "advanced") {
+			setDraft(draftFromRequest(buildRequest(), requestPlanId(editorMode, draft, guidedDraft)));
+			setEditorModeState("advanced");
+			return;
+		}
+		const compatibility = compositePlanToGuidedDraft({
+			id: requestPlanId(editorMode, draft, guidedDraft) ?? "",
+			...buildRequest(),
+		});
+		if (!compatibility.guided) {
+			setGuidedModeReason(compatibility.reason);
+			toast.error("Guided mode is not available for this plan", {
+				description: compatibility.reason,
+			});
+			return;
+		}
+		setGuidedDraft(compatibility.guided);
+		setGuidedModeReason("");
+		setEditorModeState("guided");
+	};
 
 	return {
 		navigate,
@@ -333,10 +372,15 @@ export function useCompositePlansPage(userId?: string) {
 		stageEvidence,
 		selectedPlanId,
 		setSelectedPlanId,
+		editorMode,
+		setEditorMode,
+		guidedModeReason,
 		draft,
 		setDraft,
-		runInputsJson,
-		setRunInputsJson,
+		guidedDraft,
+		setGuidedDraft,
+		runInputs,
+		setRunInputs,
 		previewWarnings,
 		previewErrors,
 		previewMutation,
@@ -347,8 +391,12 @@ export function useCompositePlansPage(userId?: string) {
 		newPlan: () => {
 			setSelectedPlanId("");
 			setDraft(emptyDraft());
+			setGuidedDraft(emptyGuidedCompositeDraft());
+			setEditorModeState("guided");
+			setGuidedModeReason("");
 			setPreviewWarnings([]);
 			setPreviewErrors([]);
+			setRunInputs([]);
 		},
 		addStage: () =>
 			setDraft((current) => ({
@@ -388,11 +436,19 @@ export function useCompositePlansPage(userId?: string) {
 	};
 }
 
+function requestPlanId(
+	editorMode: CompositeEditorMode,
+	draft: DraftPlan,
+	guidedDraft: GuidedCompositeDraft,
+): string | undefined {
+	return editorMode === "guided" ? guidedDraft.id : draft.id;
+}
+
 function toDraft(plan: CompositePlanRecord): DraftPlan {
 	return {
 		id: String(plan.id ?? "").trim(),
 		name: String(plan.name ?? "").trim(),
-		inputsJson: JSON.stringify(plan.inputs ?? {}, null, 2),
+		inputs: keyValueEntriesFromRecord(plan.inputs ?? {}),
 		stages: cloneStages(plan.stages ?? []),
 		bindings: cloneBindings(plan.bindings ?? []),
 		outputs: cloneOutputs(plan.outputs ?? []),
@@ -404,7 +460,7 @@ function draftToRequest(draft: DraftPlan) {
 	if (!name) throw new Error("plan name is required");
 	return {
 		name,
-		inputs: parseJsonMap(draft.inputsJson),
+		inputs: keyValueRecordFromEntries(draft.inputs),
 		stages: draft.stages.map(normalizeStage),
 		bindings: draft.bindings.map(normalizeBinding),
 		outputs: draft.outputs
@@ -416,36 +472,22 @@ function draftToRequest(draft: DraftPlan) {
 	};
 }
 
-function parseJsonMap(raw: string): Record<string, string> {
-	const text = String(raw ?? "").trim();
-	if (!text) return {};
-	let parsed: unknown;
-	try {
-		parsed = JSON.parse(text);
-	} catch {
-		throw new Error("invalid JSON object");
-	}
-	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-		throw new Error("inputs must be a JSON object");
-	}
-	const out: Record<string, string> = {};
-	for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-		const nextKey = String(key ?? "").trim();
-		if (!nextKey) continue;
-		out[nextKey] = String(value ?? "").trim();
-	}
-	return out;
+function draftFromRequest(request: ReturnType<typeof draftToRequest>, planId?: string): DraftPlan {
+	return {
+		id: planId ? String(planId).trim() : undefined,
+		name: String(request.name ?? "").trim(),
+		inputs: keyValueEntriesFromRecord(request.inputs ?? {}),
+		stages: cloneStages(request.stages ?? []),
+		bindings: cloneBindings(request.bindings ?? []),
+		outputs: cloneOutputs(request.outputs ?? []),
+	};
 }
 
 function normalizeStage(stage: CompositePlanStage): CompositePlanStage {
 	return {
 		id: String(stage.id ?? "").trim(),
-		provider: String(stage.provider ?? "")
-			.trim()
-			.toLowerCase(),
-		action: String(stage.action ?? "")
-			.trim()
-			.toLowerCase(),
+		provider: String(stage.provider ?? "").trim().toLowerCase(),
+		action: String(stage.action ?? "").trim().toLowerCase(),
 		dependsOn: splitCsv(stage.dependsOn ?? []),
 		inputs: normalizeRecord(stage.inputs ?? {}),
 		outputs: splitCsv(stage.outputs ?? []),
