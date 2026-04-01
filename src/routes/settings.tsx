@@ -12,7 +12,6 @@ import {
 import { useAdminSettingsPage } from "../hooks/use-admin-settings-page";
 import { useUserSettingsPage } from "../hooks/use-user-settings-page";
 import {
-	type LegacySettingsTab,
 	type SettingsSectionId,
 	getAvailableSettingsSections,
 	normalizeSettingsSection,
@@ -38,8 +37,6 @@ const settingsSearchSchema = z.object({
 			"maintenance",
 		])
 		.optional(),
-	panel: z.string().optional(),
-	tab: z.enum(["profile", "admin"]).optional(),
 });
 
 export const Route = createFileRoute("/settings")({
@@ -51,10 +48,9 @@ function SettingsPage() {
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const routeAccess = useCatalogRouteAccess();
-	const canAccessAdminSections = routeAccess.canAccessRoute("/admin/settings");
+	const canAccessAdminSections = routeAccess.canAccessRoute("/admin/");
 	const section = normalizeSettingsSection({
 		section: search.section as SettingsSectionId | undefined,
-		legacyTab: search.tab as LegacySettingsTab | undefined,
 		canAccessAdminSections,
 	});
 	const sections = getAvailableSettingsSections(canAccessAdminSections);

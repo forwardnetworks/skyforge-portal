@@ -23,15 +23,6 @@ describe("settings section helpers", () => {
 		]);
 	});
 
-	it("maps the legacy admin tab to the users section", () => {
-		expect(
-			normalizeSettingsSection({
-				legacyTab: "admin",
-				canAccessAdminSections: true,
-			}),
-		).toBe("users");
-	});
-
 	it("falls back to profile when a user cannot access an admin section", () => {
 		expect(
 			normalizeSettingsSection({
@@ -39,5 +30,14 @@ describe("settings section helpers", () => {
 				canAccessAdminSections: false,
 			}),
 		).toBe("profile");
+	});
+
+	it("preserves the requested admin section when access is allowed", () => {
+		expect(
+			normalizeSettingsSection({
+				section: "users",
+				canAccessAdminSections: true,
+			}),
+		).toBe("users");
 	});
 });

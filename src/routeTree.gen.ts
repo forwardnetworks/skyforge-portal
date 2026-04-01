@@ -22,7 +22,6 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as LoginLocalRouteImport } from './routes/login.local'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as DashboardTeamsRouteImport } from './routes/dashboard/teams'
-import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardServicenowRouteImport } from './routes/dashboard/servicenow'
 import { Route as DashboardS3RouteImport } from './routes/dashboard/s3'
 import { Route as DashboardReservationsRouteImport } from './routes/dashboard/reservations'
@@ -31,7 +30,6 @@ import { Route as DashboardObservabilityRouteImport } from './routes/dashboard/o
 import { Route as DashboardInfobloxRouteImport } from './routes/dashboard/infoblox'
 import { Route as DashboardForwardRouteImport } from './routes/dashboard/forward'
 import { Route as DashboardConfigChangesRouteImport } from './routes/dashboard/config-changes'
-import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as DashboardRunsIndexRouteImport } from './routes/dashboard/runs/index'
 import { Route as DashboardForwardIndexRouteImport } from './routes/dashboard/forward.index'
 import { Route as DashboardForwardAnalyticsIndexRouteImport } from './routes/dashboard/forward-analytics/index'
@@ -119,11 +117,6 @@ const DashboardTeamsRoute = DashboardTeamsRouteImport.update({
   path: '/dashboard/teams',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: '/dashboard/settings',
-  path: '/dashboard/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardServicenowRoute = DashboardServicenowRouteImport.update({
   id: '/dashboard/servicenow',
   path: '/dashboard/servicenow',
@@ -162,11 +155,6 @@ const DashboardForwardRoute = DashboardForwardRouteImport.update({
 const DashboardConfigChangesRoute = DashboardConfigChangesRouteImport.update({
   id: '/dashboard/config-changes',
   path: '/dashboard/config-changes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/admin/settings',
-  path: '/admin/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRunsIndexRoute = DashboardRunsIndexRouteImport.update({
@@ -294,7 +282,6 @@ export interface FileRoutesByFullPath {
   '/snmp': typeof SnmpRoute
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
-  '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/config-changes': typeof DashboardConfigChangesRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
@@ -303,7 +290,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/reservations': typeof DashboardReservationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
@@ -340,7 +326,6 @@ export interface FileRoutesByTo {
   '/snmp': typeof SnmpRoute
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
-  '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/config-changes': typeof DashboardConfigChangesRoute
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
   '/dashboard/observability': typeof DashboardObservabilityRoute
@@ -348,7 +333,6 @@ export interface FileRoutesByTo {
   '/dashboard/reservations': typeof DashboardReservationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
@@ -386,7 +370,6 @@ export interface FileRoutesById {
   '/snmp': typeof SnmpRoute
   '/syslog': typeof SyslogRoute
   '/webhooks': typeof WebhooksRoute
-  '/admin/settings': typeof AdminSettingsRoute
   '/dashboard/config-changes': typeof DashboardConfigChangesRoute
   '/dashboard/forward': typeof DashboardForwardRouteWithChildren
   '/dashboard/infoblox': typeof DashboardInfobloxRoute
@@ -395,7 +378,6 @@ export interface FileRoutesById {
   '/dashboard/reservations': typeof DashboardReservationsRoute
   '/dashboard/s3': typeof DashboardS3Route
   '/dashboard/servicenow': typeof DashboardServicenowRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/teams': typeof DashboardTeamsRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/login/local': typeof LoginLocalRoute
@@ -434,7 +416,6 @@ export interface FileRouteTypes {
     | '/snmp'
     | '/syslog'
     | '/webhooks'
-    | '/admin/settings'
     | '/dashboard/config-changes'
     | '/dashboard/forward'
     | '/dashboard/infoblox'
@@ -443,7 +424,6 @@ export interface FileRouteTypes {
     | '/dashboard/reservations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
-    | '/dashboard/settings'
     | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
@@ -480,7 +460,6 @@ export interface FileRouteTypes {
     | '/snmp'
     | '/syslog'
     | '/webhooks'
-    | '/admin/settings'
     | '/dashboard/config-changes'
     | '/dashboard/infoblox'
     | '/dashboard/observability'
@@ -488,7 +467,6 @@ export interface FileRouteTypes {
     | '/dashboard/reservations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
-    | '/dashboard/settings'
     | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
@@ -525,7 +503,6 @@ export interface FileRouteTypes {
     | '/snmp'
     | '/syslog'
     | '/webhooks'
-    | '/admin/settings'
     | '/dashboard/config-changes'
     | '/dashboard/forward'
     | '/dashboard/infoblox'
@@ -534,7 +511,6 @@ export interface FileRouteTypes {
     | '/dashboard/reservations'
     | '/dashboard/s3'
     | '/dashboard/servicenow'
-    | '/dashboard/settings'
     | '/dashboard/teams'
     | '/docs/$slug'
     | '/login/local'
@@ -572,7 +548,6 @@ export interface RootRouteChildren {
   SnmpRoute: typeof SnmpRoute
   SyslogRoute: typeof SyslogRoute
   WebhooksRoute: typeof WebhooksRoute
-  AdminSettingsRoute: typeof AdminSettingsRoute
   DashboardConfigChangesRoute: typeof DashboardConfigChangesRoute
   DashboardForwardRoute: typeof DashboardForwardRouteWithChildren
   DashboardInfobloxRoute: typeof DashboardInfobloxRoute
@@ -581,7 +556,6 @@ export interface RootRouteChildren {
   DashboardReservationsRoute: typeof DashboardReservationsRoute
   DashboardS3Route: typeof DashboardS3Route
   DashboardServicenowRoute: typeof DashboardServicenowRoute
-  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardTeamsRoute: typeof DashboardTeamsRoute
   DocsSlugRoute: typeof DocsSlugRoute
   LoginLocalRoute: typeof LoginLocalRoute
@@ -701,13 +675,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTeamsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/settings': {
-      id: '/dashboard/settings'
-      path: '/dashboard/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof DashboardSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/servicenow': {
       id: '/dashboard/servicenow'
       path: '/dashboard/servicenow'
@@ -762,13 +729,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/config-changes'
       fullPath: '/dashboard/config-changes'
       preLoaderRoute: typeof DashboardConfigChangesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/admin/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/runs/': {
@@ -944,7 +904,6 @@ const rootRouteChildren: RootRouteChildren = {
   SnmpRoute: SnmpRoute,
   SyslogRoute: SyslogRoute,
   WebhooksRoute: WebhooksRoute,
-  AdminSettingsRoute: AdminSettingsRoute,
   DashboardConfigChangesRoute: DashboardConfigChangesRoute,
   DashboardForwardRoute: DashboardForwardRouteWithChildren,
   DashboardInfobloxRoute: DashboardInfobloxRoute,
@@ -953,7 +912,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardReservationsRoute: DashboardReservationsRoute,
   DashboardS3Route: DashboardS3Route,
   DashboardServicenowRoute: DashboardServicenowRoute,
-  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardTeamsRoute: DashboardTeamsRoute,
   DocsSlugRoute: DocsSlugRoute,
   LoginLocalRoute: LoginLocalRoute,

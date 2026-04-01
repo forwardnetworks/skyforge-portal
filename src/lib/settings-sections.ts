@@ -50,7 +50,6 @@ export const settingsSections = [
 ] as const;
 
 export type SettingsSectionId = (typeof settingsSections)[number]["id"];
-export type LegacySettingsTab = "profile" | "admin";
 export type SettingsSectionDefinition = (typeof settingsSections)[number];
 
 export function getAvailableSettingsSections(
@@ -61,26 +60,20 @@ export function getAvailableSettingsSections(
 	);
 }
 
-export function getDefaultSettingsSection(
-	canAccessAdminSections: boolean,
-): SettingsSectionId {
-	return canAccessAdminSections ? "profile" : "profile";
+export function getDefaultSettingsSection(): SettingsSectionId {
+	return "profile";
 }
 
 export function normalizeSettingsSection(args: {
 	section?: SettingsSectionId;
-	legacyTab?: LegacySettingsTab;
 	canAccessAdminSections: boolean;
 }): SettingsSectionId {
-	const { section, legacyTab, canAccessAdminSections } = args;
+	const { section, canAccessAdminSections } = args;
 	if (section) {
 		const matched = settingsSections.find((entry) => entry.id === section);
 		if (matched && (!matched.adminOnly || canAccessAdminSections)) {
 			return matched.id;
 		}
 	}
-	if (legacyTab === "admin" && canAccessAdminSections) {
-		return "users";
-	}
-	return getDefaultSettingsSection(canAccessAdminSections);
+	return getDefaultSettingsSection();
 }
