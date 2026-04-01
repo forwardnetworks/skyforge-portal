@@ -2,8 +2,56 @@ import { apiFetch } from "./http";
 import type { operations } from "./openapi.gen";
 import { setRuntimeAuthMode, setRuntimeAuthProvider } from "./skyforge-config";
 
-export type AdminEffectiveConfigResponse =
-	operations["GET:skyforge.GetAdminEffectiveConfig"]["responses"][200]["content"]["application/json"];
+export type AdminEffectiveConfigResponse = {
+	publicUrl: string;
+	publicTunnel: {
+		provider: string;
+		hostnames?: string[];
+		directGatewayClass: string;
+		cloudflare: {
+			controllerImage?: string;
+			controllerName?: string;
+			controllerNamespace?: string;
+			gatewayClassName?: string;
+			gatewayName?: string;
+			credentialsSecretName?: string;
+			credentialsAccountIdKey?: string;
+			credentialsApiTokenKey?: string;
+		};
+	};
+	flags: {
+		taskWorkerEnabled: boolean;
+		notificationsEnabled: boolean;
+		disableEncoreCache: boolean;
+	};
+	netlab: {
+		mode: string;
+		image: string;
+		pullPolicy: string;
+	};
+	objectStorage: {
+		endpoint: string;
+		useSsl: boolean;
+	};
+	integrations: {
+		giteaBaseUrl: string;
+		netboxBaseUrl: string;
+		nautobotBaseUrl: string;
+		infobloxBaseUrl: string;
+		jiraBaseUrl: string;
+		rapid7BaseUrl: string;
+		elkBaseUrl: string;
+		yaadeBaseUrl: string;
+	};
+	forwardCollector: {
+		image: string;
+		pullPolicy: string;
+		imagePullSecretName: string;
+		imagePullSecretNamespace: string;
+		heapSizeGb: number;
+	};
+	missing?: string[];
+};
 export async function getAdminEffectiveConfig(): Promise<AdminEffectiveConfigResponse> {
 	return apiFetch<AdminEffectiveConfigResponse>("/api/admin/config");
 }
