@@ -200,6 +200,8 @@ export const queryKeys = {
 	adminEphemeralRuntimes: () => ["adminEphemeralRuntimes"] as const,
 	adminPlatformOverview: () => ["adminPlatformOverview"] as const,
 	adminPlatformRuntimePolicy: () => ["adminPlatformRuntimePolicy"] as const,
+	adminHetznerBurstStatus: () => ["adminHetznerBurstStatus"] as const,
+	adminHetznerBurstRuntimePolicy: () => ["adminHetznerBurstRuntimePolicy"] as const,
 	adminPlatformReservations: () => ["adminPlatformReservations"] as const,
 	adminPlatformUserPolicy: (username: string) =>
 		["adminPlatformUserPolicy", username] as const,

@@ -274,6 +274,68 @@ export async function putAdminPlatformUserQuota(
 	);
 }
 
+
+export type AdminHetznerBurstResource = {
+	resourceKey: string;
+	kind: string;
+	name: string;
+	hcloudId?: number;
+	status: string;
+	lastError?: string;
+	detailsJson?: string;
+	lastReconciledAt?: string;
+	updatedAt?: string;
+};
+
+export type AdminHetznerBurstStatusResponse = {
+	enabled: boolean;
+	provisioningEnabled: boolean;
+	provider: string;
+	poolClass: string;
+	location?: string;
+	networkZone?: string;
+	desiredReplicas: number;
+	readyBurstNodes: number;
+	managedWorkerCount: number;
+	bootstrapReady: boolean;
+	resources?: AdminHetznerBurstResource[];
+};
+
+export type AdminHetznerBurstRuntimePolicyResponse = {
+	enabled: boolean;
+	provisioningEnabled: boolean;
+	updatedAt?: string;
+};
+
+export type PutAdminHetznerBurstRuntimePolicyRequest = {
+	enabled: boolean;
+	provisioningEnabled: boolean;
+};
+
+export async function getAdminHetznerBurstStatus(): Promise<AdminHetznerBurstStatusResponse> {
+	return apiFetch<AdminHetznerBurstStatusResponse>(
+		"/api/admin/platform/hetzner-burst",
+	);
+}
+
+export async function getAdminHetznerBurstRuntimePolicy(): Promise<AdminHetznerBurstRuntimePolicyResponse> {
+	return apiFetch<AdminHetznerBurstRuntimePolicyResponse>(
+		"/api/admin/platform/hetzner-burst/runtime-policy",
+	);
+}
+
+export async function putAdminHetznerBurstRuntimePolicy(
+	body: PutAdminHetznerBurstRuntimePolicyRequest,
+): Promise<AdminHetznerBurstRuntimePolicyResponse> {
+	return apiFetch<AdminHetznerBurstRuntimePolicyResponse>(
+		"/api/admin/platform/hetzner-burst/runtime-policy",
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
 export type AdminForwardTenantResetRunsResponse =
 	operations["GET:skyforge.ListAdminForwardTenantRebuildRuns"]["responses"][200]["content"]["application/json"];
 export type AdminForwardTenantResetRun =

@@ -3,6 +3,7 @@ import { AdminOverviewConfigCard } from "./admin-overview-config-card";
 import { AdminOverviewPublicAccessCard } from "./admin-overview-public-access-card";
 import { AdminOverviewForwardDemoSeedsCard } from "./admin-overview-forward-demo-seeds-card";
 import { AdminOverviewForwardSupportCard } from "./admin-overview-forward-support-card";
+import { AdminOverviewHetznerBurstCard } from "./admin-overview-hetzner-burst-card";
 import { AdminOverviewImpersonationCard } from "./admin-overview-impersonation-card";
 import { AdminOverviewOIDCCard } from "./admin-overview-oidc-card";
 import { AdminOverviewQuickDeployCard } from "./admin-overview-quick-deploy-card";
@@ -20,6 +21,7 @@ export function AdminOverviewTab(props: AdminOverviewTabProps) {
 			<AdminOverviewServiceNowCard {...props} />
 			<AdminOverviewTeamsCard {...props} />
 			<AdminOverviewForwardSupportCard {...props} />
+			<AdminOverviewHetznerBurstCard {...props} />
 			<AdminOverviewRuntimePressureCard {...props} />
 			<AdminOverviewPublicAccessCard {...props} />
 			<AdminOverviewForwardDemoSeedsCard {...props} />

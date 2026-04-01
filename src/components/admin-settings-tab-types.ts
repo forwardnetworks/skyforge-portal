@@ -7,6 +7,8 @@ import type {
 	AdminOIDCSettingsResponse,
 	AdminForwardTenantResetRun,
 	AdminForwardDemoSeedCatalogResponse,
+	AdminHetznerBurstStatusResponse,
+	AdminHetznerBurstRuntimePolicyResponse,
 	AdminEphemeralRuntimeCleanupResponse,
 	AdminEphemeralRuntimeFinalizeResponse,
 	AdminEphemeralRuntimeNamespaceRecord,
@@ -138,6 +140,16 @@ export type AdminOverviewTabProps = {
 	adminForwardSupportPassword: string;
 	revealAdminForwardSupportCredentialPending: boolean;
 	onRevealAdminForwardSupportCredentialPassword: () => void;
+	hetznerBurstStatus?: AdminHetznerBurstStatusResponse;
+	hetznerBurstStatusLoading: boolean;
+	hetznerBurstRuntimePolicy?: AdminHetznerBurstRuntimePolicyResponse;
+	hetznerBurstRuntimePolicyLoading: boolean;
+	hetznerBurstEnabledDraft: boolean;
+	hetznerBurstProvisioningEnabledDraft: boolean;
+	saveHetznerBurstRuntimePolicyPending: boolean;
+	onHetznerBurstEnabledChange: (enabled: boolean) => void;
+	onHetznerBurstProvisioningEnabledChange: (enabled: boolean) => void;
+	onSaveHetznerBurstRuntimePolicy: () => void;
 	adminEphemeralRuntimeSummary?: {
 		total: number;
 		active: number;

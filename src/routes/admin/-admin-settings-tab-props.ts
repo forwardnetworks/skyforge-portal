@@ -128,6 +128,21 @@ export function buildAdminOverviewTabProps(
 			page.revealAdminForwardSupportCredentialMutation.isPending,
 			onRevealAdminForwardSupportCredentialPassword: () =>
 				page.revealAdminForwardSupportCredentialMutation.mutate(),
+		hetznerBurstStatus: page.hetznerBurstStatusQ.data,
+		hetznerBurstStatusLoading: page.hetznerBurstStatusQ.isLoading,
+		hetznerBurstRuntimePolicy: page.hetznerBurstRuntimePolicyQ.data,
+		hetznerBurstRuntimePolicyLoading:
+			page.hetznerBurstRuntimePolicyQ.isLoading,
+		hetznerBurstEnabledDraft: page.hetznerBurstEnabledDraft,
+		hetznerBurstProvisioningEnabledDraft:
+			page.hetznerBurstProvisioningEnabledDraft,
+		saveHetznerBurstRuntimePolicyPending:
+			page.saveHetznerBurstRuntimePolicy.isPending,
+		onHetznerBurstEnabledChange: page.setHetznerBurstEnabledDraft,
+		onHetznerBurstProvisioningEnabledChange:
+			page.setHetznerBurstProvisioningEnabledDraft,
+		onSaveHetznerBurstRuntimePolicy: () =>
+			page.saveHetznerBurstRuntimePolicy.mutate(),
 			adminEphemeralRuntimeSummary: {
 				total: page.adminEphemeralRuntimesQ.data?.total ?? 0,
 				active: page.adminEphemeralRuntimesQ.data?.active ?? 0,

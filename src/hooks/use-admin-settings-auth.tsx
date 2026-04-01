@@ -3,6 +3,8 @@ import {
 	getAdminAuthSettings,
 	getAdminEffectiveConfig,
 	getAdminForwardDemoSeedCatalog,
+	getAdminHetznerBurstRuntimePolicy,
+	getAdminHetznerBurstStatus,
 	getAdminOIDCSettings,
 	getAdminQuickDeployCatalog,
 	getAdminQuickDeployTemplateOptions,
@@ -11,8 +13,9 @@ import {
 	getUserScopeNetlabTemplates,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
-import { useAdminSettingsAuthLocal } from "./use-admin-settings-auth-local";
 import { useAdminSettingsAuthForwardDemoSeeds } from "./use-admin-settings-auth-forward-demo-seeds";
+import { useAdminSettingsAuthHetznerBurst } from "./use-admin-settings-auth-hetzner-burst";
+import { useAdminSettingsAuthLocal } from "./use-admin-settings-auth-local";
 import { useAdminSettingsAuthOIDC } from "./use-admin-settings-auth-oidc";
 import { useAdminSettingsAuthQuickDeploy } from "./use-admin-settings-auth-quick-deploy";
 import { useAdminSettingsAuthServiceNow } from "./use-admin-settings-auth-servicenow";
@@ -90,6 +93,19 @@ export function useAdminSettingsAuth({
 		staleTime: 15_000,
 		retry: false,
 	});
+	const hetznerBurstStatusQ = useQuery({
+		queryKey: queryKeys.adminHetznerBurstStatus(),
+		queryFn: getAdminHetznerBurstStatus,
+		staleTime: 15_000,
+		retry: false,
+	});
+	const hetznerBurstRuntimePolicyQ = useQuery({
+		queryKey: queryKeys.adminHetznerBurstRuntimePolicy(),
+		queryFn: getAdminHetznerBurstRuntimePolicy,
+		staleTime: 15_000,
+		retry: false,
+	});
+
 	const authLocal = useAdminSettingsAuthLocal({
 		queryClient,
 		authSettings: authSettingsQ.data,
@@ -122,6 +138,12 @@ export function useAdminSettingsAuth({
 		teamsGlobalConfig: teamsGlobalConfigQ.data,
 		refetchTeamsGlobalConfig: teamsGlobalConfigQ.refetch,
 	});
+	const hetznerBurst = useAdminSettingsAuthHetznerBurst({
+		queryClient,
+		runtimePolicy: hetznerBurstRuntimePolicyQ.data,
+		refetchRuntimePolicy: hetznerBurstRuntimePolicyQ.refetch,
+		refetchStatus: hetznerBurstStatusQ.refetch,
+	});
 
 	return {
 		cfgQ,
@@ -139,5 +161,8 @@ export function useAdminSettingsAuth({
 		...forwardDemoSeeds,
 		teamsGlobalConfigQ,
 		...teams,
+		hetznerBurstStatusQ,
+		hetznerBurstRuntimePolicyQ,
+		...hetznerBurst,
 	};
 }
