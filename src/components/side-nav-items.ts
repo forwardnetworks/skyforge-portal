@@ -120,6 +120,8 @@ function navEntryItem(entry: ToolNavigationEntry): NavItem {
 		label: String(entry.label).trim(),
 		href: entry.navigationHref,
 		icon: toolNavIcon(entry.navigationIcon),
+		external: String(entry.navigationMode ?? "").trim() === "direct",
+		newTab: String(entry.launchMode ?? "").trim() === "new_tab",
 		featureFlag: entry.featureFlag as keyof Features | undefined,
 		allowed: entry.allowed,
 		experience:

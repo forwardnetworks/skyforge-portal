@@ -14,6 +14,8 @@ export type ToolNavigationEntry = {
 	navigationOrder: number;
 	navigationIcon: string;
 	navigationHref: string;
+	navigationMode?: string;
+	launchMode?: string;
 	experience: string;
 	displayMode?: string;
 	featureFlag?: string;
