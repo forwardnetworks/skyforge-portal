@@ -5,7 +5,7 @@ import { LabDesignerLinkEditor } from "@/components/lab-designer-selection-edito
 function SelectionEmptyPanel({ message }: { message: string }) {
 	return (
 		<div className="space-y-4 pt-3">
-			<div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">
+			<div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
 				{message}
 			</div>
 		</div>

@@ -36,7 +36,7 @@ type Props = {
 export function LabDesignerQuickstartDialog(props: Props) {
 	return (
 		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent>
+			<DialogContent className="border-border/70 bg-card/95 sm:max-w-4xl">
 				<DialogHeader>
 					<DialogTitle>Quickstart: Generate CLOS</DialogTitle>
 					<DialogDescription>
@@ -46,14 +46,14 @@ export function LabDesignerQuickstartDialog(props: Props) {
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-4">
-					<div className="space-y-1">
+					<div className="space-y-1 rounded-2xl border border-border bg-muted/20 p-3">
 						<Label>Lab name</Label>
 						<Input
 							value={props.qsName}
 							onChange={(e) => props.onQsNameChange(e.target.value)}
 						/>
 					</div>
-					<div className="grid grid-cols-3 gap-3">
+					<div className="grid grid-cols-3 gap-3 rounded-2xl border border-border bg-muted/20 p-3">
 						<div className="space-y-1">
 							<Label>Spines</Label>
 							<Input
@@ -92,8 +92,8 @@ export function LabDesignerQuickstartDialog(props: Props) {
 						</div>
 					</div>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div className="space-y-3">
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+						<div className="space-y-3 rounded-2xl border border-border bg-muted/20 p-3">
 							<div className="space-y-1">
 								<Label>Switch kind</Label>
 								<Input
@@ -107,7 +107,7 @@ export function LabDesignerQuickstartDialog(props: Props) {
 								onChange={props.onQsSwitchImageChange}
 							/>
 						</div>
-						<div className="space-y-3">
+						<div className="space-y-3 rounded-2xl border border-border bg-muted/20 p-3">
 							<div className="space-y-1">
 								<Label>Host kind</Label>
 								<Input

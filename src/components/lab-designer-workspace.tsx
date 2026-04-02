@@ -6,11 +6,11 @@ import type { LabDesignerWorkspaceProps } from "./lab-designer-workspace-types";
 
 export function LabDesignerWorkspace(props: LabDesignerWorkspaceProps) {
 	return (
-		<div className="flex min-h-0 flex-col rounded-2xl border border-slate-200/70 bg-white/85 p-3">
+		<div className="flex min-h-0 flex-col rounded-2xl border border-border/70 bg-card/85 p-3 dark:bg-card/95">
 			<div className="flex items-center justify-between gap-3 pb-3">
 				<div>
-					<div className="text-sm font-semibold text-slate-950">Canvas</div>
-					<div className="text-xs text-slate-500">
+					<div className="text-sm font-semibold text-foreground">Canvas</div>
+					<div className="text-xs text-muted-foreground">
 						Palette-driven topology editing with explicit interfaces.
 					</div>
 				</div>

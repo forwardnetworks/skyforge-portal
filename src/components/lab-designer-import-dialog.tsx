@@ -40,7 +40,7 @@ type Props = {
 export function LabDesignerImportDialog(props: Props) {
 	return (
 		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent>
+			<DialogContent className="border-border/70 bg-card/95 sm:max-w-3xl">
 				<DialogHeader>
 					<DialogTitle>Import template</DialogTitle>
 					<DialogDescription>
@@ -48,8 +48,8 @@ export function LabDesignerImportDialog(props: Props) {
 						the editor.
 					</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-3">
-					<div className="grid grid-cols-2 gap-3">
+				<div className="space-y-4">
+					<div className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-muted/30 p-3">
 						<div className="space-y-1">
 							<Label>Source</Label>
 							<Select
@@ -76,7 +76,7 @@ export function LabDesignerImportDialog(props: Props) {
 						</div>
 					</div>
 
-					<div className="space-y-1">
+					<div className="space-y-1 rounded-2xl border border-border bg-muted/20 p-3">
 						<Label>Template</Label>
 						<Select
 							value={props.importFile}
@@ -105,7 +105,7 @@ export function LabDesignerImportDialog(props: Props) {
 						) : null}
 					</div>
 
-					<div className="space-y-1">
+					<div className="space-y-1 rounded-2xl border border-border bg-muted/20 p-3">
 						<Label>Preview</Label>
 						<Textarea
 							value={props.templatePreview}

@@ -194,6 +194,7 @@ function EmbeddedToolPage() {
 		runtimeStatus?.status === "starting"
 	) {
 		const waitingForWake = runtimeStatus.status === "starting";
+		const wakeBlocked = !waitingForWake && wakeAction?.allowed === false;
 		return (
 			<div className="p-6">
 				<Card className="max-w-2xl">
@@ -202,7 +203,9 @@ function EmbeddedToolPage() {
 						<CardDescription>
 							{waitingForWake
 								? `${toolDef.title} is starting.`
-								: `${toolDef.title} is in standby and is being started automatically.`}
+								: wakeBlocked
+									? `${toolDef.title} is in standby.`
+									: `${toolDef.title} is in standby and is being started automatically.`}
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">

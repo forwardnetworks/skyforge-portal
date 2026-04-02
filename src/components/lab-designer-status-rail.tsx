@@ -13,12 +13,12 @@ export function LabDesignerStatusRail({
 	selectedEdge: SelectedEdge;
 }) {
 	return (
-		<div className="grid gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+		<div className="grid gap-3 rounded-2xl border border-border/70 bg-card/80 p-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr] dark:bg-card/95">
 			<div className="space-y-1">
-				<div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+				<div className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
 					Status
 				</div>
-				<div className="flex items-center gap-2 text-sm text-slate-900">
+				<div className="flex items-center gap-2 text-sm text-foreground">
 					{page.lastValidation?.valid ? (
 						<CheckCircle2 className="h-4 w-4 text-emerald-600" />
 					) : (
@@ -30,10 +30,10 @@ export function LabDesignerStatusRail({
 				</div>
 			</div>
 			<div className="space-y-1">
-				<div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+				<div className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
 					Selection
 				</div>
-				<div className="text-sm text-slate-900">
+				<div className="text-sm text-foreground">
 					{page.selectedNode
 						? `Node ${String(page.selectedNode.data?.label ?? page.selectedNode.id)}`
 						: selectedEdge
@@ -42,20 +42,20 @@ export function LabDesignerStatusRail({
 				</div>
 			</div>
 			<div className="space-y-1">
-				<div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+				<div className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
 					Warnings
 				</div>
-				<div className="text-sm text-slate-900">
+				<div className="text-sm text-foreground">
 					{(page.lastValidation?.warnings?.length ?? 0) +
 						page.missingImageWarnings.length +
 						page.otherWarnings.length}
 				</div>
 			</div>
 			<div className="space-y-1">
-				<div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+				<div className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
 					Deploy target
 				</div>
-				<div className="text-sm text-slate-900">
+				<div className="text-sm text-foreground">
 					KNE in-cluster
 				</div>
 			</div>

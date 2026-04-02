@@ -12,10 +12,10 @@ function LabDesignerYamlModeControls({ page }: { page: LabDesignerInspectorPageS
 	return (
 		<div className="flex items-center justify-between gap-3">
 			<div>
-				<div className="text-sm font-semibold text-slate-900">
+				<div className="text-sm font-semibold text-foreground">
 					Normalized topology
 				</div>
-				<div className="text-xs text-slate-500">
+				<div className="text-xs text-muted-foreground">
 					Save and deploy use this same normalized path.
 				</div>
 			</div>
@@ -59,7 +59,7 @@ function LabDesignerYamlWarnings({ page }: { page: LabDesignerInspectorPageState
 	return (
 		<>
 			{page.lastValidation?.warnings?.length ? (
-				<div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-950">
+				<div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-950 dark:text-amber-100">
 					<div className="mb-2 flex items-center gap-2 font-medium">
 						<AlertTriangle className="h-4 w-4" />
 						Validation warnings
@@ -72,7 +72,7 @@ function LabDesignerYamlWarnings({ page }: { page: LabDesignerInspectorPageState
 				</div>
 			) : null}
 			{page.lastValidation?.errors?.length ? (
-				<div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-950">
+				<div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-950 dark:text-red-100">
 					<div className="mb-2 flex items-center gap-2 font-medium">
 						<AlertTriangle className="h-4 w-4" />
 						Blocking errors
@@ -85,7 +85,7 @@ function LabDesignerYamlWarnings({ page }: { page: LabDesignerInspectorPageState
 				</div>
 			) : null}
 			{page.showWarnings && page.missingImageWarnings.length > 0 ? (
-				<div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-950">
+				<div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-950 dark:text-amber-100">
 					<div className="mb-2 flex items-center gap-2 font-medium">
 						<AlertTriangle className="h-4 w-4" />
 						Designer warnings

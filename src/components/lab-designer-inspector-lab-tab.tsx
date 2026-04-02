@@ -24,7 +24,7 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 					onChange={(e) => page.setDefaultKind(e.target.value)}
 					placeholder="ceos, linux, n9kv..."
 				/>
-				<div className="text-xs text-slate-500">
+				<div className="text-xs text-muted-foreground">
 					Used as fallback node `device` when a node does not set one
 					explicitly.
 				</div>
@@ -92,16 +92,16 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 						Open map
 					</Button>
 				</div>
-				<div className="font-mono text-xs text-slate-500">
+				<div className="font-mono text-xs text-muted-foreground">
 					{page.effectiveTemplatesDir}/{page.effectiveTemplateFile}
 				</div>
 			</div>
 
-			<div className="space-y-3 rounded-2xl border border-slate-200 p-3">
+			<div className="space-y-3 rounded-2xl border border-border p-3">
 				<div className="flex items-center justify-between gap-3">
 					<div>
 						<div className="text-sm font-medium">Deployment behavior</div>
-						<div className="text-xs text-slate-500">
+						<div className="text-xs text-muted-foreground">
 							Same validated topology drives save and deploy.
 						</div>
 					</div>
@@ -109,7 +109,7 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 				<div className="flex items-center justify-between gap-3">
 					<div className="min-w-0">
 						<div className="text-sm font-medium">Use saved config</div>
-						<div className="truncate text-xs text-slate-500">
+						<div className="truncate text-xs text-muted-foreground">
 							{page.lastSaved?.userId === page.userId
 								? `${page.lastSaved.filePath} (${page.lastSaved.branch})`
 								: "Validate and save before deploy"}
@@ -125,7 +125,7 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 						<div className="text-sm font-medium">
 							Open deployment on create
 						</div>
-						<div className="text-xs text-slate-500">Keep the designer open in this tab.</div>
+						<div className="text-xs text-muted-foreground">Keep the designer open in this tab.</div>
 					</div>
 					<Switch
 						checked={page.openDeploymentOnCreate}

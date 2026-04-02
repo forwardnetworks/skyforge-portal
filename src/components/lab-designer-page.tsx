@@ -13,24 +13,24 @@ function validationTone(page: ReturnType<typeof useLabDesignerPage>) {
 	if (page.validateTopology.isPending) {
 		return {
 			label: "Validating",
-			className: "border-amber-500/40 bg-amber-500/10 text-amber-950",
+			className: "border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100",
 		};
 	}
 	if (page.lastValidation?.valid === false) {
 		return {
 			label: "Needs fixes",
-			className: "border-red-500/40 bg-red-500/10 text-red-950",
+			className: "border-red-500/40 bg-red-500/10 text-red-950 dark:text-red-100",
 		};
 	}
 	if (page.lastValidation?.valid) {
 		return {
 			label: "Validated",
-			className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-950",
+			className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100",
 		};
 	}
 	return {
 		label: "Draft",
-		className: "border-slate-400/30 bg-slate-500/10 text-slate-900",
+		className: "border-border bg-muted/60 text-foreground",
 	};
 }
 
@@ -40,12 +40,12 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 	const validation = validationTone(page);
 
 	return (
-		<div className="flex h-full min-h-0 w-full flex-col gap-4 bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.08),transparent_28%),radial-gradient(circle_at_top_right,rgba(234,179,8,0.08),transparent_24%)] p-4">
-			<Card className="overflow-hidden border-slate-200/70 bg-white/90 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.45)] backdrop-blur">
+		<div className="flex h-full min-h-0 w-full flex-col gap-4 bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.08),transparent_28%),radial-gradient(circle_at_top_right,rgba(234,179,8,0.08),transparent_24%)] p-4 dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(250,204,21,0.08),transparent_24%)]">
+			<Card className="overflow-hidden border-border/70 bg-card/90 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:bg-card/95">
 				<CardContent className="flex flex-col gap-4 p-4">
 					<LabDesignerCommandBar page={page} validation={validation} />
 
-					<div className="grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-950/[0.02] p-3 lg:grid-cols-[minmax(0,1fr)_380px]">
+					<div className="grid gap-3 rounded-2xl border border-border/70 bg-muted/30 p-3 lg:grid-cols-[minmax(0,1fr)_380px] dark:bg-muted/20">
 						<LabDesignerWorkspace
 							snapToGrid={page.snapToGrid}
 							onSnapToGridChange={page.setSnapToGrid}
@@ -101,7 +101,7 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 							rfInstance={page.rfInstance}
 						/>
 
-						<Card className="min-h-0 border-slate-200/70 bg-white/85">
+						<Card className="min-h-0 border-border/70 bg-card/85 dark:bg-card/95">
 							<CardContent className="flex h-full min-h-0 flex-col p-3">
 								<LabDesignerInspectorTabs
 									page={page}

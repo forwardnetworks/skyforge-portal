@@ -16,10 +16,10 @@ function NodeEditorHeader({ page }: LabDesignerNodeEditorProps) {
 	return (
 		<div className="flex items-center justify-between gap-3">
 			<div>
-				<div className="text-sm font-semibold text-slate-900">
+				<div className="text-sm font-semibold text-foreground">
 					{String(page.selectedNode?.data?.label ?? page.selectedNode?.id)}
 				</div>
-				<div className="text-xs text-slate-500">Graph node editor</div>
+				<div className="text-xs text-muted-foreground">Graph node editor</div>
 			</div>
 			{page.selectedNode?.data?.status ? (
 				<Badge variant="outline">{page.selectedNode.data.status}</Badge>

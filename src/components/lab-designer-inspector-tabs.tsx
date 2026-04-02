@@ -15,7 +15,7 @@ export function LabDesignerInspectorTabs({
 }: LabDesignerInspectorTabsProps) {
 	return (
 		<Tabs defaultValue="lab" className="flex h-full min-h-0 flex-col">
-			<TabsList className="grid w-full grid-cols-4 bg-slate-100">
+			<TabsList className="grid w-full grid-cols-4 bg-muted text-muted-foreground">
 				<TabsTrigger value="lab">Lab</TabsTrigger>
 				<TabsTrigger value="node">Node</TabsTrigger>
 				<TabsTrigger value="link">Link</TabsTrigger>

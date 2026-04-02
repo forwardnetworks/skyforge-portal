@@ -31,18 +31,18 @@ export function LabDesignerCommandBar({
 					<Badge variant="outline" className={validation.className}>
 						{validation.label}
 					</Badge>
-					<Badge variant="outline" className="bg-slate-500/5">
+					<Badge variant="outline" className="bg-muted/60 text-foreground">
 						KNE workbench
 					</Badge>
-					<Badge variant="outline" className="bg-slate-500/5">
+					<Badge variant="outline" className="bg-muted/60 text-foreground">
 						In-cluster runtime
 					</Badge>
 				</div>
 				<div>
-					<div className="font-serif text-3xl tracking-tight text-slate-950">
+					<div className="font-serif text-3xl tracking-tight text-foreground">
 						Lab Designer
 					</div>
-					<div className="max-w-3xl text-sm text-slate-600">
+					<div className="max-w-3xl text-sm text-muted-foreground">
 						Graph-first KNE editing with one validation contract for
 						preview, save, and deploy. YAML remains available, but it is no
 						longer the primary editing surface.

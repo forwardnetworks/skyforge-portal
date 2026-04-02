@@ -159,6 +159,9 @@ export const queryKeys = {
 	userTeamsConfig: () => ["userTeamsConfig"] as const,
 	storageFiles: () => ["storageFiles"] as const,
 	userArtifacts: (userId: string) => ["userArtifacts", userId] as const,
+	adminObjectStoreBuckets: () => ["adminObjectStoreBuckets"] as const,
+	adminObjectStoreObjects: (bucket: string, prefix: string) =>
+		["adminObjectStoreObjects", bucket, prefix] as const,
 	userNetlabServersByScope: (userId: string) =>
 		["userNetlabServersByScope", userId] as const,
 	notifications: (includeRead?: boolean, limit?: string) =>

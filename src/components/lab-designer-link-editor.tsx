@@ -12,10 +12,10 @@ function LinkEditorHeader({ selectedEdge }: { selectedEdge: LabDesignerLinkEdito
 	return (
 		<div className="flex items-center justify-between gap-3">
 			<div>
-				<div className="text-sm font-semibold text-slate-900">
+				<div className="text-sm font-semibold text-foreground">
 					{selectedEdge.data?.label || selectedEdge.label || selectedEdge.id}
 				</div>
-				<div className="text-xs text-slate-500">
+				<div className="text-xs text-muted-foreground">
 					{selectedEdge.source} ↔ {selectedEdge.target}
 				</div>
 			</div>

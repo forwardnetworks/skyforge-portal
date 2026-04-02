@@ -183,12 +183,22 @@ const toolEntries: ToolNavigationEntry[] = [
 		adminOnly: true,
 	},
 	{
-		id: "platform-redoc",
-		label: "ReDoc",
+		id: "platform-api",
+		label: "API",
 		navigationSection: "platform",
 		navigationOrder: 120,
+		navigationIcon: "panel-top",
+		navigationHref: "",
+		experience: "advanced",
+	},
+	{
+		id: "platform-redoc",
+		label: "API Spec",
+		navigationSection: "platform",
+		navigationParentId: "platform-api",
+		navigationOrder: 10,
 		navigationIcon: "book-open",
-		navigationHref: "/redoc/",
+		navigationHref: "/redoc",
 		experience: "advanced",
 		featureFlag: "swaggerUIEnabled",
 	},
@@ -322,11 +332,11 @@ const toolLaunches: ToolLaunchMap = {
 	},
 	elk: {
 		id: "elk",
-		title: "ELK",
+		title: "Kibana",
 		category: "integrations",
 		experience: "advanced",
 		navigationSection: "integrations",
-		navigationLabel: "ELK",
+		navigationLabel: "Kibana",
 		navigationOrder: 50,
 		navigationIcon: "database",
 		navigationHref: toolRouteHref("elk"),
@@ -430,6 +440,7 @@ const toolLaunches: ToolLaunchMap = {
 		category: "platform",
 		experience: "advanced",
 		navigationSection: "platform",
+		navigationParentId: "platform-api",
 		navigationLabel: "API Testing",
 		navigationOrder: 70,
 		navigationIcon: "panel-top",
@@ -557,7 +568,7 @@ describe("side nav model", () => {
 				"Nautobot",
 				"Jira",
 				"Rapid7",
-				"ELK",
+				"Kibana",
 				"Infoblox",
 			]),
 		);
@@ -580,13 +591,17 @@ describe("side nav model", () => {
 				"Coder",
 				"Reservations",
 				"Infoblox Console",
-				"API Testing",
-				"ReDoc",
+				"API",
 				"Webhooks",
 				"Syslog",
 				"SNMP",
 			]),
 		);
+		const api = platform?.children?.find((c) => c.label === "API");
+		expect(api?.children?.map((c) => c.label)).toEqual([
+			"API Spec",
+			"API Testing",
+		]);
 		const coder = platform?.children?.find((c) => c.label === "Coder");
 		expect(coder?.href).toBe(toolRouteHref("coder"));
 		const nautobot = integrations?.children?.find(
