@@ -68,6 +68,12 @@ function useAdminSettingsAuditSection(args: {
 		() => ({
 			auditLimit: audit.auditLimit,
 			onAuditLimitChange: audit.setAuditLimit,
+			auditActor: audit.auditActor,
+			onAuditActorChange: audit.setAuditActor,
+			auditAction: audit.auditAction,
+			onAuditActionChange: audit.setAuditAction,
+			auditQuery: audit.auditQuery,
+			onAuditQueryChange: audit.setAuditQuery,
 			auditTimestamp: audit.auditQ.data?.timestamp,
 			auditEvents: audit.auditQ.data?.events ?? [],
 			auditColumns: audit.auditColumns,

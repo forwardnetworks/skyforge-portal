@@ -59,16 +59,22 @@ export type AdminForwardDemoSeedItem = {
 	id: string;
 	note: string;
 	fileName: string;
-	contentSha256?: string;
-	sizeBytes?: number;
+	assetPath: string;
 	enabled: boolean;
+	repeatCount: number;
 	order: number;
-	uploadedAt?: string;
 };
 
 export type AdminForwardDemoSeedCatalogResponse = {
 	configured: boolean;
-	updatedAt?: string;
+	source: string;
+	repo?: string;
+	branch?: string;
+	manifestPath?: string;
+	manifestValid: boolean;
+	manifestError?: string;
+	retrievedAt?: string;
+	lastCommitSha?: string;
 	networkName?: string;
 	seeds: AdminForwardDemoSeedItem[];
 };
@@ -84,6 +90,7 @@ export type PutAdminForwardDemoSeedRequest = {
 export type UpdateAdminForwardDemoSeedRequest = {
 	note?: string;
 	enabled?: boolean;
+	repeatCount?: number;
 	order?: number;
 };
 

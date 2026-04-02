@@ -7,9 +7,23 @@ import { queryKeys } from "../lib/query-keys";
 
 export function useAdminSettingsAudit() {
 	const [auditLimit, setAuditLimit] = useState("200");
+	const [auditActor, setAuditActor] = useState("");
+	const [auditAction, setAuditAction] = useState("");
+	const [auditQuery, setAuditQuery] = useState("");
 	const auditQ = useQuery({
-		queryKey: queryKeys.adminAudit(auditLimit),
-		queryFn: () => getAdminAudit({ limit: auditLimit }),
+		queryKey: queryKeys.adminAudit({
+			limit: auditLimit,
+			actor: auditActor,
+			action: auditAction,
+			q: auditQuery,
+		}),
+		queryFn: () =>
+			getAdminAudit({
+				limit: auditLimit,
+				actor: auditActor.trim() || undefined,
+				action: auditAction.trim() || undefined,
+				q: auditQuery.trim() || undefined,
+			}),
 		staleTime: 15_000,
 		retry: false,
 	});
@@ -64,5 +78,16 @@ export function useAdminSettingsAudit() {
 		[],
 	);
 
-	return { auditLimit, setAuditLimit, auditQ, auditColumns };
+	return {
+		auditLimit,
+		setAuditLimit,
+		auditActor,
+		setAuditActor,
+		auditAction,
+		setAuditAction,
+		auditQuery,
+		setAuditQuery,
+		auditQ,
+		auditColumns,
+	};
 }

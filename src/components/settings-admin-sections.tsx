@@ -135,7 +135,7 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 				<CardDescription>Recent admin and user actions.</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+				<div className="grid gap-2 lg:grid-cols-[auto_1fr_1fr_1fr_auto] lg:items-center">
 					<div className="flex items-center gap-2">
 						<span className="text-sm text-muted-foreground">Limit</span>
 						<Input
@@ -144,6 +144,21 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 							onChange={(e) => props.onAuditLimitChange(e.target.value)}
 						/>
 					</div>
+					<Input
+						placeholder="Actor username"
+						value={props.auditActor}
+						onChange={(e) => props.onAuditActorChange(e.target.value)}
+					/>
+					<Input
+						placeholder="Action prefix"
+						value={props.auditAction}
+						onChange={(e) => props.onAuditActionChange(e.target.value)}
+					/>
+					<Input
+						placeholder="Search details"
+						value={props.auditQuery}
+						onChange={(e) => props.onAuditQueryChange(e.target.value)}
+					/>
 					<Badge variant="outline">{props.auditTimestamp ?? "—"}</Badge>
 				</div>
 				<DataTable

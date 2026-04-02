@@ -43,11 +43,13 @@ export function useAdminSettingsAuthForwardDemoSeeds({
 			seedID: string;
 			note?: string;
 			enabled?: boolean;
+			repeatCount?: number;
 			order?: number;
 		}) =>
 			patchAdminForwardDemoSeed(input.seedID, {
 				note: input.note,
 				enabled: input.enabled,
+				repeatCount: input.repeatCount,
 				order: input.order,
 			}),
 		onSuccess: async () => {

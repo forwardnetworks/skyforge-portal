@@ -133,6 +133,7 @@ export type AdminForwardSectionProps = {
 		seedID: string;
 		note?: string;
 		enabled?: boolean;
+		repeatCount?: number;
 		order?: number;
 	}) => void;
 	onSaveForwardDemoSeedConfig: (value: { networkName: string }) => void;
@@ -181,6 +182,12 @@ export type AdminRuntimeSectionProps = AdminConfigSectionProps &
 export type AdminAuditSectionProps = {
 	auditLimit: string;
 	onAuditLimitChange: (value: string) => void;
+	auditActor: string;
+	onAuditActorChange: (value: string) => void;
+	auditAction: string;
+	onAuditActionChange: (value: string) => void;
+	auditQuery: string;
+	onAuditQueryChange: (value: string) => void;
 	auditTimestamp?: string;
 	auditEvents: AdminAuditResponse["events"];
 	auditColumns: DataTableColumn<AdminAuditResponse["events"][number]>[];
