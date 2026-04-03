@@ -35,6 +35,10 @@ export function useAdminSettingsUsersAccess(
 		setManageUsername: managedUsers.setManageUsername,
 		manageInitialRole: managedUsers.manageInitialRole,
 		setManageInitialRole: managedUsers.setManageInitialRole,
+		manageProvisionDefaultUserScope:
+			managedUsers.manageProvisionDefaultUserScope,
+		setManageProvisionDefaultUserScope:
+			managedUsers.setManageProvisionDefaultUserScope,
 		availableRbacRoles: rbac.availableRbacRoles,
 		createManagedUser: managedUsers.createManagedUser,
 		deleteManagedUserQuery: managedUsers.deleteManagedUserQuery,

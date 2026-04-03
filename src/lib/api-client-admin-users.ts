@@ -3,11 +3,13 @@ import { apiFetch } from "./http";
 export type CreateAdminUserRequest = {
 	username: string;
 	role?: string;
+	provisionDefaultUserScope?: boolean;
 };
 export type CreateAdminUserResponse = {
 	status: string;
 	username: string;
 	role?: string;
+	provisionedUserScopeId?: string;
 };
 export async function createAdminUser(
 	body: CreateAdminUserRequest,

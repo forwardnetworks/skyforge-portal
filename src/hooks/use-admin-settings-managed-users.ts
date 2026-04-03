@@ -23,6 +23,8 @@ export function useAdminSettingsManagedUsers({
 }) {
 	const [manageUsername, setManageUsername] = useState("");
 	const [manageInitialRole, setManageInitialRole] = useState("USER");
+	const [manageProvisionDefaultUserScope, setManageProvisionDefaultUserScope] =
+		useState(true);
 	const [deleteManagedUser, setDeleteManagedUser] = useState("");
 	const [deleteManagedUserQuery, setDeleteManagedUserQuery] = useState("");
 
@@ -41,6 +43,7 @@ export function useAdminSettingsManagedUsers({
 			createAdminUser({
 				username: manageUsername,
 				role: manageInitialRole,
+				provisionDefaultUserScope: manageProvisionDefaultUserScope,
 			}),
 		onSuccess: async () => {
 			toast.success("User created");
@@ -87,6 +90,8 @@ export function useAdminSettingsManagedUsers({
 		setManageUsername,
 		manageInitialRole,
 		setManageInitialRole,
+		manageProvisionDefaultUserScope,
+		setManageProvisionDefaultUserScope,
 		createManagedUser,
 		deleteManagedUserQuery,
 		setDeleteManagedUserQuery,

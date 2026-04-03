@@ -12,10 +12,14 @@ function useAdminSettingsManagedUsersSection(args: {
 		() => ({
 			manageUsername: usersAccess.manageUsername,
 			manageInitialRole: usersAccess.manageInitialRole,
+			manageProvisionDefaultUserScope:
+				usersAccess.manageProvisionDefaultUserScope,
 			availableRbacRoles: usersAccess.availableRbacRoles,
 			createManagedUserPending: usersAccess.createManagedUser.isPending,
 			onManageUsernameChange: usersAccess.setManageUsername,
 			onManageInitialRoleChange: usersAccess.setManageInitialRole,
+			onManageProvisionDefaultUserScopeChange:
+				usersAccess.setManageProvisionDefaultUserScope,
 			onCreateManagedUser: () => usersAccess.createManagedUser.mutate(),
 			deleteManagedUserQuery: usersAccess.deleteManagedUserQuery,
 			deleteManagedUser: usersAccess.deleteManagedUser,

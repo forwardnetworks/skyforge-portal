@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Box, Filter, Plus, Search } from "lucide-react";
+import type { SkyforgeUserScope } from "../../lib/api-client";
 import { useCatalogRouteAccess } from "../../hooks/use-catalog-route-access";
 import type { DeploymentsPageState } from "../../hooks/use-deployments-page";
 import { buttonVariants } from "../ui/button";
@@ -24,6 +25,8 @@ export function DeploymentsPageToolbar({
 		| "typeFilter"
 		| "setTypeFilter"
 		| "selectedUserScopeId"
+		| "setSelectedUserScopeId"
+		| "userScopes"
 	>;
 }) {
 	const routeAccess = useCatalogRouteAccess();
@@ -67,6 +70,21 @@ export function DeploymentsPageToolbar({
 					<SelectItem value="netlab">Netlab</SelectItem>
 					<SelectItem value="containerlab">Containerlab</SelectItem>
 					<SelectItem value="terraform">Terraform</SelectItem>
+				</SelectContent>
+			</Select>
+			<Select
+				value={state.selectedUserScopeId}
+				onValueChange={state.setSelectedUserScopeId}
+			>
+				<SelectTrigger className="w-[220px]">
+					<SelectValue placeholder="User scope" />
+				</SelectTrigger>
+				<SelectContent>
+					{(state.userScopes as SkyforgeUserScope[]).map((scope) => (
+						<SelectItem key={scope.id} value={scope.id}>
+							{scope.name}
+						</SelectItem>
+					))}
 				</SelectContent>
 			</Select>
 			{canCreateDeployment || canCreateComposite ? (

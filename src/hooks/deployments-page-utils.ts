@@ -7,7 +7,9 @@ import {
 export function selectVisibleUserScopes(
 	allUserScopes: SkyforgeUserScope[],
 	effectiveUsername: string,
+	isAdmin = false,
 ): SkyforgeUserScope[] {
+	if (isAdmin) return allUserScopes;
 	if (!effectiveUsername) return allUserScopes;
 	const mine = allUserScopes.filter((scope) => {
 		if (String(scope.createdBy ?? "").trim() === effectiveUsername) return true;

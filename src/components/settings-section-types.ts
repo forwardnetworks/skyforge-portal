@@ -1,6 +1,9 @@
 import type {
 	AdminAPICatalogEntry,
 	AdminAuditResponse,
+	AdminAuditIntegrityStatus,
+	AdminAuditExportSignatureRecord,
+	VerifyAdminAuditExportSignatureResponse,
 	AdminAuthSettingsResponse,
 	AdminEffectiveConfigResponse,
 	AdminImpersonateStatusResponse,
@@ -184,14 +187,60 @@ export type AdminAuditSectionProps = {
 	onAuditLimitChange: (value: string) => void;
 	auditActor: string;
 	onAuditActorChange: (value: string) => void;
-	auditAction: string;
-	onAuditActionChange: (value: string) => void;
+	auditActorType: string;
+	onAuditActorTypeChange: (value: string) => void;
+	auditImpersonated: string;
+	onAuditImpersonatedChange: (value: string) => void;
+	auditEventType: string;
+	onAuditEventTypeChange: (value: string) => void;
+	auditCategory: string;
+	onAuditCategoryChange: (value: string) => void;
+	auditOutcome: string;
+	onAuditOutcomeChange: (value: string) => void;
+	auditSeverity: string;
+	onAuditSeverityChange: (value: string) => void;
+	auditTargetType: string;
+	onAuditTargetTypeChange: (value: string) => void;
+	auditTarget: string;
+	onAuditTargetChange: (value: string) => void;
+	auditAuthMethod: string;
+	onAuditAuthMethodChange: (value: string) => void;
+	auditSourceIP: string;
+	onAuditSourceIPChange: (value: string) => void;
 	auditQuery: string;
 	onAuditQueryChange: (value: string) => void;
+	auditSince: string;
+	onAuditSinceChange: (value: string) => void;
+	auditUntil: string;
+	onAuditUntilChange: (value: string) => void;
+	onAuditQuickRangeChange: (value: string) => void;
+	onAuditClearFilters: () => void;
 	auditTimestamp?: string;
 	auditEvents: AdminAuditResponse["events"];
 	auditColumns: DataTableColumn<AdminAuditResponse["events"][number]>[];
+	auditSummary?: AdminAuditResponse["summary"];
+	auditIntegrityStatus?: AdminAuditIntegrityStatus;
+	auditIntegrityLoading: boolean;
+	auditExportSignatures: AdminAuditExportSignatureRecord[];
+	auditExportSignaturesLoading: boolean;
+	auditVerifyResult: VerifyAdminAuditExportSignatureResponse | null;
+	auditVerifyPending: boolean;
+	auditVerifyTargetID: string | null;
+	auditVerifyError: string | null;
 	auditLoading: boolean;
+	selectedAuditEventID: number | null;
+	onSelectAuditEvent: (id: number | null) => void;
+	selectedAuditEvent?: AdminAuditResponse["events"][number];
+	selectedAuditEventLoading: boolean;
+	selectedAuditEventJSON: string;
+	auditSavedViewName: string;
+	onAuditSavedViewNameChange: (value: string) => void;
+	auditSavedViews: { id: string; name: string }[];
+	onAuditSaveView: () => void;
+	onAuditLoadView: (id: string) => void;
+	onAuditDeleteView: (id: string) => void;
+	onAuditExport: (format: "csv" | "jsonl") => void;
+	onAuditVerifySignature: (signatureID: string, file: File | null) => void;
 };
 
 export type AdminTasksSectionProps = {
@@ -236,10 +285,12 @@ export type AdminTasksSectionProps = {
 export type AdminUsersSectionProps = {
 	manageUsername: string;
 	manageInitialRole: string;
+	manageProvisionDefaultUserScope: boolean;
 	availableRbacRoles: string[];
 	createManagedUserPending: boolean;
 	onManageUsernameChange: (value: string) => void;
 	onManageInitialRoleChange: (value: string) => void;
+	onManageProvisionDefaultUserScopeChange: (value: boolean) => void;
 	onCreateManagedUser: () => void;
 	deleteManagedUserQuery: string;
 	deleteManagedUser: string;

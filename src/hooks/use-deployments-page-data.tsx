@@ -70,9 +70,10 @@ export function useDeploymentsPageData(args: {
 
 	const allUserScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
 	const effectiveUsername = String(session.data?.username ?? "").trim();
+	const isAdmin = Boolean(session.data?.isAdmin);
 	const userScopes = useMemo(
-		() => selectVisibleUserScopes(allUserScopes, effectiveUsername),
-		[allUserScopes, effectiveUsername],
+		() => selectVisibleUserScopes(allUserScopes, effectiveUsername, isAdmin),
+		[allUserScopes, effectiveUsername, isAdmin],
 	);
 
 	const selectedUserScopeId = useMemo(() => {
@@ -187,6 +188,7 @@ export function useDeploymentsPageData(args: {
 		loginHref,
 		runs,
 		searchQuery,
+		userScopes,
 		selectedUserScope,
 		selectedUserScopeId,
 		setIsFeedOpen,

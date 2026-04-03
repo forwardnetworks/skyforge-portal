@@ -137,9 +137,10 @@ export function useCompositePlansPage(userId?: string) {
 
 	const allUserScopes = (userScopesQ.data ?? []) as SkyforgeUserScope[];
 	const effectiveUsername = String(sessionQ.data?.username ?? "").trim();
+	const isAdmin = Boolean(sessionQ.data?.isAdmin);
 	const userScopes = useMemo(
-		() => selectVisibleUserScopes(allUserScopes, effectiveUsername),
-		[allUserScopes, effectiveUsername],
+		() => selectVisibleUserScopes(allUserScopes, effectiveUsername, isAdmin),
+		[allUserScopes, effectiveUsername, isAdmin],
 	);
 
 	const selectedUserScopeId = useMemo(() => {

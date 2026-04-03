@@ -9,6 +9,7 @@ import {
 	CardTitle,
 } from "./ui/card";
 import { Input } from "./ui/input";
+import { Switch } from "./ui/switch";
 import {
 	Select,
 	SelectContent,
@@ -60,6 +61,21 @@ export function AdminUsersManagementCard(props: AdminUsersSectionProps) {
 					>
 						{props.createManagedUserPending ? "Adding…" : "Add user"}
 					</Button>
+				</div>
+				<div className="flex items-center justify-between rounded-md border p-3">
+					<div>
+						<div className="text-sm font-medium">
+							Pre-provision default user scope
+						</div>
+						<div className="text-xs text-muted-foreground">
+							Create the user scope now so Okta users can be targeted before
+							first login.
+						</div>
+					</div>
+					<Switch
+						checked={props.manageProvisionDefaultUserScope}
+						onCheckedChange={props.onManageProvisionDefaultUserScopeChange}
+					/>
 				</div>
 
 				<div className="space-y-2 rounded-md border p-3">

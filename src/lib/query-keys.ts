@@ -217,23 +217,30 @@ export const queryKeys = {
 	adminApiCatalog: () => ["adminApiCatalog"] as const,
 	adminUserApiPermissions: (username: string) =>
 		["adminUserApiPermissions", username] as const,
+	adminAuditSavedViews: () => ["adminAuditSavedViews"] as const,
 	adminAudit: (params?: {
 		limit?: string;
 		actor?: string;
-		action?: string;
+		actorType?: string;
+		impersonated?: string;
+		eventType?: string;
+		category?: string;
+		outcome?: string;
+		severity?: string;
+		targetType?: string;
+		target?: string;
+		authMethod?: string;
+		sourceIp?: string;
 		q?: string;
 		since?: string;
 		until?: string;
+		cursor?: string;
 	}) =>
-		[
-			"adminAudit",
-			params?.limit ?? "",
-			params?.actor ?? "",
-			params?.action ?? "",
-			params?.q ?? "",
-			params?.since ?? "",
-			params?.until ?? "",
-		] as const,
+		["adminAudit", params ?? {}] as const,
+	adminAuditEvent: (eventID: number | null) =>
+		["adminAuditEvent", String(eventID ?? "")] as const,
+	adminAuditIntegrity: () => ["adminAuditIntegrity"] as const,
+	adminAuditExportSignatures: () => ["adminAuditExportSignatures"] as const,
 	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,
 	registryRepos: (q: string) => ["registryRepos", q] as const,
 	registryTags: (repo: string, q: string) => ["registryTags", repo, q] as const,

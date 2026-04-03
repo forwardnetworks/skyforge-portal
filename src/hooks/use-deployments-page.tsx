@@ -2,8 +2,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useDashboardEvents } from "../lib/dashboard-events";
 import {
-	resolveDeploymentDisplayStatus,
-	resolveDeploymentPrimaryAction,
+		resolveDeploymentDisplayStatus,
+		resolveDeploymentPrimaryAction,
 } from "./deployment-detail-utils";
 import {
 	deploymentForwardNetworkId,
@@ -56,6 +56,7 @@ export function useDeploymentsPage(userId?: string) {
 		runs: data.runs,
 		saveLifetimeMutation: actions.saveLifetimeMutation,
 		searchQuery: data.searchQuery,
+		userScopes: data.userScopes,
 		selectedUserScope: data.selectedUserScope,
 		selectedUserScopeId: data.selectedUserScopeId,
 		setDestroyAlsoDeleteForward: actions.setDestroyAlsoDeleteForward,
@@ -68,6 +69,14 @@ export function useDeploymentsPage(userId?: string) {
 		setSearchQuery: data.setSearchQuery,
 		setStatusFilter: data.setStatusFilter,
 		setTypeFilter: data.setTypeFilter,
+		setSelectedUserScopeId: (nextScopeId: string) => {
+			const scopeId = String(nextScopeId ?? "").trim();
+			if (!scopeId || scopeId === data.selectedUserScopeId) return;
+			void navigate({
+				search: { userId: scopeId } as never,
+				replace: true,
+			});
+		},
 		snap: data.snap,
 		statusFilter: data.statusFilter,
 		typeFilter: data.typeFilter,
