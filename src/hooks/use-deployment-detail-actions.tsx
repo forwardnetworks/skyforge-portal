@@ -1,6 +1,8 @@
 import type { UserScopeDeployment } from "@/lib/api-client";
 import {
 	deleteDeployment,
+	deleteDeploymentSourceShare,
+	putDeploymentSourceShare,
 	saveDeploymentNodeConfig,
 	syncDeploymentForward,
 	updateDeploymentForwardConfig,
@@ -227,6 +229,8 @@ export function useDeploymentDetailActions(args: {
 		mutationFn: async (next: {
 			enabled: boolean;
 			collectorConfigId?: string;
+			topologySourceUserId?: string;
+			topologySourceDeploymentId?: string;
 			autoSyncOnBringUp?: boolean;
 		}) => {
 			if (!deployment) throw new Error("deployment not found");
@@ -244,6 +248,58 @@ export function useDeploymentDetailActions(args: {
 		},
 		onError: (error) =>
 			toast.error("Failed to update Forward settings", {
+				description: (error as Error).message,
+			}),
+	});
+
+	const grantDeploymentSourceShare = useMutation({
+		mutationFn: async (next: { username: string; access: string }) => {
+			if (!deployment) throw new Error("deployment not found");
+			return putDeploymentSourceShare(deployment.userId, deployment.id, next);
+		},
+		onSuccess: async () => {
+			toast.success("Deployment source share updated");
+			if (!deployment) return;
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.deploymentSourceShares(
+					deployment.userId,
+					deployment.id,
+				),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.sharedDeploymentSources(),
+			});
+		},
+		onError: (error) =>
+			toast.error("Failed to share deployment source", {
+				description: (error as Error).message,
+			}),
+	});
+
+	const revokeDeploymentSourceShare = useMutation({
+		mutationFn: async (username: string) => {
+			if (!deployment) throw new Error("deployment not found");
+			return deleteDeploymentSourceShare(
+				deployment.userId,
+				deployment.id,
+				username,
+			);
+		},
+		onSuccess: async () => {
+			toast.success("Deployment source share removed");
+			if (!deployment) return;
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.deploymentSourceShares(
+					deployment.userId,
+					deployment.id,
+				),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.sharedDeploymentSources(),
+			});
+		},
+		onError: (error) =>
+			toast.error("Failed to remove deployment source share", {
 				description: (error as Error).message,
 			}),
 	});
@@ -276,6 +332,8 @@ export function useDeploymentDetailActions(args: {
 		saveAllConfigs,
 		downloadDeploymentConfig,
 		updateForward,
+		grantDeploymentSourceShare,
+		revokeDeploymentSourceShare,
 		syncForward,
 	};
 }

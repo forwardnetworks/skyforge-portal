@@ -1,11 +1,11 @@
 import type {
+	JSONMap,
 	LinkAdminRequest,
 	LinkAdminResponse,
 	LinkCaptureRequest,
 	LinkCaptureResponse,
 	LinkImpairmentRequest,
 	LinkImpairmentResponse,
-	JSONMap,
 } from "./api-client-user-user-scope";
 import { apiFetch } from "./http";
 
@@ -13,6 +13,8 @@ export type UpdateDeploymentForwardConfigRequest = {
 	enabled: boolean;
 	collectorConfigId?: string;
 	collectorUsername?: string;
+	topologySourceUserId?: string;
+	topologySourceDeploymentId?: string;
 	autoSyncOnBringUp?: boolean;
 };
 
@@ -22,6 +24,8 @@ export type UpdateDeploymentForwardConfigResponse = {
 	enabled: boolean;
 	collectorConfigId?: string;
 	collectorUsername?: string;
+	topologySourceUserId?: string;
+	topologySourceDeploymentId?: string;
 	autoSyncOnBringUp?: boolean;
 	forwardNetworkId?: string;
 	forwardSnapshotUrl?: string;

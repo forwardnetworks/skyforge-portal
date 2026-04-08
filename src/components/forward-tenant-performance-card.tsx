@@ -1,4 +1,5 @@
 import type { useForwardCredentialsPage } from "@/hooks/use-forward-credentials-page";
+import type { ManagedForwardTenantKind } from "@/lib/api-client-forward-performance";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "./ui/button";
 import {
@@ -20,7 +21,7 @@ import {
 } from "./ui/select";
 
 type ForwardCredentialsPageState = ReturnType<typeof useForwardCredentialsPage>;
-type ManagedTenantKey = "demo" | "primary";
+type ManagedTenantKey = ManagedForwardTenantKind;
 
 type DraftByNetwork = Record<
 	string,
@@ -40,6 +41,7 @@ type DraftByNetwork = Record<
 
 const managedTenantOptions: { label: string; value: ManagedTenantKey }[] = [
 	{ label: "Deployment Org", value: "primary" },
+	{ label: "Customer Org", value: "customer" },
 	{ label: "Demo Org", value: "demo" },
 ];
 
@@ -67,6 +69,7 @@ export function ForwardTenantPerformanceCard(props: {
 	);
 	const [drafts, setDrafts] = useState<Record<ManagedTenantKey, DraftByNetwork>>({
 		demo: {},
+		customer: {},
 		primary: {},
 	});
 
@@ -138,9 +141,13 @@ export function ForwardTenantPerformanceCard(props: {
 	}, [networks, tenant]);
 
 	const cardDescription = useMemo(() => {
-		return tenant === "primary"
-			? "Generate synthetic performance data for the deployment org. This is the default path for post-collection generation."
-			: "Generate synthetic performance data for the demo org when you want to refresh curated demo telemetry.";
+		if (tenant === "primary") {
+			return "Generate synthetic performance data for the deployment org. This is the default path for post-collection generation.";
+		}
+		if (tenant === "customer") {
+			return "Generate synthetic performance data for the customer org when validating customer snapshot analysis workflows.";
+		}
+		return "Generate synthetic performance data for the demo org when you want to refresh curated demo telemetry.";
 	}, [tenant]);
 
 	return (
@@ -155,9 +162,7 @@ export function ForwardTenantPerformanceCard(props: {
 						<Label>Forward org</Label>
 						<Select
 							value={tenant}
-							onValueChange={(value) =>
-								setTenant(value === "demo" ? "demo" : "primary")
-							}
+							onValueChange={(value) => setTenant(value as ManagedTenantKey)}
 						>
 							<SelectTrigger>
 								<SelectValue placeholder="Select Forward org" />

@@ -15,3 +15,4 @@ export * from "./api-client-admin";
 export * from "./api-client-admin-object-store";
 export * from "./api-client-forward-analytics";
 export * from "./api-client-tool-catalog";
+export * from "./api-client-deployment-source-shares";

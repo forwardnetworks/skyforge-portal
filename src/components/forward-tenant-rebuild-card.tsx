@@ -1,4 +1,5 @@
 import type { useForwardCredentialsPage } from "@/hooks/use-forward-credentials-page";
+import type { ManagedForwardTenantKind } from "@/lib/api-client-forward-performance";
 import { Checkbox } from "./ui/checkbox";
 import { Button } from "./ui/button";
 import {
@@ -12,7 +13,7 @@ import { Label } from "./ui/label";
 import { ForwardTenantResetRunRow } from "./forward-tenant-reset-run-row";
 
 type ForwardCredentialsPageState = ReturnType<typeof useForwardCredentialsPage>;
-type ManagedTenantKey = "demo" | "primary";
+type ManagedTenantKey = ManagedForwardTenantKind;
 
 function tenantCopy(tenant: ManagedTenantKey) {
 	if (tenant === "demo") {
@@ -25,6 +26,18 @@ function tenantCopy(tenant: ManagedTenantKey) {
 			impact:
 				"This replaces the current demo org state, replays all enabled demo seed snapshots into Demo Network, and rotates the demo credential. Deployment-backed networks and collector wiring are not touched.",
 			allowCurated: true,
+		};
+	}
+	if (tenant === "customer") {
+		return {
+			title: "Customer Org Rebuild",
+			description:
+				"Re-sync or rebuild the managed customer snapshot-analysis org.",
+			softLabel: "Soft resync",
+			hardLabel: "Hard rebuild",
+			impact:
+				"This deletes the managed customer org state and reprovisions it from the Skyforge baseline. Use soft resync first unless the org is clearly broken.",
+			allowCurated: false,
 		};
 	}
 	return {

@@ -74,7 +74,7 @@ export type ForwardSnapshotDataFileInjectResponse = {
 	status: string;
 };
 
-export type ManagedForwardTenantKind = "primary" | "demo";
+export type ManagedForwardTenantKind = "primary" | "demo" | "customer";
 
 export async function listUserScopeForwardPerformanceNetworks(
 	userId: string,
@@ -99,9 +99,13 @@ export async function generateUserScopeForwardNetworkPerformance(
 }
 
 function tenantPerformanceBasePath(tenantKind: ManagedForwardTenantKind): string {
-	return tenantKind === "demo"
-		? "/api/forward/demo-org/performance-networks"
-		: "/api/forward/org/performance-networks";
+	if (tenantKind === "demo") {
+		return "/api/forward/demo-org/performance-networks";
+	}
+	if (tenantKind === "customer") {
+		return "/api/forward/customer-org/performance-networks";
+	}
+	return "/api/forward/org/performance-networks";
 }
 
 export async function listManagedForwardTenantPerformanceNetworks(

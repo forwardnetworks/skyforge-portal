@@ -278,6 +278,20 @@ const toolLaunches: ToolLaunchMap = {
 		navigationMode: "direct",
 		launchMode: "new_tab",
 	},
+	"forward-cluster-customer": {
+		id: "forward-cluster-customer",
+		title: "Forward Customer Org",
+		category: "forward",
+		experience: "both",
+		navigationSection: "forward",
+		navigationParentId: "forward-credentials",
+		navigationLabel: "Customer Org",
+		navigationOrder: 20,
+		navigationIcon: "network",
+		navigationHref: "/api/forward/session?tenant=customer",
+		navigationMode: "direct",
+		launchMode: "new_tab",
+	},
 	netbox: {
 		id: "netbox",
 		title: "NetBox",
@@ -486,6 +500,7 @@ describe("side nav model", () => {
 		);
 		expect(orgAccess?.children?.map((c) => c.label)).toEqual([
 			"Demo Org",
+			"Customer Org",
 			"Deployment Org",
 		]);
 		const collectorItem = forward?.children?.find(
@@ -507,6 +522,7 @@ describe("side nav model", () => {
 			Object.entries(withAllowedTools()).filter(
 				([id, tool]) =>
 					id !== "forward-cluster-demo" &&
+					id !== "forward-cluster-customer" &&
 					id !== "forward-cluster-deployment" &&
 					tool.navigationSection !== "forward",
 			),
@@ -686,6 +702,7 @@ describe("side nav model", () => {
 		]);
 		expect(orgAccess?.children?.map((child) => child.label)).toEqual([
 			"Demo Org",
+			"Customer Org",
 			"Deployment Org",
 		]);
 		expect(labels).not.toContain("Observability");

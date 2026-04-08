@@ -12,6 +12,8 @@ export const queryKeys = {
 		["deploymentTopology", userId, deploymentId] as const,
 	deploymentMap: (userId: string, deploymentId: string) =>
 		["deploymentMap", userId, deploymentId] as const,
+	deploymentSourceShares: (userId: string, deploymentId: string) =>
+		["deploymentSourceShares", userId, deploymentId] as const,
 	deploymentUIEvents: (userId: string, deploymentId: string) =>
 		["deploymentUIEvents", userId, deploymentId] as const,
 	deploymentCapacitySummary: (userId: string, deploymentId: string) =>
@@ -86,6 +88,8 @@ export const queryKeys = {
 			objectType,
 		] as const,
 	userScopes: () => ["userScopes"] as const,
+	assignableUsers: () => ["assignableUsers"] as const,
+	sharedDeploymentSources: () => ["sharedDeploymentSources"] as const,
 	userPlatformReservations: () => ["userPlatformReservations"] as const,
 	currentPlatformReservationLifecycle: (id: string) =>
 		["currentPlatformReservationLifecycle", id] as const,
@@ -130,7 +134,7 @@ export const queryKeys = {
 	userNetlabDeviceOptions: (userId: string) =>
 		["userNetlabDeviceOptions", userId] as const,
 	userNetlabServers: () => ["userNetlabServers"] as const,
-	userContainerlabServers: () => ["userContainerlabServers"] as const,
+	userKNEServers: () => ["userKNEServers"] as const,
 	userFixiaServers: () => ["userFixiaServers"] as const,
 	userAwsStaticCredentials: () => ["userAwsStaticCredentials"] as const,
 	userAwsSsoCredentials: () => ["userAwsSsoCredentials"] as const,
@@ -204,7 +208,8 @@ export const queryKeys = {
 	adminPlatformOverview: () => ["adminPlatformOverview"] as const,
 	adminPlatformRuntimePolicy: () => ["adminPlatformRuntimePolicy"] as const,
 	adminHetznerBurstStatus: () => ["adminHetznerBurstStatus"] as const,
-	adminHetznerBurstRuntimePolicy: () => ["adminHetznerBurstRuntimePolicy"] as const,
+	adminHetznerBurstRuntimePolicy: () =>
+		["adminHetznerBurstRuntimePolicy"] as const,
 	adminPlatformReservations: () => ["adminPlatformReservations"] as const,
 	adminPlatformUserPolicy: (username: string) =>
 		["adminPlatformUserPolicy", username] as const,
@@ -235,8 +240,7 @@ export const queryKeys = {
 		since?: string;
 		until?: string;
 		cursor?: string;
-	}) =>
-		["adminAudit", params ?? {}] as const,
+	}) => ["adminAudit", params ?? {}] as const,
 	adminAuditEvent: (eventID: number | null) =>
 		["adminAuditEvent", String(eventID ?? "")] as const,
 	adminAuditIntegrity: () => ["adminAuditIntegrity"] as const,

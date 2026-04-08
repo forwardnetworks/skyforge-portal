@@ -1,4 +1,5 @@
 import type { useForwardCredentialsPage } from "@/hooks/use-forward-credentials-page";
+import type { ManagedForwardTenantKind } from "@/lib/api-client-forward-performance";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import {
@@ -10,7 +11,12 @@ import {
 } from "./ui/card";
 
 type ForwardCredentialsPageState = ReturnType<typeof useForwardCredentialsPage>;
-type ManagedTenantKey = "demo" | "primary";
+type ManagedTenantKey = ManagedForwardTenantKind;
+
+function queryErrorMessage(error: unknown): string {
+	if (!(error instanceof Error)) return "";
+	return error.message.trim();
+}
 
 function tenantCopy(tenant: ManagedTenantKey) {
 	if (tenant === "demo") {
@@ -19,6 +25,14 @@ function tenantCopy(tenant: ManagedTenantKey) {
 			description:
 				"Curated Forward demo org used by the default Forward launch path. Credentials rotate whenever the nightly or manual demo rebuild runs.",
 			resetLabel: "Reset demo credential",
+		};
+	}
+	if (tenant === "customer") {
+		return {
+			title: "Customer Org Credential",
+			description:
+				"Managed customer snapshot-analysis org. The org banner is set to CUSTOMER CONFIDENTIAL.",
+			resetLabel: "Reset customer credential",
 		};
 	}
 	return {
@@ -36,6 +50,7 @@ export function ForwardCredentialsManagedTenantCard(props: {
 	const { page, tenant } = props;
 	const state = page.tenants[tenant];
 	const copy = tenantCopy(tenant);
+	const credentialError = queryErrorMessage(state.credentialQ.error);
 
 	return (
 		<Card>
@@ -48,8 +63,11 @@ export function ForwardCredentialsManagedTenantCard(props: {
 					<div className="text-sm text-muted-foreground">Loading…</div>
 				) : null}
 				{state.credentialQ.isError ? (
-					<div className="text-sm text-destructive">
-						Failed to load managed credential.
+					<div className="space-y-1 text-sm text-destructive">
+						<div>Failed to load managed credential.</div>
+						{credentialError ? (
+							<div className="break-all text-xs">{credentialError}</div>
+						) : null}
 					</div>
 				) : null}
 				{state.credentialQ.data && !state.credentialQ.data.configured ? (
@@ -93,7 +111,9 @@ export function ForwardCredentialsManagedTenantCard(props: {
 									!state.credentialQ.data.hasPassword ||
 									page.revealTenantCredentialMutation.isPending
 								}
-								onClick={() => page.revealTenantCredentialMutation.mutate(tenant)}
+								onClick={() =>
+									page.revealTenantCredentialMutation.mutate(tenant)
+								}
 							>
 								{page.revealTenantCredentialMutation.isPending
 									? "Revealing…"
@@ -127,7 +147,9 @@ export function ForwardCredentialsManagedTenantCard(props: {
 								variant="destructive"
 								size="sm"
 								disabled={page.resetTenantCredentialMutation.isPending}
-								onClick={() => page.resetTenantCredentialMutation.mutate(tenant)}
+								onClick={() =>
+									page.resetTenantCredentialMutation.mutate(tenant)
+								}
 							>
 								{page.resetTenantCredentialMutation.isPending
 									? "Resetting…"

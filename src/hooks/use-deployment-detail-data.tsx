@@ -1,14 +1,19 @@
 import {
-	type DeploymentMap,
-	type DeploymentInfoResponse,
 	type DashboardSnapshot,
+	type DeploymentInfoResponse,
+	type DeploymentMap,
 	type DeploymentResourceEstimateResponse,
+	type DeploymentSourceShare,
+	type SharedDeploymentSource,
 	type UserForwardCollectorConfigSummary,
-	getDeploymentInfo,
 	type UserScopeDeployment,
-	getDeploymentResourceEstimate,
+	getDeploymentInfo,
 	getDeploymentMap,
+	getDeploymentResourceEstimate,
 	getDeploymentTopology,
+	listAssignableUsers,
+	listDeploymentSourceShares,
+	listSharedDeploymentSources,
 	listUserForwardCollectorConfigs,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
@@ -29,6 +34,12 @@ export function useDeploymentDetailData(args: {
 	const [destroyDialogOpen, setDestroyDialogOpen] = useState(false);
 	const [forwardEnabled, setForwardEnabled] = useState(false);
 	const [forwardCollector, setForwardCollector] = useState("");
+	const [forwardTopologySourceUserId, setForwardTopologySourceUserId] =
+		useState("");
+	const [
+		forwardTopologySourceDeploymentId,
+		setForwardTopologySourceDeploymentId,
+	] = useState("");
 	const [forwardAutoSyncOnBringUp, setForwardAutoSyncOnBringUp] =
 		useState(false);
 	const normalizedTab =
@@ -65,11 +76,19 @@ export function useDeploymentDetailData(args: {
 		const collector = String(
 			(deployment?.config ?? {})["forwardCollectorId"] ?? "",
 		).trim();
+		const topologySourceUserId = String(
+			(deployment?.config ?? {})["forwardTopologySourceUserId"] ?? "",
+		).trim();
+		const topologySourceDeploymentId = String(
+			(deployment?.config ?? {})["forwardTopologySourceDeploymentId"] ?? "",
+		).trim();
 		const autoSync =
 			Boolean(deployment?.autoSyncOnBringUp) ||
 			Boolean((deployment?.config ?? {})["forwardAutoSyncOnBringUp"]);
 		setForwardEnabled(enabled);
 		setForwardCollector(collector);
+		setForwardTopologySourceUserId(topologySourceUserId);
+		setForwardTopologySourceDeploymentId(topologySourceDeploymentId);
 		setForwardAutoSyncOnBringUp(autoSync);
 	}, [deployment?.id, deployment?.config, deployment?.autoSyncOnBringUp]);
 
@@ -196,6 +215,34 @@ export function useDeploymentDetailData(args: {
 	});
 	const forwardCollectors = (forwardCollectorsQ.data?.collectors ??
 		[]) as UserForwardCollectorConfigSummary[];
+	const deploymentSourceSharesQ = useQuery({
+		queryKey: queryKeys.deploymentSourceShares(userId, deploymentId),
+		queryFn: async () => {
+			if (!deployment) throw new Error("deployment not found");
+			return listDeploymentSourceShares(deployment.userId, deployment.id);
+		},
+		enabled: Boolean(deployment),
+		retry: false,
+		staleTime: 30_000,
+	});
+	const deploymentSourceShares = (deploymentSourceSharesQ.data?.shares ??
+		[]) as DeploymentSourceShare[];
+	const sharedDeploymentSourcesQ = useQuery({
+		queryKey: queryKeys.sharedDeploymentSources(),
+		queryFn: listSharedDeploymentSources,
+		enabled: Boolean(deployment),
+		retry: false,
+		staleTime: 30_000,
+	});
+	const sharedDeploymentSources = (sharedDeploymentSourcesQ.data?.sources ??
+		[]) as SharedDeploymentSource[];
+	const assignableUsersQ = useQuery({
+		queryKey: queryKeys.assignableUsers(),
+		queryFn: listAssignableUsers,
+		enabled: Boolean(deployment),
+		retry: false,
+		staleTime: 30_000,
+	});
 
 	return {
 		activeLogs,
@@ -212,6 +259,8 @@ export function useDeploymentDetailData(args: {
 		forwardCollectors,
 		forwardCollectorsQ,
 		forwardEnabled,
+		forwardTopologySourceDeploymentId,
+		forwardTopologySourceUserId,
 		forwardNetworkID,
 		isKNEDeployment,
 		primaryAction,
@@ -223,6 +272,13 @@ export function useDeploymentDetailData(args: {
 		setForwardAutoSyncOnBringUp,
 		setForwardCollector,
 		setForwardEnabled,
+		setForwardTopologySourceDeploymentId,
+		setForwardTopologySourceUserId,
+		assignableUsersQ,
+		deploymentSourceShares,
+		deploymentSourceSharesQ,
+		sharedDeploymentSources,
+		sharedDeploymentSourcesQ,
 		snap,
 		status,
 		topology,

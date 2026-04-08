@@ -20,9 +20,9 @@ export function ForwardCredentialsPageContent(props: {
 					Forward Org Access
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Manage your deployment and demo Forward orgs, experimental
-					deployment-org feature flags, and any additional on-prem
-					credential sets.
+					Manage your deployment, demo, and customer Forward orgs,
+					experimental deployment-org feature flags, and any additional
+					on-prem credential sets.
 				</p>
 			</div>
 
@@ -49,6 +49,20 @@ export function ForwardCredentialsPageContent(props: {
 				<ForwardCredentialsManagedTenantCard page={page} tenant="primary" />
 				<ForwardTenantFeaturesCard page={page} />
 				<ForwardTenantRebuildCard page={page} tenant="primary" />
+			</section>
+
+			<section id="customer-org" className="space-y-4">
+				<div className="space-y-1">
+					<h2 className="text-xl font-semibold tracking-tight">
+						Customer Org
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						Managed customer snapshot-analysis org with a confidentiality
+						banner.
+					</p>
+				</div>
+				<ForwardCredentialsManagedTenantCard page={page} tenant="customer" />
+				<ForwardTenantRebuildCard page={page} tenant="customer" />
 			</section>
 
 			<section id="performance-data" className="space-y-4">
