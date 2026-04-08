@@ -38,7 +38,7 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 		externalRepos,
 		byosServerRefs,
 		userNetlabServersQ,
-		userContainerlabServersQ,
+		userKNEServersQ,
 	} = page;
 
 	return (
@@ -81,7 +81,7 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 									value="external"
 									disabled={
 										!externalAllowed ||
-										(watchKind !== "containerlab" &&
+										(watchKind !== "kne" &&
 											watchKind !== "kne_netlab" &&
 											watchKind !== "kne_raw" &&
 											watchKind !== "terraform")
@@ -95,7 +95,7 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 										watchKind !== "netlab" &&
 										watchKind !== "kne_netlab" &&
 										watchKind !== "kne_raw" &&
-										watchKind !== "containerlab"
+										watchKind !== "kne"
 									}
 								>
 									One-shot repo URL
@@ -103,7 +103,7 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 							</SelectContent>
 						</Select>
 						{!externalAllowed &&
-							(watchKind === "containerlab" ||
+							(watchKind === "kne" ||
 								watchKind === "kne_netlab" ||
 								watchKind === "kne_raw" ||
 								watchKind === "terraform") && (
@@ -174,7 +174,7 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 				/>
 			)}
 
-			{(watchKind === "netlab" || watchKind === "containerlab") && (
+			{(watchKind === "netlab" || watchKind === "kne") && (
 				<FormField
 					control={form.control}
 					name="netlabServer"
@@ -200,7 +200,7 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 								</SelectContent>
 							</Select>
 							{(userNetlabServersQ.isLoading ||
-								userContainerlabServersQ.isLoading) && (
+								userKNEServersQ.isLoading) && (
 								<FormDescription>Loading servers…</FormDescription>
 							)}
 							<FormDescription>

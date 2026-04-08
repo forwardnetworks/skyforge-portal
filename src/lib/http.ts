@@ -12,6 +12,44 @@ export class ApiError extends Error {
 	}
 }
 
+export type AuthRedirectMode = "auto" | "always" | "never";
+
+export type ApiFetchInit = RequestInit & {
+	authRedirect?: AuthRedirectMode;
+};
+
+let unauthorizedRedirectInFlight = false;
+
+export function isProtectedPath(pathname: string): boolean {
+	return /^\/(dashboard|admin)(\/|$)/.test(pathname);
+}
+
+export function triggerUnauthorizedRedirect() {
+	if (typeof window === "undefined" || unauthorizedRedirectInFlight) return;
+	unauthorizedRedirectInFlight = true;
+	const currentPath = window.location.pathname + (window.location.search ?? "");
+	window.location.href = buildLoginUrl(currentPath);
+}
+
+function shouldRedirectOnUnauthorized(
+	path: string,
+	method: string,
+	authRedirect: AuthRedirectMode,
+): boolean {
+	if (authRedirect === "never") return false;
+	if (authRedirect === "always") return true;
+	const normalizedPath = String(path).trim().toLowerCase();
+	if (
+		normalizedPath === "/api/auth/session" ||
+		normalizedPath === "/api/auth/login"
+	) {
+		return false;
+	}
+	if (method === "GET") return true;
+	if (typeof window === "undefined") return false;
+	return isProtectedPath(window.location.pathname);
+}
+
 export function extractErrorMessage(bodyText: string): string {
 	const raw = (bodyText ?? "").trim();
 	if (!raw) return "";
@@ -36,15 +74,17 @@ export function extractErrorMessage(bodyText: string): string {
 
 export async function apiFetch<T>(
 	path: string,
-	init?: RequestInit,
+	init?: ApiFetchInit,
 ): Promise<T> {
-	const method = (init?.method ?? "GET").toUpperCase();
+	const { authRedirect = "auto", ...requestInitRaw } = init ?? {};
+	const requestInit: RequestInit = requestInitRaw;
+	const method = (requestInit.method ?? "GET").toUpperCase();
 	const resp = await fetch(`${SKYFORGE_PROXY_ROOT}${path}`, {
 		credentials: "include",
-		...init,
+		...requestInit,
 		headers: {
 			"Content-Type": "application/json",
-			...(init?.headers ?? {}),
+			...(requestInit.headers ?? {}),
 		},
 	});
 
@@ -52,13 +92,8 @@ export async function apiFetch<T>(
 	// 403 means "logged in but forbidden" -> do NOT redirect; show an error instead.
 	if (resp.status === 401) {
 		const text = await resp.text().catch(() => "");
-		// Only auto-redirect for navigation-style GET requests.
-		// For mutations (PUT/POST/DELETE), bubble an error so the UI can show a toast
-		// and not kick the user out while they are editing a form.
-		if (method === "GET" && typeof window !== "undefined") {
-			const currentPath =
-				window.location.pathname + (window.location.search ?? "");
-			window.location.href = buildLoginUrl(currentPath);
+		if (shouldRedirectOnUnauthorized(path, method, authRedirect)) {
+			triggerUnauthorizedRedirect();
 		}
 		throw new ApiError("unauthorized", resp.status, text);
 	}

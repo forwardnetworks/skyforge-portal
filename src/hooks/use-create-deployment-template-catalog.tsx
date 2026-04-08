@@ -86,8 +86,8 @@ export function useCreateDeploymentTemplateCatalog(args: {
 	const externalAllowed = externalRepos.length > 0;
 
 	return {
-		byosContainerlabEnabled: importOptions.byosContainerlabEnabled,
-		byosContainerlabServerRefs: importOptions.byosContainerlabServerRefs,
+		byosKNEEnabled: importOptions.byosKNEEnabled,
+		byosKNEServerRefs: importOptions.byosKNEServerRefs,
 		byosNetlabEnabled: importOptions.byosNetlabEnabled,
 		byosServerRefs: importOptions.byosServerRefs,
 		deploymentModeOptions,
@@ -105,7 +105,7 @@ export function useCreateDeploymentTemplateCatalog(args: {
 		templates: templateCatalog.templates,
 		templatesQ: templateCatalog.templatesQ,
 		terraformProviders: templateCatalog.terraformProviders,
-		userContainerlabServersQ: importOptions.userContainerlabServersQ,
+		userKNEServersQ: importOptions.userKNEServersQ,
 		userNetlabServersQ: importOptions.userNetlabServersQ,
 		variableGroups: collectorCatalog.variableGroups,
 	};

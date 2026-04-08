@@ -51,11 +51,11 @@ export function DeploymentDetailTopologyTab({
 								{deployment.family === "kne" && deploymentEngine === "netlab"
 									? "Derived from KNE/Netlab artifacts after deploy (includes resolved mgmt IPs)."
 									: deployment.family === "kne" &&
-											deploymentEngine === "containerlab"
+											deploymentEngine === "kne"
 										? "Derived from KNE raw-topology artifacts after deploy (includes resolved mgmt IPs)."
 										: deployment.family === "byos" &&
-												deploymentEngine === "containerlab"
-										? "Derived from containerlab BYOS artifacts after deploy."
+												deploymentEngine === "kne"
+										? "Derived from kne BYOS artifacts after deploy."
 										: deployment.family === "byos" &&
 												deploymentEngine === "netlab"
 											? "Derived from netlab BYOS artifacts after deploy."

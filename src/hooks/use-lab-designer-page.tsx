@@ -33,7 +33,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		importSource: state.importSource,
 		importDir: state.importDir,
 		importFile: state.importFile,
-		containerlabServer: state.containerlabServer,
+		kneServer: state.kneServer,
 		labName: state.labName,
 		effectiveYaml: model.effectiveYaml,
 		effectiveTemplatesDir: model.effectiveTemplatesDir,
@@ -73,7 +73,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 			? (data.registryReposQ.error as Error)
 			: null,
 		userScopes: data.userScopesQ.data ?? [],
-		containerlabServers: data.containerlabServersQ.data?.servers ?? [],
+		kneServers: data.kneServersQ.data?.servers ?? [],
 	});
 
 	const actions = createLabDesignerActions({
@@ -113,7 +113,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		setUseSavedConfig: state.setUseSavedConfig,
 		setLastSaved: state.setLastSaved,
 		setUserScopeId: state.setUserScopeId,
-		setContainerlabServer: state.setContainerlabServer,
+		setKNEServer: state.setKNEServer,
 		setRuntime: state.setRuntime,
 		markWarningsVisible: state.markWarningsVisible,
 	});

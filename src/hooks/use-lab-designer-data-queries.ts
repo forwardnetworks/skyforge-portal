@@ -2,7 +2,7 @@ import {
 	getUserScopeNetlabTemplate,
 	getUserScopeNetlabTemplates,
 	listRegistryRepositories,
-	listUserContainerlabServers,
+	listUserKNEServers,
 	listUserScopes,
 } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
@@ -26,9 +26,9 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 		staleTime: 60_000,
 	});
 
-	const containerlabServersQ = useQuery({
-		queryKey: queryKeys.userContainerlabServers(),
-		queryFn: listUserContainerlabServers,
+	const kneServersQ = useQuery({
+		queryKey: queryKeys.userKNEServers(),
+		queryFn: listUserKNEServers,
 		enabled: false,
 		retry: false,
 		staleTime: 30_000,
@@ -37,12 +37,12 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 	const templatesQ = useQuery({
 		queryKey: opts.userId
 			? [
-					"containerlabTemplates",
+					"kneTemplates",
 					opts.userId,
 					opts.importSource,
 					opts.importDir,
 				]
-			: ["containerlabTemplates", "none"],
+			: ["kneTemplates", "none"],
 		queryFn: async () =>
 			getUserScopeNetlabTemplates(opts.userId, {
 				source: toAPISource(opts.importSource),
@@ -56,13 +56,13 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 	const templatePreviewQ = useQuery({
 		queryKey: opts.userId
 			? [
-					"containerlabTemplate",
+					"kneTemplate",
 					opts.userId,
 					opts.importSource,
 					opts.importDir,
 					opts.importFile,
 				]
-			: ["containerlabTemplate", "none"],
+			: ["kneTemplate", "none"],
 		queryFn: async () => {
 			if (!opts.userId) throw new Error("missing user");
 			if (!opts.importFile) return null;
@@ -81,7 +81,7 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 	return {
 		userScopesQ,
 		registryReposQ,
-		containerlabServersQ,
+		kneServersQ,
 		templatesQ,
 		templatePreviewQ,
 	};

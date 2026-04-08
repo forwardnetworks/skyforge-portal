@@ -83,30 +83,30 @@ export function UserSettingsByolServersCard(props: {
 				</div>
 
 				<div className="space-y-4">
-					<div className="text-sm font-medium">Containerlab</div>
+					<div className="text-sm font-medium">KNE</div>
 					<div className="grid gap-2 md:grid-cols-2">
 						<Input
 							placeholder="https://clab.example.com"
-							value={page.newContainerlabUrl}
-							onChange={(e) => page.setNewContainerlabUrl(e.target.value)}
+							value={page.newKNEUrl}
+							onChange={(e) => page.setNewKNEUrl(e.target.value)}
 						/>
 						<Input
 							placeholder="API username (optional)"
-							value={page.newContainerlabUser}
-							onChange={(e) => page.setNewContainerlabUser(e.target.value)}
+							value={page.newKNEUser}
+							onChange={(e) => page.setNewKNEUser(e.target.value)}
 						/>
 						<Input
 							placeholder="API password (optional)"
 							type="password"
-							value={page.newContainerlabPassword}
-							onChange={(e) => page.setNewContainerlabPassword(e.target.value)}
+							value={page.newKNEPassword}
+							onChange={(e) => page.setNewKNEPassword(e.target.value)}
 						/>
 						<div className="flex items-center gap-2">
 							<input
 								type="checkbox"
-								checked={page.newContainerlabInsecure}
+								checked={page.newKNEInsecure}
 								onChange={(e) =>
-									page.setNewContainerlabInsecure(e.target.checked)
+									page.setNewKNEInsecure(e.target.checked)
 								}
 							/>
 							<div className="text-sm">Skip TLS verify</div>
@@ -115,16 +115,16 @@ export function UserSettingsByolServersCard(props: {
 					<Button
 						type="button"
 						variant="outline"
-						onClick={() => page.saveContainerlabServerM.mutate()}
+						onClick={() => page.saveKNEServerM.mutate()}
 						disabled={
-							!page.newContainerlabUrl.trim() ||
-							page.saveContainerlabServerM.isPending
+							!page.newKNEUrl.trim() ||
+							page.saveKNEServerM.isPending
 						}
 					>
 						Add/Update
 					</Button>
 					<div className="space-y-2">
-						{(page.userContainerlabServersQ.data?.servers ?? []).map(
+						{(page.userKNEServersQ.data?.servers ?? []).map(
 							(server) => (
 								<div
 									key={server.id}
@@ -144,7 +144,7 @@ export function UserSettingsByolServersCard(props: {
 										size="icon"
 										onClick={() =>
 											server.id &&
-											page.deleteContainerlabServerM.mutate(server.id)
+											page.deleteKNEServerM.mutate(server.id)
 										}
 									>
 										<Trash2 className="h-4 w-4" />

@@ -6,7 +6,9 @@ export type SessionResponseEnvelope =
 
 export async function getSession(): Promise<SessionResponseEnvelope> {
 	try {
-		return await apiFetch<SessionResponseEnvelope>("/api/auth/session");
+		return await apiFetch<SessionResponseEnvelope>("/api/auth/session", {
+			authRedirect: "never",
+		});
 	} catch (error) {
 		// Landing and login routes must treat "no cookie yet" as a normal anonymous state.
 		// This avoids redirect loops before auth mode is loaded from /api/ui/config.

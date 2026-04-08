@@ -269,8 +269,8 @@ function buildRunExecutionContext(
 	if (!engine) {
 		if (taskType.includes("terraform")) {
 			engine = "terraform";
-		} else if (taskType.includes("containerlab")) {
-			engine = "containerlab";
+		} else if (taskType.includes("kne")) {
+			engine = "kne";
 		} else if (
 			asRecord(run?.netlabContract) ||
 			asRecord(run?.netlabCatalogProvenance) ||
@@ -301,7 +301,7 @@ function describeExecutionDetails(family: string, engine: string): string {
 	if (family === "byos" && engine === "netlab") {
 		return "Template and runtime metadata captured during BYOS execution.";
 	}
-	if (family === "byos" && engine === "containerlab") {
+	if (family === "byos" && engine === "kne") {
 		return "Runtime and deployment metadata captured during BYOS execution.";
 	}
 	if (engine) {

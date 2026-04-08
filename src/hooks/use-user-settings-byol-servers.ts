@@ -2,13 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-	deleteUserContainerlabServer,
+	deleteUserKNEServer,
 	deleteUserFixiaServer,
 	deleteUserNetlabServer,
-	listUserContainerlabServers,
+	listUserKNEServers,
 	listUserFixiaServers,
 	listUserNetlabServers,
-	upsertUserContainerlabServer,
+	upsertUserKNEServer,
 	upsertUserFixiaServer,
 	upsertUserNetlabServer,
 } from "../lib/api-client";
@@ -30,9 +30,9 @@ export function useUserSettingsByolServers() {
 		staleTime: 10_000,
 		retry: false,
 	});
-	const userContainerlabServersQ = useQuery({
-		queryKey: queryKeys.userContainerlabServers(),
-		queryFn: listUserContainerlabServers,
+	const userKNEServersQ = useQuery({
+		queryKey: queryKeys.userKNEServers(),
+		queryFn: listUserKNEServers,
 		staleTime: 10_000,
 		retry: false,
 	});
@@ -47,10 +47,10 @@ export function useUserSettingsByolServers() {
 	const [newNetlabInsecure, setNewNetlabInsecure] = useState(true);
 	const [newNetlabUser, setNewNetlabUser] = useState("");
 	const [newNetlabPassword, setNewNetlabPassword] = useState("");
-	const [newContainerlabUrl, setNewContainerlabUrl] = useState("");
-	const [newContainerlabInsecure, setNewContainerlabInsecure] = useState(true);
-	const [newContainerlabUser, setNewContainerlabUser] = useState("");
-	const [newContainerlabPassword, setNewContainerlabPassword] = useState("");
+	const [newKNEUrl, setNewKNEUrl] = useState("");
+	const [newKNEInsecure, setNewKNEInsecure] = useState(true);
+	const [newKNEUser, setNewKNEUser] = useState("");
+	const [newKNEPassword, setNewKNEPassword] = useState("");
 	const [newFixiaUrl, setNewFixiaUrl] = useState("");
 	const [newFixiaInsecure, setNewFixiaInsecure] = useState(true);
 	const [newFixiaUser, setNewFixiaUser] = useState("");
@@ -95,41 +95,41 @@ export function useUserSettingsByolServers() {
 			}),
 	});
 
-	const saveContainerlabServerM = useMutation({
+	const saveKNEServerM = useMutation({
 		mutationFn: async () =>
-			upsertUserContainerlabServer({
-				name: nameFromURL(newContainerlabUrl).trim(),
-				apiUrl: newContainerlabUrl.trim(),
-				apiInsecure: newContainerlabInsecure,
-				apiUser: newContainerlabUser.trim() || undefined,
-				apiPassword: newContainerlabPassword.trim() || undefined,
+			upsertUserKNEServer({
+				name: nameFromURL(newKNEUrl).trim(),
+				apiUrl: newKNEUrl.trim(),
+				apiInsecure: newKNEInsecure,
+				apiUser: newKNEUser.trim() || undefined,
+				apiPassword: newKNEPassword.trim() || undefined,
 			}),
 		onSuccess: async () => {
-			setNewContainerlabUrl("");
-			setNewContainerlabInsecure(true);
-			setNewContainerlabUser("");
-			setNewContainerlabPassword("");
+			setNewKNEUrl("");
+			setNewKNEInsecure(true);
+			setNewKNEUser("");
+			setNewKNEPassword("");
 			await queryClient.invalidateQueries({
-				queryKey: queryKeys.userContainerlabServers(),
+				queryKey: queryKeys.userKNEServers(),
 			});
-			toast.success("Containerlab server saved");
+			toast.success("KNE server saved");
 		},
 		onError: (err: unknown) =>
-			toast.error("Failed to save Containerlab server", {
+			toast.error("Failed to save KNE server", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
 
-	const deleteContainerlabServerM = useMutation({
-		mutationFn: async (id: string) => deleteUserContainerlabServer(id),
+	const deleteKNEServerM = useMutation({
+		mutationFn: async (id: string) => deleteUserKNEServer(id),
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
-				queryKey: queryKeys.userContainerlabServers(),
+				queryKey: queryKeys.userKNEServers(),
 			});
-			toast.success("Containerlab server deleted");
+			toast.success("KNE server deleted");
 		},
 		onError: (err: unknown) =>
-			toast.error("Failed to delete Containerlab server", {
+			toast.error("Failed to delete KNE server", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
@@ -175,7 +175,7 @@ export function useUserSettingsByolServers() {
 
 	return {
 		userNetlabServersQ,
-		userContainerlabServersQ,
+		userKNEServersQ,
 		userFixiaServersQ,
 		newNetlabUrl,
 		setNewNetlabUrl,
@@ -185,14 +185,14 @@ export function useUserSettingsByolServers() {
 		setNewNetlabUser,
 		newNetlabPassword,
 		setNewNetlabPassword,
-		newContainerlabUrl,
-		setNewContainerlabUrl,
-		newContainerlabInsecure,
-		setNewContainerlabInsecure,
-		newContainerlabUser,
-		setNewContainerlabUser,
-		newContainerlabPassword,
-		setNewContainerlabPassword,
+		newKNEUrl,
+		setNewKNEUrl,
+		newKNEInsecure,
+		setNewKNEInsecure,
+		newKNEUser,
+		setNewKNEUser,
+		newKNEPassword,
+		setNewKNEPassword,
 		newFixiaUrl,
 		setNewFixiaUrl,
 		newFixiaInsecure,
@@ -203,8 +203,8 @@ export function useUserSettingsByolServers() {
 		setNewFixiaPassword,
 		saveNetlabServerM,
 		deleteNetlabServerM,
-		saveContainerlabServerM,
-		deleteContainerlabServerM,
+		saveKNEServerM,
+		deleteKNEServerM,
 		saveFixiaServerM,
 		deleteFixiaServerM,
 	};

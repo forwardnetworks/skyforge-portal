@@ -19,7 +19,7 @@ export function kneYamlToDesign(yamlContent: string): {
 		throw new Error("Invalid KNE YAML");
 	}
 	if (parsed.topology && typeof parsed.topology === "object") {
-		throw new Error("KNE YAML must use top-level nodes (not containerlab topology wrapper)");
+		throw new Error("KNE YAML must use top-level nodes (not kne topology wrapper)");
 	}
 	const nodesRecord = parsed.nodes as Record<string, unknown> | undefined;
 	if (!nodesRecord || typeof nodesRecord !== "object") {

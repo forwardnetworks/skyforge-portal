@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
-	listUserContainerlabServers,
+	listUserKNEServers,
 	listUserNetlabServers,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
@@ -21,17 +21,17 @@ export function useCreateDeploymentImportOptions(args: {
 		staleTime: 30_000,
 		retry: false,
 	});
-	const userContainerlabServersQ = useQuery({
-		queryKey: queryKeys.userContainerlabServers(),
-		queryFn: listUserContainerlabServers,
+	const userKNEServersQ = useQuery({
+		queryKey: queryKeys.userKNEServers(),
+		queryFn: listUserKNEServers,
 		staleTime: 30_000,
 		retry: false,
 	});
 
 	const userNetlabOptions = userNetlabServersQ.data?.servers ?? [];
-	const userContainerlabOptions = userContainerlabServersQ.data?.servers ?? [];
+	const userKNEOptions = userKNEServersQ.data?.servers ?? [];
 	const byosNetlabEnabled = userNetlabOptions.length > 0;
-	const byosContainerlabEnabled = userContainerlabOptions.length > 0;
+	const byosKNEEnabled = userKNEOptions.length > 0;
 
 	const byosNetlabServerRefs = useMemo(
 		() =>
@@ -43,30 +43,30 @@ export function useCreateDeploymentImportOptions(args: {
 				})),
 		[userNetlabOptions],
 	);
-	const byosContainerlabServerRefs = useMemo(
+	const byosKNEServerRefs = useMemo(
 		() =>
-			userContainerlabOptions
+			userKNEOptions
 				.filter((s) => !!s?.id)
 				.map((s) => ({
 					value: `user:${s.id}`,
 					label: hostLabelFromURL(s.apiUrl) || s.name,
 				})),
-		[userContainerlabOptions],
+		[userKNEOptions],
 	);
 	const byosServerRefs =
 		watchKind === "netlab"
 			? byosNetlabServerRefs
-			: watchKind === "containerlab"
-				? byosContainerlabServerRefs
+			: watchKind === "kne"
+				? byosKNEServerRefs
 				: [];
 
 	return {
 		userNetlabServersQ,
-		userContainerlabServersQ,
+		userKNEServersQ,
 		byosNetlabEnabled,
-		byosContainerlabEnabled,
+		byosKNEEnabled,
 		byosNetlabServerRefs,
-		byosContainerlabServerRefs,
+		byosKNEServerRefs,
 		byosServerRefs,
 	};
 }

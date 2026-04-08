@@ -106,7 +106,7 @@
         <h2>Where Skyforge reads templates from</h2>
         <ul>
           <li>Repo: <code>skyforge/blueprints</code> (Gitea)</li>
-          <li>Folders at repo root: <code>containerlab/</code>, <code>netlab/</code>, <code>terraform/</code></li>
+          <li>Folders at repo root: <code>kne/</code>, <code>netlab/</code>, <code>terraform/</code></li>
           <li>Skyforge UI loads templates from those folders; if the repo is empty you’ll see “failed to load templates”.</li>
         </ul>
       </div>
@@ -123,7 +123,7 @@ git clone https://&lt;host&gt;/git/skyforge/blueprints.git
 cd blueprints
 
 # Copy templates into the correct directories
-mkdir -p containerlab netlab terraform
+mkdir -p kne netlab terraform
 # e.g. cp -R /path/to/my-topos/* netlab/
 
 git add -A

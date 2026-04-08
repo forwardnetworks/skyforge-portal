@@ -35,7 +35,7 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 		lifetimeDefaultHours,
 		deploymentModeOptions,
 		byosNetlabEnabled,
-		byosContainerlabEnabled,
+		byosKNEEnabled,
 		forwardCollectorsQ,
 		selectableCollectors,
 	} = page;
@@ -66,9 +66,9 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 								{byosNetlabEnabled && (
 									<SelectItem value="netlab">Netlab (BYOS)</SelectItem>
 								)}
-								{byosContainerlabEnabled && (
-									<SelectItem value="containerlab">
-										Containerlab (BYOS)
+								{byosKNEEnabled && (
+									<SelectItem value="kne">
+										KNE (BYOS)
 									</SelectItem>
 								)}
 								<SelectItem value="terraform">Terraform</SelectItem>

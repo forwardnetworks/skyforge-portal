@@ -8,7 +8,7 @@ describe("kne yaml designer model", () => {
 	it("round-trips lab defaults kind and explicit link interfaces", () => {
 		const source = `
 name: fabric
-provider: clab
+provider: kne
 nodes:
   leaf1:
     device: eos
@@ -40,7 +40,7 @@ links:
 		});
 
 		const rendered = designToKneYaml(parsed.design);
-		expect(rendered.yaml).toContain("provider: clab");
+		expect(rendered.yaml).toContain("provider: kne");
 		expect(rendered.yaml).toContain("device: eos");
 		expect(rendered.yaml).toContain("leaf1:");
 		expect(rendered.yaml).toContain("ifname: eth1");

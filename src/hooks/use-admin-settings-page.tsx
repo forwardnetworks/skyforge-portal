@@ -1,23 +1,23 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import {
-	getAdminUserRoles,
-	getSession,
-	listUserScopes,
-} from "../lib/api-client";
-import { queryKeys } from "../lib/query-keys";
 import type {
 	AdminForwardSectionProps,
 	AdminIdentitySectionProps,
 	AdminIntegrationsSectionProps,
 	AdminRuntimeSectionProps,
 } from "../components/settings-section-types";
+import {
+	getAdminUserRoles,
+	getSession,
+	listUserScopes,
+} from "../lib/api-client";
+import { queryKeys } from "../lib/query-keys";
 import { useAdminSettingsAudit } from "./use-admin-settings-audit";
+import { useAdminSettingsAuth } from "./use-admin-settings-auth";
 import {
 	buildRuntimeSummary,
 	useAdminSettingsMaintenanceSection,
 } from "./use-admin-settings-maintenance-section";
-import { useAdminSettingsAuth } from "./use-admin-settings-auth";
 import { useAdminSettingsOperations } from "./use-admin-settings-operations";
 import { useAdminSettingsPlatformPolicyDrafts } from "./use-admin-settings-platform-policy-drafts";
 import { useAdminSettingsPlatformPolicyUserSelection } from "./use-admin-settings-platform-policy-selection";
@@ -221,8 +221,7 @@ function useAdminSettingsForwardSection(args: {
 			saveQuickDeployCatalogPending: auth.saveQuickDeployCatalog.isPending,
 			hasQuickDeployTemplateRows: auth.hasQuickDeployTemplateRows,
 			onSelectedQuickDeployOptionChange: auth.setSelectedQuickDeployOption,
-			onAddQuickDeployTemplateFromOption:
-				auth.addQuickDeployTemplateFromOption,
+			onAddQuickDeployTemplateFromOption: auth.addQuickDeployTemplateFromOption,
 			onQuickDeployTemplateFieldChange: auth.upsertQuickDeployTemplateField,
 			onRemoveQuickDeployTemplate: auth.removeQuickDeployTemplate,
 			onAddQuickDeployTemplate: auth.addQuickDeployTemplate,
@@ -253,6 +252,8 @@ function useAdminSettingsForwardSection(args: {
 			adminForwardSupportHasPassword:
 				ops.adminForwardSupportCredentialQ.data?.hasPassword ?? false,
 			adminForwardSupportPassword: ops.adminForwardSupportPassword,
+			adminForwardSupportLaunchHref:
+				"/api/admin/integrations/forward/session?next=%2F",
 			revealAdminForwardSupportCredentialPending:
 				ops.revealAdminForwardSupportCredentialMutation.isPending,
 			onRevealAdminForwardSupportCredentialPassword: () =>

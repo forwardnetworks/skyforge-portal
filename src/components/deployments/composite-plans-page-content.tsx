@@ -915,7 +915,7 @@ function AdvancedCompositeEditor({ page }: { page: CompositePlansPageState }) {
 								<SelectContent>
 									<SelectItem value="terraform">terraform</SelectItem>
 									<SelectItem value="netlab">netlab</SelectItem>
-									<SelectItem value="containerlab">containerlab</SelectItem>
+									<SelectItem value="kne">kne</SelectItem>
 									<SelectItem value="baremetal">baremetal</SelectItem>
 								</SelectContent>
 							</Select>

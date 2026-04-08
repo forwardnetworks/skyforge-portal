@@ -22,7 +22,7 @@ export type UserScopeDeployment = {
 	userId: string;
 	name: string;
 	family: "terraform" | "kne" | "byos" | string;
-	engine: "terraform" | "netlab" | "containerlab" | string;
+	engine: "terraform" | "netlab" | "kne" | string;
 	config: JSONMap;
 	lifecycleState?: string;
 	primaryAction?: "bring_up" | "shut_down" | "none" | string;

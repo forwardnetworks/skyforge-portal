@@ -93,7 +93,7 @@ export function createLabDesignerPersistenceActions(
 	const saveDraft = (
 		storageKey: string,
 		runtime: "kne",
-		containerlabServer: string,
+		kneServer: string,
 		useSavedConfig: boolean,
 	) => {
 		try {
@@ -102,7 +102,7 @@ export function createLabDesignerPersistenceActions(
 				defaultKind: opts.defaultKind,
 				userId: opts.userId,
 				runtime,
-				containerlabServer,
+				kneServer,
 				useSavedConfig,
 				lastSaved: opts.lastSaved,
 				nodes: opts.nodes,
@@ -135,10 +135,10 @@ export function createLabDesignerPersistenceActions(
 			if (parsed?.runtime === "kne") {
 				opts.setRuntime(parsed.runtime);
 			}
-			if (typeof parsed?.containerlabServer === "string") {
-				opts.setContainerlabServer(parsed.containerlabServer);
+			if (typeof parsed?.kneServer === "string") {
+				opts.setKNEServer(parsed.kneServer);
 			} else if (typeof parsed?.netlabServer === "string") {
-				opts.setContainerlabServer(parsed.netlabServer);
+				opts.setKNEServer(parsed.netlabServer);
 			}
 			if (parsed?.lastSaved && typeof parsed.lastSaved === "object") {
 				opts.setLastSaved(parsed.lastSaved as SavedConfigRef);

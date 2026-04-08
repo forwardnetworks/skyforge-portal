@@ -44,7 +44,7 @@ export function LabDesignerImportDialog(props: Props) {
 				<DialogHeader>
 					<DialogTitle>Import template</DialogTitle>
 					<DialogDescription>
-						Load an existing containerlab YAML from templates/blueprints into
+						Load an existing kne YAML from templates/blueprints into
 						the editor.
 					</DialogDescription>
 				</DialogHeader>

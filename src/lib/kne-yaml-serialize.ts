@@ -95,7 +95,7 @@ export function designToKneYaml(design: LabDesign): {
 
 	const doc = {
 		name,
-		provider: "clab",
+		provider: "kne",
 		nodes,
 		...(links.length ? { links } : {}),
 	};

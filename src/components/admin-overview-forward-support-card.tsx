@@ -9,7 +9,9 @@ import {
 	CardTitle,
 } from "./ui/card";
 
-export function AdminOverviewForwardSupportCard(props: AdminForwardSectionProps) {
+export function AdminOverviewForwardSupportCard(
+	props: AdminForwardSectionProps,
+) {
 	const revealedPassword = props.adminForwardSupportPassword.trim();
 	const maskedPassword = "••••••••••••••••";
 
@@ -49,6 +51,17 @@ export function AdminOverviewForwardSupportCard(props: AdminForwardSectionProps)
 							</div>
 						</div>
 						<div className="flex flex-wrap gap-2">
+							<Button
+								size="sm"
+								disabled={!props.adminForwardSupportCredentialConfigured}
+								onClick={() => {
+									const href = props.adminForwardSupportLaunchHref.trim();
+									if (!href) return;
+									window.open(href, "_blank", "noopener,noreferrer");
+								}}
+							>
+								Open Forward Admin
+							</Button>
 							<Button
 								variant="outline"
 								size="sm"

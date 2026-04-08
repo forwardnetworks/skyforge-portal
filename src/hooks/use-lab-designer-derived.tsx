@@ -28,7 +28,7 @@ export function useLabDesignerDerived(opts: {
 	registryRepos: string[];
 	registryError: Error | null;
 	userScopes: any[];
-	containerlabServers: any[];
+	kneServers: any[];
 }) {
 	const selectedNode = useMemo(
 		() => opts.nodes.find((n) => n.id === opts.selectedNodeId) ?? null,
@@ -169,13 +169,13 @@ export function useLabDesignerDerived(opts: {
 		[opts.userScopes],
 	);
 
-	const containerlabServerOptions = useMemo(
+	const kneServerOptions = useMemo(
 		() =>
-			(opts.containerlabServers ?? []).map((server: any) => ({
+			(opts.kneServers ?? []).map((server: any) => ({
 				value: `user:${String(server.id)}`,
 				label: hostLabelFromURL(server.apiUrl) || server.name,
 			})),
-		[opts.containerlabServers],
+		[opts.kneServers],
 	);
 
 	return {
@@ -192,6 +192,6 @@ export function useLabDesignerDerived(opts: {
 		paletteIsFilteredEmpty,
 		registryError,
 		userScopeOptions,
-		containerlabServerOptions,
+		kneServerOptions,
 	};
 }

@@ -126,13 +126,13 @@ export function formatDeploymentType(deployment: UserScopeDeployment): string {
 		.trim()
 		.toLowerCase();
 	if (family === "kne" && engine === "netlab") return "Netlab (KNE)";
-	if (family === "kne" && engine === "containerlab") {
+	if (family === "kne" && engine === "kne") {
 		return "KNE (Raw)";
 	}
 	if (family === "kne") return "KNE";
 	if (family === "byos" && engine === "netlab") return "Netlab (BYOS)";
-	if (family === "byos" && engine === "containerlab") {
-		return "Containerlab (BYOS)";
+	if (family === "byos" && engine === "kne") {
+		return "KNE (BYOS)";
 	}
 	if (family === "byos") return "BYOS";
 	if (family === "terraform") return "Terraform";
@@ -201,8 +201,8 @@ function matchesDeploymentTypeFilter(
 			(family === "byos" && engine === "netlab")
 		);
 	}
-	if (typeFilter === "containerlab") {
-		return family === "byos" && engine === "containerlab";
+	if (typeFilter === "kne") {
+		return family === "byos" && engine === "kne";
 	}
 	if (typeFilter === "terraform") return family === "terraform";
 	return true;

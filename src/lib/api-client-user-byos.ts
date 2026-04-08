@@ -83,7 +83,7 @@ export async function deleteUserNetlabServer(serverId: string): Promise<void> {
 	);
 }
 
-export type UserContainerlabServerConfig = {
+export type UserKNEServerConfig = {
 	id?: string;
 	name: string;
 	apiUrl: string;
@@ -93,30 +93,30 @@ export type UserContainerlabServerConfig = {
 	apiToken?: string;
 	hasPassword?: boolean;
 };
-export type UserContainerlabServersResponse = {
-	servers: UserContainerlabServerConfig[];
+export type UserKNEServersResponse = {
+	servers: UserKNEServerConfig[];
 };
 
-export async function listUserContainerlabServers(): Promise<UserContainerlabServersResponse> {
-	return apiFetch<UserContainerlabServersResponse>(
-		"/api/byos/me/containerlab/servers",
+export async function listUserKNEServers(): Promise<UserKNEServersResponse> {
+	return apiFetch<UserKNEServersResponse>(
+		"/api/byos/me/kne/servers",
 	);
 }
 
-export async function upsertUserContainerlabServer(
-	payload: UserContainerlabServerConfig,
-): Promise<UserContainerlabServerConfig> {
-	return apiFetch<UserContainerlabServerConfig>(
-		"/api/byos/me/containerlab/servers",
+export async function upsertUserKNEServer(
+	payload: UserKNEServerConfig,
+): Promise<UserKNEServerConfig> {
+	return apiFetch<UserKNEServerConfig>(
+		"/api/byos/me/kne/servers",
 		{ method: "PUT", body: JSON.stringify(payload) },
 	);
 }
 
-export async function deleteUserContainerlabServer(
+export async function deleteUserKNEServer(
 	serverId: string,
 ): Promise<void> {
 	await apiFetch<void>(
-		`/api/byos/me/containerlab/servers/${encodeURIComponent(serverId)}`,
+		`/api/byos/me/kne/servers/${encodeURIComponent(serverId)}`,
 		{ method: "DELETE" },
 	);
 }

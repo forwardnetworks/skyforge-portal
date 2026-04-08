@@ -73,7 +73,7 @@ const DOC_PAGES: DocPage[] = [
 						reuse them across deployments.
 					</li>
 					<li>
-						<strong>BYOL Servers</strong>: register Netlab / Containerlab
+						<strong>BYOL Servers</strong>: register Netlab / KNE
 						servers (using <span className="font-mono">user:</span> refs).
 					</li>
 					<li>

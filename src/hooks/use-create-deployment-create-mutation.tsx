@@ -69,7 +69,7 @@ export function useCreateDeploymentCreateMutation(
 					(config as any).forwardCollectorId = cid;
 				}
 			}
-			if (normalizedKind === "netlab" || normalizedKind === "containerlab") {
+			if (normalizedKind === "netlab" || normalizedKind === "kne") {
 				const v = (values.netlabServer || "").trim();
 				if (!v) throw new Error("BYOS server is required");
 				config.netlabServer = v;

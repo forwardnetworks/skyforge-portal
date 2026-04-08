@@ -97,8 +97,8 @@ function LabsMapPage() {
 
 	const templateQ = useQuery({
 		queryKey: userId
-			? ["containerlabTemplateMap", userId, source, dir, file]
-			: ["containerlabTemplateMap", "none"],
+			? ["kneTemplateMap", userId, source, dir, file]
+			: ["kneTemplateMap", "none"],
 		queryFn: async () => {
 			if (!userId) throw new Error("userId is required");
 			if (!file) throw new Error("file is required");

@@ -3,8 +3,8 @@ import { useEffect, useMemo } from "react";
 import {
 	type UserScopeTemplatesResponse,
 	estimateUserScopeTemplateResources,
-	getUserScopeContainerlabTemplate,
-	getUserScopeContainerlabTemplates,
+	getUserScopeKNETemplate,
+	getUserScopeKNETemplates,
 	getUserScopeNetlabTemplate,
 	getUserScopeNetlabTemplates,
 	getUserScopeTerraformTemplates,
@@ -85,9 +85,9 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 				case "netlab":
 				case "kne_netlab":
 					return getUserScopeNetlabTemplates(scopeId, query);
-				case "containerlab":
+				case "kne":
 				case "kne_raw":
-					return getUserScopeContainerlabTemplates(scopeId, query);
+					return getUserScopeKNETemplates(scopeId, query);
 				case "terraform":
 					return getUserScopeTerraformTemplates(scopeId, query);
 				default:
@@ -150,8 +150,8 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 				templateRepoId,
 			);
 			if (templatesQ.data?.dir) query.dir = templatesQ.data.dir;
-			if (watchKind === "containerlab" || watchKind === "kne_raw") {
-				return getUserScopeContainerlabTemplate(scopeId, {
+			if (watchKind === "kne" || watchKind === "kne_raw") {
+				return getUserScopeKNETemplate(scopeId, {
 					...query,
 					file: templateName,
 				});
@@ -168,7 +168,7 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 			(watchKind === "netlab" ||
 				watchKind === "kne_netlab" ||
 				watchKind === "kne_raw" ||
-				watchKind === "containerlab"),
+				watchKind === "kne"),
 		retry: false,
 		staleTime: 30_000,
 	});

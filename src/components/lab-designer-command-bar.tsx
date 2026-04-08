@@ -81,7 +81,7 @@ export function LabDesignerCommandBar({
 						page.saveDraft(
 							page.storageKey,
 							page.runtime,
-							page.containerlabServer,
+							page.kneServer,
 							page.useSavedConfig,
 						)
 					}

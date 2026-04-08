@@ -64,7 +64,7 @@ export async function getUserScopeNetlabDeviceOptions(
 	);
 }
 
-export async function getUserScopeContainerlabTemplates(
+export async function getUserScopeKNETemplates(
 	userId: string,
 	query?: TemplatesQuery,
 ): Promise<UserScopeTemplatesResponse> {
@@ -74,7 +74,7 @@ export async function getUserScopeContainerlabTemplates(
 	if (query?.dir) params.set("dir", query.dir);
 	const qs = params.toString();
 	return apiFetch<UserScopeTemplatesResponse>(
-		`/api/users/${encodeURIComponent(userId)}/containerlab/templates${qs ? `?${qs}` : ""}`,
+		`/api/users/${encodeURIComponent(userId)}/kne/templates${qs ? `?${qs}` : ""}`,
 	);
 }
 

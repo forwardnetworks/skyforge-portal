@@ -32,7 +32,7 @@ export function getEffectiveTemplateSource(
 	if (watchKind === "kne_raw") {
 		return watchSource as TemplateSource;
 	}
-	if (watchKind === "containerlab") {
+	if (watchKind === "kne") {
 		return watchSource as TemplateSource;
 	}
 	if (watchKind === "terraform") return watchSource as TemplateSource;
@@ -78,7 +78,7 @@ export function getDeploymentModeOptions(watchKind: DeploymentKind) {
 	switch (watchKind) {
 		case "netlab":
 		case "kne_netlab":
-		case "containerlab":
+		case "kne":
 		case "kne_raw":
 			return [
 				{ value: "in_cluster", label: "In cluster" },

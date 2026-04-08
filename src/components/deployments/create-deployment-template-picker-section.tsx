@@ -81,7 +81,7 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 								watchKind === "kne_netlab" ||
 								watchKind === "kne_raw" ||
 								watchKind === "terraform" ||
-								watchKind === "containerlab") && (
+								watchKind === "kne") && (
 								<div className="flex items-center gap-2">
 									<Button
 										type="button"

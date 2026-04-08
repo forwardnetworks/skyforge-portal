@@ -49,7 +49,7 @@ export type LabDesignerActionsOptions = {
 	setUseSavedConfig: (value: boolean) => void;
 	setLastSaved: Dispatch<SetStateAction<SavedConfigRef | null>>;
 	setUserScopeId: (value: string) => void;
-	setContainerlabServer: (value: string) => void;
+	setKNEServer: (value: string) => void;
 	setRuntime: (value: "kne") => void;
 	markWarningsVisible: () => void;
 };

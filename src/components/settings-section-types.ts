@@ -1,27 +1,27 @@
 import type {
 	AdminAPICatalogEntry,
-	AdminAuditResponse,
-	AdminAuditIntegrityStatus,
 	AdminAuditExportSignatureRecord,
-	VerifyAdminAuditExportSignatureResponse,
+	AdminAuditIntegrityStatus,
+	AdminAuditResponse,
 	AdminAuthSettingsResponse,
 	AdminEffectiveConfigResponse,
-	AdminImpersonateStatusResponse,
-	AdminOIDCSettingsResponse,
-	AdminForwardTenantResetRun,
-	AdminForwardDemoSeedCatalogResponse,
-	AdminHetznerBurstStatusResponse,
-	AdminHetznerBurstRuntimePolicyResponse,
 	AdminEphemeralRuntimeCleanupResponse,
 	AdminEphemeralRuntimeFinalizeResponse,
 	AdminEphemeralRuntimeNamespaceRecord,
 	AdminEphemeralRuntimeResourceCounts,
+	AdminForwardDemoSeedCatalogResponse,
+	AdminForwardTenantResetRun,
+	AdminHetznerBurstRuntimePolicyResponse,
+	AdminHetznerBurstStatusResponse,
+	AdminImpersonateStatusResponse,
+	AdminOIDCSettingsResponse,
 	AdminServiceNowGlobalConfigResponse,
 	AdminTeamsGlobalConfigResponse,
-	AdminUserRoleRecord,
 	AdminTenantPodCleanupResponse,
+	AdminUserRoleRecord,
 	QuickDeployTemplate,
 	SkyforgeUserScope,
+	VerifyAdminAuditExportSignatureResponse,
 } from "../lib/api-client";
 import type { DataTableColumn } from "./ui/data-table";
 
@@ -146,6 +146,7 @@ export type AdminForwardSectionProps = {
 	adminForwardSupportUsername: string;
 	adminForwardSupportHasPassword: boolean;
 	adminForwardSupportPassword: string;
+	adminForwardSupportLaunchHref: string;
 	revealAdminForwardSupportCredentialPending: boolean;
 	onRevealAdminForwardSupportCredentialPassword: () => void;
 };
@@ -396,7 +397,6 @@ export type AdminUsersSectionProps = {
 	onAdminForwardTenantResetConfirmChange: (value: string) => void;
 	onRequestAdminForwardTenantReset: () => void;
 };
-
 
 export type AdminMaintenanceSectionProps = {
 	config: AdminConfigSectionProps;

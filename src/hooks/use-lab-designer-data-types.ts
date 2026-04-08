@@ -17,7 +17,7 @@ export type UseLabDesignerDataOptions = {
 	importSource: "user" | "blueprints";
 	importDir: string;
 	importFile: string;
-	containerlabServer: string;
+	kneServer: string;
 	labName: string;
 	effectiveYaml: string;
 	effectiveTemplatesDir: string;

@@ -24,7 +24,7 @@ export function useLabDesignerPageState() {
 	const [defaultKind, setDefaultKind] = useState("");
 	const [userId, setUserScopeId] = useState("");
 	const [runtime, setRuntime] = useState<"kne">("kne");
-	const [containerlabServer, setContainerlabServer] = useState("");
+	const [kneServer, setKNEServer] = useState("");
 	const [useSavedConfig, setUseSavedConfig] = useState(true);
 	const [lastSaved, setLastSaved] = useState<SavedConfigRef | null>(null);
 	const [templatesDir, setTemplatesDir] = useState("kne/designer");
@@ -110,8 +110,8 @@ export function useLabDesignerPageState() {
 		setUserScopeId,
 		runtime,
 		setRuntime,
-		containerlabServer,
-		setContainerlabServer,
+		kneServer,
+		setKNEServer,
 		useSavedConfig,
 		setUseSavedConfig,
 		lastSaved,

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
 	adminImpersonateStop,
@@ -33,6 +33,7 @@ export function useRootLayout() {
 	const [navCollapsed, setNavCollapsed] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [expiryNowMs, setExpiryNowMs] = useState(() => Date.now());
+	const lastSessionRefreshAtRef = useRef(0);
 
 	const isLabDesignerRoute = useMemo(
 		() => location.pathname === "/dashboard/labs/designer",
@@ -195,12 +196,37 @@ export function useRootLayout() {
 
 	useEffect(() => {
 		if (!session.data?.authenticated || typeof window === "undefined") return;
-		const timer = window.setInterval(() => {
+		const refreshActiveSession = () => {
 			if (document.visibilityState !== "visible") return;
+			if (refreshSessionM.isPending) return;
+			const now = Date.now();
+			if (now - lastSessionRefreshAtRef.current < 15_000) return;
+			lastSessionRefreshAtRef.current = now;
 			refreshSessionM.mutate();
+		};
+		const onFocus = () => {
+			refreshActiveSession();
+		};
+		const onPageShow = () => {
+			refreshActiveSession();
+		};
+		const onVisibilityChange = () => {
+			if (document.visibilityState !== "visible") return;
+			refreshActiveSession();
+		};
+		window.addEventListener("focus", onFocus);
+		window.addEventListener("pageshow", onPageShow);
+		document.addEventListener("visibilitychange", onVisibilityChange);
+		const timer = window.setInterval(() => {
+			refreshActiveSession();
 		}, 5 * 60_000);
-		return () => window.clearInterval(timer);
-	}, [refreshSessionM, session.data?.authenticated]);
+		return () => {
+			window.clearInterval(timer);
+			window.removeEventListener("focus", onFocus);
+			window.removeEventListener("pageshow", onPageShow);
+			document.removeEventListener("visibilitychange", onVisibilityChange);
+		};
+	}, [refreshSessionM, refreshSessionM.isPending, session.data?.authenticated]);
 
 	useEffect(() => {
 		if (!session.data?.authenticated || typeof window === "undefined") return;

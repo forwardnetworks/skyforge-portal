@@ -162,7 +162,7 @@ export async function getUserScopeNetlabTemplate(
 	);
 }
 
-export type UserScopeContainerlabTemplateResponse = {
+export type UserScopeKNETemplateResponse = {
 	userId: string;
 	source: string;
 	repo?: string;
@@ -173,17 +173,17 @@ export type UserScopeContainerlabTemplateResponse = {
 	yaml: string;
 };
 
-export async function getUserScopeContainerlabTemplate(
+export async function getUserScopeKNETemplate(
 	userId: string,
 	params: { source?: string; repo?: string; dir?: string; file: string },
-): Promise<UserScopeContainerlabTemplateResponse> {
+): Promise<UserScopeKNETemplateResponse> {
 	const qs = new URLSearchParams();
 	if (params.source) qs.set("source", params.source);
 	if (params.repo) qs.set("repo", params.repo);
 	if (params.dir) qs.set("dir", params.dir);
 	qs.set("file", params.file);
-	return apiFetch<UserScopeContainerlabTemplateResponse>(
-		`/api/users/${encodeURIComponent(userId)}/containerlab/template?${qs.toString()}`,
+	return apiFetch<UserScopeKNETemplateResponse>(
+		`/api/users/${encodeURIComponent(userId)}/kne/template?${qs.toString()}`,
 	);
 }
 

@@ -1,3 +1,6 @@
+import { isProtectedPath, triggerUnauthorizedRedirect } from "./http";
+import { SKYFORGE_PROXY_ROOT } from "./skyforge-config";
+
 export type SSEHandler = (ev: MessageEvent<string>) => void;
 
 export type SSESubscription = {
@@ -15,6 +18,29 @@ type SharedSource = {
 };
 
 const sharedSources = new Map<string, SharedSource>();
+let authProbeInFlight = false;
+let lastAuthProbeAt = 0;
+
+function probeSessionForUnauthorized() {
+	if (typeof window === "undefined" || authProbeInFlight) return;
+	if (!isProtectedPath(window.location.pathname)) return;
+	const now = Date.now();
+	if (now - lastAuthProbeAt < 5_000) return;
+	lastAuthProbeAt = now;
+	authProbeInFlight = true;
+	void fetch(`${SKYFORGE_PROXY_ROOT}/api/auth/session`, {
+		credentials: "include",
+	})
+		.then((resp) => {
+			if (resp.status === 401) triggerUnauthorizedRedirect();
+		})
+		.catch(() => {
+			// ignore probe failures, normal reconnect loop still applies
+		})
+		.finally(() => {
+			authProbeInFlight = false;
+		});
+}
 
 function attachAllHandlers(src: SharedSource) {
 	for (const [eventName, set] of src.handlers.entries()) {
@@ -34,6 +60,7 @@ function createEventSource(src: SharedSource): EventSource {
 	es.onerror = () => {
 		if (src.closed) return;
 		if (src.reconnectTimer) return;
+		probeSessionForUnauthorized();
 
 		// EventSource should auto-reconnect, but in practice proxies/browsers can get
 		// into a stuck state. If we see errors, force a reconnect with backoff.

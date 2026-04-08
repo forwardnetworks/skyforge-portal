@@ -68,7 +68,7 @@ export function DeploymentsPageToolbar({
 				<SelectContent>
 					<SelectItem value="all">All Types</SelectItem>
 					<SelectItem value="netlab">Netlab</SelectItem>
-					<SelectItem value="containerlab">Containerlab</SelectItem>
+					<SelectItem value="kne">KNE</SelectItem>
 					<SelectItem value="terraform">Terraform</SelectItem>
 				</SelectContent>
 			</Select>
