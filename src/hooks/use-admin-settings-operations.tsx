@@ -13,6 +13,7 @@ import { toast } from "sonner";
 	adminListEphemeralRuntimes,
 	getAdminForwardSupportCredential,
 	getAdminImpersonateStatus,
+	reconcileAdminForwardCustomerBannerAllUsers,
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
 	revealAdminForwardSupportCredentialPassword,
@@ -51,6 +52,19 @@ export function useAdminSettingsOperations({
 		},
 		onError: (e) => {
 			toast.error("Failed to reveal support credential password", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	const reconcileAdminForwardCustomerBannerMutation = useMutation({
+		mutationFn: reconcileAdminForwardCustomerBannerAllUsers,
+		onSuccess: (resp) => {
+			toast.success("Customer banners reconciled", {
+				description: `users ok ${resp.succeededUsers}, failed ${resp.failedUsers}, networks ${resp.networkCount}`,
+			});
+		},
+		onError: (e) => {
+			toast.error("Failed to reconcile customer banners", {
 				description: (e as Error).message,
 			});
 		},
@@ -240,6 +254,7 @@ export function useAdminSettingsOperations({
 		adminForwardSupportPassword,
 		setAdminForwardSupportPassword,
 		revealAdminForwardSupportCredentialMutation,
+		reconcileAdminForwardCustomerBannerMutation,
 		reconcileQueued,
 		reconcileRunning,
 			adminEphemeralRuntimesQ,

@@ -258,6 +258,10 @@ function useAdminSettingsForwardSection(args: {
 				ops.revealAdminForwardSupportCredentialMutation.isPending,
 			onRevealAdminForwardSupportCredentialPassword: () =>
 				ops.revealAdminForwardSupportCredentialMutation.mutate(),
+			reconcileAdminForwardCustomerBannerPending:
+				ops.reconcileAdminForwardCustomerBannerMutation.isPending,
+			onReconcileAdminForwardCustomerBanner: () =>
+				ops.reconcileAdminForwardCustomerBannerMutation.mutate(),
 		}),
 		[auth, ops],
 	);

@@ -69,6 +69,17 @@ export function ForwardTenantRebuildCard(props: {
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="flex flex-wrap gap-2">
+					{tenant === "customer" ? (
+						<Button
+							variant="secondary"
+							onClick={() => page.reconcileCustomerBannerMutation.mutate()}
+							disabled={page.reconcileCustomerBannerMutation.isPending}
+						>
+							{page.reconcileCustomerBannerMutation.isPending
+								? "Reconciling…"
+								: "Reconcile confidentiality banner"}
+						</Button>
+					) : null}
 					<Button
 						variant="outline"
 						onClick={() =>

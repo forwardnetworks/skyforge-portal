@@ -116,6 +116,13 @@ export type ForwardTenantResetRunsResponse =
 	operations["GET:skyforge.ListCurrentUserForwardTenantRebuildRuns"]["responses"][200]["content"]["application/json"];
 export type ForwardTenantResetRun =
 	ForwardTenantResetRunsResponse["runs"][number];
+export type ForwardCustomerBannerReconcileResponse = {
+	tenantKind: ForwardTenantKind;
+	username?: string;
+	bannerId?: string;
+	networkIds?: string[];
+	networkCount?: number;
+};
 
 export type UserForwardCollectorConfigUpdateResponse = {
 	id: string;
@@ -274,6 +281,16 @@ export async function listCurrentUserForwardDemoTenantRebuildRuns(): Promise<For
 export async function listCurrentUserForwardCustomerTenantRebuildRuns(): Promise<ForwardTenantResetRunsResponse> {
 	return apiFetch<ForwardTenantResetRunsResponse>(
 		"/api/forward/customer-org/rebuild/runs",
+	);
+}
+
+export async function reconcileCurrentUserForwardCustomerBanner(): Promise<ForwardCustomerBannerReconcileResponse> {
+	return apiFetch<ForwardCustomerBannerReconcileResponse>(
+		"/api/forward/customer-org/banner/reconcile",
+		{
+			method: "POST",
+			body: "{}",
+		},
 	);
 }
 

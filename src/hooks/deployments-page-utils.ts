@@ -20,6 +20,43 @@ export function selectVisibleUserScopes(
 	return mine.length > 0 ? mine : allUserScopes;
 }
 
+export function pickPreferredUserScopeID(args: {
+	userScopes: SkyforgeUserScope[];
+	effectiveUsername: string;
+	isAdmin: boolean;
+	requestedUserScopeID?: string;
+	storedUserScopeID?: string;
+}): string {
+	const {
+		userScopes,
+		effectiveUsername,
+		isAdmin,
+		requestedUserScopeID,
+		storedUserScopeID,
+	} = args;
+	const requested = String(requestedUserScopeID ?? "").trim();
+	if (requested && userScopes.some((scope) => scope.id === requested)) {
+		return requested;
+	}
+
+	// For admin sessions, prefer own scope by username match when available.
+	if (isAdmin) {
+		const ownScope = userScopes.find((scope) => {
+			if (String(scope.createdBy ?? "").trim() === effectiveUsername) return true;
+			if ((scope.owners ?? []).includes(effectiveUsername)) return true;
+			if (String(scope.slug ?? "").trim() === effectiveUsername) return true;
+			return false;
+		});
+		if (ownScope?.id) return ownScope.id;
+	}
+
+	const stored = String(storedUserScopeID ?? "").trim();
+	if (stored && userScopes.some((scope) => scope.id === stored)) {
+		return stored;
+	}
+	return userScopes[0]?.id ?? "";
+}
+
 export function filterDeployments(
 	deployments: UserScopeDeployment[],
 	filters: {

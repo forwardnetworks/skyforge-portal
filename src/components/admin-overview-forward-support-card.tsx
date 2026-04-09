@@ -100,6 +100,16 @@ export function AdminOverviewForwardSupportCard(
 							>
 								Copy password
 							</Button>
+							<Button
+								variant="secondary"
+								size="sm"
+								disabled={props.reconcileAdminForwardCustomerBannerPending}
+								onClick={props.onReconcileAdminForwardCustomerBanner}
+							>
+								{props.reconcileAdminForwardCustomerBannerPending
+									? "Reconciling…"
+									: "Reconcile customer banners"}
+							</Button>
 						</div>
 					</div>
 				) : null}

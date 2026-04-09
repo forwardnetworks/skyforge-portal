@@ -15,6 +15,7 @@ import {
 	requestCurrentUserForwardCustomerTenantRebuild,
 	requestCurrentUserForwardDemoTenantRebuild,
 	requestCurrentUserForwardTenantRebuild,
+	reconcileCurrentUserForwardCustomerBanner,
 	resetCurrentUserForwardCustomerTenantCredential,
 	resetCurrentUserForwardDemoTenantCredential,
 	resetCurrentUserForwardTenantCredential,
@@ -349,6 +350,23 @@ export function useForwardCredentialsPage() {
 			),
 	});
 
+	const reconcileCustomerBannerMutation = useMutation({
+		mutationFn: reconcileCurrentUserForwardCustomerBanner,
+		onSuccess: async (resp) => {
+			const networkCount = Number(resp.networkCount ?? 0);
+			toast.success("Customer org banner reconciled", {
+				description:
+					networkCount > 0
+						? `Applied across ${networkCount} network${networkCount === 1 ? "" : "s"}`
+						: "No customer networks found",
+			});
+		},
+		onError: (err) =>
+			toast.error("Failed to reconcile customer org banner", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
 	const saveTenantFeaturesMutation = useMutation({
 		mutationFn: async (input: {
 			tenant: ForwardFeatureTenant;
@@ -528,6 +546,7 @@ export function useForwardCredentialsPage() {
 		resetTenantCredentialMutation,
 		revealTenantCredentialMutation,
 		requestTenantResetMutation,
+		reconcileCustomerBannerMutation,
 		saveTenantFeaturesMutation,
 		generateSyntheticPerformanceMutation,
 		injectSnapshotDataFileMutation,

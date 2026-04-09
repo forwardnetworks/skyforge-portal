@@ -21,6 +21,7 @@ import {
 	filterRunsForUserScope,
 	formatLifetimeCellFor,
 	isManagedDeploymentType,
+	pickPreferredUserScopeID,
 	selectVisibleUserScopes,
 } from "./deployments-page-utils";
 
@@ -77,18 +78,18 @@ export function useDeploymentsPageData(args: {
 	);
 
 	const selectedUserScopeId = useMemo(() => {
-		if (userId && userScopes.some((scope) => scope.id === userId)) {
-			return userId;
-		}
 		const stored =
 			typeof window !== "undefined"
 				? (window.localStorage.getItem(LAST_USER_SCOPE_KEY) ?? "")
 				: "";
-		if (stored && userScopes.some((scope) => scope.id === stored)) {
-			return stored;
-		}
-		return userScopes[0]?.id ?? "";
-	}, [userId, userScopes]);
+		return pickPreferredUserScopeID({
+			userScopes,
+			effectiveUsername,
+			isAdmin,
+			requestedUserScopeID: userId,
+			storedUserScopeID: stored,
+		});
+	}, [effectiveUsername, isAdmin, userId, userScopes]);
 
 	useEffect(() => {
 		if (!selectedUserScopeId) return;

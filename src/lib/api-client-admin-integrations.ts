@@ -55,6 +55,17 @@ export type AdminForwardSupportCredentialResponse = {
 	source?: string;
 };
 
+export type AdminForwardCustomerBannerReconcileResponse = {
+	tenantKind: "customer";
+	networkCount: number;
+	processedUsers: number;
+	succeededUsers: number;
+	skippedUsers: number;
+	failedUsers: number;
+	failedUsernames?: string[];
+	requestedBy?: string;
+};
+
 export type AdminForwardDemoSeedItem = {
 	id: string;
 	note: string;
@@ -219,6 +230,16 @@ export async function getAdminForwardSupportCredential(): Promise<AdminForwardSu
 export async function revealAdminForwardSupportCredentialPassword(): Promise<AdminForwardSupportCredentialResponse> {
 	return apiFetch<AdminForwardSupportCredentialResponse>(
 		"/api/admin/integrations/forward/support-credential/reveal",
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
+export async function reconcileAdminForwardCustomerBannerAllUsers(): Promise<AdminForwardCustomerBannerReconcileResponse> {
+	return apiFetch<AdminForwardCustomerBannerReconcileResponse>(
+		"/api/admin/integrations/forward/customer-banner/reconcile",
 		{
 			method: "POST",
 			body: "{}",

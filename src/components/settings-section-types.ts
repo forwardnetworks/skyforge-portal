@@ -149,6 +149,8 @@ export type AdminForwardSectionProps = {
 	adminForwardSupportLaunchHref: string;
 	revealAdminForwardSupportCredentialPending: boolean;
 	onRevealAdminForwardSupportCredentialPassword: () => void;
+	reconcileAdminForwardCustomerBannerPending: boolean;
+	onReconcileAdminForwardCustomerBanner: () => void;
 };
 
 export type AdminConfigSectionProps = {
