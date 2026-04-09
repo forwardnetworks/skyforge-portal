@@ -44,7 +44,7 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 		});
 	}
 
-	if (lower.includes("vrnetlab/cisco_iol")) {
+	if (lower.includes("vrnetlab/cisco_iol") || lower.includes("/kne/cisco_iol:")) {
 		return mk({
 			label: "Router · Cisco IOL (IOS)",
 			category: "Routers",
@@ -55,7 +55,11 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 			role: "router",
 		});
 	}
-	if (lower.includes("vrnetlab/vr-n9kv") || lower.includes("vrnetlab/nxos")) {
+	if (
+		lower.includes("vrnetlab/vr-n9kv") ||
+		lower.includes("vrnetlab/nxos") ||
+		lower.includes("/kubevirt/vr-n9kv:")
+	) {
 		return mk({
 			label: "Switch · Cisco NX-OSv (N9Kv)",
 			category: "Switches",
@@ -77,7 +81,10 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 			role: "router",
 		});
 	}
-	if (lower.includes("vrnetlab/juniper_vjunos-router")) {
+	if (
+		lower.includes("vrnetlab/juniper_vjunos-router") ||
+		lower.includes("/kubevirt/juniper_vjunos-router:")
+	) {
 		return mk({
 			label: "Router · Juniper vJunos Router",
 			category: "Routers",
@@ -88,7 +95,10 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 			role: "router",
 		});
 	}
-	if (lower.includes("vrnetlab/juniper_vjunos-switch")) {
+	if (
+		lower.includes("vrnetlab/juniper_vjunos-switch") ||
+		lower.includes("/kubevirt/juniper_vjunos-switch:")
+	) {
 		return mk({
 			label: "Switch · Juniper vJunos Switch",
 			category: "Switches",
@@ -128,7 +138,11 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 			role: "firewall",
 		});
 	}
-	if (lower.includes("vrnetlab/vr-ftosv") || lower.includes("os10")) {
+	if (
+		lower.includes("vrnetlab/vr-ftosv") ||
+		lower.includes("/kubevirt/vr-ftosv:") ||
+		lower.includes("os10")
+	) {
 		return mk({
 			label: "Switch · Dell OS10",
 			category: "Switches",
@@ -136,6 +150,17 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 			repo: clean,
 			vendor: "Dell",
 			model: "OS10",
+			role: "switch",
+		});
+	}
+	if (lower.includes("/kne/cisco_iol_l2:")) {
+		return mk({
+			label: "Switch · Cisco IOL-L2",
+			category: "Switches",
+			kind: "cisco_iol_l2",
+			repo: clean,
+			vendor: "Cisco",
+			model: "IOL-L2",
 			role: "switch",
 		});
 	}

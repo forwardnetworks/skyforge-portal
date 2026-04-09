@@ -20,6 +20,15 @@ export type ApiFetchInit = RequestInit & {
 
 let unauthorizedRedirectInFlight = false;
 
+async function bestEffortLogout(): Promise<void> {
+	await fetch(`${SKYFORGE_PROXY_ROOT}/api/auth/logout`, {
+		method: "POST",
+		credentials: "include",
+		headers: { "Content-Type": "application/json" },
+		body: "{}",
+	}).catch(() => undefined);
+}
+
 export function isProtectedPath(pathname: string): boolean {
 	return /^\/(dashboard|admin)(\/|$)/.test(pathname);
 }
@@ -28,7 +37,14 @@ export function triggerUnauthorizedRedirect() {
 	if (typeof window === "undefined" || unauthorizedRedirectInFlight) return;
 	unauthorizedRedirectInFlight = true;
 	const currentPath = window.location.pathname + (window.location.search ?? "");
-	window.location.href = buildLoginUrl(currentPath);
+	void (async () => {
+		await bestEffortLogout();
+		window.location.replace(buildLoginUrl(currentPath));
+	})();
+}
+
+export function resetUnauthorizedRedirectStateForTests() {
+	unauthorizedRedirectInFlight = false;
 }
 
 function shouldRedirectOnUnauthorized(

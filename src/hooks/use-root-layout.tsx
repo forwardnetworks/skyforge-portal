@@ -12,6 +12,7 @@ import {
 	logout,
 	refreshSession,
 } from "../lib/api-client";
+import { triggerUnauthorizedRedirect } from "../lib/http";
 import { getToolCatalog } from "../lib/api-client-tool-catalog";
 import { loginWithPopup } from "../lib/auth-popup";
 import {
@@ -235,6 +236,15 @@ export function useRootLayout() {
 		}, 30_000);
 		return () => window.clearInterval(timer);
 	}, [session.data?.authenticated]);
+
+	useEffect(() => {
+		if (!session.data?.authenticated) return;
+		const expiresAt = String(session.data?.expiresAt ?? "").trim();
+		if (expiresAt === "") return;
+		const expiresAtMs = Date.parse(expiresAt);
+		if (!Number.isFinite(expiresAtMs) || expiresAtMs > expiryNowMs) return;
+		triggerUnauthorizedRedirect();
+	}, [expiryNowMs, session.data?.authenticated, session.data?.expiresAt]);
 
 	const startLogin = async () => {
 		if (!authModeReady && !uiConfig.isError) return;
