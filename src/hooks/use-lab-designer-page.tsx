@@ -69,6 +69,9 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		registryRepos: Array.isArray(data.registryReposQ.data?.repositories)
 			? data.registryReposQ.data.repositories
 			: [],
+		registryCatalogImages: Array.isArray(data.registryCatalogQ.data?.images)
+			? data.registryCatalogQ.data.images
+			: [],
 		registryError: data.registryReposQ.isError
 			? (data.registryReposQ.error as Error)
 			: null,

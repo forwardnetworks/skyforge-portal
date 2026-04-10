@@ -58,10 +58,14 @@ export function createLabDesignerDndActions(opts: LabDesignerActionsOptions) {
 		}
 
 		const repo = String(parsed?.repo ?? "").trim();
-		const tag = repo
-			? await resolveRepoTag({ repo, queryClient: opts.queryClient })
-			: "";
-		const image = repo ? `${repo}:${tag}` : "";
+		const explicitImage = String(parsed?.image ?? "").trim();
+		const fallbackTag = String(parsed?.defaultTag ?? "").trim();
+		const tag =
+			fallbackTag ||
+			(repo
+				? await resolveRepoTag({ repo, queryClient: opts.queryClient })
+				: "");
+		const image = explicitImage || (repo ? `${repo}:${tag}` : "");
 
 		const next: Node<DesignNodeData> = {
 			id,

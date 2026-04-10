@@ -46,12 +46,49 @@ export type ValidateKneTopologyYAMLResponse = {
 	valid: boolean;
 };
 
+export type ImportContainerlabTopologyRequest = {
+	topologyYAML: string;
+};
+
+export type ImportContainerlabIssue = {
+	severity: "error" | "warning" | "info";
+	code: string;
+	message: string;
+	path?: string;
+};
+
+export type ImportContainerlabImageMapping = {
+	node: string;
+	source: string;
+	resolved?: string;
+	matched: boolean;
+	reason?: string;
+};
+
+export type ImportContainerlabTopologyResponse = {
+	userId?: string;
+	convertedYAML: string;
+	issues: ImportContainerlabIssue[];
+	imageMappings: ImportContainerlabImageMapping[];
+	blocking: boolean;
+};
+
 export async function validateKneTopologyYAML(
 	userId: string,
 	body: ValidateKneTopologyYAMLRequest,
 ): Promise<ValidateKneTopologyYAMLResponse> {
 	return apiFetch<ValidateKneTopologyYAMLResponse>(
 		`/api/users/${encodeURIComponent(userId)}/kne/topologies/validate`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function importContainerlabTopology(
+	userId: string,
+	body: ImportContainerlabTopologyRequest,
+): Promise<ImportContainerlabTopologyResponse> {
+	return apiFetch<ImportContainerlabTopologyResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments-designer/kne/import-containerlab`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }

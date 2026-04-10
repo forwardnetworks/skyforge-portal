@@ -48,13 +48,29 @@ export function kneYamlToDesign(yamlContent: string): {
 		designNodes.push({
 			id: nodeName,
 			label: nodeName,
-			kind: String(nodeConfig.device ?? "").trim(),
-			image: String(nodeConfig.image ?? "").trim(),
+			kind: [
+				String(nodeConfig.vendor ?? "").trim(),
+				String(nodeConfig.model ?? "").trim(),
+			]
+				.filter(Boolean)
+				.join("/")
+				.trim(),
+			image: String(
+				(nodeConfig.config as Record<string, unknown> | undefined)?.image ??
+					nodeConfig.image ??
+					"",
+			).trim(),
 			mgmtIpv4:
 				String(
 					(nodeConfig.mgmt as Record<string, unknown> | undefined)?.ipv4 ?? "",
 				).trim() || undefined,
-			startupConfig: String(nodeConfig.config ?? "").trim() || undefined,
+			startupConfig:
+				String(
+					(nodeConfig.config as Record<string, unknown> | undefined)
+						?.startupConfig ??
+						nodeConfig.startupConfig ??
+						"",
+				).trim() || undefined,
 			env: env && Object.keys(env).length ? env : undefined,
 			position: {
 				x: 120 + (idx % layoutCols) * 260,

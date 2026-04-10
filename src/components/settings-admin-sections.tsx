@@ -15,6 +15,7 @@ import { AdminOverviewImpersonationCard } from "./admin-overview-impersonation-c
 import { AdminOverviewOIDCCard } from "./admin-overview-oidc-card";
 import { AdminOverviewPublicAccessCard } from "./admin-overview-public-access-card";
 import { AdminOverviewQuickDeployCard } from "./admin-overview-quick-deploy-card";
+import { AdminOverviewRegistryCatalogCard } from "./admin-overview-registry-catalog-card";
 import { AdminOverviewRuntimePressureCard } from "./admin-overview-runtime-pressure-card";
 import { AdminOverviewServiceNowCard } from "./admin-overview-servicenow-card";
 import { AdminOverviewTeamsCard } from "./admin-overview-teams-card";
@@ -86,6 +87,7 @@ function IntegrationsSettingsSection(
 ) {
 	return (
 		<>
+			<AdminOverviewRegistryCatalogCard {...props} />
 			<AdminOverviewTeamsCard {...props} />
 			<AdminOverviewServiceNowCard {...props} />
 		</>

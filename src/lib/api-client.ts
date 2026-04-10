@@ -6,6 +6,7 @@ export * from "./api-client-deployments-actions";
 export * from "./api-client-deployments-capacity";
 export * from "./api-client-deployments-detail";
 export * from "./api-client-deployments-list";
+export * from "./api-client-deployments-actions-designer";
 export * from "./api-client-public-status";
 export * from "./api-client-platform";
 export * from "./api-client-config-changes";

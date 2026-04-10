@@ -66,6 +66,53 @@ export type AdminForwardCustomerBannerReconcileResponse = {
 	requestedBy?: string;
 };
 
+export type RegistryCatalogImageEntry = {
+	id?: string;
+	label?: string;
+	nos?: string;
+	vendor?: string;
+	model?: string;
+	kind?: string;
+	role?: "host" | "router" | "switch" | "firewall" | "other" | string;
+	repository: string;
+	defaultTag?: string;
+	aliases?: string[];
+	enabled: boolean;
+};
+
+export type AdminRegistryCatalogResponse = {
+	source: string;
+	baseUrl?: string;
+	skipTlsVerify: boolean;
+	repoPrefixes?: string[];
+	username?: string;
+	hasPassword: boolean;
+	prepullWorkerNodes: boolean;
+	images: RegistryCatalogImageEntry[];
+	updatedAt?: string;
+	retrievedAt?: string;
+};
+
+export type PutAdminRegistryCatalogRequest = {
+	baseUrl?: string;
+	skipTlsVerify: boolean;
+	repoPrefixes?: string[];
+	username?: string;
+	password?: string;
+	prepullWorkerNodes: boolean;
+	images: RegistryCatalogImageEntry[];
+};
+
+export type TriggerAdminRegistryCatalogPrepullResponse = {
+	status: string;
+	namespace: string;
+	daemonSet: string;
+	imageCount: number;
+	images: string[];
+	appliedAt?: string;
+	catalogFrom?: string;
+};
+
 export type AdminForwardDemoSeedItem = {
 	id: string;
 	note: string;
@@ -194,6 +241,26 @@ export async function pushAdminServiceNowForwardConfig(): Promise<AdminServiceNo
 export async function getAdminTeamsGlobalConfig(): Promise<AdminTeamsGlobalConfigResponse> {
 	return apiFetch<AdminTeamsGlobalConfigResponse>(
 		"/api/admin/integrations/teams/global-config",
+	);
+}
+
+export async function getAdminRegistryCatalog(): Promise<AdminRegistryCatalogResponse> {
+	return apiFetch<AdminRegistryCatalogResponse>("/api/admin/registry/catalog");
+}
+
+export async function putAdminRegistryCatalog(
+	body: PutAdminRegistryCatalogRequest,
+): Promise<AdminRegistryCatalogResponse> {
+	return apiFetch<AdminRegistryCatalogResponse>("/api/admin/registry/catalog", {
+		method: "PUT",
+		body: JSON.stringify(body),
+	});
+}
+
+export async function triggerAdminRegistryCatalogPrepull(): Promise<TriggerAdminRegistryCatalogPrepullResponse> {
+	return apiFetch<TriggerAdminRegistryCatalogPrepullResponse>(
+		"/api/admin/registry/catalog/prepull",
+		{ method: "POST", body: "{}" },
 	);
 }
 

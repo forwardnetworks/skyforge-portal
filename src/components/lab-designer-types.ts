@@ -40,6 +40,8 @@ export type PaletteItem = {
 	category: PaletteCategory;
 	kind: string;
 	repo?: string;
+	defaultTag?: string;
+	image?: string;
 	vendor?: string;
 	model?: string;
 	role?: "host" | "router" | "switch" | "firewall" | "other";

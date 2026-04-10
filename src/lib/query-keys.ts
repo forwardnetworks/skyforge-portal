@@ -199,6 +199,7 @@ export const queryKeys = {
 			limit ?? "",
 		] as const,
 	adminQuickDeployCatalog: () => ["adminQuickDeployCatalog"] as const,
+	adminRegistryCatalog: () => ["adminRegistryCatalog"] as const,
 	adminServiceNowGlobalConfig: () => ["adminServiceNowGlobalConfig"] as const,
 	adminForwardDemoSeedCatalog: () => ["adminForwardDemoSeedCatalog"] as const,
 	adminTeamsGlobalConfig: () => ["adminTeamsGlobalConfig"] as const,
@@ -247,6 +248,7 @@ export const queryKeys = {
 	adminAuditExportSignatures: () => ["adminAuditExportSignatures"] as const,
 	adminImpersonateStatus: () => ["adminImpersonateStatus"] as const,
 	registryRepos: (q: string) => ["registryRepos", q] as const,
+	registryCatalog: () => ["registryCatalog"] as const,
 	registryTags: (repo: string, q: string) => ["registryTags", repo, q] as const,
 	forwardAnalyticsChecks: (userId: string) =>
 		["forwardAnalyticsChecks", userId] as const,

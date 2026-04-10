@@ -7,6 +7,26 @@ import {
 } from "./kne-yaml-helpers";
 import type { LabDesign } from "./kne-yaml-types";
 
+function parseNodeKind(kind: string): { vendor: string; model: string } {
+	const trimmed = String(kind ?? "").trim();
+	if (!trimmed) return { vendor: "generic", model: "generic" };
+	if (trimmed.includes("/")) {
+		const [vendor, ...rest] = trimmed.split("/");
+		return {
+			vendor: vendor.trim() || "generic",
+			model: rest.join("/").trim() || "generic",
+		};
+	}
+	if (trimmed.includes(":")) {
+		const [vendor, ...rest] = trimmed.split(":");
+		return {
+			vendor: vendor.trim() || "generic",
+			model: rest.join(":").trim() || "generic",
+		};
+	}
+	return { vendor: "generic", model: trimmed };
+}
+
 export function designToKneYaml(design: LabDesign): {
 	yaml: string;
 	warnings: string[];
@@ -48,19 +68,24 @@ export function designToKneYaml(design: LabDesign): {
 		if (!String(node.image ?? "").trim()) {
 			warnings.push(`Node ${nodeName}: missing image`);
 		}
-		const device = String(node.kind ?? "").trim() || defaultDevice;
-		if (!device) {
-			warnings.push(`Node ${nodeName}: missing device`);
+		const rawKind = String(node.kind ?? "").trim() || defaultDevice;
+		if (!rawKind) {
+			warnings.push(`Node ${nodeName}: missing kind`);
 		}
+		const { vendor, model } = parseNodeKind(rawKind);
 
 		const env = node.env && Object.keys(node.env).length ? node.env : undefined;
 		nodes[nodeName] = {
-			...(device ? { device } : {}),
-			...(node.image ? { image: node.image.trim() } : {}),
+			vendor,
+			model,
+			runtime: "containerlab",
+			config: {
+				...(node.image ? { image: node.image.trim() } : {}),
+				...(node.startupConfig ? { startupConfig: node.startupConfig.trim() } : {}),
+			},
 			...(node.mgmtIpv4
 				? { mgmt: { ipv4: node.mgmtIpv4.trim() } }
 				: {}),
-			...(node.startupConfig ? { config: node.startupConfig.trim() } : {}),
 			...(env ? { environment: env } : {}),
 		};
 	}

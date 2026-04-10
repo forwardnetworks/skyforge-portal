@@ -15,6 +15,7 @@ import type {
 	AdminHetznerBurstStatusResponse,
 	AdminImpersonateStatusResponse,
 	AdminOIDCSettingsResponse,
+	AdminRegistryCatalogResponse,
 	AdminServiceNowGlobalConfigResponse,
 	AdminTeamsGlobalConfigResponse,
 	AdminTenantPodCleanupResponse,
@@ -94,6 +95,54 @@ export type AdminIntegrationsSectionProps = {
 	onTeamsTestWebhookURLChange: (value: string) => void;
 	onSaveTeamsGlobalConfig: () => void;
 	onTestTeamsOutgoing: () => void;
+	adminRegistryCatalog?: AdminRegistryCatalogResponse;
+	adminRegistryCatalogLoading: boolean;
+	registryBaseURLDraft: string;
+	registrySkipTLSVerifyDraft: boolean;
+	registryRepoPrefixesDraft: string;
+	registryUsernameDraft: string;
+	registryPasswordDraft: string;
+	registryPrepullWorkerNodesDraft: boolean;
+	registryCatalogImagesDraft: {
+		id?: string;
+		label?: string;
+		nos?: string;
+		vendor?: string;
+		model?: string;
+		kind?: string;
+		role?: string;
+		repository: string;
+		defaultTag?: string;
+		aliases?: string[];
+		enabled: boolean;
+	}[];
+	saveRegistryCatalogPending: boolean;
+	triggerRegistryCatalogPrepullPending: boolean;
+	onRegistryBaseURLChange: (value: string) => void;
+	onRegistrySkipTLSVerifyChange: (enabled: boolean) => void;
+	onRegistryRepoPrefixesChange: (value: string) => void;
+	onRegistryUsernameChange: (value: string) => void;
+	onRegistryPasswordChange: (value: string) => void;
+	onRegistryPrepullWorkerNodesChange: (enabled: boolean) => void;
+	onRegistryCatalogImageFieldChange: (
+		index: number,
+		field:
+			| "label"
+			| "nos"
+			| "vendor"
+			| "model"
+			| "kind"
+			| "role"
+			| "repository"
+			| "defaultTag"
+			| "aliases"
+			| "enabled",
+		value: string | boolean | string[],
+	) => void;
+	onAddRegistryCatalogImage: () => void;
+	onRemoveRegistryCatalogImage: (index: number) => void;
+	onSaveRegistryCatalog: () => void;
+	onTriggerRegistryCatalogPrepull: () => void;
 };
 
 export type AdminForwardSectionProps = {

@@ -1,6 +1,7 @@
 import {
-	getUserScopeNetlabTemplate,
-	getUserScopeNetlabTemplates,
+	getRegistryCatalog,
+	getUserScopeKNETemplate,
+	getUserScopeKNETemplates,
 	listRegistryRepositories,
 	listUserKNEServers,
 	listUserScopes,
@@ -25,6 +26,12 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 		retry: false,
 		staleTime: 60_000,
 	});
+	const registryCatalogQ = useQuery({
+		queryKey: queryKeys.registryCatalog(),
+		queryFn: getRegistryCatalog,
+		retry: false,
+		staleTime: 60_000,
+	});
 
 	const kneServersQ = useQuery({
 		queryKey: queryKeys.userKNEServers(),
@@ -44,7 +51,7 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 				]
 			: ["kneTemplates", "none"],
 		queryFn: async () =>
-			getUserScopeNetlabTemplates(opts.userId, {
+			getUserScopeKNETemplates(opts.userId, {
 				source: toAPISource(opts.importSource),
 				dir: opts.importDir,
 			}),
@@ -66,10 +73,10 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 		queryFn: async () => {
 			if (!opts.userId) throw new Error("missing user");
 			if (!opts.importFile) return null;
-			return getUserScopeNetlabTemplate(opts.userId, {
+			return getUserScopeKNETemplate(opts.userId, {
 				source: toAPISource(opts.importSource),
 				dir: opts.importDir,
-				template: opts.importFile,
+				file: opts.importFile,
 			});
 		},
 		enabled:
@@ -81,6 +88,7 @@ export function useLabDesignerDataQueries(opts: UseLabDesignerDataOptions) {
 	return {
 		userScopesQ,
 		registryReposQ,
+		registryCatalogQ,
 		kneServersQ,
 		templatesQ,
 		templatePreviewQ,

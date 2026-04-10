@@ -149,6 +149,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
 		createDeployment: { mutate: vi.fn(), isPending: false },
 		saveConfig: { mutate: vi.fn(), isPending: false },
 		importTemplate: { mutate: vi.fn(), isPending: false },
+		importContainerlab: { mutate: vi.fn(), isPending: false },
 		loadDraft: vi.fn(),
 		saveDraft: vi.fn(),
 		exportYaml: vi.fn(),

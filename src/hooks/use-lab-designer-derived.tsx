@@ -26,6 +26,18 @@ export function useLabDesignerDerived(opts: {
 	paletteVendor: string;
 	paletteRole: string;
 	registryRepos: string[];
+	registryCatalogImages: Array<{
+		id?: string;
+		label?: string;
+		nos?: string;
+		vendor?: string;
+		model?: string;
+		kind?: string;
+		role?: string;
+		repository: string;
+		defaultTag?: string;
+		enabled: boolean;
+	}>;
 	registryError: Error | null;
 	userScopes: any[];
 	kneServers: any[];
@@ -104,10 +116,52 @@ export function useLabDesignerDerived(opts: {
 		return `${base}.yml`;
 	}, [opts.labName, opts.templateFile]);
 
-	const paletteBaseItems = useMemo(
-		() => opts.registryRepos.map(inferPaletteItemFromRepo),
-		[opts.registryRepos],
-	);
+	const paletteBaseItems = useMemo(() => {
+		const fromCatalog = (opts.registryCatalogImages ?? [])
+			.filter((entry) => Boolean(entry?.enabled))
+			.map((entry) => {
+				const repo = String(entry.repository ?? "")
+					.trim()
+					.replace(/^\/+|\/+$/g, "");
+				const defaultTag = String(entry.defaultTag ?? "latest").trim() || "latest";
+				const label = String(entry.label ?? "").trim();
+				const kind = String(entry.kind ?? "").trim();
+				const inferred = inferPaletteItemFromRepo(repo);
+				const role = String(entry.role ?? inferred.role ?? "other")
+					.trim()
+					.toLowerCase() as
+					| "host"
+					| "router"
+					| "switch"
+					| "firewall"
+					| "other";
+				const category: PaletteCategory =
+					role === "host"
+						? "Hosts"
+						: role === "router"
+							? "Routers"
+							: role === "switch"
+								? "Switches"
+								: role === "firewall"
+									? "Firewalls"
+									: "Other";
+				return {
+					...inferred,
+					id: String(entry.id ?? `${kind || inferred.kind}:${repo}:${defaultTag}`),
+					label: label || inferred.label,
+					kind: kind || inferred.kind,
+					role,
+					category,
+					repo,
+					defaultTag,
+					image: `${repo}:${defaultTag}`,
+					vendor: String(entry.vendor ?? inferred.vendor ?? "").trim() || inferred.vendor,
+					model: String(entry.model ?? inferred.model ?? "").trim() || inferred.model,
+				};
+			});
+		if (fromCatalog.length > 0) return fromCatalog;
+		return opts.registryRepos.map(inferPaletteItemFromRepo);
+	}, [opts.registryCatalogImages, opts.registryRepos]);
 	const paletteVendors = useMemo(() => {
 		const set = new Set<string>();
 		for (const p of paletteBaseItems) {
@@ -143,8 +197,8 @@ export function useLabDesignerDerived(opts: {
 			Other: 4,
 		};
 		return filtered.sort((a, b) => {
-			const oa = order[a.category] ?? 99;
-			const ob = order[b.category] ?? 99;
+			const oa = order[a.category as PaletteCategory] ?? 99;
+			const ob = order[b.category as PaletteCategory] ?? 99;
 			if (oa !== ob) return oa - ob;
 			return a.label.localeCompare(b.label);
 		});

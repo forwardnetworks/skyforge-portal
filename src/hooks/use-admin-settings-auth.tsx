@@ -8,6 +8,7 @@ import {
 	getAdminOIDCSettings,
 	getAdminQuickDeployCatalog,
 	getAdminQuickDeployTemplateOptions,
+	getAdminRegistryCatalog,
 	getAdminServiceNowGlobalConfig,
 	getAdminTeamsGlobalConfig,
 	getUserScopeNetlabTemplates,
@@ -18,6 +19,7 @@ import { useAdminSettingsAuthHetznerBurst } from "./use-admin-settings-auth-hetz
 import { useAdminSettingsAuthLocal } from "./use-admin-settings-auth-local";
 import { useAdminSettingsAuthOIDC } from "./use-admin-settings-auth-oidc";
 import { useAdminSettingsAuthQuickDeploy } from "./use-admin-settings-auth-quick-deploy";
+import { useAdminSettingsAuthRegistryCatalog } from "./use-admin-settings-auth-registry-catalog";
 import { useAdminSettingsAuthServiceNow } from "./use-admin-settings-auth-servicenow";
 import { useAdminSettingsAuthTeams } from "./use-admin-settings-auth-teams";
 
@@ -105,6 +107,12 @@ export function useAdminSettingsAuth({
 		staleTime: 15_000,
 		retry: false,
 	});
+	const adminRegistryCatalogQ = useQuery({
+		queryKey: queryKeys.adminRegistryCatalog(),
+		queryFn: getAdminRegistryCatalog,
+		staleTime: 15_000,
+		retry: false,
+	});
 
 	const authLocal = useAdminSettingsAuthLocal({
 		queryClient,
@@ -138,6 +146,11 @@ export function useAdminSettingsAuth({
 		teamsGlobalConfig: teamsGlobalConfigQ.data,
 		refetchTeamsGlobalConfig: teamsGlobalConfigQ.refetch,
 	});
+	const registryCatalog = useAdminSettingsAuthRegistryCatalog({
+		queryClient,
+		registryCatalog: adminRegistryCatalogQ.data,
+		refetchRegistryCatalog: adminRegistryCatalogQ.refetch,
+	});
 	const hetznerBurst = useAdminSettingsAuthHetznerBurst({
 		queryClient,
 		runtimePolicy: hetznerBurstRuntimePolicyQ.data,
@@ -161,6 +174,8 @@ export function useAdminSettingsAuth({
 		...forwardDemoSeeds,
 		teamsGlobalConfigQ,
 		...teams,
+		adminRegistryCatalogQ,
+		...registryCatalog,
 		hetznerBurstStatusQ,
 		hetznerBurstRuntimePolicyQ,
 		...hetznerBurst,

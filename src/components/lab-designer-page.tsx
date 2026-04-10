@@ -139,7 +139,9 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 				templatePreview={page.templatePreviewQ.data?.yaml ?? ""}
 				templatePreviewLoading={page.templatePreviewQ.isLoading}
 				importPending={page.importTemplate.isPending}
+				importContainerlabPending={page.importContainerlab.isPending}
 				onImport={() => page.importTemplate.mutate()}
+				onImportContainerlab={(yaml) => page.importContainerlab.mutate(yaml)}
 			/>
 			<LabDesignerQuickstartDialog
 				open={page.quickstartOpen}

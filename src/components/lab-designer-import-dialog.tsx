@@ -17,6 +17,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
 
 type Props = {
 	open: boolean;
@@ -35,9 +36,13 @@ type Props = {
 	templatePreviewLoading: boolean;
 	importPending: boolean;
 	onImport: () => void;
+	importContainerlabPending: boolean;
+	onImportContainerlab: (yaml: string) => void;
 };
 
 export function LabDesignerImportDialog(props: Props) {
+	const [containerlabYAML, setContainerlabYAML] = useState("");
+
 	return (
 		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
 			<DialogContent className="border-border/70 bg-card/95 sm:max-w-3xl">
@@ -119,6 +124,25 @@ export function LabDesignerImportDialog(props: Props) {
 							}
 							className="font-mono text-xs h-[220px]"
 						/>
+					</div>
+
+					<div className="space-y-1 rounded-2xl border border-border bg-muted/20 p-3">
+						<Label>Containerlab YAML (convert + import)</Label>
+						<Textarea
+							value={containerlabYAML}
+							onChange={(e) => setContainerlabYAML(e.target.value)}
+							placeholder="Paste containerlab topology YAML here..."
+							className="font-mono text-xs h-[200px]"
+						/>
+						<div className="flex justify-end">
+							<Button
+								variant="secondary"
+								onClick={() => props.onImportContainerlab(containerlabYAML)}
+								disabled={props.importContainerlabPending || !containerlabYAML.trim()}
+							>
+								Convert + Import
+							</Button>
+						</div>
 					</div>
 				</div>
 				<DialogFooter>

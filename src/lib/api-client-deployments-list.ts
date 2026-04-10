@@ -104,6 +104,27 @@ export type RegistryTagsListResponse = {
 	tags: string[];
 };
 
+export type RegistryCatalogPublicImageEntry = {
+	id?: string;
+	label?: string;
+	nos?: string;
+	vendor?: string;
+	model?: string;
+	kind?: string;
+	role?: "host" | "router" | "switch" | "firewall" | "other" | string;
+	repository: string;
+	defaultTag?: string;
+	aliases?: string[];
+	enabled: boolean;
+};
+
+export type RegistryCatalogResponse = {
+	source: string;
+	baseUrl?: string;
+	images: RegistryCatalogPublicImageEntry[];
+	retrievedAt?: ISO8601;
+};
+
 export async function listRegistryRepositories(params?: {
 	q?: string;
 	n?: number;
@@ -127,4 +148,8 @@ export async function listRegistryTags(
 	return apiFetch<RegistryTagsListResponse>(
 		`/api/registry/repos/${encodeURIComponent(repo)}/tags${suffix ? `?${suffix}` : ""}`,
 	);
+}
+
+export async function getRegistryCatalog(): Promise<RegistryCatalogResponse> {
+	return apiFetch<RegistryCatalogResponse>("/api/registry/catalog");
 }

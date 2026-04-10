@@ -1,7 +1,8 @@
 import type { SavedConfigRef } from "@/components/lab-designer-types";
 import {
 	createKneDeploymentFromTemplate,
-	getUserScopeNetlabTemplate,
+	getUserScopeKNETemplate,
+	importContainerlabTopology,
 	saveKneTopologyYAML,
 	validateKneTopologyYAML,
 } from "@/lib/api-client";
@@ -24,6 +25,51 @@ export function useLabDesignerDataMutations(args: {
 }) {
 	const { opts, setLastValidation } = args;
 	const toAPISource = (value: string) => (value === "user" ? "user" : value);
+
+	const applyImportedDesign = (yaml: string) => {
+		const parsed = kneYamlToDesign(yaml);
+		opts.setLabName(parsed.design.name);
+		opts.setDefaultKind(parsed.design.defaultKind ?? "");
+		opts.setNodes(
+			parsed.design.nodes.map((node: (typeof parsed.design.nodes)[number]) => ({
+				id: node.id,
+				position: node.position ?? { x: 120, y: 120 },
+				data: {
+					label: node.label ?? node.id,
+					kind: node.kind ?? "",
+					image: node.image ?? "",
+					mgmtIpv4: node.mgmtIpv4,
+					startupConfig: node.startupConfig,
+					env: node.env,
+					interfaces: node.interfaces,
+					notes: node.notes,
+					status: node.status,
+				},
+				type: "designerNode",
+			})),
+		);
+		opts.setEdges(
+			parsed.design.links.map((link: (typeof parsed.design.links)[number]) => ({
+				id: link.id,
+				source: link.source,
+				target: link.target,
+				label:
+					link.label ||
+					`${link.sourceIf || link.source} ↔ ${link.targetIf || link.target}`,
+				data: {
+					label: link.label,
+					sourceIf: link.sourceIf,
+					targetIf: link.targetIf,
+					mtu: link.mtu,
+					notes: link.notes,
+				},
+			})),
+		);
+		opts.setSelectedNodeId(parsed.design.nodes[0]?.id ?? "");
+		opts.setYamlMode("generated");
+		opts.setCustomYaml("");
+		opts.setImportOpen(false);
+	};
 
 	const validateBeforePersist = async () => {
 		if (!opts.userId) throw new Error("Select a user");
@@ -183,59 +229,45 @@ export function useLabDesignerDataMutations(args: {
 			if (!opts.userId) throw new Error("Select a user");
 			const file = opts.importFile.trim();
 			if (!file) throw new Error("Select a template");
-			return getUserScopeNetlabTemplate(opts.userId, {
+			return getUserScopeKNETemplate(opts.userId, {
 				source: toAPISource(opts.importSource),
 				dir: opts.importDir,
-				template: file,
+				file,
 			});
 		},
 		onSuccess: (resp) => {
-			const parsed = kneYamlToDesign(resp.yaml);
-			opts.setLabName(parsed.design.name);
-			opts.setDefaultKind(parsed.design.defaultKind ?? "");
-			opts.setNodes(
-				parsed.design.nodes.map((node: (typeof parsed.design.nodes)[number]) => ({
-					id: node.id,
-					position: node.position ?? { x: 120, y: 120 },
-					data: {
-						label: node.label ?? node.id,
-						kind: node.kind ?? "",
-						image: node.image ?? "",
-						mgmtIpv4: node.mgmtIpv4,
-						startupConfig: node.startupConfig,
-						env: node.env,
-						interfaces: node.interfaces,
-						notes: node.notes,
-						status: node.status,
-					},
-					type: "designerNode",
-				})),
-			);
-			opts.setEdges(
-				parsed.design.links.map((link: (typeof parsed.design.links)[number]) => ({
-					id: link.id,
-					source: link.source,
-					target: link.target,
-					label:
-						link.label ||
-						`${link.sourceIf || link.source} ↔ ${link.targetIf || link.target}`,
-					data: {
-						label: link.label,
-						sourceIf: link.sourceIf,
-						targetIf: link.targetIf,
-						mtu: link.mtu,
-						notes: link.notes,
-					},
-				})),
-			);
-			opts.setSelectedNodeId(parsed.design.nodes[0]?.id ?? "");
-			opts.setYamlMode("generated");
-			opts.setCustomYaml("");
-			opts.setImportOpen(false);
+			applyImportedDesign(resp.yaml);
 			toast.success("Template imported", { description: resp.path });
 		},
 		onError: (e) =>
 			toast.error("Import failed", { description: (e as Error).message }),
+	});
+
+	const importContainerlab = useMutation({
+		mutationFn: async (topologyYAML: string) => {
+			if (!opts.userId) throw new Error("Select a user");
+			const payload = String(topologyYAML ?? "").trim();
+			if (!payload) throw new Error("Paste containerlab YAML");
+			return importContainerlabTopology(opts.userId, { topologyYAML: payload });
+		},
+		onSuccess: (resp) => {
+			if (resp.blocking) {
+				const firstError = resp.issues.find((issue) => issue.severity === "error");
+				toast.error("Containerlab conversion failed", {
+					description: firstError?.message ?? "Fix conversion errors and retry.",
+				});
+				return;
+			}
+			applyImportedDesign(resp.convertedYAML);
+			const warning = resp.issues.find((issue) => issue.severity === "warning");
+			toast.success("Containerlab imported", {
+				description: warning?.message ?? "Converted to canonical KNE topology.",
+			});
+		},
+		onError: (e) =>
+			toast.error("Containerlab import failed", {
+				description: (e as Error).message,
+			}),
 	});
 
 	return {
@@ -243,5 +275,6 @@ export function useLabDesignerDataMutations(args: {
 		createDeployment,
 		saveConfig,
 		importTemplate,
+		importContainerlab,
 	};
 }
