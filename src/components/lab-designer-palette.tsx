@@ -44,7 +44,10 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 		});
 	}
 
-	if (lower.includes("vrnetlab/cisco_iol") || lower.includes("/kne/cisco_iol:")) {
+	if (
+		lower.includes("vrnetlab/cisco_iol") ||
+		lower.includes("/kne/cisco_iol:")
+	) {
 		return mk({
 			label: "Router · Cisco IOL (IOS)",
 			category: "Routers",
@@ -211,7 +214,9 @@ export function PaletteDraggableItem(props: { item: PaletteItem }) {
 			className="cursor-grab select-none rounded-lg border bg-background px-3 py-2 text-sm hover:bg-accent"
 			draggable
 			onDragStart={(e) => {
-				e.dataTransfer.setData(paletteMimeType, JSON.stringify(p));
+				const payload = JSON.stringify(p);
+				e.dataTransfer.setData(paletteMimeType, payload);
+				e.dataTransfer.setData("text/plain", payload);
 				e.dataTransfer.effectAllowed = "copy";
 			}}
 			title={p.repo ? `${p.label}\n${p.repo}` : p.label}

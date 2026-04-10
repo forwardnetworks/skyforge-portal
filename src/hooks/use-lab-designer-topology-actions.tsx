@@ -11,6 +11,11 @@ import type { LabDesignerActionsOptions } from "./lab-designer-action-types";
 export function createLabDesignerTopologyActions(
 	opts: LabDesignerActionsOptions,
 ) {
+	const normalizeKind = (value: string) =>
+		String(value ?? "")
+			.trim()
+			.toLowerCase();
+
 	const addNode = () => {
 		const base = "n";
 		let i = opts.nodes.length + 1;
@@ -53,6 +58,29 @@ export function createLabDesignerTopologyActions(
 
 		const name = (opts.qsName || "clos").trim() || "clos";
 		opts.setLabName(name);
+		const switchImage =
+			String(opts.qsSwitchImage ?? "").trim() ||
+			opts.quickstartImageByKind[normalizeKind(opts.qsSwitchKind)] ||
+			"";
+		const hostImage =
+			String(opts.qsHostImage ?? "").trim() ||
+			opts.quickstartImageByKind[normalizeKind(opts.qsHostKind)] ||
+			"";
+
+		if (!switchImage) {
+			toast.error("Switch image is required", {
+				description:
+					"Pick a switch image in Quickstart so deployments are repeatable.",
+			});
+			return;
+		}
+		if (hostsPerLeaf > 0 && !hostImage) {
+			toast.error("Host image is required", {
+				description:
+					"Pick a host image in Quickstart so deployments are repeatable.",
+			});
+			return;
+		}
 
 		const mkNode = (
 			id: string,
@@ -69,6 +97,8 @@ export function createLabDesignerTopologyActions(
 
 		const nextNodes: DesignNode[] = [];
 		const nextEdges: DesignEdge[] = [];
+		const interfaceIndexByNode: Record<string, number> = {};
+		const interfaceNamesByNode: Record<string, string[]> = {};
 		const x0 = 120;
 		const dx = 260;
 		const ySpine = 120;
@@ -85,32 +115,43 @@ export function createLabDesignerTopologyActions(
 					x0 + i * dx,
 					ySpine,
 					opts.qsSwitchKind,
-					opts.qsSwitchImage,
+					switchImage,
 				),
 			);
 		}
 
 		for (let i = 0; i < leafIds.length; i++) {
 			nextNodes.push(
-				mkNode(
-					leafIds[i],
-					x0 + i * dx,
-					yLeaf,
-					opts.qsSwitchKind,
-					opts.qsSwitchImage,
-				),
+				mkNode(leafIds[i], x0 + i * dx, yLeaf, opts.qsSwitchKind, switchImage),
 			);
 		}
 
+		const nextInterfaceName = (nodeId: string): string => {
+			const current = interfaceIndexByNode[nodeId] ?? 0;
+			const next = current + 1;
+			interfaceIndexByNode[nodeId] = next;
+			const name = `eth${next}`;
+			if (!interfaceNamesByNode[nodeId]) interfaceNamesByNode[nodeId] = [];
+			interfaceNamesByNode[nodeId].push(name);
+			return name;
+		};
+
+		const appendEdge = (id: string, source: string, target: string) => {
+			const sourceIf = nextInterfaceName(source);
+			const targetIf = nextInterfaceName(target);
+			const label = `${source}:${sourceIf} ↔ ${target}:${targetIf}`;
+			nextEdges.push({
+				id,
+				source,
+				target,
+				label,
+				data: { label, sourceIf, targetIf },
+			});
+		};
+
 		for (const l of leafIds) {
 			for (const s of spineIds) {
-				nextEdges.push({
-					id: `e-${l}-${s}`,
-					source: l,
-					target: s,
-					label: `${l} ↔ ${s}`,
-					data: { label: `${l} ↔ ${s}` },
-				});
+				appendEdge(`e-${l}-${s}`, l, s);
 			}
 		}
 
@@ -121,37 +162,33 @@ export function createLabDesignerTopologyActions(
 				const hostId = `h${hostCounter++}`;
 				const hostX = x0 + li * dx + hi * 70;
 				nextNodes.push(
-					mkNode(hostId, hostX, yHost, opts.qsHostKind, opts.qsHostImage),
+					mkNode(hostId, hostX, yHost, opts.qsHostKind, hostImage),
 				);
-				nextEdges.push({
-					id: `e-${hostId}-${leafId}`,
-					source: hostId,
-					target: leafId,
-					label: `${hostId} ↔ ${leafId}`,
-					data: { label: `${hostId} ↔ ${leafId}` },
-				});
+				appendEdge(`e-${hostId}-${leafId}`, hostId, leafId);
 			}
 		}
 
-		opts.setNodes(nextNodes);
+		const nodesWithInterfaces = nextNodes.map((node) => ({
+			...node,
+			data: {
+				...node.data,
+				interfaces: (interfaceNamesByNode[node.id] ?? []).map((name) => ({
+					id: name,
+					name,
+				})),
+			},
+		}));
+
+		opts.setNodes(nodesWithInterfaces);
 		opts.setEdges(nextEdges);
 		opts.setYamlMode("generated");
 		opts.setCustomYaml("");
 		opts.setSelectedNodeId("");
+		opts.setInspectorTab("lab");
 		opts.setQuickstartOpen(false);
 		requestAnimationFrame(() =>
 			opts.rfInstance?.fitView({ padding: 0.15, duration: 250 }),
 		);
-
-		const missingImages = nextNodes.filter(
-			(n) => !String(n.data?.image ?? "").trim(),
-		);
-		if (missingImages.length) {
-			toast.message("Quickstart created (missing images)", {
-				description: "Pick images per-node (or use defaults) before deploying.",
-			});
-			return;
-		}
 		toast.success("Starter topology created");
 	};
 

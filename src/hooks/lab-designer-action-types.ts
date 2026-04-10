@@ -4,6 +4,7 @@ import type {
 	DesignEdge,
 	DesignNode,
 	EdgeMenuState,
+	LabDesignerInspectorTab,
 	NodeMenuState,
 	PaletteItem,
 	SavedConfigRef,
@@ -28,6 +29,7 @@ export type LabDesignerActionsOptions = {
 	qsSwitchImage: string;
 	qsHostKind: string;
 	qsHostImage: string;
+	quickstartImageByKind: Record<string, string>;
 	selectedNodeId: string;
 	importDeploymentId: string;
 	userId: string;
@@ -46,6 +48,7 @@ export type LabDesignerActionsOptions = {
 	setNodeMenu: Dispatch<SetStateAction<NodeMenuState | null>>;
 	setEdgeMenu: Dispatch<SetStateAction<EdgeMenuState | null>>;
 	setCanvasMenu: Dispatch<SetStateAction<CanvasMenuState | null>>;
+	setInspectorTab: (value: LabDesignerInspectorTab) => void;
 	setUseSavedConfig: (value: boolean) => void;
 	setLastSaved: Dispatch<SetStateAction<SavedConfigRef | null>>;
 	setUserScopeId: (value: string) => void;

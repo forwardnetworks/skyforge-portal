@@ -1,5 +1,4 @@
-import { useLabDesignerPageModel } from "@/hooks/use-lab-designer-page-model";
-import { useLabDesignerPageState } from "@/hooks/use-lab-designer-page-state";
+import type { LabDesignerSearch } from "@/components/lab-designer-types";
 import { useLabDesignerData } from "@/hooks/use-lab-designer-data";
 import { useLabDesignerDerived } from "@/hooks/use-lab-designer-derived";
 import {
@@ -7,8 +6,9 @@ import {
 	useLabDesignerImportPrefsEffect,
 	useLabDesignerImportedDeploymentSyncEffect,
 } from "@/hooks/use-lab-designer-effects";
+import { useLabDesignerPageModel } from "@/hooks/use-lab-designer-page-model";
+import { useLabDesignerPageState } from "@/hooks/use-lab-designer-page-state";
 import { createLabDesignerActions } from "./use-lab-designer-actions";
-import type { LabDesignerSearch } from "@/components/lab-designer-types";
 
 export function useLabDesignerPage(search: LabDesignerSearch) {
 	const state = useLabDesignerPageState();
@@ -95,6 +95,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		qsSwitchImage: state.qsSwitchImage,
 		qsHostKind: state.qsHostKind,
 		qsHostImage: state.qsHostImage,
+		quickstartImageByKind: derived.quickstartImageByKind,
 		selectedNodeId: state.selectedNodeId,
 		importDeploymentId,
 		userId: state.userId,
@@ -113,6 +114,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		setNodeMenu: state.setNodeMenu,
 		setEdgeMenu: state.setEdgeMenu,
 		setCanvasMenu: state.setCanvasMenu,
+		setInspectorTab: state.setInspectorTab,
 		setUseSavedConfig: state.setUseSavedConfig,
 		setLastSaved: state.setLastSaved,
 		setUserScopeId: state.setUserScopeId,

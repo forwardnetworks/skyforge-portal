@@ -13,19 +13,22 @@ function validationTone(page: ReturnType<typeof useLabDesignerPage>) {
 	if (page.validateTopology.isPending) {
 		return {
 			label: "Validating",
-			className: "border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100",
+			className:
+				"border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100",
 		};
 	}
 	if (page.lastValidation?.valid === false) {
 		return {
 			label: "Needs fixes",
-			className: "border-red-500/40 bg-red-500/10 text-red-950 dark:text-red-100",
+			className:
+				"border-red-500/40 bg-red-500/10 text-red-950 dark:text-red-100",
 		};
 	}
 	if (page.lastValidation?.valid) {
 		return {
 			label: "Validated",
-			className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100",
+			className:
+				"border-emerald-500/40 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100",
 		};
 	}
 	return {
@@ -43,10 +46,28 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 		<div className="flex h-full min-h-0 w-full flex-col gap-4 bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.08),transparent_28%),radial-gradient(circle_at_top_right,rgba(234,179,8,0.08),transparent_24%)] p-4 dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(250,204,21,0.08),transparent_24%)]">
 			<Card className="overflow-hidden border-border/70 bg-card/90 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:bg-card/95">
 				<CardContent className="flex flex-col gap-4 p-4">
-					<LabDesignerCommandBar page={page} validation={validation} />
+					{page.showCommandBar ? (
+						<LabDesignerCommandBar page={page} validation={validation} />
+					) : null}
 
-					<div className="grid gap-3 rounded-2xl border border-border/70 bg-muted/30 p-3 lg:grid-cols-[minmax(0,1fr)_380px] dark:bg-muted/20">
+					<div
+						className={`grid gap-3 rounded-2xl border border-border/70 bg-muted/30 p-3 dark:bg-muted/20 ${
+							page.showInspector
+								? "lg:grid-cols-[minmax(0,1fr)_380px]"
+								: "lg:grid-cols-1"
+						}`}
+					>
 						<LabDesignerWorkspace
+							showPalette={page.showPalette}
+							onTogglePalette={() => page.setShowPalette((current) => !current)}
+							showInspector={page.showInspector}
+							onToggleInspector={() =>
+								page.setShowInspector((current) => !current)
+							}
+							showCommandBar={page.showCommandBar}
+							onToggleCommandBar={() =>
+								page.setShowCommandBar((current) => !current)
+							}
 							snapToGrid={page.snapToGrid}
 							onSnapToGridChange={page.setSnapToGrid}
 							linkMode={page.linkMode}
@@ -99,16 +120,19 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 							setLinkMode={page.setLinkMode}
 							setPendingLinkSource={page.setPendingLinkSource}
 							rfInstance={page.rfInstance}
+							setInspectorTab={page.setInspectorTab}
 						/>
 
-						<Card className="min-h-0 border-border/70 bg-card/85 dark:bg-card/95">
-							<CardContent className="flex h-full min-h-0 flex-col p-3">
-								<LabDesignerInspectorTabs
-									page={page}
-									selectedEdge={selectedEdge}
-								/>
-							</CardContent>
-						</Card>
+						{page.showInspector ? (
+							<Card className="min-h-0 border-border/70 bg-card/85 dark:bg-card/95">
+								<CardContent className="flex h-full min-h-0 flex-col p-3">
+									<LabDesignerInspectorTabs
+										page={page}
+										selectedEdge={selectedEdge}
+									/>
+								</CardContent>
+							</Card>
+						) : null}
 					</div>
 
 					<LabDesignerStatusRail page={page} selectedEdge={selectedEdge} />
@@ -123,9 +147,7 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 				onImportSourceChange={(value) => {
 					page.setImportSource(value);
 					page.setImportDir(
-						value === page.USER_REPO_SOURCE
-							? "kne/designer"
-							: "kne",
+						value === page.USER_REPO_SOURCE ? "kne/designer" : "kne",
 					);
 					page.setImportFile("");
 				}}

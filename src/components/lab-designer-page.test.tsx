@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LabDesignerPage } from "./lab-designer-page";
 
@@ -62,6 +61,14 @@ function makePage(overrides: Record<string, unknown> = {}) {
 		setTemplatesDir: vi.fn(),
 		templateFile: "fabric.kne.yml",
 		setTemplateFile: vi.fn(),
+		showCommandBar: true,
+		setShowCommandBar: vi.fn(),
+		showPalette: true,
+		setShowPalette: vi.fn(),
+		showInspector: true,
+		setShowInspector: vi.fn(),
+		inspectorTab: "lab",
+		setInspectorTab: vi.fn(),
 		snapToGrid: true,
 		setSnapToGrid: vi.fn(),
 		paletteSearch: "",
@@ -173,8 +180,8 @@ describe("LabDesignerPage", () => {
 	});
 
 	it("renders validation warnings, errors, and normalized yaml", async () => {
-		const user = userEvent.setup();
 		mockPage = makePage({
+			inspectorTab: "yaml",
 			lastValidation: {
 				normalizedYAML: "name: normalized\ntopology: {}\n",
 				warnings: ["node names were normalized"],
@@ -186,7 +193,6 @@ describe("LabDesignerPage", () => {
 		render(<LabDesignerPage search={{}} />);
 
 		expect(screen.getByText("Needs fixes")).toBeInTheDocument();
-		await user.click(screen.getByRole("tab", { name: "YAML" }));
 		expect(screen.getByText("node names were normalized")).toBeInTheDocument();
 		expect(screen.getByText("missing topology.nodes")).toBeInTheDocument();
 		expect(
@@ -211,7 +217,6 @@ describe("LabDesignerPage", () => {
 	});
 
 	it("applies node inspector edits through setNodes", async () => {
-		const user = userEvent.setup();
 		const selectedNode = {
 			id: "r1",
 			position: { x: 0, y: 0 },
@@ -219,13 +224,13 @@ describe("LabDesignerPage", () => {
 			data: { label: "r1", kind: "linux", image: "", interfaces: [] },
 		};
 		mockPage = makePage({
+			inspectorTab: "node",
 			nodes: [selectedNode],
 			selectedNode,
 		});
 
 		render(<LabDesignerPage search={{}} />);
-		await user.click(screen.getByRole("tab", { name: "Node" }));
-		const nodePanel = screen.getByRole("tabpanel", { name: "Node" });
+		const nodePanel = screen.getByRole("tabpanel", { name: /Node/ });
 		const nodeInputs = within(nodePanel).getAllByRole("textbox");
 
 		fireEvent.change(nodeInputs[0], {
@@ -236,7 +241,6 @@ describe("LabDesignerPage", () => {
 	});
 
 	it("applies link inspector edits through setEdges", async () => {
-		const user = userEvent.setup();
 		const selectedEdge = {
 			id: "e-r1-r2",
 			source: "r1",
@@ -244,13 +248,13 @@ describe("LabDesignerPage", () => {
 			data: { sourceIf: "eth1", targetIf: "eth2", label: "uplink" },
 		};
 		mockPage = makePage({
+			inspectorTab: "link",
 			edges: [{ ...selectedEdge, selected: true }],
 			selectedEdge,
 		});
 
 		render(<LabDesignerPage search={{}} />);
-		await user.click(screen.getByRole("tab", { name: "Link" }));
-		const linkPanel = screen.getByRole("tabpanel", { name: "Link" });
+		const linkPanel = screen.getByRole("tabpanel", { name: /Link/ });
 		const linkInputs = within(linkPanel).getAllByRole("textbox");
 
 		fireEvent.change(linkInputs[0], {

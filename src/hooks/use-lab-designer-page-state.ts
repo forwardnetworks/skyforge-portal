@@ -4,6 +4,7 @@ import type {
 	DesignEdge,
 	DesignNode,
 	EdgeMenuState,
+	LabDesignerInspectorTab,
 	NodeMenuState,
 	SavedConfigRef,
 } from "@/components/lab-designer-types";
@@ -29,6 +30,11 @@ export function useLabDesignerPageState() {
 	const [lastSaved, setLastSaved] = useState<SavedConfigRef | null>(null);
 	const [templatesDir, setTemplatesDir] = useState("kne/designer");
 	const [templateFile, setTemplateFile] = useState("");
+	const [showCommandBar, setShowCommandBar] = useState(true);
+	const [showPalette, setShowPalette] = useState(true);
+	const [showInspector, setShowInspector] = useState(true);
+	const [inspectorTab, setInspectorTab] =
+		useState<LabDesignerInspectorTab>("lab");
 	const [snapToGrid, setSnapToGrid] = useState(true);
 	const [paletteSearch, setPaletteSearch] = useState("");
 	const [paletteVendor, setPaletteVendor] = useState<string>("all");
@@ -40,9 +46,7 @@ export function useLabDesignerPageState() {
 	const [selectedNodeId, setSelectedNodeId] = useState<string>("");
 	const [linkMode, setLinkMode] = useState(false);
 	const [pendingLinkSource, setPendingLinkSource] = useState<string>("");
-	const [yamlMode, setYamlMode] = useState<"generated" | "custom">(
-		"generated",
-	);
+	const [yamlMode, setYamlMode] = useState<"generated" | "custom">("generated");
 	const [customYaml, setCustomYaml] = useState<string>("");
 	const [importOpen, setImportOpen] = useState(false);
 	const [importSource, setImportSource] = useState<"user" | "blueprints">(
@@ -120,6 +124,14 @@ export function useLabDesignerPageState() {
 		setTemplatesDir,
 		templateFile,
 		setTemplateFile,
+		showCommandBar,
+		setShowCommandBar,
+		showPalette,
+		setShowPalette,
+		showInspector,
+		setShowInspector,
+		inspectorTab,
+		setInspectorTab,
 		snapToGrid,
 		setSnapToGrid,
 		paletteSearch,

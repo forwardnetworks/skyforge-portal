@@ -6,10 +6,7 @@ import type {
 	SavedConfigRef,
 } from "@/components/lab-designer-types";
 import { hostLabelFromURL } from "@/hooks/lab-designer-utils";
-import {
-	type LabDesign,
-	designToKneYaml,
-} from "@/lib/kne-yaml";
+import { type LabDesign, designToKneYaml } from "@/lib/kne-yaml";
 import { useMemo } from "react";
 
 export function useLabDesignerDerived(opts: {
@@ -123,18 +120,14 @@ export function useLabDesignerDerived(opts: {
 				const repo = String(entry.repository ?? "")
 					.trim()
 					.replace(/^\/+|\/+$/g, "");
-				const defaultTag = String(entry.defaultTag ?? "latest").trim() || "latest";
+				const defaultTag =
+					String(entry.defaultTag ?? "latest").trim() || "latest";
 				const label = String(entry.label ?? "").trim();
 				const kind = String(entry.kind ?? "").trim();
 				const inferred = inferPaletteItemFromRepo(repo);
 				const role = String(entry.role ?? inferred.role ?? "other")
 					.trim()
-					.toLowerCase() as
-					| "host"
-					| "router"
-					| "switch"
-					| "firewall"
-					| "other";
+					.toLowerCase() as "host" | "router" | "switch" | "firewall" | "other";
 				const category: PaletteCategory =
 					role === "host"
 						? "Hosts"
@@ -147,7 +140,9 @@ export function useLabDesignerDerived(opts: {
 									: "Other";
 				return {
 					...inferred,
-					id: String(entry.id ?? `${kind || inferred.kind}:${repo}:${defaultTag}`),
+					id: String(
+						entry.id ?? `${kind || inferred.kind}:${repo}:${defaultTag}`,
+					),
 					label: label || inferred.label,
 					kind: kind || inferred.kind,
 					role,
@@ -155,8 +150,12 @@ export function useLabDesignerDerived(opts: {
 					repo,
 					defaultTag,
 					image: `${repo}:${defaultTag}`,
-					vendor: String(entry.vendor ?? inferred.vendor ?? "").trim() || inferred.vendor,
-					model: String(entry.model ?? inferred.model ?? "").trim() || inferred.model,
+					vendor:
+						String(entry.vendor ?? inferred.vendor ?? "").trim() ||
+						inferred.vendor,
+					model:
+						String(entry.model ?? inferred.model ?? "").trim() ||
+						inferred.model,
 				};
 			});
 		if (fromCatalog.length > 0) return fromCatalog;
@@ -209,6 +208,19 @@ export function useLabDesignerDerived(opts: {
 		paletteBaseItems,
 	]);
 
+	const quickstartImageByKind = useMemo(() => {
+		const images: Record<string, string> = {};
+		for (const item of paletteBaseItems) {
+			const kind = String(item.kind ?? "")
+				.trim()
+				.toLowerCase();
+			const image = String(item.image ?? "").trim();
+			if (!kind || !image || images[kind]) continue;
+			images[kind] = image;
+		}
+		return images;
+	}, [paletteBaseItems]);
+
 	const paletteHasBaseItems = paletteBaseItems.length > 0;
 	const paletteIsFilteredEmpty =
 		paletteHasBaseItems && paletteItems.length === 0;
@@ -243,6 +255,7 @@ export function useLabDesignerDerived(opts: {
 		effectiveTemplateFile,
 		paletteVendors,
 		paletteItems,
+		quickstartImageByKind,
 		paletteIsFilteredEmpty,
 		registryError,
 		userScopeOptions,

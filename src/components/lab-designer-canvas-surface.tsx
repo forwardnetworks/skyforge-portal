@@ -1,5 +1,5 @@
-import type { LabDesignerWorkspaceProps } from "@/components/lab-designer-workspace-types";
 import type { DesignEdge, DesignNode } from "@/components/lab-designer-types";
+import type { LabDesignerWorkspaceProps } from "@/components/lab-designer-workspace-types";
 import {
 	Background,
 	Controls,
@@ -40,6 +40,7 @@ type Props = Pick<
 	| "setLinkMode"
 	| "setPendingLinkSource"
 	| "rfInstance"
+	| "setInspectorTab"
 	| "snapToGrid"
 	| "linkMode"
 	| "pendingLinkSource"
@@ -202,6 +203,7 @@ export function LabDesignerCanvasSurface(props: Props) {
 						return;
 					}
 					props.setSelectedNodeId(id);
+					props.setInspectorTab("node");
 				}}
 				onNodeContextMenu={(event, node) => {
 					event.preventDefault();
@@ -211,6 +213,11 @@ export function LabDesignerCanvasSurface(props: Props) {
 					props.setNodeMenu({ x, y, nodeId: String(node.id) });
 					props.setEdgeMenu(null);
 					props.setCanvasMenu(null);
+					props.setInspectorTab("node");
+				}}
+				onEdgeClick={(_, edge) => {
+					if (!edge?.id) return;
+					props.setInspectorTab("link");
 				}}
 				onEdgeContextMenu={(event, edge) => {
 					event.preventDefault();
@@ -220,6 +227,7 @@ export function LabDesignerCanvasSurface(props: Props) {
 					props.setEdgeMenu({ x, y, edgeId: String(edge.id) });
 					props.setNodeMenu(null);
 					props.setCanvasMenu(null);
+					props.setInspectorTab("link");
 				}}
 				onPaneContextMenu={(event) => {
 					event.preventDefault();

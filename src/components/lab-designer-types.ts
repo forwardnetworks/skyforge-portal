@@ -77,4 +77,6 @@ export type LabDesignerSearch = {
 	importDeploymentId?: string;
 };
 
+export type LabDesignerInspectorTab = "lab" | "node" | "link" | "yaml";
+
 export type DesignEdge = Edge<DesignEdgeData>;

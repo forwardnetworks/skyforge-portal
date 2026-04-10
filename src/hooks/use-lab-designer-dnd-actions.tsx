@@ -17,7 +17,9 @@ export function createLabDesignerDndActions(opts: LabDesignerActionsOptions) {
 	const onDrop = async (event: DragEvent) => {
 		event.preventDefault();
 		if (!opts.rfRef.current || !opts.rfInstance) return;
-		const payload = event.dataTransfer.getData(labDesignerPaletteMimeType);
+		const payload =
+			event.dataTransfer.getData(labDesignerPaletteMimeType) ||
+			event.dataTransfer.getData("text/plain");
 		const parsed: LabDesignerPaletteItem | null = payload
 			? (() => {
 					try {
@@ -76,6 +78,7 @@ export function createLabDesignerDndActions(opts: LabDesignerActionsOptions) {
 		opts.markWarningsVisible();
 		opts.setNodes((prev) => [...prev, next]);
 		opts.setSelectedNodeId(id);
+		opts.setInspectorTab("node");
 	};
 
 	return {

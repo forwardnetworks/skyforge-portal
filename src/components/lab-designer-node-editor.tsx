@@ -1,16 +1,16 @@
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { RegistryImagePicker } from "@/components/registry-image-picker";
 import {
+	type LabDesignerNodeEditorProps,
 	formatEnv,
 	formatInterfaces,
-	LabDesignerNodeEditorProps,
 	parseEnv,
 	parseInterfaces,
 	updateSelectedNode,
 } from "@/components/lab-designer-editor-utils";
+import { RegistryImagePicker } from "@/components/registry-image-picker";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 function NodeEditorHeader({ page }: LabDesignerNodeEditorProps) {
 	return (
@@ -19,7 +19,10 @@ function NodeEditorHeader({ page }: LabDesignerNodeEditorProps) {
 				<div className="text-sm font-semibold text-foreground">
 					{String(page.selectedNode?.data?.label ?? page.selectedNode?.id)}
 				</div>
-				<div className="text-xs text-muted-foreground">Graph node editor</div>
+				<div className="text-xs text-muted-foreground">
+					Graph node editor{" "}
+					{page.selectedNode ? `• editing ${page.selectedNode.id}` : ""}
+				</div>
 			</div>
 			{page.selectedNode?.data?.status ? (
 				<Badge variant="outline">{page.selectedNode.data.status}</Badge>
@@ -113,7 +116,9 @@ function NodeStartupField({ page }: LabDesignerNodeEditorProps) {
 	);
 }
 
-function NodeInterfaceAndEnvironmentFields({ page }: LabDesignerNodeEditorProps) {
+function NodeInterfaceAndEnvironmentFields({
+	page,
+}: LabDesignerNodeEditorProps) {
 	return (
 		<div className="grid gap-3">
 			<div className="space-y-1">
@@ -167,7 +172,9 @@ function NodeNotesField({ page }: LabDesignerNodeEditorProps) {
 	);
 }
 
-export function LabDesignerNodeEditorContent({ page }: LabDesignerNodeEditorProps) {
+export function LabDesignerNodeEditorContent({
+	page,
+}: LabDesignerNodeEditorProps) {
 	return (
 		<>
 			<NodeEditorHeader page={page} />

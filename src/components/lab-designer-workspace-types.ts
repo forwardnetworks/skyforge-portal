@@ -3,6 +3,7 @@ import type {
 	DesignEdge,
 	DesignNode,
 	EdgeMenuState,
+	LabDesignerInspectorTab,
 	NodeMenuState,
 	PaletteItem,
 } from "@/components/lab-designer-types";
@@ -12,6 +13,12 @@ import type { DragEvent, KeyboardEvent, MutableRefObject } from "react";
 export type LabDesignerWorkspaceProps = {
 	snapToGrid: boolean;
 	onSnapToGridChange: (value: boolean) => void;
+	showPalette: boolean;
+	onTogglePalette: () => void;
+	showInspector: boolean;
+	onToggleInspector: () => void;
+	showCommandBar: boolean;
+	onToggleCommandBar: () => void;
 	linkMode: boolean;
 	onLinkModeToggle: () => void;
 	pendingLinkSource: string;
@@ -61,4 +68,5 @@ export type LabDesignerWorkspaceProps = {
 	setLinkMode: React.Dispatch<React.SetStateAction<boolean>>;
 	setPendingLinkSource: React.Dispatch<React.SetStateAction<string>>;
 	rfInstance: ReactFlowInstance<DesignNode, DesignEdge> | null;
+	setInspectorTab: (value: LabDesignerInspectorTab) => void;
 };
