@@ -48,13 +48,18 @@ export type SyncDeploymentForwardResponse = {
 	run: JSONMap;
 };
 
+export type SyncDeploymentForwardRequest = {
+	mode?: "full" | "metadata-only";
+};
+
 export async function syncDeploymentForward(
 	userId: string,
 	deploymentId: string,
+	body?: SyncDeploymentForwardRequest,
 ): Promise<SyncDeploymentForwardResponse> {
 	return apiFetch<SyncDeploymentForwardResponse>(
 		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/forward/sync`,
-		{ method: "POST", body: "{}" },
+		{ method: "POST", body: JSON.stringify(body ?? {}) },
 	);
 }
 

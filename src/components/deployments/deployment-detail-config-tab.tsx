@@ -106,7 +106,8 @@ export function DeploymentDetailConfigTab({
 				<CardHeader>
 					<CardTitle>Forward Analytics</CardTitle>
 					<CardDescription>
-						Optional: sync device IPs into Forward for collection.
+						Optional: sync topology metadata and optionally trigger Forward
+						collection.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -268,14 +269,17 @@ export function DeploymentDetailConfigTab({
 							<div className="flex items-end gap-2">
 								<Button
 									variant="outline"
-									onClick={() => syncForward.mutate()}
-									disabled={
-										!forwardCollector.trim() ||
-										syncForward.isPending ||
-										updateForward.isPending
-									}
+									onClick={() => syncForward.mutate({ mode: "metadata-only" })}
+									disabled={syncForward.isPending || updateForward.isPending}
 								>
-									{syncForward.isPending ? "Queueing…" : "Sync now"}
+									{syncForward.isPending ? "Queueing…" : "Sync metadata"}
+								</Button>
+								<Button
+									variant="outline"
+									onClick={() => syncForward.mutate({ mode: "full" })}
+									disabled={syncForward.isPending || updateForward.isPending}
+								>
+									{syncForward.isPending ? "Queueing…" : "Full sync"}
 								</Button>
 							</div>
 						</div>

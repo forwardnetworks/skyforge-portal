@@ -305,12 +305,13 @@ export function useDeploymentDetailActions(args: {
 	});
 
 	const syncForward = useMutation({
-		mutationFn: async () => {
+		mutationFn: async (next?: { mode?: "full" | "metadata-only" }) => {
 			if (!deployment) throw new Error("deployment not found");
-			return syncDeploymentForward(deployment.userId, deployment.id);
+			return syncDeploymentForward(deployment.userId, deployment.id, next);
 		},
-		onSuccess: async (resp) => {
-			toast.success("Forward sync queued", {
+		onSuccess: async (resp, vars) => {
+			const mode = vars?.mode === "metadata-only" ? "metadata" : "full";
+			toast.success(`Forward ${mode} sync queued`, {
 				description: `Run ${String(resp.run?.id ?? "")}`,
 			});
 			await queryClient.invalidateQueries({
