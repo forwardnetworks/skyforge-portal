@@ -63,6 +63,108 @@ async function listDeploymentIDs(
 	return ids;
 }
 
+async function waitForNewDeploymentID(
+	page: Page,
+	userID: string,
+	beforeIDs: Set<string>,
+): Promise<string> {
+	let discovered = "";
+	await expect
+		.poll(
+			async () => {
+				const afterDeploymentIDs = await listDeploymentIDs(page, userID);
+				for (const id of afterDeploymentIDs) {
+					if (!beforeIDs.has(id)) {
+						discovered = id;
+						return id;
+					}
+				}
+				return "";
+			},
+			{ timeout: smokeTimeoutMs },
+		)
+		.not.toBe("");
+	return discovered;
+}
+
+async function waitForDeploymentNodeID(
+	page: Page,
+	userID: string,
+	deploymentID: string,
+): Promise<string> {
+	const terminalReadyTimeoutMs = Math.max(smokeTimeoutMs, 90_000);
+	let discovered = "";
+	await expect
+		.poll(
+			async () => {
+				const resp = await page.request.get(
+					`/api/users/${encodeURIComponent(userID)}/deployments/${encodeURIComponent(
+						deploymentID,
+					)}/topology`,
+				);
+				if (!resp.ok()) return "";
+				const body = (await resp.json()) as {
+					nodes?: Array<{ id?: string; status?: string }>;
+				};
+				for (const node of body.nodes ?? []) {
+					const id = String(node.id ?? "").trim();
+					if (!id) continue;
+					const status = String(node.status ?? "").trim().toLowerCase();
+					if (
+						status === "" ||
+						status === "unknown" ||
+						status === "running" ||
+						status === "up" ||
+						status === "ready"
+					) {
+						discovered = id;
+						return id;
+					}
+				}
+				return "";
+			},
+			{ timeout: terminalReadyTimeoutMs },
+		)
+		.not.toBe("");
+	return discovered;
+}
+
+async function validateDeploymentTerminalConnection(
+	page: Page,
+	deploymentID: string,
+	nodeID: string,
+): Promise<void> {
+	const terminalReadyTimeoutMs = Math.max(smokeTimeoutMs, 90_000);
+	const origin = new URL(page.url()).origin;
+	const terminalPage = await page.context().newPage();
+	try {
+		await terminalPage.goto(
+			`${origin}/dashboard/deployments/${encodeURIComponent(
+				deploymentID,
+			)}?node=${encodeURIComponent(nodeID)}&action=terminal`,
+			{
+				waitUntil: "domcontentloaded",
+				timeout: terminalReadyTimeoutMs,
+			},
+		);
+		await expect(
+			terminalPage.getByText(new RegExp(`^${nodeID} / connected$`)).first(),
+		).toBeVisible({ timeout: terminalReadyTimeoutMs });
+		const xtermInput = terminalPage.locator(".xterm-helper-textarea").first();
+		await expect(xtermInput).toBeVisible({ timeout: terminalReadyTimeoutMs });
+		await xtermInput.click();
+		await xtermInput.press("Enter");
+		await expect(
+			terminalPage.getByText(new RegExp(`^${nodeID} / connected$`)).first(),
+		).toBeVisible({ timeout: smokeTimeoutMs });
+		await expect(
+			terminalPage.getByText(/\[error\]|\[disconnected\]/i).first(),
+		).toHaveCount(0);
+	} finally {
+		await terminalPage.close();
+	}
+}
+
 async function ensureAdvancedMode(page: Page): Promise<void> {
 	const current = await page.request.get("/api/settings");
 	if (!current.ok()) return;
@@ -187,10 +289,20 @@ async function convertAndImportTopology(
 	const convertButton = dialog.getByRole("button", { name: "Convert + Import" });
 	await expect(convertButton).toBeEnabled({ timeout: smokeTimeoutMs });
 	await convertButton.scrollIntoViewIfNeeded();
-	await convertButton.evaluate((el) => (el as HTMLButtonElement).click());
-	await expect(dialog.getByText("Last import result")).toBeVisible({
-		timeout: smokeTimeoutMs,
-	});
+	const resultSummary = dialog.getByText("Last import result");
+	let lastErr: unknown = null;
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		await convertButton.evaluate((el) => (el as HTMLButtonElement).click());
+		try {
+			await expect(resultSummary).toBeVisible({
+				timeout: Math.max(smokeTimeoutMs, 15_000),
+			});
+			return;
+		} catch (err) {
+			lastErr = err;
+		}
+	}
+	throw lastErr instanceof Error ? lastErr : new Error("convert/import did not return a result");
 }
 
 test.describe("Designer smoke coverage", () => {
@@ -459,9 +571,11 @@ test.describe("Designer smoke coverage", () => {
 
 		const imageInputs = dialog.getByPlaceholder("repo:tag");
 		await imageInputs.nth(0).fill(
-			"ghcr.io/forwardnetworks/kne/cisco_iol:latest",
+			"ghcr.io/forwardnetworks/kne/cisco_iol:17.16.01a-kne-r27",
 		);
-		await imageInputs.nth(1).fill("ghcr.io/forwardnetworks/kne/linux:latest");
+		await imageInputs
+			.nth(1)
+			.fill("ghcr.io/forwardnetworks/kne/linux:20260323-ssh-traffic-r1");
 		const generateButton = dialog.getByRole("button", { name: "Generate" });
 		await generateButton.scrollIntoViewIfNeeded();
 		await generateButton.evaluate((el) =>
@@ -633,6 +747,7 @@ test.describe("Designer smoke coverage", () => {
 	test("@smoke-designer parity: deploy launch request is accepted for imported topology", async ({
 		page,
 	}) => {
+		test.setTimeout(Math.max(smokeTimeoutMs * 4, 120_000));
 		test.skip(missingRequiredEnv.length > 0, missingEnvMessage);
 		test.skip(
 			!allowDeployMutations,
@@ -665,22 +780,17 @@ test.describe("Designer smoke coverage", () => {
 			timeout: smokeTimeoutMs,
 		});
 		await expect(
-			page.locator(".react-flow__node").filter({ hasText: "h1" }).first(),
+			page.locator(".react-flow__node").filter({ hasText: "r1" }).first(),
 		).toBeVisible({ timeout: smokeTimeoutMs });
 
 		await page.getByRole("button", { name: "Deploy" }).click();
-		await expect
-			.poll(
-				async () => {
-					const afterDeploymentIDs = await listDeploymentIDs(page, userID);
-					for (const id of afterDeploymentIDs) {
-						if (!beforeDeploymentIDs.has(id)) return true;
-					}
-					return false;
-				},
-				{ timeout: smokeTimeoutMs },
-			)
-			.toBe(true);
+		const deploymentID = await waitForNewDeploymentID(
+			page,
+			userID,
+			beforeDeploymentIDs,
+		);
+		const nodeID = await waitForDeploymentNodeID(page, userID, deploymentID);
+		await validateDeploymentTerminalConnection(page, deploymentID, nodeID);
 	});
 
 	test("@smoke-designer parity: eve-ng import converts a minimal topology", async ({

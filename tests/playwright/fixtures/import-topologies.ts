@@ -13,13 +13,22 @@ function readFixture(name: string): string {
 }
 
 const containerlabMinimal = readFixture("containerlab_minimal.yaml");
+const containerlabDeploy = `name: clab-deploy-smoke
+topology:
+  nodes:
+    r1:
+      kind: ceos
+      image: ghcr.io/forwardnetworks/kne/ceos:4.34.2F
+    r2:
+      kind: ceos
+      image: ghcr.io/forwardnetworks/kne/ceos:4.34.2F
+  links:
+    - endpoints: ["r1:eth1", "r2:eth1"]
+`;
 
 export const IMPORT_TOPOLOGY_FIXTURES = {
 	containerlabMinimal,
-	containerlabDeploy: containerlabMinimal.replace(
-		"name: clab-smoke",
-		"name: clab-deploy-smoke",
-	),
+	containerlabDeploy,
 	eveMinimal: readFixture("eve_minimal.xml"),
 	gns3Minimal: readFixture("gns3_minimal.yaml"),
 	gns3JsonMinimal: readFixture("gns3_minimal.json"),

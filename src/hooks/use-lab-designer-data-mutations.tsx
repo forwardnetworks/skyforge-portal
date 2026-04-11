@@ -1,7 +1,9 @@
 import type { SavedConfigRef } from "@/components/lab-designer-types";
+import { resolveTopologyImageTags } from "@/hooks/lab-designer-utils";
 import {
 	createKneDeploymentFromTemplate,
 	getKneDesignerSidecar,
+	getRegistryCatalog,
 	getUserScopeKNETemplate,
 	importTopology,
 	saveKneTopologyYAML,
@@ -122,6 +124,39 @@ export function useLabDesignerDataMutations(args: {
 	const toAPISource = (value: string) => (value === "user" ? "user" : value);
 	const preservedSidecarRef = useRef<Record<string, unknown>>({});
 
+	const resolveTopologyImageRefs = async (
+		topologyYAML: string,
+	): Promise<{ normalizedYAML: string; updatedImageCount: number }> => {
+		const catalog = await opts.queryClient
+			.fetchQuery({
+				queryKey: queryKeys.registryCatalog(),
+				queryFn: async () => getRegistryCatalog(),
+				retry: false,
+				staleTime: 30_000,
+			})
+			.catch(() => null);
+
+		const fallbackTagByRepo: Record<string, string> = {};
+		for (const row of catalog?.images ?? []) {
+			const repo = String(row?.repository ?? "")
+				.trim()
+				.replace(/^\/+|\/+$/g, "");
+			if (!repo) continue;
+			const fallbackTag = String(row?.defaultTag ?? "").trim() || "latest";
+			fallbackTagByRepo[repo] = fallbackTag;
+		}
+
+		const resolved = await resolveTopologyImageTags({
+			topologyYAML,
+			queryClient: opts.queryClient,
+			fallbackTagByRepo,
+		});
+		return {
+			normalizedYAML: resolved.topologyYAML,
+			updatedImageCount: resolved.updatedImages.length,
+		};
+	};
+
 	const buildDesignerSidecarState = (): Record<string, unknown> =>
 		buildDesignerSidecarStateForSave({
 			labName: opts.labName,
@@ -175,7 +210,8 @@ export function useLabDesignerDataMutations(args: {
 		sidecar: Record<string, unknown> | undefined,
 	): void => {
 		if (!sidecar || typeof sidecar !== "object") return;
-		preservedSidecarRef.current = extractPreservedDesignerSidecarFields(sidecar);
+		preservedSidecarRef.current =
+			extractPreservedDesignerSidecarFields(sidecar);
 		const root = sidecar as {
 			defaultKind?: unknown;
 			viewport?: unknown;
@@ -350,11 +386,20 @@ export function useLabDesignerDataMutations(args: {
 			);
 		}
 		if (root.viewport && typeof root.viewport === "object") {
-			const view = root.viewport as { x?: unknown; y?: unknown; zoom?: unknown };
+			const view = root.viewport as {
+				x?: unknown;
+				y?: unknown;
+				zoom?: unknown;
+			};
 			const x = Number(view.x);
 			const y = Number(view.y);
 			const zoom = Number(view.zoom);
-			if (opts.rfInstance && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(zoom)) {
+			if (
+				opts.rfInstance &&
+				Number.isFinite(x) &&
+				Number.isFinite(y) &&
+				Number.isFinite(zoom)
+			) {
 				requestAnimationFrame(() => {
 					opts.rfInstance?.setViewport({ x, y, zoom });
 				});
@@ -411,9 +456,15 @@ export function useLabDesignerDataMutations(args: {
 
 	const validateBeforePersist = async () => {
 		if (!opts.userId) throw new Error("Select a user");
+		const resolved = await resolveTopologyImageRefs(opts.effectiveYaml);
+		if (resolved.updatedImageCount > 0) {
+			opts.setYamlMode("custom");
+			opts.setCustomYaml(resolved.normalizedYAML);
+			opts.setUseSavedConfig(false);
+		}
 		const resp = await validateKneTopologyYAML(opts.userId, {
 			name: opts.labName,
-			topologyYAML: opts.effectiveYaml,
+			topologyYAML: resolved.normalizedYAML,
 		});
 		setLastValidation({
 			normalizedYAML: resp.normalizedYAML,
@@ -435,9 +486,15 @@ export function useLabDesignerDataMutations(args: {
 	const validateTopology = useMutation({
 		mutationFn: async () => {
 			if (!opts.userId) throw new Error("Select a user");
+			const resolved = await resolveTopologyImageRefs(opts.effectiveYaml);
+			if (resolved.updatedImageCount > 0) {
+				opts.setYamlMode("custom");
+				opts.setCustomYaml(resolved.normalizedYAML);
+				opts.setUseSavedConfig(false);
+			}
 			return validateKneTopologyYAML(opts.userId, {
 				name: opts.labName,
-				topologyYAML: opts.effectiveYaml,
+				topologyYAML: resolved.normalizedYAML,
 			});
 		},
 		onSuccess: (resp) => {
@@ -491,7 +548,7 @@ export function useLabDesignerDataMutations(args: {
 						templatesDir: opts.effectiveTemplatesDir,
 						template: opts.effectiveTemplateFile,
 						designerState: buildDesignerSidecarState(),
-				  }).then((resp) => {
+					}).then((resp) => {
 						const next: SavedConfigRef = {
 							userId: resp.userId,
 							templatesDir: resp.templatesDir,
@@ -501,7 +558,7 @@ export function useLabDesignerDataMutations(args: {
 						};
 						opts.setLastSaved(next);
 						return next;
-				  });
+					});
 			if (!saved) throw new Error("Failed to resolve saved topology reference");
 
 			return createKneDeploymentFromTemplate(opts.userId, {
@@ -521,7 +578,11 @@ export function useLabDesignerDataMutations(args: {
 			});
 			const id = resp.deployment?.id;
 			if (opts.openDeploymentOnCreate && id) {
-				window.open(`/dashboard/deployments/${id}`, "_blank", "noopener,noreferrer");
+				window.open(
+					`/dashboard/deployments/${id}`,
+					"_blank",
+					"noopener,noreferrer",
+				);
 			}
 		},
 		onError: (e) =>
@@ -609,7 +670,10 @@ export function useLabDesignerDataMutations(args: {
 	});
 
 	const importTopologyMutation = useMutation({
-		mutationFn: async (args: { source: "containerlab" | "eve-ng" | "gns3"; topologyYAML: string }) => {
+		mutationFn: async (args: {
+			source: "containerlab" | "eve-ng" | "gns3";
+			topologyYAML: string;
+		}) => {
 			if (!opts.userId) throw new Error("Select a user");
 			const payload = String(args.topologyYAML ?? "").trim();
 			if (!payload) throw new Error("Paste topology YAML");
@@ -621,9 +685,12 @@ export function useLabDesignerDataMutations(args: {
 		onSuccess: (resp) => {
 			setLastImportResult(resp);
 			if (resp.blocking) {
-				const firstError = resp.issues.find((issue) => issue.severity === "error");
+				const firstError = resp.issues.find(
+					(issue) => issue.severity === "error",
+				);
 				toast.error("Import failed", {
-					description: firstError?.message ?? "Fix conversion errors and retry.",
+					description:
+						firstError?.message ?? "Fix conversion errors and retry.",
 				});
 				return;
 			}

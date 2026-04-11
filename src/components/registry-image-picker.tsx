@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { resolveRepoTag } from "@/hooks/lab-designer-utils";
 import { listRegistryRepositories, listRegistryTags } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ export function RegistryImagePicker(props: {
 	const [repoQuery, setRepoQuery] = useState("");
 	const [tagQuery, setTagQuery] = useState("");
 	const [repo, setRepo] = useState("");
+	const queryClient = useQueryClient();
 
 	const reposQ = useQuery({
 		queryKey: queryKeys.registryRepos(repoQuery),
@@ -47,7 +49,7 @@ export function RegistryImagePicker(props: {
 				<Input
 					value={props.value}
 					onChange={(e) => props.onChange(e.target.value)}
-					placeholder="repo:tag"
+					placeholder="repo or repo:tag"
 				/>
 				<div className="text-xs text-muted-foreground">
 					Registry-backed picker. Requires server env `SKYFORGE_REGISTRY_URL`.
@@ -109,9 +111,16 @@ export function RegistryImagePicker(props: {
 						<Button
 							size="sm"
 							variant="ghost"
-							onClick={() => {
+							onClick={async () => {
 								if (!repo) return;
-								const image = `${repo}:${selected.tag || "latest"}`;
+								const tag =
+									selected.tag ||
+									(await resolveRepoTag({
+										repo,
+										queryClient,
+										fallbackTag: "latest",
+									}));
+								const image = `${repo}:${tag}`;
 								props.onChange(image);
 							}}
 							disabled={!repo}
