@@ -197,6 +197,12 @@ function useAdminSettingsIntegrationsSection(args: {
 			registryUsernameDraft: auth.registryUsernameDraft,
 			registryPasswordDraft: auth.registryPasswordDraft,
 			registryPrepullWorkerNodesDraft: auth.registryPrepullWorkerNodesDraft,
+			registryDiscoveredReposLoading: auth.registryReposQ.isLoading,
+			registryDiscoveredReposError: auth.registryReposQ.isError,
+			registryDiscoveredRepoCount: auth.discoveredRepos.length,
+			registryCatalogRepoCount: auth.registryCatalogImagesDraft.length,
+			registryMissingCatalogRepos: auth.missingCatalogRepos,
+			registryDisabledDiscoveredRepos: auth.disabledDiscoveredRepos,
 			registryCatalogImagesDraft: auth.registryCatalogImagesDraft,
 			saveRegistryCatalogPending: auth.saveRegistryCatalog.isPending,
 			triggerRegistryCatalogPrepullPending:
@@ -210,6 +216,8 @@ function useAdminSettingsIntegrationsSection(args: {
 			onRegistryCatalogImageFieldChange: auth.upsertRegistryCatalogImage,
 			onAddRegistryCatalogImage: auth.addRegistryCatalogImage,
 			onRemoveRegistryCatalogImage: auth.removeRegistryCatalogImage,
+			onAddMissingRegistryReposToCatalog:
+				auth.addMissingRegistryReposToCatalogDraft,
 			onSaveRegistryCatalog: () => auth.saveRegistryCatalog.mutate(),
 			onTriggerRegistryCatalogPrepull: () =>
 				auth.triggerRegistryCatalogPrepull.mutate(),

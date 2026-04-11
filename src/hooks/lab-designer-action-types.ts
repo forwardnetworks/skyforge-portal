@@ -31,6 +31,7 @@ export type LabDesignerActionsOptions = {
 	qsHostImage: string;
 	quickstartImageByKind: Record<string, string>;
 	selectedNodeId: string;
+	selectedEdgeId: string;
 	importDeploymentId: string;
 	userId: string;
 	effectiveYaml: string;
@@ -42,6 +43,7 @@ export type LabDesignerActionsOptions = {
 	setNodes: React.Dispatch<React.SetStateAction<DesignNode[]>>;
 	setEdges: React.Dispatch<React.SetStateAction<DesignEdge[]>>;
 	setSelectedNodeId: (value: string) => void;
+	setSelectedEdgeId: (value: string) => void;
 	setYamlMode: (value: "generated" | "custom") => void;
 	setCustomYaml: (value: string) => void;
 	setQuickstartOpen: (value: boolean) => void;

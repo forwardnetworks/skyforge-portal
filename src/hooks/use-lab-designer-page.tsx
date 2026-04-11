@@ -8,6 +8,7 @@ import {
 } from "@/hooks/use-lab-designer-effects";
 import { useLabDesignerPageModel } from "@/hooks/use-lab-designer-page-model";
 import { useLabDesignerPageState } from "@/hooks/use-lab-designer-page-state";
+import { useEffect } from "react";
 import { createLabDesignerActions } from "./use-lab-designer-actions";
 
 export function useLabDesignerPage(search: LabDesignerSearch) {
@@ -35,11 +36,17 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		importFile: state.importFile,
 		kneServer: state.kneServer,
 		labName: state.labName,
+		defaultKind: state.defaultKind,
+		nodes: state.nodes,
+		edges: state.edges,
+		annotations: state.annotations,
+		groups: state.groups,
 		effectiveYaml: model.effectiveYaml,
 		effectiveTemplatesDir: model.effectiveTemplatesDir,
 		effectiveTemplateFile: model.effectiveTemplateFile,
 		useSavedConfig: state.useSavedConfig,
 		lastSaved: state.lastSaved,
+		rfInstance: state.rfInstance,
 		openDeploymentOnCreate: state.openDeploymentOnCreate,
 		setLastSaved: state.setLastSaved,
 		setYamlMode: state.setYamlMode,
@@ -49,6 +56,8 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		setDefaultKind: state.setDefaultKind,
 		setNodes: state.setNodes,
 		setEdges: state.setEdges,
+		setAnnotations: state.setAnnotations,
+		setGroups: state.setGroups,
 		setSelectedNodeId: state.setSelectedNodeId,
 		setUseSavedConfig: state.setUseSavedConfig,
 	});
@@ -59,6 +68,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		labName: state.labName,
 		defaultKind: state.defaultKind,
 		selectedNodeId: state.selectedNodeId,
+		selectedEdgeId: state.selectedEdgeId,
 		yamlMode: state.yamlMode,
 		customYaml: state.customYaml,
 		templatesDir: state.templatesDir,
@@ -97,6 +107,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		qsHostImage: state.qsHostImage,
 		quickstartImageByKind: derived.quickstartImageByKind,
 		selectedNodeId: state.selectedNodeId,
+		selectedEdgeId: state.selectedEdgeId,
 		importDeploymentId,
 		userId: state.userId,
 		effectiveYaml: model.effectiveYaml,
@@ -108,6 +119,7 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		setNodes: state.setNodes,
 		setEdges: state.setEdges,
 		setSelectedNodeId: state.setSelectedNodeId,
+		setSelectedEdgeId: state.setSelectedEdgeId,
 		setYamlMode: state.setYamlMode,
 		setCustomYaml: state.setCustomYaml,
 		setQuickstartOpen: state.setQuickstartOpen,
@@ -139,6 +151,16 @@ export function useLabDesignerPage(search: LabDesignerSearch) {
 		search,
 		syncImportedDeployment: actions.syncImportedDeployment,
 	});
+
+	useEffect(() => {
+		if (state.userId) return;
+		const scopes = data.userScopesQ.data ?? [];
+		if (!Array.isArray(scopes) || scopes.length === 0) return;
+		const firstScope = scopes[0];
+		const nextUserID = String(firstScope?.id ?? "").trim();
+		if (!nextUserID) return;
+		state.setUserScopeId(nextUserID);
+	}, [data.userScopesQ.data, state.userId, state.setUserScopeId]);
 
 	return {
 		...state,

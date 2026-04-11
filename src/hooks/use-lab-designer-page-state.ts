@@ -3,6 +3,8 @@ import type {
 	CanvasMenuState,
 	DesignEdge,
 	DesignNode,
+	DesignerAnnotation,
+	DesignerGroup,
 	EdgeMenuState,
 	LabDesignerInspectorTab,
 	NodeMenuState,
@@ -11,12 +13,36 @@ import type {
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactFlowInstance } from "@xyflow/react";
 import { useEdgesState, useNodesState } from "@xyflow/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export const USER_REPO_SOURCE = "user" as const;
 export const LAB_DESIGNER_STORAGE_KEY = "skyforge.labDesigner.v1";
+const LAB_DESIGNER_LAYOUT_STORAGE_KEY = "skyforge.labDesigner.layout.v1";
+
+type LabDesignerLayoutPrefs = {
+	showCommandBar?: boolean;
+	showPalette?: boolean;
+	showInspector?: boolean;
+};
+
+function readLabDesignerLayoutPrefs(): LabDesignerLayoutPrefs {
+	if (typeof window === "undefined") return {};
+	try {
+		const raw = window.localStorage.getItem(LAB_DESIGNER_LAYOUT_STORAGE_KEY);
+		if (!raw) return {};
+		const parsed = JSON.parse(raw) as LabDesignerLayoutPrefs;
+		return {
+			showCommandBar: parsed?.showCommandBar,
+			showPalette: parsed?.showPalette,
+			showInspector: parsed?.showInspector,
+		};
+	} catch {
+		return {};
+	}
+}
 
 export function useLabDesignerPageState() {
+	const layoutPrefs = readLabDesignerLayoutPrefs();
 	const storageKey = LAB_DESIGNER_STORAGE_KEY;
 	const rfRef = useRef<HTMLDivElement | null>(null);
 	const queryClient = useQueryClient();
@@ -30,9 +56,15 @@ export function useLabDesignerPageState() {
 	const [lastSaved, setLastSaved] = useState<SavedConfigRef | null>(null);
 	const [templatesDir, setTemplatesDir] = useState("kne/designer");
 	const [templateFile, setTemplateFile] = useState("");
-	const [showCommandBar, setShowCommandBar] = useState(true);
-	const [showPalette, setShowPalette] = useState(true);
-	const [showInspector, setShowInspector] = useState(true);
+	const [showCommandBar, setShowCommandBar] = useState(
+		layoutPrefs.showCommandBar ?? true,
+	);
+	const [showPalette, setShowPalette] = useState(
+		layoutPrefs.showPalette ?? true,
+	);
+	const [showInspector, setShowInspector] = useState(
+		layoutPrefs.showInspector ?? true,
+	);
 	const [inspectorTab, setInspectorTab] =
 		useState<LabDesignerInspectorTab>("lab");
 	const [snapToGrid, setSnapToGrid] = useState(true);
@@ -44,6 +76,7 @@ export function useLabDesignerPageState() {
 		DesignEdge
 	> | null>(null);
 	const [selectedNodeId, setSelectedNodeId] = useState<string>("");
+	const [selectedEdgeId, setSelectedEdgeId] = useState<string>("");
 	const [linkMode, setLinkMode] = useState(false);
 	const [pendingLinkSource, setPendingLinkSource] = useState<string>("");
 	const [yamlMode, setYamlMode] = useState<"generated" | "custom">("generated");
@@ -64,6 +97,8 @@ export function useLabDesignerPageState() {
 	const [qsHostKind, setQsHostKind] = useState("linux");
 	const [qsHostImage, setQsHostImage] = useState("");
 	const [openDeploymentOnCreate, setOpenDeploymentOnCreate] = useState(true);
+	const [annotations, setAnnotations] = useState<DesignerAnnotation[]>([]);
+	const [groups, setGroups] = useState<DesignerGroup[]>([]);
 	const [nodeMenu, setNodeMenu] = useState<NodeMenuState | null>(null);
 	const [edgeMenu, setEdgeMenu] = useState<EdgeMenuState | null>(null);
 	const [canvasMenu, setCanvasMenu] = useState<CanvasMenuState | null>(null);
@@ -72,7 +107,7 @@ export function useLabDesignerPageState() {
 	const [nodes, setNodes, onNodesChange] = useNodesState<DesignNode>([
 		{
 			id: "r1",
-			position: { x: 80, y: 80 },
+			position: { x: 80, y: 220 },
 			data: { label: "r1", kind: "linux", image: "", interfaces: [] },
 			type: "designerNode",
 		},
@@ -100,6 +135,19 @@ export function useLabDesignerPageState() {
 	);
 
 	const nodeTypes = useMemo(() => ({ designerNode: DesignerNode }), []);
+
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const payload: LabDesignerLayoutPrefs = {
+			showCommandBar,
+			showPalette,
+			showInspector,
+		};
+		window.localStorage.setItem(
+			LAB_DESIGNER_LAYOUT_STORAGE_KEY,
+			JSON.stringify(payload),
+		);
+	}, [showCommandBar, showPalette, showInspector]);
 
 	return {
 		USER_REPO_SOURCE,
@@ -144,6 +192,8 @@ export function useLabDesignerPageState() {
 		setRfInstance,
 		selectedNodeId,
 		setSelectedNodeId,
+		selectedEdgeId,
+		setSelectedEdgeId,
 		linkMode,
 		setLinkMode,
 		pendingLinkSource,
@@ -180,6 +230,10 @@ export function useLabDesignerPageState() {
 		setQsHostImage,
 		openDeploymentOnCreate,
 		setOpenDeploymentOnCreate,
+		annotations,
+		setAnnotations,
+		groups,
+		setGroups,
 		nodeMenu,
 		setNodeMenu,
 		edgeMenu,

@@ -19,6 +19,7 @@ export function LabDesignerCanvasMenu(props: Props) {
 		<div
 			className="absolute z-50"
 			style={{ left: props.canvasMenu.x, top: props.canvasMenu.y }}
+			onMouseDown={(e) => e.stopPropagation()}
 			onContextMenu={(e) => e.preventDefault()}
 		>
 			<Card className="w-60 shadow-lg border bg-background/95 backdrop-blur">

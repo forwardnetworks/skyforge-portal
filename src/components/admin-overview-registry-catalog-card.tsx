@@ -84,6 +84,68 @@ export function AdminOverviewRegistryCatalogCard(
 						images: {props.registryCatalogImagesDraft.length}
 					</Badge>
 				</div>
+				<div className="space-y-2 rounded-md border p-3">
+					<div className="text-sm font-medium">Catalog coverage</div>
+					<div className="flex flex-wrap gap-2 text-xs">
+						<Badge variant="outline">
+							discovered: {props.registryDiscoveredRepoCount}
+						</Badge>
+						<Badge variant="outline">catalog rows: {props.registryCatalogRepoCount}</Badge>
+						<Badge
+							variant={
+								props.registryMissingCatalogRepos.length > 0
+									? "destructive"
+									: "secondary"
+							}
+						>
+							missing in catalog: {props.registryMissingCatalogRepos.length}
+						</Badge>
+						<Badge
+							variant={
+								props.registryDisabledDiscoveredRepos.length > 0
+									? "destructive"
+									: "secondary"
+							}
+						>
+							disabled in catalog: {props.registryDisabledDiscoveredRepos.length}
+						</Badge>
+					</div>
+					{props.registryDiscoveredReposLoading ? (
+						<div className="text-xs text-muted-foreground">
+							Loading discovered repositories…
+						</div>
+					) : props.registryDiscoveredReposError ? (
+						<div className="text-xs text-muted-foreground">
+							Could not load discovered repositories from registry.
+						</div>
+					) : null}
+					{props.registryMissingCatalogRepos.length > 0 ? (
+						<div className="space-y-2">
+							<div className="max-h-24 overflow-auto rounded-md border bg-muted/20 p-2 text-xs font-mono">
+								{props.registryMissingCatalogRepos.slice(0, 12).map((repo) => (
+									<div key={repo}>{repo}</div>
+								))}
+								{props.registryMissingCatalogRepos.length > 12 ? (
+									<div className="text-muted-foreground">
+										+{props.registryMissingCatalogRepos.length - 12} more
+									</div>
+								) : null}
+							</div>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={props.onAddMissingRegistryReposToCatalog}
+							>
+								Add missing discovered repos to catalog draft
+							</Button>
+						</div>
+					) : (
+						<div className="text-xs text-muted-foreground">
+							All discovered repositories are represented in catalog rows.
+						</div>
+					)}
+				</div>
 
 				<div className="space-y-2 rounded-md border p-3">
 					<div className="text-sm font-medium">Catalog images</div>

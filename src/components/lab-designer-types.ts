@@ -47,6 +47,20 @@ export type PaletteItem = {
 	role?: "host" | "router" | "switch" | "firewall" | "other";
 };
 
+export type DesignerAnnotation = {
+	id: string;
+	title: string;
+	text: string;
+	x: number;
+	y: number;
+};
+
+export type DesignerGroup = {
+	id: string;
+	label: string;
+	nodeIds: string[];
+};
+
 export type SavedConfigRef = {
 	userId: string;
 	templatesDir: string;

@@ -108,6 +108,8 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 							paletteIsFilteredEmpty={page.paletteIsFilteredEmpty}
 							nodes={page.nodes}
 							edges={page.edges}
+							annotations={page.annotations}
+							groups={page.groups}
 							rfRef={page.rfRef}
 							onDrop={page.onDrop}
 							onDragOver={page.onDragOver}
@@ -179,9 +181,15 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 				templatePreview={page.templatePreviewQ.data?.yaml ?? ""}
 				templatePreviewLoading={page.templatePreviewQ.isLoading}
 				importPending={page.importTemplate.isPending}
-				importContainerlabPending={page.importContainerlab.isPending}
+				importTopologyPending={page.importTopology.isPending}
+				lastImportResult={page.lastImportResult}
 				onImport={() => page.importTemplate.mutate()}
-				onImportContainerlab={(yaml) => page.importContainerlab.mutate(yaml)}
+				onImportTopology={(args) =>
+					page.importTopology.mutate({
+						source: args.source,
+						topologyYAML: args.yaml,
+					})
+				}
 			/>
 			<LabDesignerQuickstartDialog
 				open={page.quickstartOpen}

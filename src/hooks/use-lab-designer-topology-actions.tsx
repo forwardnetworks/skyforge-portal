@@ -25,9 +25,12 @@ export function createLabDesignerTopologyActions(
 			i++;
 			id = `${base}${i}`;
 		}
+		// Place new nodes on a predictable grid to avoid overlap with existing nodes.
+		const index = opts.nodes.length;
+		const columns = 4;
 		const pos = {
-			x: 120 + opts.nodes.length * 40,
-			y: 120 + opts.nodes.length * 30,
+			x: 120 + (index % columns) * 260,
+			y: 260 + Math.floor(index / columns) * 180,
 		};
 		const next: Node<DesignNodeData> = {
 			id,
@@ -312,6 +315,9 @@ export function createLabDesignerTopologyActions(
 				return true;
 			}),
 		);
+		if (selectedEdgeIds.has(opts.selectedEdgeId)) {
+			opts.setSelectedEdgeId("");
+		}
 	};
 
 	return {

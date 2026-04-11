@@ -68,7 +68,7 @@ export function createLabDesignerDndActions(opts: LabDesignerActionsOptions) {
 
 	const onDragOver = (event: DragEvent) => {
 		event.preventDefault();
-		event.dataTransfer.dropEffect = "move";
+		event.dataTransfer.dropEffect = "copy";
 	};
 
 	const onDrop = async (event: DragEvent) => {

@@ -12,6 +12,7 @@ import {
 	getAdminServiceNowGlobalConfig,
 	getAdminTeamsGlobalConfig,
 	getUserScopeNetlabTemplates,
+	listRegistryRepositories,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import { useAdminSettingsAuthForwardDemoSeeds } from "./use-admin-settings-auth-forward-demo-seeds";
@@ -113,6 +114,12 @@ export function useAdminSettingsAuth({
 		staleTime: 15_000,
 		retry: false,
 	});
+	const registryReposQ = useQuery({
+		queryKey: queryKeys.registryRepos(""),
+		queryFn: async () => listRegistryRepositories({ q: "", n: 2000 }),
+		staleTime: 15_000,
+		retry: false,
+	});
 
 	const authLocal = useAdminSettingsAuthLocal({
 		queryClient,
@@ -149,6 +156,7 @@ export function useAdminSettingsAuth({
 	const registryCatalog = useAdminSettingsAuthRegistryCatalog({
 		queryClient,
 		registryCatalog: adminRegistryCatalogQ.data,
+		registryRepos: registryReposQ.data,
 		refetchRegistryCatalog: adminRegistryCatalogQ.refetch,
 	});
 	const hetznerBurst = useAdminSettingsAuthHetznerBurst({
@@ -175,6 +183,7 @@ export function useAdminSettingsAuth({
 		teamsGlobalConfigQ,
 		...teams,
 		adminRegistryCatalogQ,
+		registryReposQ,
 		...registryCatalog,
 		hetznerBurstStatusQ,
 		hetznerBurstRuntimePolicyQ,

@@ -1,8 +1,10 @@
 import { type QueryClient, useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { inferPaletteItemFromRepo } from "@/components/lab-designer-palette";
 import {
 	type AdminRegistryCatalogResponse,
+	type RegistryReposResponse,
 	type RegistryCatalogImageEntry,
 	putAdminRegistryCatalog,
 	triggerAdminRegistryCatalogPrepull,
@@ -12,6 +14,7 @@ import { queryKeys } from "../lib/query-keys";
 type UseAdminSettingsAuthRegistryCatalogArgs = {
 	queryClient: QueryClient;
 	registryCatalog: AdminRegistryCatalogResponse | undefined;
+	registryRepos: RegistryReposResponse | undefined;
 	refetchRegistryCatalog: () => Promise<unknown>;
 };
 
@@ -31,6 +34,7 @@ const emptyRow: RegistryCatalogImageEntry = {
 export function useAdminSettingsAuthRegistryCatalog({
 	queryClient,
 	registryCatalog,
+	registryRepos,
 	refetchRegistryCatalog,
 }: UseAdminSettingsAuthRegistryCatalogArgs) {
 	const [registryBaseURLDraft, setRegistryBaseURLDraft] = useState("");
@@ -84,6 +88,84 @@ export function useAdminSettingsAuthRegistryCatalog({
 		setRegistryCatalogImagesDraft((prev) =>
 			prev.filter((_, rowIndex) => rowIndex !== index),
 		);
+	};
+
+	const catalogRepoSet = useMemo(() => {
+		const set = new Set<string>();
+		for (const row of registryCatalogImagesDraft) {
+			const repo = String(row.repository ?? "")
+				.trim()
+				.replace(/^\/+|\/+$/g, "");
+			if (repo) set.add(repo);
+		}
+		return set;
+	}, [registryCatalogImagesDraft]);
+
+	const disabledCatalogRepoSet = useMemo(() => {
+		const set = new Set<string>();
+		for (const row of registryCatalogImagesDraft) {
+			if (row.enabled) continue;
+			const repo = String(row.repository ?? "")
+				.trim()
+				.replace(/^\/+|\/+$/g, "");
+			if (repo) set.add(repo);
+		}
+		return set;
+	}, [registryCatalogImagesDraft]);
+
+	const discoveredRepos = useMemo(
+		() =>
+			(registryRepos?.repositories ?? [])
+				.map((repo) =>
+					String(repo ?? "")
+						.trim()
+						.replace(/^\/+|\/+$/g, ""),
+				)
+				.filter(Boolean),
+		[registryRepos?.repositories],
+	);
+
+	const missingCatalogRepos = useMemo(
+		() => discoveredRepos.filter((repo) => !catalogRepoSet.has(repo)),
+		[catalogRepoSet, discoveredRepos],
+	);
+
+	const disabledDiscoveredRepos = useMemo(
+		() => discoveredRepos.filter((repo) => disabledCatalogRepoSet.has(repo)),
+		[disabledCatalogRepoSet, discoveredRepos],
+	);
+
+	const addMissingRegistryReposToCatalogDraft = () => {
+		if (missingCatalogRepos.length === 0) return;
+		setRegistryCatalogImagesDraft((prev) => {
+			const seen = new Set(
+				prev
+					.map((row) =>
+						String(row.repository ?? "")
+							.trim()
+							.replace(/^\/+|\/+$/g, ""),
+					)
+					.filter(Boolean),
+			);
+			const additions: RegistryCatalogImageEntry[] = [];
+			for (const repo of missingCatalogRepos) {
+				if (seen.has(repo)) continue;
+				const inferred = inferPaletteItemFromRepo(repo);
+				additions.push({
+					...emptyRow,
+					repository: repo,
+					label: inferred.label,
+					vendor: inferred.vendor ?? "",
+					model: inferred.model ?? "",
+					kind: inferred.kind,
+					role: inferred.role ?? "other",
+				});
+				seen.add(repo);
+			}
+			if (additions.length === 0) return prev;
+			toast.success(`Added ${additions.length} discovered repo(s) to catalog draft`);
+			return [...prev, ...additions];
+		});
 	};
 
 	const saveRegistryCatalog = useMutation({
@@ -148,9 +230,13 @@ export function useAdminSettingsAuthRegistryCatalog({
 		setRegistryPrepullWorkerNodesDraft,
 		registryCatalogImagesDraft,
 		setRegistryCatalogImagesDraft,
+		discoveredRepos,
+		missingCatalogRepos,
+		disabledDiscoveredRepos,
 		upsertRegistryCatalogImage,
 		addRegistryCatalogImage,
 		removeRegistryCatalogImage,
+		addMissingRegistryReposToCatalogDraft,
 		saveRegistryCatalog,
 		triggerRegistryCatalogPrepull,
 	};

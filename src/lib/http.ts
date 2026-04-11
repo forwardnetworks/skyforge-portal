@@ -61,8 +61,10 @@ function shouldRedirectOnUnauthorized(
 	) {
 		return false;
 	}
-	if (method === "GET") return true;
 	if (typeof window === "undefined") return false;
+	// Avoid recursive login redirects while already on a login route.
+	if (window.location.pathname.startsWith("/login")) return false;
+	if (method === "GET") return true;
 	return isProtectedPath(window.location.pathname);
 }
 

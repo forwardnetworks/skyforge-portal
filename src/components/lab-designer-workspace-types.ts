@@ -1,6 +1,8 @@
 import type {
 	CanvasMenuState,
 	DesignEdge,
+	DesignerAnnotation,
+	DesignerGroup,
 	DesignNode,
 	EdgeMenuState,
 	LabDesignerInspectorTab,
@@ -41,6 +43,8 @@ export type LabDesignerWorkspaceProps = {
 	paletteIsFilteredEmpty: boolean;
 	nodes: DesignNode[];
 	edges: DesignEdge[];
+	annotations: DesignerAnnotation[];
+	groups: DesignerGroup[];
 	rfRef: MutableRefObject<HTMLDivElement | null>;
 	onDrop: (event: DragEvent) => void | Promise<void>;
 	onDragOver: (event: DragEvent) => void;

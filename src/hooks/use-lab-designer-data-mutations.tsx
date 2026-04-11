@@ -1,30 +1,366 @@
 import type { SavedConfigRef } from "@/components/lab-designer-types";
 import {
 	createKneDeploymentFromTemplate,
+	getKneDesignerSidecar,
 	getUserScopeKNETemplate,
-	importContainerlabTopology,
+	importTopology,
 	saveKneTopologyYAML,
 	validateKneTopologyYAML,
 } from "@/lib/api-client";
 import { kneYamlToDesign } from "@/lib/kne-yaml";
 import { queryKeys } from "@/lib/query-keys";
 import { useMutation } from "@tanstack/react-query";
+import { useRef } from "react";
 import { toast } from "sonner";
 import type {
+	LabDesignerImportState,
 	LabDesignerValidationState,
 	UseLabDesignerDataOptions,
 } from "./use-lab-designer-data-types";
 
 const USER_REPO_SOURCE = "user" as const;
 
+type DesignerSidecarState = {
+	version: number;
+	labName: string;
+	defaultKind?: string;
+	viewport?: { x: number; y: number; zoom: number };
+	annotations?: Array<{
+		id: string;
+		title?: string;
+		text?: string;
+		x?: number;
+		y?: number;
+	}>;
+	groups?: Array<{
+		id: string;
+		label?: string;
+		nodeIds?: string[];
+	}>;
+	nodes: Array<{
+		id: string;
+		label?: string;
+		kind?: string;
+		image?: string;
+		x: number;
+		y: number;
+		mgmtIpv4?: string;
+		startupConfig?: string;
+		env?: Record<string, string>;
+		interfaces?: unknown;
+		notes?: string;
+		status?: string;
+	}>;
+	edges: Array<{
+		id: string;
+		source: string;
+		target: string;
+		label?: string;
+		sourceIf?: string;
+		targetIf?: string;
+		mtu?: number;
+		notes?: string;
+	}>;
+};
+
+const SIDE_CAR_RESERVED_KEYS = new Set([
+	"version",
+	"labName",
+	"defaultKind",
+	"viewport",
+	"annotations",
+	"groups",
+	"nodes",
+	"edges",
+]);
+
+export function extractPreservedDesignerSidecarFields(
+	sidecar: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+	if (!sidecar || typeof sidecar !== "object") return {};
+	const preserved: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(sidecar)) {
+		if (SIDE_CAR_RESERVED_KEYS.has(key)) continue;
+		preserved[key] = value;
+	}
+	return preserved;
+}
+
+export function buildDesignerSidecarStateForSave(args: {
+	labName: string;
+	defaultKind: string;
+	viewport?: { x: number; y: number; zoom: number };
+	annotations?: DesignerSidecarState["annotations"];
+	groups?: DesignerSidecarState["groups"];
+	nodes: DesignerSidecarState["nodes"];
+	edges: DesignerSidecarState["edges"];
+	preserved: Record<string, unknown>;
+}): Record<string, unknown> {
+	return {
+		...args.preserved,
+		version: 1,
+		labName: args.labName,
+		defaultKind: String(args.defaultKind ?? "").trim() || undefined,
+		viewport: args.viewport,
+		annotations: args.annotations,
+		groups: args.groups,
+		nodes: args.nodes,
+		edges: args.edges,
+	};
+}
+
 export function useLabDesignerDataMutations(args: {
 	opts: UseLabDesignerDataOptions;
 	setLastValidation: React.Dispatch<
 		React.SetStateAction<LabDesignerValidationState | null>
 	>;
+	setLastImportResult: React.Dispatch<
+		React.SetStateAction<LabDesignerImportState | null>
+	>;
 }) {
-	const { opts, setLastValidation } = args;
+	const { opts, setLastValidation, setLastImportResult } = args;
 	const toAPISource = (value: string) => (value === "user" ? "user" : value);
+	const preservedSidecarRef = useRef<Record<string, unknown>>({});
+
+	const buildDesignerSidecarState = (): Record<string, unknown> =>
+		buildDesignerSidecarStateForSave({
+			labName: opts.labName,
+			defaultKind: opts.defaultKind,
+			viewport: opts.rfInstance?.getViewport(),
+			annotations: opts.annotations.map((item) => ({
+				id: String(item.id),
+				title: String(item.title ?? "").trim() || undefined,
+				text: String(item.text ?? ""),
+				x: Number(item.x ?? 0),
+				y: Number(item.y ?? 0),
+			})),
+			groups: opts.groups.map((group) => ({
+				id: String(group.id),
+				label: String(group.label ?? "").trim() || undefined,
+				nodeIds: Array.isArray(group.nodeIds)
+					? group.nodeIds.map((id) => String(id)).filter(Boolean)
+					: [],
+			})),
+			nodes: opts.nodes.map((node) => ({
+				id: String(node.id),
+				label: String(node.data?.label ?? ""),
+				kind: String(node.data?.kind ?? ""),
+				image: String(node.data?.image ?? ""),
+				x: Number(node.position?.x ?? 0),
+				y: Number(node.position?.y ?? 0),
+				mgmtIpv4: String(node.data?.mgmtIpv4 ?? "").trim() || undefined,
+				startupConfig:
+					String(node.data?.startupConfig ?? "").trim() || undefined,
+				env: node.data?.env,
+				interfaces: node.data?.interfaces,
+				notes: String(node.data?.notes ?? "").trim() || undefined,
+				status: String(node.data?.status ?? "").trim() || undefined,
+			})),
+			edges: opts.edges.map((edge) => ({
+				id: String(edge.id),
+				source: String(edge.source),
+				target: String(edge.target),
+				label: String(edge.data?.label ?? edge.label ?? "").trim() || undefined,
+				sourceIf: String(edge.data?.sourceIf ?? "").trim() || undefined,
+				targetIf: String(edge.data?.targetIf ?? "").trim() || undefined,
+				mtu: Number.isFinite(Number(edge.data?.mtu))
+					? Number(edge.data?.mtu)
+					: undefined,
+				notes: String(edge.data?.notes ?? "").trim() || undefined,
+			})),
+			preserved: preservedSidecarRef.current,
+		});
+
+	const mergeDesignerSidecar = (
+		sidecar: Record<string, unknown> | undefined,
+	): void => {
+		if (!sidecar || typeof sidecar !== "object") return;
+		preservedSidecarRef.current = extractPreservedDesignerSidecarFields(sidecar);
+		const root = sidecar as {
+			defaultKind?: unknown;
+			viewport?: unknown;
+			annotations?: unknown;
+			groups?: unknown;
+			nodes?: unknown;
+			edges?: unknown;
+		};
+		if (typeof root.defaultKind === "string" && root.defaultKind.trim()) {
+			opts.setDefaultKind(root.defaultKind.trim());
+		}
+		if (Array.isArray(root.nodes)) {
+			const byID = new Map<string, any>();
+			for (const entry of root.nodes) {
+				if (!entry || typeof entry !== "object") continue;
+				const id = String((entry as any).id ?? "").trim();
+				if (!id) continue;
+				byID.set(id, entry as any);
+			}
+			opts.setNodes((prev) =>
+				prev.map((node) => {
+					const saved = byID.get(String(node.id));
+					if (!saved) return node;
+					const x = Number(saved.x);
+					const y = Number(saved.y);
+					return {
+						...node,
+						position: {
+							x: Number.isFinite(x) ? x : node.position.x,
+							y: Number.isFinite(y) ? y : node.position.y,
+						},
+						data: {
+							...node.data,
+							label:
+								typeof saved.label === "string" && saved.label.trim()
+									? saved.label.trim()
+									: node.data?.label,
+							notes:
+								typeof saved.notes === "string"
+									? saved.notes
+									: node.data?.notes,
+							status:
+								typeof saved.status === "string"
+									? saved.status
+									: node.data?.status,
+							mgmtIpv4:
+								typeof saved.mgmtIpv4 === "string"
+									? saved.mgmtIpv4
+									: node.data?.mgmtIpv4,
+							startupConfig:
+								typeof saved.startupConfig === "string"
+									? saved.startupConfig
+									: node.data?.startupConfig,
+						},
+					};
+				}),
+			);
+		}
+		if (Array.isArray(root.annotations)) {
+			const annotationRows: unknown[] = root.annotations;
+			opts.setAnnotations(() =>
+				annotationRows
+					.filter((entry) => entry && typeof entry === "object")
+					.map((entry: unknown) => {
+						const row = entry as {
+							id?: unknown;
+							title?: unknown;
+							text?: unknown;
+							x?: unknown;
+							y?: unknown;
+						};
+						const id = String(row.id ?? "").trim();
+						if (!id) return null;
+						const x = Number(row.x);
+						const y = Number(row.y);
+						return {
+							id,
+							title: String(row.title ?? ""),
+							text: String(row.text ?? ""),
+							x: Number.isFinite(x) ? x : 0,
+							y: Number.isFinite(y) ? y : 0,
+						};
+					})
+					.filter(
+						(
+							value,
+						): value is {
+							id: string;
+							title: string;
+							text: string;
+							x: number;
+							y: number;
+						} => Boolean(value),
+					),
+			);
+		}
+		if (Array.isArray(root.groups)) {
+			const groupRows: unknown[] = root.groups;
+			opts.setGroups(() =>
+				groupRows
+					.filter((entry) => entry && typeof entry === "object")
+					.map((entry: unknown) => {
+						const row = entry as {
+							id?: unknown;
+							label?: unknown;
+							nodeIds?: unknown;
+						};
+						const id = String(row.id ?? "").trim();
+						if (!id) return null;
+						return {
+							id,
+							label: String(row.label ?? ""),
+							nodeIds: Array.isArray(row.nodeIds)
+								? row.nodeIds
+										.map((nodeID: unknown) => String(nodeID))
+										.filter(Boolean)
+								: [],
+						};
+					})
+					.filter(
+						(
+							value,
+						): value is {
+							id: string;
+							label: string;
+							nodeIds: string[];
+						} => Boolean(value),
+					),
+			);
+		}
+		if (Array.isArray(root.edges)) {
+			const byID = new Map<string, any>();
+			for (const entry of root.edges) {
+				if (!entry || typeof entry !== "object") continue;
+				const id = String((entry as any).id ?? "").trim();
+				if (!id) continue;
+				byID.set(id, entry as any);
+			}
+			opts.setEdges((prev) =>
+				prev.map((edge) => {
+					const saved = byID.get(String(edge.id));
+					if (!saved) return edge;
+					const mtu = Number(saved.mtu);
+					return {
+						...edge,
+						label:
+							typeof saved.label === "string" && saved.label.trim()
+								? saved.label.trim()
+								: edge.label,
+						data: {
+							...edge.data,
+							label:
+								typeof saved.label === "string"
+									? saved.label
+									: edge.data?.label,
+							sourceIf:
+								typeof saved.sourceIf === "string"
+									? saved.sourceIf
+									: edge.data?.sourceIf,
+							targetIf:
+								typeof saved.targetIf === "string"
+									? saved.targetIf
+									: edge.data?.targetIf,
+							mtu: Number.isFinite(mtu) ? mtu : edge.data?.mtu,
+							notes:
+								typeof saved.notes === "string"
+									? saved.notes
+									: edge.data?.notes,
+						},
+					};
+				}),
+			);
+		}
+		if (root.viewport && typeof root.viewport === "object") {
+			const view = root.viewport as { x?: unknown; y?: unknown; zoom?: unknown };
+			const x = Number(view.x);
+			const y = Number(view.y);
+			const zoom = Number(view.zoom);
+			if (opts.rfInstance && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(zoom)) {
+				requestAnimationFrame(() => {
+					opts.rfInstance?.setViewport({ x, y, zoom });
+				});
+			}
+		}
+	};
 
 	const applyImportedDesign = (yaml: string) => {
 		const parsed = kneYamlToDesign(yaml);
@@ -66,6 +402,8 @@ export function useLabDesignerDataMutations(args: {
 			})),
 		);
 		opts.setSelectedNodeId(parsed.design.nodes[0]?.id ?? "");
+		opts.setAnnotations([]);
+		opts.setGroups([]);
 		opts.setYamlMode("generated");
 		opts.setCustomYaml("");
 		opts.setImportOpen(false);
@@ -152,6 +490,7 @@ export function useLabDesignerDataMutations(args: {
 						topologyYAML: validation.normalizedYAML,
 						templatesDir: opts.effectiveTemplatesDir,
 						template: opts.effectiveTemplateFile,
+						designerState: buildDesignerSidecarState(),
 				  }).then((resp) => {
 						const next: SavedConfigRef = {
 							userId: resp.userId,
@@ -206,6 +545,7 @@ export function useLabDesignerDataMutations(args: {
 				topologyYAML: validation.normalizedYAML,
 				templatesDir: opts.effectiveTemplatesDir,
 				template: opts.effectiveTemplateFile,
+				designerState: buildDesignerSidecarState(),
 			});
 		},
 		onSuccess: (resp) => {
@@ -229,43 +569,73 @@ export function useLabDesignerDataMutations(args: {
 			if (!opts.userId) throw new Error("Select a user");
 			const file = opts.importFile.trim();
 			if (!file) throw new Error("Select a template");
-			return getUserScopeKNETemplate(opts.userId, {
+			const templateResp = await getUserScopeKNETemplate(opts.userId, {
 				source: toAPISource(opts.importSource),
 				dir: opts.importDir,
 				file,
 			});
+			let sidecar:
+				| { found: boolean; designerState?: Record<string, unknown> }
+				| undefined;
+			if (opts.importSource === USER_REPO_SOURCE) {
+				try {
+					sidecar = await getKneDesignerSidecar(opts.userId, {
+						dir: templateResp.dir,
+						file: templateResp.file,
+					});
+				} catch {
+					sidecar = undefined;
+				}
+			}
+			return { templateResp, sidecar };
 		},
-		onSuccess: (resp) => {
-			applyImportedDesign(resp.yaml);
-			toast.success("Template imported", { description: resp.path });
+		onSuccess: ({ templateResp, sidecar }) => {
+			setLastImportResult(null);
+			preservedSidecarRef.current = {};
+			applyImportedDesign(templateResp.yaml);
+			let restoredSidecar = false;
+			if (sidecar?.found && sidecar.designerState) {
+				mergeDesignerSidecar(sidecar.designerState);
+				restoredSidecar = true;
+			}
+			toast.success("Template imported", {
+				description: restoredSidecar
+					? `${templateResp.path} (designer metadata restored)`
+					: templateResp.path,
+			});
 		},
 		onError: (e) =>
 			toast.error("Import failed", { description: (e as Error).message }),
 	});
 
-	const importContainerlab = useMutation({
-		mutationFn: async (topologyYAML: string) => {
+	const importTopologyMutation = useMutation({
+		mutationFn: async (args: { source: "containerlab" | "eve-ng" | "gns3"; topologyYAML: string }) => {
 			if (!opts.userId) throw new Error("Select a user");
-			const payload = String(topologyYAML ?? "").trim();
-			if (!payload) throw new Error("Paste containerlab YAML");
-			return importContainerlabTopology(opts.userId, { topologyYAML: payload });
+			const payload = String(args.topologyYAML ?? "").trim();
+			if (!payload) throw new Error("Paste topology YAML");
+			return importTopology(opts.userId, {
+				source: args.source,
+				topologyYAML: payload,
+			});
 		},
 		onSuccess: (resp) => {
+			setLastImportResult(resp);
 			if (resp.blocking) {
 				const firstError = resp.issues.find((issue) => issue.severity === "error");
-				toast.error("Containerlab conversion failed", {
+				toast.error("Import failed", {
 					description: firstError?.message ?? "Fix conversion errors and retry.",
 				});
 				return;
 			}
+			preservedSidecarRef.current = {};
 			applyImportedDesign(resp.convertedYAML);
 			const warning = resp.issues.find((issue) => issue.severity === "warning");
-			toast.success("Containerlab imported", {
+			toast.success("Topology imported", {
 				description: warning?.message ?? "Converted to canonical KNE topology.",
 			});
 		},
 		onError: (e) =>
-			toast.error("Containerlab import failed", {
+			toast.error("Import failed", {
 				description: (e as Error).message,
 			}),
 	});
@@ -275,6 +645,6 @@ export function useLabDesignerDataMutations(args: {
 		createDeployment,
 		saveConfig,
 		importTemplate,
-		importContainerlab,
+		importTopology: importTopologyMutation,
 	};
 }

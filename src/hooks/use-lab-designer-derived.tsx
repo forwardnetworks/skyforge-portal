@@ -3,11 +3,144 @@ import type {
 	DesignEdge,
 	DesignNode,
 	PaletteCategory,
+	PaletteItem,
 	SavedConfigRef,
 } from "@/components/lab-designer-types";
 import { hostLabelFromURL } from "@/hooks/lab-designer-utils";
 import { type LabDesign, designToKneYaml } from "@/lib/kne-yaml";
 import { useMemo } from "react";
+
+const BUILTIN_PALETTE_ITEMS = [
+	{
+		id: "builtin:linux",
+		label: "Host · Linux",
+		category: "Hosts",
+		kind: "linux",
+		role: "host",
+		vendor: "Linux",
+		model: "Generic",
+	},
+	{
+		id: "builtin:ceos",
+		label: "Switch · Arista cEOS",
+		category: "Switches",
+		kind: "ceos",
+		role: "switch",
+		vendor: "Arista",
+		model: "cEOS",
+	},
+	{
+		id: "builtin:cisco_iol",
+		label: "Router · Cisco IOL (IOS)",
+		category: "Routers",
+		kind: "cisco_iol",
+		role: "router",
+		vendor: "Cisco",
+		model: "IOL",
+	},
+	{
+		id: "builtin:juniper_vjunos-router",
+		label: "Router · Juniper vJunos Router",
+		category: "Routers",
+		kind: "juniper_vjunos-router",
+		role: "router",
+		vendor: "Juniper",
+		model: "vJunos-router",
+	},
+	{
+		id: "builtin:vsrx",
+		label: "Firewall · Juniper SRX",
+		category: "Firewalls",
+		kind: "vsrx",
+		role: "firewall",
+		vendor: "Juniper",
+		model: "SRX",
+	},
+] as const;
+
+type RegistryCatalogImage = {
+	id?: string;
+	label?: string;
+	nos?: string;
+	vendor?: string;
+	model?: string;
+	kind?: string;
+	role?: string;
+	repository: string;
+	defaultTag?: string;
+	enabled: boolean;
+};
+
+function normalizeRepo(repo: string | undefined): string {
+	return String(repo ?? "")
+		.trim()
+		.replace(/^\/+|\/+$/g, "");
+}
+
+export function buildPaletteBaseItems(args: {
+	registryCatalogImages: RegistryCatalogImage[];
+	registryRepos: string[];
+}): PaletteItem[] {
+	const catalogRows = (args.registryCatalogImages ?? []).map((entry) => ({
+		...entry,
+		repo: normalizeRepo(entry.repository),
+	}));
+	const catalogRepos = new Set(
+		catalogRows.map((entry) => entry.repo).filter(Boolean),
+	);
+	const fromCatalog = catalogRows
+		.filter((entry) => Boolean(entry?.enabled) && Boolean(entry.repo))
+		.map((entry) => {
+			const defaultTag =
+				String(entry.defaultTag ?? "latest").trim() || "latest";
+			const label = String(entry.label ?? "").trim();
+			const kind = String(entry.kind ?? "").trim();
+			const inferred = inferPaletteItemFromRepo(entry.repo);
+			const role = String(entry.role ?? inferred.role ?? "other")
+				.trim()
+				.toLowerCase() as "host" | "router" | "switch" | "firewall" | "other";
+			const category: PaletteCategory =
+				role === "host"
+					? "Hosts"
+					: role === "router"
+						? "Routers"
+						: role === "switch"
+							? "Switches"
+							: role === "firewall"
+								? "Firewalls"
+								: "Other";
+			return {
+				...inferred,
+				id: String(
+					entry.id ?? `${kind || inferred.kind}:${entry.repo}:${defaultTag}`,
+				),
+				label: label || inferred.label,
+				kind: kind || inferred.kind,
+				role,
+				category,
+				repo: entry.repo,
+				defaultTag,
+				image: `${entry.repo}:${defaultTag}`,
+				vendor:
+					String(entry.vendor ?? inferred.vendor ?? "").trim() || inferred.vendor,
+				model:
+					String(entry.model ?? inferred.model ?? "").trim() || inferred.model,
+			};
+		});
+	const fromRepos = (args.registryRepos ?? [])
+		.map((repo) => normalizeRepo(repo))
+		.filter((repo) => Boolean(repo) && !catalogRepos.has(repo))
+		.map((repo) => inferPaletteItemFromRepo(repo));
+	if (fromCatalog.length > 0 || fromRepos.length > 0) {
+		return [...fromCatalog, ...fromRepos];
+	}
+	return BUILTIN_PALETTE_ITEMS.map((item) => ({
+		...item,
+		image: "",
+		repo: undefined,
+		defaultTag: "latest",
+	}));
+}
 
 export function useLabDesignerDerived(opts: {
 	nodes: DesignNode[];
@@ -15,6 +148,7 @@ export function useLabDesignerDerived(opts: {
 	labName: string;
 	defaultKind: string;
 	selectedNodeId: string;
+	selectedEdgeId: string;
 	yamlMode: "generated" | "custom";
 	customYaml: string;
 	templatesDir: string;
@@ -23,18 +157,7 @@ export function useLabDesignerDerived(opts: {
 	paletteVendor: string;
 	paletteRole: string;
 	registryRepos: string[];
-	registryCatalogImages: Array<{
-		id?: string;
-		label?: string;
-		nos?: string;
-		vendor?: string;
-		model?: string;
-		kind?: string;
-		role?: string;
-		repository: string;
-		defaultTag?: string;
-		enabled: boolean;
-	}>;
+	registryCatalogImages: RegistryCatalogImage[];
 	registryError: Error | null;
 	userScopes: any[];
 	kneServers: any[];
@@ -44,11 +167,8 @@ export function useLabDesignerDerived(opts: {
 		[opts.nodes, opts.selectedNodeId],
 	);
 	const selectedEdge = useMemo(
-		() =>
-			opts.edges.find(
-				(edge) => (edge as DesignEdge & { selected?: boolean }).selected,
-			) ?? null,
-		[opts.edges],
+		() => opts.edges.find((edge) => String(edge.id) === opts.selectedEdgeId) ?? null,
+		[opts.edges, opts.selectedEdgeId],
 	);
 
 	const design: LabDesign = useMemo(
@@ -113,54 +233,14 @@ export function useLabDesignerDerived(opts: {
 		return `${base}.yml`;
 	}, [opts.labName, opts.templateFile]);
 
-	const paletteBaseItems = useMemo(() => {
-		const fromCatalog = (opts.registryCatalogImages ?? [])
-			.filter((entry) => Boolean(entry?.enabled))
-			.map((entry) => {
-				const repo = String(entry.repository ?? "")
-					.trim()
-					.replace(/^\/+|\/+$/g, "");
-				const defaultTag =
-					String(entry.defaultTag ?? "latest").trim() || "latest";
-				const label = String(entry.label ?? "").trim();
-				const kind = String(entry.kind ?? "").trim();
-				const inferred = inferPaletteItemFromRepo(repo);
-				const role = String(entry.role ?? inferred.role ?? "other")
-					.trim()
-					.toLowerCase() as "host" | "router" | "switch" | "firewall" | "other";
-				const category: PaletteCategory =
-					role === "host"
-						? "Hosts"
-						: role === "router"
-							? "Routers"
-							: role === "switch"
-								? "Switches"
-								: role === "firewall"
-									? "Firewalls"
-									: "Other";
-				return {
-					...inferred,
-					id: String(
-						entry.id ?? `${kind || inferred.kind}:${repo}:${defaultTag}`,
-					),
-					label: label || inferred.label,
-					kind: kind || inferred.kind,
-					role,
-					category,
-					repo,
-					defaultTag,
-					image: `${repo}:${defaultTag}`,
-					vendor:
-						String(entry.vendor ?? inferred.vendor ?? "").trim() ||
-						inferred.vendor,
-					model:
-						String(entry.model ?? inferred.model ?? "").trim() ||
-						inferred.model,
-				};
-			});
-		if (fromCatalog.length > 0) return fromCatalog;
-		return opts.registryRepos.map(inferPaletteItemFromRepo);
-	}, [opts.registryCatalogImages, opts.registryRepos]);
+	const paletteBaseItems = useMemo(
+		() =>
+			buildPaletteBaseItems({
+				registryCatalogImages: opts.registryCatalogImages,
+				registryRepos: opts.registryRepos,
+			}),
+		[opts.registryCatalogImages, opts.registryRepos],
+	);
 	const paletteVendors = useMemo(() => {
 		const set = new Set<string>();
 		for (const p of paletteBaseItems) {

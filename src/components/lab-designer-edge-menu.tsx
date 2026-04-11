@@ -22,6 +22,7 @@ export function LabDesignerEdgeMenu(props: Props) {
 		<div
 			className="absolute z-50"
 			style={{ left: props.edgeMenu.x, top: props.edgeMenu.y }}
+			onMouseDown={(e) => e.stopPropagation()}
 			onContextMenu={(e) => e.preventDefault()}
 		>
 			<Card className="w-60 shadow-lg border bg-background/95 backdrop-blur">

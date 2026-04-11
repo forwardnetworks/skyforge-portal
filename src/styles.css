@@ -157,4 +157,11 @@
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
 	}
+
+}
+
+/* Keep edge labels from stealing click/context-menu events from links. */
+.react-flow__edge-textwrapper,
+.react-flow__edge-textwrapper * {
+	pointer-events: none !important;
 }

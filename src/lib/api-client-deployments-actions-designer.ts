@@ -31,6 +31,7 @@ export type SaveKneTopologyYAMLRequest = {
 	topologyYAML: string;
 	templatesDir?: string;
 	template?: string;
+	designerState?: Record<string, unknown>;
 };
 
 export type ValidateKneTopologyYAMLRequest = {
@@ -46,18 +47,22 @@ export type ValidateKneTopologyYAMLResponse = {
 	valid: boolean;
 };
 
-export type ImportContainerlabTopologyRequest = {
+export type ImportTopologySource = "containerlab" | "eve-ng" | "gns3";
+
+export type ImportTopologyRequest = {
+	source: ImportTopologySource;
 	topologyYAML: string;
+	filename?: string;
 };
 
-export type ImportContainerlabIssue = {
+export type ImportTopologyIssue = {
 	severity: "error" | "warning" | "info";
 	code: string;
 	message: string;
 	path?: string;
 };
 
-export type ImportContainerlabImageMapping = {
+export type ImportTopologyImageMapping = {
 	node: string;
 	source: string;
 	resolved?: string;
@@ -65,11 +70,13 @@ export type ImportContainerlabImageMapping = {
 	reason?: string;
 };
 
-export type ImportContainerlabTopologyResponse = {
+export type ImportTopologyResponse = {
 	userId?: string;
+	source: ImportTopologySource;
 	convertedYAML: string;
-	issues: ImportContainerlabIssue[];
-	imageMappings: ImportContainerlabImageMapping[];
+	issues: ImportTopologyIssue[];
+	imageMappings: ImportTopologyImageMapping[];
+	unsupportedFeatures?: string[];
 	blocking: boolean;
 };
 
@@ -83,12 +90,12 @@ export async function validateKneTopologyYAML(
 	);
 }
 
-export async function importContainerlabTopology(
+export async function importTopology(
 	userId: string,
-	body: ImportContainerlabTopologyRequest,
-): Promise<ImportContainerlabTopologyResponse> {
-	return apiFetch<ImportContainerlabTopologyResponse>(
-		`/api/users/${encodeURIComponent(userId)}/deployments-designer/kne/import-containerlab`,
+	body: ImportTopologyRequest,
+): Promise<ImportTopologyResponse> {
+	return apiFetch<ImportTopologyResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments-designer/kne/import`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }
@@ -99,6 +106,7 @@ export type SaveKneTopologyYAMLResponse = {
 	templatesDir: string;
 	template: string;
 	filePath: string;
+	designerSidecarPath?: string;
 };
 
 export async function saveKneTopologyYAML(
@@ -108,6 +116,29 @@ export async function saveKneTopologyYAML(
 	return apiFetch<SaveKneTopologyYAMLResponse>(
 		`/api/users/${encodeURIComponent(userId)}/kne/topologies`,
 		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export type GetKneDesignerSidecarResponse = {
+	userId: string;
+	branch: string;
+	templatesDir: string;
+	template: string;
+	filePath: string;
+	designerSidecarPath: string;
+	found: boolean;
+	designerState?: Record<string, unknown>;
+};
+
+export async function getKneDesignerSidecar(
+	userId: string,
+	query: { dir?: string; file: string },
+): Promise<GetKneDesignerSidecarResponse> {
+	const params = new URLSearchParams();
+	if (query.dir) params.set("dir", query.dir);
+	params.set("file", query.file);
+	return apiFetch<GetKneDesignerSidecarResponse>(
+		`/api/users/${encodeURIComponent(userId)}/kne/designer-sidecar?${params.toString()}`,
 	);
 }
 

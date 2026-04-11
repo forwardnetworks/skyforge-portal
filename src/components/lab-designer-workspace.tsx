@@ -18,15 +18,15 @@ import type { LabDesignerWorkspaceProps } from "./lab-designer-workspace-types";
 
 export function LabDesignerWorkspace(props: LabDesignerWorkspaceProps) {
 	return (
-		<div className="flex min-h-0 flex-col rounded-2xl border border-border/70 bg-card/85 p-3 dark:bg-card/95">
-			<div className="flex items-center justify-between gap-3 pb-3">
+		<div className="relative flex min-h-0 flex-col rounded-2xl border border-border/70 bg-card/85 p-3 dark:bg-card/95">
+			<div className="relative z-30 flex min-w-0 items-center justify-between gap-3 pb-3">
 				<div>
 					<div className="text-sm font-semibold text-foreground">Canvas</div>
 					<div className="text-xs text-muted-foreground">
 						Palette-driven topology editing with explicit interfaces.
 					</div>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex max-w-full flex-wrap items-center justify-end gap-2">
 					<Button
 						size="sm"
 						variant={props.isFocusMode ? "default" : "outline"}
@@ -120,7 +120,7 @@ export function LabDesignerWorkspace(props: LabDesignerWorkspaceProps) {
 					</Button>
 				</div>
 			</div>
-			<div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border bg-background/50">
+			<div className="relative z-10 flex min-h-0 flex-1 overflow-hidden rounded-xl border bg-background/50">
 				{props.showPalette ? <LabDesignerPalettePanel {...props} /> : null}
 				<LabDesignerCanvasSurface {...props} />
 			</div>

@@ -10,6 +10,7 @@ import {
 	login,
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
+import { sanitizeNextPath } from "../lib/skyforge-config";
 import { useStatusSummaryEvents } from "../lib/status-events";
 
 const localLoginSearchSchema = z.object({
@@ -22,9 +23,7 @@ export const Route = createFileRoute("/login/local")({
 });
 
 function normalizeNext(nextRaw: string | undefined): string {
-	const next = String(nextRaw ?? "").trim();
-	if (!next.startsWith("/")) return "/dashboard";
-	return next;
+	return sanitizeNextPath(String(nextRaw ?? ""), "/dashboard");
 }
 
 function LocalLoginPage() {

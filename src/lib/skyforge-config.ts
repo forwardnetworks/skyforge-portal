@@ -36,8 +36,28 @@ export function getRuntimeAuthProvider(): SkyforgeAuthProvider | null {
 	return runtimeAuthProvider;
 }
 
+export function sanitizeNextPath(next: string, fallback = "/dashboard"): string {
+	const normalizedFallback =
+		typeof fallback === "string" && fallback.startsWith("/")
+			? fallback
+			: "/dashboard";
+	const raw = typeof next === "string" ? next.trim() : "";
+	if (!raw.startsWith("/")) return normalizedFallback;
+	try {
+		const parsed = new URL(raw, "http://localhost");
+		const pathname = parsed.pathname || "/";
+		// Never bounce back into auth endpoints as a post-login target.
+		if (/^\/login(\/|$)/.test(pathname) || /^\/api\/auth(\/|$)/.test(pathname)) {
+			return normalizedFallback;
+		}
+		return `${pathname}${parsed.search}${parsed.hash}`;
+	} catch {
+		return normalizedFallback;
+	}
+}
+
 export function buildLocalLoginUrl(next: string): string {
-	const safeNext = next.startsWith("/") ? next : "/";
+	const safeNext = sanitizeNextPath(next, "/");
 	return `/login/local?next=${encodeURIComponent(safeNext)}`;
 }
 
@@ -45,7 +65,7 @@ export function buildLoginUrl(
 	next: string,
 	mode: SkyforgeAuthMode | null = runtimeAuthMode,
 ): string {
-	const safeNext = next.startsWith("/") ? next : "/";
+	const safeNext = sanitizeNextPath(next, "/");
 	if (mode == null) {
 		return `${SKYFORGE_API}/auth/reauth?next=${encodeURIComponent(safeNext)}`;
 	}

@@ -65,4 +65,25 @@ describe("apiFetch unauthorized handling", () => {
 			"/api/auth/oidc/login?next=%2Fdashboard%2Fdeployments%3Ftab%3Dactive",
 		);
 	});
+
+	it("does not redirect when already on a login route", async () => {
+		Object.defineProperty(window, "location", {
+			configurable: true,
+			value: {
+				pathname: "/login/local",
+				search: "?next=%2Fdashboard",
+				replace: vi.fn(),
+			},
+		});
+		const fetchMock = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(new Response("expired", { status: 401 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(apiFetch("/api/tooling/catalog")).rejects.toBeInstanceOf(ApiError);
+		await Promise.resolve();
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(window.location.replace).not.toHaveBeenCalled();
+	});
 });

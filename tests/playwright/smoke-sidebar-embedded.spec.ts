@@ -41,7 +41,21 @@ function parseTimeoutMs(name: string, fallbackMs: number): number {
 }
 
 async function loginLocal(page: Page): Promise<void> {
-	await page.goto("/login/local?next=/dashboard", {
+	const apiLogin = await page.request.post("/api/auth/login", {
+		data: {
+			username: requiredEnv.username || "",
+			password: requiredEnv.password || "",
+		},
+	});
+	if (apiLogin.ok()) {
+		await page.goto("/dashboard", {
+			waitUntil: "domcontentloaded",
+			timeout: smokeTimeoutMs,
+		});
+		return;
+	}
+
+	await page.goto("/login/local", {
 		waitUntil: "domcontentloaded",
 		timeout: smokeTimeoutMs,
 	});

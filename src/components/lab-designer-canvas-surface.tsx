@@ -7,7 +7,9 @@ import {
 	ReactFlow,
 	addEdge,
 } from "@xyflow/react";
+import type { MouseEvent } from "react";
 import { LabDesignerCanvasMenu } from "./lab-designer-canvas-menu";
+import { LabDesignerCanvasOverlays } from "./lab-designer-canvas-overlays";
 import { LabDesignerEdgeMenu } from "./lab-designer-edge-menu";
 import { LabDesignerNodeMenu } from "./lab-designer-node-menu";
 
@@ -15,6 +17,8 @@ type Props = Pick<
 	LabDesignerWorkspaceProps,
 	| "nodes"
 	| "edges"
+	| "annotations"
+	| "groups"
 	| "rfRef"
 	| "onDrop"
 	| "onDragOver"
@@ -91,6 +95,50 @@ function edgeLabel(
 }
 
 export function LabDesignerCanvasSurface(props: Props) {
+	const menuPointFromEvent = (event: MouseEvent<HTMLDivElement>) => {
+		const rect = props.rfRef.current?.getBoundingClientRect();
+		const x = rect ? event.clientX - rect.left : event.clientX;
+		const y = rect ? event.clientY - rect.top : event.clientY;
+		return { x, y };
+	};
+
+	const openEdgeMenuFromEvent = (event: MouseEvent<HTMLDivElement>) => {
+		const target = event.target as HTMLElement | null;
+		const edgeEl =
+			target?.closest?.(".react-flow__edge") ??
+			target?.closest?.(".react-flow__edge-interaction")?.closest?.(
+				".react-flow__edge",
+			) ??
+			target?.closest?.("[data-id]");
+		const edgeId = String(edgeEl?.getAttribute("data-id") ?? "").trim();
+		if (!edgeId) return false;
+		const { x, y } = menuPointFromEvent(event);
+		props.setEdgeMenu({ x, y, edgeId });
+		props.setNodeMenu(null);
+		props.setCanvasMenu(null);
+		props.setSelectedEdgeId(edgeId);
+		props.setSelectedNodeId("");
+		props.ensureInspectorVisible();
+		props.setInspectorTab("link");
+		return true;
+	};
+
+	const openNodeMenuFromEvent = (event: MouseEvent<HTMLDivElement>) => {
+		const target = event.target as HTMLElement | null;
+		const nodeEl = target?.closest?.(".react-flow__node");
+		const nodeId = String(nodeEl?.getAttribute("data-id") ?? "").trim();
+		if (!nodeId) return false;
+		const { x, y } = menuPointFromEvent(event);
+		props.setNodeMenu({ x, y, nodeId });
+		props.setEdgeMenu(null);
+		props.setCanvasMenu(null);
+		props.setSelectedNodeId(nodeId);
+		props.setSelectedEdgeId("");
+		props.ensureInspectorVisible();
+		props.setInspectorTab("node");
+		return true;
+	};
+
 	return (
 		<div
 			className="flex-1 outline-none relative"
@@ -100,10 +148,15 @@ export function LabDesignerCanvasSurface(props: Props) {
 			tabIndex={0}
 			onKeyDown={props.onCanvasKeyDown}
 			onMouseDown={(event) => {
+				if (event.button !== 0) return;
 				(event.currentTarget as HTMLDivElement).focus();
 				props.closeMenus();
 			}}
-			onContextMenu={(e) => e.preventDefault()}
+			onContextMenuCapture={(event) => {
+				event.preventDefault();
+				if (openEdgeMenuFromEvent(event)) return;
+				openNodeMenuFromEvent(event);
+			}}
 		>
 			{props.linkMode ? (
 				<div className="absolute z-10 m-3 rounded-lg border bg-background/80 px-3 py-2 text-xs text-muted-foreground backdrop-blur">
@@ -218,6 +271,8 @@ export function LabDesignerCanvasSurface(props: Props) {
 					props.setNodeMenu({ x, y, nodeId: String(node.id) });
 					props.setEdgeMenu(null);
 					props.setCanvasMenu(null);
+					props.setSelectedNodeId(String(node.id));
+					props.setSelectedEdgeId("");
 					props.ensureInspectorVisible();
 					props.setInspectorTab("node");
 				}}
@@ -263,6 +318,12 @@ export function LabDesignerCanvasSurface(props: Props) {
 				/>
 				<Background gap={12} size={1} />
 			</ReactFlow>
+			<LabDesignerCanvasOverlays
+				annotations={props.annotations}
+				groups={props.groups}
+				nodes={props.nodes}
+				viewport={props.rfInstance?.getViewport() ?? { x: 0, y: 0, zoom: 1 }}
+			/>
 
 			<LabDesignerNodeMenu {...props} />
 			<LabDesignerEdgeMenu {...props} />

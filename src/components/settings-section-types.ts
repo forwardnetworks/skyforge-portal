@@ -103,6 +103,12 @@ export type AdminIntegrationsSectionProps = {
 	registryUsernameDraft: string;
 	registryPasswordDraft: string;
 	registryPrepullWorkerNodesDraft: boolean;
+	registryDiscoveredReposLoading: boolean;
+	registryDiscoveredReposError: boolean;
+	registryDiscoveredRepoCount: number;
+	registryCatalogRepoCount: number;
+	registryMissingCatalogRepos: string[];
+	registryDisabledDiscoveredRepos: string[];
 	registryCatalogImagesDraft: {
 		id?: string;
 		label?: string;
@@ -141,6 +147,7 @@ export type AdminIntegrationsSectionProps = {
 	) => void;
 	onAddRegistryCatalogImage: () => void;
 	onRemoveRegistryCatalogImage: (index: number) => void;
+	onAddMissingRegistryReposToCatalog: () => void;
 	onSaveRegistryCatalog: () => void;
 	onTriggerRegistryCatalogPrepull: () => void;
 };

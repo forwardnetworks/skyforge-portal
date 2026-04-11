@@ -192,7 +192,10 @@ export function inferPaletteItemFromRepo(repo: string): PaletteItem {
 	});
 }
 
-export function PaletteDraggableItem(props: { item: PaletteItem }) {
+export function PaletteDraggableItem(props: {
+	item: PaletteItem;
+	onSelect?: (item: PaletteItem) => void;
+}) {
 	const p = props.item;
 	const Icon =
 		p.role === "firewall" ? Shield : p.role === "host" ? Server : Waypoints;
@@ -213,11 +216,20 @@ export function PaletteDraggableItem(props: { item: PaletteItem }) {
 		<div
 			className="cursor-grab select-none rounded-lg border bg-background px-3 py-2 text-sm hover:bg-accent"
 			draggable
+			role="button"
+			tabIndex={0}
 			onDragStart={(e) => {
 				const payload = JSON.stringify(p);
 				e.dataTransfer.setData(paletteMimeType, payload);
 				e.dataTransfer.setData("text/plain", payload);
 				e.dataTransfer.effectAllowed = "copy";
+			}}
+			onClick={() => props.onSelect?.(p)}
+			onKeyDown={(event) => {
+				if (event.key === "Enter" || event.key === " ") {
+					event.preventDefault();
+					props.onSelect?.(p);
+				}
 			}}
 			title={p.repo ? `${p.label}\n${p.repo}` : p.label}
 		>

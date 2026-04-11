@@ -1,4 +1,5 @@
 import { PaletteDraggableItem } from "@/components/lab-designer-palette";
+import { Link } from "@tanstack/react-router";
 import type { LabDesignerWorkspaceProps } from "@/components/lab-designer-workspace-types";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +24,7 @@ type Props = Pick<
 	| "registryReposError"
 	| "registryError"
 	| "paletteIsFilteredEmpty"
+	| "onAddPaletteItem"
 >;
 
 export function LabDesignerPalettePanel(props: Props) {
@@ -70,6 +72,22 @@ export function LabDesignerPalettePanel(props: Props) {
 						<SelectItem value="other">Other</SelectItem>
 					</SelectContent>
 				</Select>
+			</div>
+			<div className="mt-2 rounded-lg border bg-background px-3 py-2 text-[11px] text-muted-foreground">
+				<div className="font-medium text-foreground">Need another NOS image?</div>
+				<div className="mt-1">
+					Set registry URL + repo prefixes, then add catalog rows under Registry &
+					NOS Catalog.
+				</div>
+				<div className="mt-1">
+					<Link
+						to="/settings"
+						search={{ section: "integrations" }}
+						className="font-medium text-foreground underline underline-offset-2"
+					>
+						Open Registry & NOS Catalog settings
+					</Link>
+				</div>
 			</div>
 			<div className="mt-3 space-y-2">
 				{props.registryReposLoading ? (
@@ -121,7 +139,11 @@ export function LabDesignerPalettePanel(props: Props) {
 									</div>
 									<div className="space-y-2">
 										{group.items.slice(0, 60).map((item) => (
-											<PaletteDraggableItem key={item.id} item={item} />
+											<PaletteDraggableItem
+												key={item.id}
+												item={item}
+												onSelect={props.onAddPaletteItem}
+											/>
 										))}
 									</div>
 								</div>

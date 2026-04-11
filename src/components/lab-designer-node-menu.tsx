@@ -31,6 +31,7 @@ export function LabDesignerNodeMenu(props: Props) {
 		<div
 			className="absolute z-50"
 			style={{ left: props.nodeMenu.x, top: props.nodeMenu.y }}
+			onMouseDown={(e) => e.stopPropagation()}
 			onContextMenu={(e) => e.preventDefault()}
 		>
 			<Card className="w-64 shadow-lg border bg-background/95 backdrop-blur">
