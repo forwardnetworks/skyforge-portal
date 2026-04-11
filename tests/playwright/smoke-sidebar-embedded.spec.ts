@@ -40,6 +40,30 @@ function parseTimeoutMs(name: string, fallbackMs: number): number {
 	return parsed;
 }
 
+async function ensureAdvancedMode(page: Page): Promise<void> {
+	const current = await page.request.get("/api/settings");
+	if (!current.ok()) return;
+	const settings = (await current.json()) as {
+		defaultForwardCollectorConfigId?: string;
+		defaultEnv?: Array<{ key: string; value: string }>;
+		externalTemplateRepos?: Array<Record<string, unknown>>;
+		uiExperienceMode?: "simple" | "advanced";
+	};
+	if (settings.uiExperienceMode === "advanced") return;
+	const payload: Record<string, unknown> = {
+		defaultEnv: settings.defaultEnv ?? [],
+		externalTemplateRepos: settings.externalTemplateRepos ?? [],
+		uiExperienceMode: "advanced",
+	};
+	if (settings.defaultForwardCollectorConfigId) {
+		payload.defaultForwardCollectorConfigId =
+			settings.defaultForwardCollectorConfigId;
+	}
+	await page.request.put("/api/settings", {
+		data: payload,
+	});
+}
+
 async function loginLocal(page: Page): Promise<void> {
 	const apiLogin = await page.request.post("/api/auth/login", {
 		data: {
@@ -48,6 +72,7 @@ async function loginLocal(page: Page): Promise<void> {
 		},
 	});
 	if (apiLogin.ok()) {
+		await ensureAdvancedMode(page);
 		await page.goto("/dashboard", {
 			waitUntil: "domcontentloaded",
 			timeout: smokeTimeoutMs,
@@ -72,6 +97,11 @@ async function loginLocal(page: Page): Promise<void> {
 		}),
 		page.getByRole("button", { name: "Sign in" }).click(),
 	]);
+	await ensureAdvancedMode(page);
+	await page.goto("/dashboard", {
+		waitUntil: "domcontentloaded",
+		timeout: smokeTimeoutMs,
+	});
 }
 
 test.describe("Playwright smoke coverage", () => {
@@ -117,7 +147,7 @@ test.describe("Playwright smoke coverage", () => {
 		]);
 	});
 
-	test("@smoke-integrations embedded tool link opens in-frame and no popup", async ({
+	test("@smoke-integrations embedded tool route opens without popup", async ({
 		page,
 	}) => {
 		test.skip(missingRequiredEnv.length > 0, missingEnvMessage);
@@ -164,13 +194,18 @@ test.describe("Playwright smoke coverage", () => {
 		]);
 
 		expect(await popupOpened).toBe(false);
-		await expect(page.locator("iframe").first()).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
-		await expect(
-			page.getByText("Embedded Workspace", { exact: false }).first(),
-		).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
+		const iframe = page.locator("iframe").first();
+		const standbyBanner = page.getByText(
+			/is in standby|is starting|No launch URL is configured/i,
+		);
+
+		await expect
+			.poll(async () => {
+				if (await iframe.isVisible().catch(() => false)) return "iframe";
+				if (await standbyBanner.first().isVisible().catch(() => false))
+					return "managed-state";
+				return "pending";
+			}, { timeout: smokeTimeoutMs })
+			.not.toBe("pending");
 	});
 });

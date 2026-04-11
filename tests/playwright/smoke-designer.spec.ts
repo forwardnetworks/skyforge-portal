@@ -37,6 +37,32 @@ function parseTimeoutMs(name: string, fallbackMs: number): number {
 	return parsed;
 }
 
+async function getPrimaryUserScopeId(page: Page): Promise<string> {
+	const resp = await page.request.get("/api/users");
+	if (!resp.ok()) throw new Error("failed to load user scopes");
+	const body = (await resp.json()) as { userScopes?: Array<{ id?: string }> };
+	const id = String(body.userScopes?.[0]?.id ?? "").trim();
+	if (!id) throw new Error("missing primary user scope id");
+	return id;
+}
+
+async function listDeploymentIDs(
+	page: Page,
+	userID: string,
+): Promise<Set<string>> {
+	const resp = await page.request.get(
+		`/api/users/${encodeURIComponent(userID)}/deployments`,
+	);
+	if (!resp.ok()) throw new Error("failed to list deployments");
+	const body = (await resp.json()) as { deployments?: Array<{ id?: string }> };
+	const ids = new Set<string>();
+	for (const deployment of body.deployments ?? []) {
+		const id = String(deployment.id ?? "").trim();
+		if (id) ids.add(id);
+	}
+	return ids;
+}
+
 async function ensureAdvancedMode(page: Page): Promise<void> {
 	const current = await page.request.get("/api/settings");
 	if (!current.ok()) return;
@@ -110,7 +136,34 @@ async function loginLocal(page: Page): Promise<void> {
 }
 
 async function openImportDialog(page: Page): Promise<Locator> {
-	await page.getByRole("button", { name: "Import" }).click();
+	if (new URL(page.url()).pathname !== "/dashboard/labs/designer") {
+		await page.goto("/dashboard/labs/designer", {
+			waitUntil: "domcontentloaded",
+			timeout: smokeTimeoutMs,
+		});
+	}
+	const advancedToggle = page.getByRole("button", { name: "Advanced" }).first();
+	if (await advancedToggle.isVisible().catch(() => false)) {
+		const pressed = await advancedToggle.getAttribute("aria-pressed");
+		if (pressed !== "true") {
+			await advancedToggle.click();
+			await page.goto("/dashboard/labs/designer", {
+				waitUntil: "domcontentloaded",
+				timeout: smokeTimeoutMs,
+			});
+		}
+	}
+	await expect(page.getByText("Lab Designer").first()).toBeVisible({
+		timeout: smokeTimeoutMs,
+	});
+	const focusOn = page.getByRole("button", { name: "Focus: on" }).first();
+	if (await focusOn.isVisible().catch(() => false)) {
+		await focusOn.click();
+	}
+	await expect(page.getByRole("button", { name: "Import" }).first()).toBeVisible({
+		timeout: smokeTimeoutMs,
+	});
+	await page.getByRole("button", { name: "Import" }).first().click();
 	const dialog = page.getByRole("dialog", { name: "Import template" });
 	await expect(dialog).toBeVisible({ timeout: smokeTimeoutMs });
 	return dialog;
@@ -121,11 +174,23 @@ async function chooseImportSource(
 	dialog: Locator,
 	sourceLabel: string,
 ): Promise<void> {
-	const sourceRow = dialog.locator("div").filter({
-		has: dialog.getByText("Topology Source"),
-	});
-	await sourceRow.locator("button[role='combobox']").first().click();
+	await dialog.getByRole("combobox").nth(2).click();
 	await page.getByRole("option", { name: sourceLabel }).click();
+}
+
+async function convertAndImportTopology(
+	dialog: Locator,
+	topologyYAML: string,
+): Promise<void> {
+	const yamlInput = dialog.getByPlaceholder("Paste topology YAML here...");
+	await yamlInput.fill(topologyYAML);
+	const convertButton = dialog.getByRole("button", { name: "Convert + Import" });
+	await expect(convertButton).toBeEnabled({ timeout: smokeTimeoutMs });
+	await convertButton.scrollIntoViewIfNeeded();
+	await convertButton.evaluate((el) => (el as HTMLButtonElement).click());
+	await expect(dialog.getByText("Last import result")).toBeVisible({
+		timeout: smokeTimeoutMs,
+	});
 }
 
 test.describe("Designer smoke coverage", () => {
@@ -547,18 +612,10 @@ test.describe("Designer smoke coverage", () => {
 		);
 
 		const dialog = await openImportDialog(page);
-
-		await dialog
-			.getByPlaceholder("Paste topology YAML here...")
-			.fill(IMPORT_TOPOLOGY_FIXTURES.containerlabMinimal);
-		await dialog.getByRole("button", { name: "Convert + Import" }).click();
-
-		await expect(
-			page.locator(".react-flow__node").filter({ hasText: "h1" }).first(),
-		).toBeVisible({ timeout: smokeTimeoutMs });
-		await expect(dialog.getByText("Last import result")).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
+		await convertAndImportTopology(
+			dialog,
+			IMPORT_TOPOLOGY_FIXTURES.containerlabMinimal,
+		);
 		await expect(dialog.getByText("Ready")).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
@@ -567,6 +624,9 @@ test.describe("Designer smoke coverage", () => {
 		});
 		await expect(
 			dialog.getByText(/Issues: \d+ errors, \d+ warnings, \d+ info/),
+		).toBeVisible({ timeout: smokeTimeoutMs });
+		await expect(
+			page.locator(".react-flow__node").filter({ hasText: "h1" }).first(),
 		).toBeVisible({ timeout: smokeTimeoutMs });
 	});
 
@@ -589,20 +649,38 @@ test.describe("Designer smoke coverage", () => {
 			(url) => url.pathname === "/dashboard/labs/designer",
 			{ timeout: smokeTimeoutMs },
 		);
+		const userID = await getPrimaryUserScopeId(page);
+		const beforeDeploymentIDs = await listDeploymentIDs(page, userID);
 
 		const dialog = await openImportDialog(page);
-		await dialog
-			.getByPlaceholder("Paste topology YAML here...")
-			.fill(IMPORT_TOPOLOGY_FIXTURES.containerlabDeploy);
-		await dialog.getByRole("button", { name: "Convert + Import" }).click();
+		const uniqueName = `clab-deploy-smoke-${Date.now()}`;
+		await convertAndImportTopology(
+			dialog,
+			IMPORT_TOPOLOGY_FIXTURES.containerlabDeploy.replace(
+				"name: clab-deploy-smoke",
+				`name: ${uniqueName}`,
+			),
+		);
+		await expect(dialog.getByText("Ready")).toBeVisible({
+			timeout: smokeTimeoutMs,
+		});
 		await expect(
 			page.locator(".react-flow__node").filter({ hasText: "h1" }).first(),
 		).toBeVisible({ timeout: smokeTimeoutMs });
 
 		await page.getByRole("button", { name: "Deploy" }).click();
-		await expect(page.getByText("Deployment created")).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
+		await expect
+			.poll(
+				async () => {
+					const afterDeploymentIDs = await listDeploymentIDs(page, userID);
+					for (const id of afterDeploymentIDs) {
+						if (!beforeDeploymentIDs.has(id)) return true;
+					}
+					return false;
+				},
+				{ timeout: smokeTimeoutMs },
+			)
+			.toBe(true);
 	});
 
 	test("@smoke-designer parity: eve-ng import converts a minimal topology", async ({
@@ -623,14 +701,7 @@ test.describe("Designer smoke coverage", () => {
 
 		const dialog = await openImportDialog(page);
 		await chooseImportSource(page, dialog, "EVE-NG");
-		await dialog
-			.getByPlaceholder("Paste topology YAML here...")
-			.fill(IMPORT_TOPOLOGY_FIXTURES.eveMinimal);
-		await dialog.getByRole("button", { name: "Convert + Import" }).click();
-
-		await expect(dialog.getByText("Last import result")).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
+		await convertAndImportTopology(dialog, IMPORT_TOPOLOGY_FIXTURES.eveMinimal);
 		await expect(dialog.getByText("Ready")).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
@@ -660,14 +731,7 @@ test.describe("Designer smoke coverage", () => {
 
 		const dialog = await openImportDialog(page);
 		await chooseImportSource(page, dialog, "GNS3");
-		await dialog
-			.getByPlaceholder("Paste topology YAML here...")
-			.fill(IMPORT_TOPOLOGY_FIXTURES.gns3Minimal);
-		await dialog.getByRole("button", { name: "Convert + Import" }).click();
-
-		await expect(dialog.getByText("Last import result")).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
+		await convertAndImportTopology(dialog, IMPORT_TOPOLOGY_FIXTURES.gns3Minimal);
 		await expect(dialog.getByText("Ready")).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
@@ -697,14 +761,7 @@ test.describe("Designer smoke coverage", () => {
 
 		const dialog = await openImportDialog(page);
 		await chooseImportSource(page, dialog, "GNS3");
-		await dialog
-			.getByPlaceholder("Paste topology YAML here...")
-			.fill(IMPORT_TOPOLOGY_FIXTURES.gns3JsonMinimal);
-		await dialog.getByRole("button", { name: "Convert + Import" }).click();
-
-		await expect(dialog.getByText("Last import result")).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
+		await convertAndImportTopology(dialog, IMPORT_TOPOLOGY_FIXTURES.gns3JsonMinimal);
 		await expect(dialog.getByText("Ready")).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
