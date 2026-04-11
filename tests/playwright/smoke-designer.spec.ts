@@ -109,7 +109,9 @@ async function waitForDeploymentNodeID(
 				for (const node of body.nodes ?? []) {
 					const id = String(node.id ?? "").trim();
 					if (!id) continue;
-					const status = String(node.status ?? "").trim().toLowerCase();
+					const status = String(node.status ?? "")
+						.trim()
+						.toLowerCase();
 					if (
 						status === "" ||
 						status === "unknown" ||
@@ -262,7 +264,9 @@ async function openImportDialog(page: Page): Promise<Locator> {
 	if (await focusOn.isVisible().catch(() => false)) {
 		await focusOn.click();
 	}
-	await expect(page.getByRole("button", { name: "Import" }).first()).toBeVisible({
+	await expect(
+		page.getByRole("button", { name: "Import" }).first(),
+	).toBeVisible({
 		timeout: smokeTimeoutMs,
 	});
 	await page.getByRole("button", { name: "Import" }).first().click();
@@ -286,7 +290,9 @@ async function convertAndImportTopology(
 ): Promise<void> {
 	const yamlInput = dialog.getByPlaceholder("Paste topology YAML here...");
 	await yamlInput.fill(topologyYAML);
-	const convertButton = dialog.getByRole("button", { name: "Convert + Import" });
+	const convertButton = dialog.getByRole("button", {
+		name: "Convert + Import",
+	});
 	await expect(convertButton).toBeEnabled({ timeout: smokeTimeoutMs });
 	await convertButton.scrollIntoViewIfNeeded();
 	const resultSummary = dialog.getByText("Last import result");
@@ -294,15 +300,24 @@ async function convertAndImportTopology(
 	for (let attempt = 0; attempt < 3; attempt += 1) {
 		await convertButton.evaluate((el) => (el as HTMLButtonElement).click());
 		try {
-			await expect(resultSummary).toBeVisible({
-				timeout: Math.max(smokeTimeoutMs, 15_000),
-			});
+			await Promise.race([
+				resultSummary.waitFor({
+					state: "visible",
+					timeout: Math.max(smokeTimeoutMs, 15_000),
+				}),
+				dialog.waitFor({
+					state: "hidden",
+					timeout: Math.max(smokeTimeoutMs, 15_000),
+				}),
+			]);
 			return;
 		} catch (err) {
 			lastErr = err;
 		}
 	}
-	throw lastErr instanceof Error ? lastErr : new Error("convert/import did not return a result");
+	throw lastErr instanceof Error
+		? lastErr
+		: new Error("convert/import did not return a result");
 }
 
 test.describe("Designer smoke coverage", () => {
@@ -341,8 +356,14 @@ test.describe("Designer smoke coverage", () => {
 		});
 
 		await page.getByRole("button", { name: "Add node" }).click();
-		const nodeR1 = page.locator(".react-flow__node").filter({ hasText: "r1" }).first();
-		const nodeN2 = page.locator(".react-flow__node").filter({ hasText: "n2" }).first();
+		const nodeR1 = page
+			.locator(".react-flow__node")
+			.filter({ hasText: "r1" })
+			.first();
+		const nodeN2 = page
+			.locator(".react-flow__node")
+			.filter({ hasText: "n2" })
+			.first();
 		await expect(nodeN2).toBeVisible({ timeout: smokeTimeoutMs });
 
 		await nodeR1.click();
@@ -354,7 +375,10 @@ test.describe("Designer smoke coverage", () => {
 		const nodeTextboxes = nodeTab.getByRole("textbox");
 		await nodeTextboxes.first().fill("r1-renamed");
 		await expect(
-			page.locator(".react-flow__node").filter({ hasText: "r1-renamed" }).first(),
+			page
+				.locator(".react-flow__node")
+				.filter({ hasText: "r1-renamed" })
+				.first(),
 		).toBeVisible({ timeout: smokeTimeoutMs });
 
 		await page.getByRole("button", { name: "Link: off" }).click();
@@ -396,34 +420,44 @@ test.describe("Designer smoke coverage", () => {
 			timeout: smokeTimeoutMs,
 		});
 		await page.getByRole("button", { name: "Header: on" }).click();
-		await expect(page.getByRole("button", { name: "Header: off" })).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
+		await expect(page.getByRole("button", { name: "Header: off" })).toBeVisible(
+			{
+				timeout: smokeTimeoutMs,
+			},
+		);
 		await page.getByRole("button", { name: "Header: off" }).click();
 		await expect(page.getByRole("button", { name: "Header: on" })).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
 
 		await page.getByRole("button", { name: "Palette: on" }).click();
-		await expect(page.getByRole("button", { name: "Palette: off" })).toBeVisible({
+		await expect(
+			page.getByRole("button", { name: "Palette: off" }),
+		).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
 		await page.getByRole("button", { name: "Palette: off" }).click();
-		await expect(page.getByRole("button", { name: "Palette: on" })).toBeVisible({
-			timeout: smokeTimeoutMs,
-		});
+		await expect(page.getByRole("button", { name: "Palette: on" })).toBeVisible(
+			{
+				timeout: smokeTimeoutMs,
+			},
+		);
 
 		await page.getByRole("button", { name: "Inspector: on" }).click();
 		await expect(
 			page.getByRole("button", { name: "Inspector: off" }),
 		).toBeVisible({ timeout: smokeTimeoutMs });
 		await page.getByRole("button", { name: "Inspector: off" }).click();
-		await expect(page.getByRole("button", { name: "Inspector: on" })).toBeVisible({
+		await expect(
+			page.getByRole("button", { name: "Inspector: on" }),
+		).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
 
 		const nodeCountBefore = await page.locator(".react-flow__node").count();
-		const paletteItem = page.locator("[draggable='true'][role='button']").first();
+		const paletteItem = page
+			.locator("[draggable='true'][role='button']")
+			.first();
 		await expect(paletteItem).toBeVisible({ timeout: smokeTimeoutMs });
 		await paletteItem.dragTo(page.locator(".react-flow").first());
 
@@ -517,16 +551,10 @@ test.describe("Designer smoke coverage", () => {
 		await linkInputs.nth(1).fill("eth11");
 		await linkInputs.nth(2).fill("uplink-a");
 		await linkInputs.nth(3).fill("9000");
-		await linkPanel
-			.locator("textarea")
-			.first()
-			.fill("parity-link-note");
+		await linkPanel.locator("textarea").first().fill("parity-link-note");
 
 		await nodeR1.click();
-		await page
-			.locator(".react-flow__edge-interaction")
-			.first()
-			.click();
+		await page.locator(".react-flow__edge-interaction").first().click();
 		await expect(page.getByRole("tab", { name: /Link \*/ })).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
@@ -562,7 +590,9 @@ test.describe("Designer smoke coverage", () => {
 			page.getByRole("dialog", { name: "Quickstart: Generate CLOS" }),
 		).toBeVisible({ timeout: smokeTimeoutMs });
 
-		const dialog = page.getByRole("dialog", { name: "Quickstart: Generate CLOS" });
+		const dialog = page.getByRole("dialog", {
+			name: "Quickstart: Generate CLOS",
+		});
 		await dialog.locator("input").first().fill("clos-parity");
 		const numeric = dialog.locator("input[type='number']");
 		await numeric.nth(0).fill("1");
@@ -570,17 +600,15 @@ test.describe("Designer smoke coverage", () => {
 		await numeric.nth(2).fill("1");
 
 		const imageInputs = dialog.getByPlaceholder("repo:tag");
-		await imageInputs.nth(0).fill(
-			"ghcr.io/forwardnetworks/kne/cisco_iol:17.16.01a-kne-r27",
-		);
+		await imageInputs
+			.nth(0)
+			.fill("ghcr.io/forwardnetworks/kne/cisco_iol:17.16.01a-kne-r27");
 		await imageInputs
 			.nth(1)
 			.fill("ghcr.io/forwardnetworks/kne/linux:20260323-ssh-traffic-r1");
 		const generateButton = dialog.getByRole("button", { name: "Generate" });
 		await generateButton.scrollIntoViewIfNeeded();
-		await generateButton.evaluate((el) =>
-			(el as HTMLButtonElement).click(),
-		);
+		await generateButton.evaluate((el) => (el as HTMLButtonElement).click());
 
 		await expect
 			.poll(async () => page.locator(".react-flow__node").count(), {
@@ -594,9 +622,7 @@ test.describe("Designer smoke coverage", () => {
 			.toBe(4);
 	});
 
-	test("@smoke-designer parity: YAML custom round-trip", async ({
-		page,
-	}) => {
+	test("@smoke-designer parity: YAML custom round-trip", async ({ page }) => {
 		test.skip(missingRequiredEnv.length > 0, missingEnvMessage);
 		await page.setViewportSize({ width: 1600, height: 1400 });
 
@@ -841,7 +867,10 @@ test.describe("Designer smoke coverage", () => {
 
 		const dialog = await openImportDialog(page);
 		await chooseImportSource(page, dialog, "GNS3");
-		await convertAndImportTopology(dialog, IMPORT_TOPOLOGY_FIXTURES.gns3Minimal);
+		await convertAndImportTopology(
+			dialog,
+			IMPORT_TOPOLOGY_FIXTURES.gns3Minimal,
+		);
 		await expect(dialog.getByText("Ready")).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
@@ -871,7 +900,10 @@ test.describe("Designer smoke coverage", () => {
 
 		const dialog = await openImportDialog(page);
 		await chooseImportSource(page, dialog, "GNS3");
-		await convertAndImportTopology(dialog, IMPORT_TOPOLOGY_FIXTURES.gns3JsonMinimal);
+		await convertAndImportTopology(
+			dialog,
+			IMPORT_TOPOLOGY_FIXTURES.gns3JsonMinimal,
+		);
 		await expect(dialog.getByText("Ready")).toBeVisible({
 			timeout: smokeTimeoutMs,
 		});
