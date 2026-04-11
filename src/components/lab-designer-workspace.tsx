@@ -4,6 +4,8 @@ import {
 	ChevronsUpDown,
 	LayoutGrid,
 	Link2,
+	Maximize2,
+	Minimize2,
 	PanelLeftClose,
 	PanelLeftOpen,
 	PanelRightClose,
@@ -25,6 +27,23 @@ export function LabDesignerWorkspace(props: LabDesignerWorkspaceProps) {
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
+					<Button
+						size="sm"
+						variant={props.isFocusMode ? "default" : "outline"}
+						onClick={props.onToggleFocusMode}
+						title={
+							props.isFocusMode
+								? "Restore header and side panels"
+								: "Focus canvas by collapsing header and side panels"
+						}
+					>
+						{props.isFocusMode ? (
+							<Minimize2 className="mr-2 h-4 w-4" />
+						) : (
+							<Maximize2 className="mr-2 h-4 w-4" />
+						)}
+						{props.isFocusMode ? "Focus: on" : "Focus: off"}
+					</Button>
 					<Button
 						size="sm"
 						variant="outline"

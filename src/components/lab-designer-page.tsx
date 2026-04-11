@@ -41,6 +41,8 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 	const page = useLabDesignerPage(search);
 	const selectedEdge = page.selectedEdge;
 	const validation = validationTone(page);
+	const isFocusMode =
+		!page.showCommandBar && !page.showPalette && !page.showInspector;
 
 	return (
 		<div className="flex h-full min-h-0 w-full flex-col gap-4 bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.08),transparent_28%),radial-gradient(circle_at_top_right,rgba(234,179,8,0.08),transparent_24%)] p-4 dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(250,204,21,0.08),transparent_24%)]">
@@ -68,6 +70,14 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 							onToggleCommandBar={() =>
 								page.setShowCommandBar((current) => !current)
 							}
+							isFocusMode={isFocusMode}
+							onToggleFocusMode={() => {
+								const enableFocus =
+									page.showCommandBar || page.showPalette || page.showInspector;
+								page.setShowCommandBar(!enableFocus);
+								page.setShowPalette(!enableFocus);
+								page.setShowInspector(!enableFocus);
+							}}
 							snapToGrid={page.snapToGrid}
 							onSnapToGridChange={page.setSnapToGrid}
 							linkMode={page.linkMode}
@@ -81,6 +91,9 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 							pendingLinkSource={page.pendingLinkSource}
 							autoLayout={page.autoLayout}
 							addNode={page.addNode}
+							onAddPaletteItem={(item) => {
+								void page.addNodeFromPalette(item);
+							}}
 							paletteSearch={page.paletteSearch}
 							onPaletteSearchChange={page.setPaletteSearch}
 							paletteVendor={page.paletteVendor}
@@ -105,6 +118,8 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 							nodeTypes={page.nodeTypes}
 							setRfInstance={page.setRfInstance}
 							setSelectedNodeId={page.setSelectedNodeId}
+							selectedEdgeId={page.selectedEdgeId}
+							setSelectedEdgeId={page.setSelectedEdgeId}
 							setNodeMenu={page.setNodeMenu}
 							setEdgeMenu={page.setEdgeMenu}
 							setCanvasMenu={page.setCanvasMenu}
@@ -121,6 +136,9 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 							setPendingLinkSource={page.setPendingLinkSource}
 							rfInstance={page.rfInstance}
 							setInspectorTab={page.setInspectorTab}
+							ensureInspectorVisible={() => {
+								if (!page.showInspector) page.setShowInspector(true);
+							}}
 						/>
 
 						{page.showInspector ? (

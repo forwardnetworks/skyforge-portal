@@ -25,6 +25,8 @@ type Props = Pick<
 	| "nodeTypes"
 	| "setRfInstance"
 	| "setSelectedNodeId"
+	| "selectedEdgeId"
+	| "setSelectedEdgeId"
 	| "setNodeMenu"
 	| "setEdgeMenu"
 	| "setCanvasMenu"
@@ -41,6 +43,7 @@ type Props = Pick<
 	| "setPendingLinkSource"
 	| "rfInstance"
 	| "setInspectorTab"
+	| "ensureInspectorVisible"
 	| "snapToGrid"
 	| "linkMode"
 	| "pendingLinkSource"
@@ -203,6 +206,8 @@ export function LabDesignerCanvasSurface(props: Props) {
 						return;
 					}
 					props.setSelectedNodeId(id);
+					props.setSelectedEdgeId("");
+					props.ensureInspectorVisible();
 					props.setInspectorTab("node");
 				}}
 				onNodeContextMenu={(event, node) => {
@@ -213,10 +218,14 @@ export function LabDesignerCanvasSurface(props: Props) {
 					props.setNodeMenu({ x, y, nodeId: String(node.id) });
 					props.setEdgeMenu(null);
 					props.setCanvasMenu(null);
+					props.ensureInspectorVisible();
 					props.setInspectorTab("node");
 				}}
 				onEdgeClick={(_, edge) => {
 					if (!edge?.id) return;
+					props.setSelectedEdgeId(String(edge.id));
+					props.setSelectedNodeId("");
+					props.ensureInspectorVisible();
 					props.setInspectorTab("link");
 				}}
 				onEdgeContextMenu={(event, edge) => {
@@ -227,6 +236,9 @@ export function LabDesignerCanvasSurface(props: Props) {
 					props.setEdgeMenu({ x, y, edgeId: String(edge.id) });
 					props.setNodeMenu(null);
 					props.setCanvasMenu(null);
+					props.setSelectedEdgeId(String(edge.id));
+					props.setSelectedNodeId("");
+					props.ensureInspectorVisible();
 					props.setInspectorTab("link");
 				}}
 				onPaneContextMenu={(event) => {

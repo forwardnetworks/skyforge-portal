@@ -19,11 +19,14 @@ export type LabDesignerWorkspaceProps = {
 	onToggleInspector: () => void;
 	showCommandBar: boolean;
 	onToggleCommandBar: () => void;
+	isFocusMode: boolean;
+	onToggleFocusMode: () => void;
 	linkMode: boolean;
 	onLinkModeToggle: () => void;
 	pendingLinkSource: string;
 	autoLayout: () => void;
 	addNode: () => void;
+	onAddPaletteItem: (item: PaletteItem) => void;
 	paletteSearch: string;
 	onPaletteSearchChange: (value: string) => void;
 	paletteVendor: string;
@@ -50,6 +53,8 @@ export type LabDesignerWorkspaceProps = {
 		value: ReactFlowInstance<DesignNode, DesignEdge> | null,
 	) => void;
 	setSelectedNodeId: (value: string) => void;
+	selectedEdgeId: string;
+	setSelectedEdgeId: (value: string) => void;
 	setNodeMenu: (value: NodeMenuState | null) => void;
 	setEdgeMenu: (value: EdgeMenuState | null) => void;
 	setCanvasMenu: (value: CanvasMenuState | null) => void;
@@ -69,4 +74,5 @@ export type LabDesignerWorkspaceProps = {
 	setPendingLinkSource: React.Dispatch<React.SetStateAction<string>>;
 	rfInstance: ReactFlowInstance<DesignNode, DesignEdge> | null;
 	setInspectorTab: (value: LabDesignerInspectorTab) => void;
+	ensureInspectorVisible: () => void;
 };

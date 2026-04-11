@@ -7,6 +7,7 @@ type Props = Pick<
 	LabDesignerWorkspaceProps,
 	| "nodeMenu"
 	| "nodes"
+	| "edges"
 	| "closeMenus"
 	| "setSelectedNodeId"
 	| "importDeploymentId"
@@ -15,8 +16,12 @@ type Props = Pick<
 	| "setNodes"
 	| "setEdges"
 	| "selectedNodeId"
+	| "selectedEdgeId"
 	| "setLinkMode"
 	| "setPendingLinkSource"
+	| "setSelectedEdgeId"
+	| "setInspectorTab"
+	| "ensureInspectorVisible"
 >;
 
 export function LabDesignerNodeMenu(props: Props) {
@@ -45,6 +50,9 @@ export function LabDesignerNodeMenu(props: Props) {
 						className="w-full"
 						onClick={() => {
 							props.setSelectedNodeId(props.nodeMenu!.nodeId);
+							props.setSelectedEdgeId("");
+							props.ensureInspectorVisible();
+							props.setInspectorTab("node");
 							props.closeMenus();
 						}}
 					>
@@ -170,6 +178,14 @@ export function LabDesignerNodeMenu(props: Props) {
 						className="w-full"
 						onClick={() => {
 							const id = props.nodeMenu!.nodeId;
+							const deletingEdgeIds = new Set(
+								props.edges
+									.filter(
+										(edge) =>
+											String(edge.source) === id || String(edge.target) === id,
+									)
+									.map((edge) => String(edge.id)),
+							);
 							props.setNodes((current) =>
 								current.filter((node) => String(node.id) !== id),
 							);
@@ -180,6 +196,9 @@ export function LabDesignerNodeMenu(props: Props) {
 								),
 							);
 							if (props.selectedNodeId === id) props.setSelectedNodeId("");
+							if (deletingEdgeIds.has(props.selectedEdgeId)) {
+								props.setSelectedEdgeId("");
+							}
 							props.closeMenus();
 						}}
 					>

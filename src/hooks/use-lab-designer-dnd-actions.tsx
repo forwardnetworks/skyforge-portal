@@ -9,34 +9,12 @@ import {
 } from "./lab-designer-action-types";
 
 export function createLabDesignerDndActions(opts: LabDesignerActionsOptions) {
-	const onDragOver = (event: DragEvent) => {
-		event.preventDefault();
-		event.dataTransfer.dropEffect = "move";
-	};
-
-	const onDrop = async (event: DragEvent) => {
-		event.preventDefault();
-		if (!opts.rfRef.current || !opts.rfInstance) return;
-		const payload =
-			event.dataTransfer.getData(labDesignerPaletteMimeType) ||
-			event.dataTransfer.getData("text/plain");
-		const parsed: LabDesignerPaletteItem | null = payload
-			? (() => {
-					try {
-						return JSON.parse(payload) as LabDesignerPaletteItem;
-					} catch {
-						return null;
-					}
-				})()
-			: null;
+	const addNodeFromPalette = async (
+		parsed: LabDesignerPaletteItem,
+		position?: { x: number; y: number },
+	) => {
 		const kind = parsed?.kind;
 		if (!kind) return;
-
-		const rect = opts.rfRef.current.getBoundingClientRect();
-		const position = opts.rfInstance.screenToFlowPosition({
-			x: event.clientX - rect.left,
-			y: event.clientY - rect.top,
-		});
 
 		const role = parsed?.role;
 		const idBase =
@@ -59,6 +37,12 @@ export function createLabDesignerDndActions(opts: LabDesignerActionsOptions) {
 			id = `${idBase}${i}`;
 		}
 
+		const fallbackPosition = {
+			x: 120 + opts.nodes.length * 40,
+			y: 120 + opts.nodes.length * 30,
+		};
+		const resolvedPosition = position ?? fallbackPosition;
+
 		const repo = String(parsed?.repo ?? "").trim();
 		const explicitImage = String(parsed?.image ?? "").trim();
 		const fallbackTag = String(parsed?.defaultTag ?? "").trim();
@@ -71,18 +55,49 @@ export function createLabDesignerDndActions(opts: LabDesignerActionsOptions) {
 
 		const next: Node<DesignNodeData> = {
 			id,
-			position,
+			position: resolvedPosition,
 			data: { label: id, kind, image, interfaces: [] },
 			type: "designerNode",
 		};
 		opts.markWarningsVisible();
 		opts.setNodes((prev) => [...prev, next]);
 		opts.setSelectedNodeId(id);
+		opts.setSelectedEdgeId("");
 		opts.setInspectorTab("node");
+	};
+
+	const onDragOver = (event: DragEvent) => {
+		event.preventDefault();
+		event.dataTransfer.dropEffect = "move";
+	};
+
+	const onDrop = async (event: DragEvent) => {
+		event.preventDefault();
+		if (!opts.rfRef.current || !opts.rfInstance) return;
+		const payload =
+			event.dataTransfer.getData(labDesignerPaletteMimeType) ||
+			event.dataTransfer.getData("text/plain");
+		const parsed: LabDesignerPaletteItem | null = payload
+			? (() => {
+					try {
+						return JSON.parse(payload) as LabDesignerPaletteItem;
+					} catch {
+						return null;
+					}
+				})()
+			: null;
+		if (!parsed?.kind) return;
+
+		const position = opts.rfInstance.screenToFlowPosition({
+			x: event.clientX,
+			y: event.clientY,
+		});
+		await addNodeFromPalette(parsed, position);
 	};
 
 	return {
 		onDragOver,
 		onDrop,
+		addNodeFromPalette,
 	};
 }

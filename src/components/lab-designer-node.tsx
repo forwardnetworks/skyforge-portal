@@ -22,9 +22,10 @@ export function DesignerNode(props: NodeProps<DesignNode>) {
 
 	return (
 		<div
+			data-selected={props.selected ? "true" : "false"}
 			className={[
-				"rounded-xl border bg-background/95 px-3 py-2 shadow-sm min-w-[140px]",
-				props.selected ? "ring-2 ring-primary/60" : "",
+				"rounded-xl border bg-background/95 px-3 py-2 shadow-sm min-w-[140px] transition-shadow",
+				props.selected ? "ring-2 ring-primary/70 shadow-md" : "",
 				accent,
 			].join(" ")}
 		>
@@ -37,7 +38,14 @@ export function DesignerNode(props: NodeProps<DesignNode>) {
 					<Icon className="h-4 w-4" />
 				</div>
 				<div className="min-w-0">
-					<div className="font-medium leading-tight truncate">{label}</div>
+					<div className="font-medium leading-tight truncate flex items-center gap-2">
+						<span className="truncate">{label}</span>
+						{props.selected ? (
+							<span className="rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+								Selected
+							</span>
+						) : null}
+					</div>
 					<div className="text-[11px] text-muted-foreground truncate">
 						{kind || "node"}
 					</div>

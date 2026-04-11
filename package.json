@@ -13,7 +13,7 @@
 		"lint": "biome check .",
 		"format": "biome format --write .",
 		"test": "vitest",
-		"smoke:playwright": "playwright test --grep \"@smoke-(sidebar|integrations)\"",
+		"smoke:playwright": "playwright test --grep \"@smoke-(sidebar|integrations|designer)\"",
 		"smoke:sidebar-embedded": "node scripts/smoke-sidebar-embedded.mjs",
 		"gen:openapi": "openapi-typescript ../charts/skyforge/files/openapi.json -o src/lib/openapi.gen.ts"
 	},

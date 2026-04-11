@@ -4,7 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = Pick<
 	LabDesignerWorkspaceProps,
-	"edgeMenu" | "edges" | "setEdges" | "closeMenus"
+	| "edgeMenu"
+	| "edges"
+	| "setEdges"
+	| "closeMenus"
+	| "selectedEdgeId"
+	| "setSelectedEdgeId"
+	| "setSelectedNodeId"
+	| "setInspectorTab"
+	| "ensureInspectorVisible"
 >;
 
 export function LabDesignerEdgeMenu(props: Props) {
@@ -28,6 +36,19 @@ export function LabDesignerEdgeMenu(props: Props) {
 				<CardContent className="p-3 pt-0 space-y-2">
 					<Button
 						size="sm"
+						className="w-full"
+						onClick={() => {
+							props.setSelectedEdgeId(props.edgeMenu!.edgeId);
+							props.setSelectedNodeId("");
+							props.ensureInspectorVisible();
+							props.setInspectorTab("link");
+							props.closeMenus();
+						}}
+					>
+						Edit…
+					</Button>
+					<Button
+						size="sm"
 						variant="outline"
 						className="w-full"
 						onClick={() => {
@@ -43,7 +64,14 @@ export function LabDesignerEdgeMenu(props: Props) {
 							props.setEdges((current) =>
 								current.map((item) =>
 									String(item.id) === props.edgeMenu?.edgeId
-										? { ...item, label: next }
+										? {
+												...item,
+												label: next,
+												data: {
+													...item.data,
+													label: next || undefined,
+												},
+											}
 										: item,
 								),
 							);
@@ -62,6 +90,9 @@ export function LabDesignerEdgeMenu(props: Props) {
 									(edge) => String(edge.id) !== props.edgeMenu?.edgeId,
 								),
 							);
+							if (props.selectedEdgeId === props.edgeMenu?.edgeId) {
+								props.setSelectedEdgeId("");
+							}
 							props.closeMenus();
 						}}
 					>
