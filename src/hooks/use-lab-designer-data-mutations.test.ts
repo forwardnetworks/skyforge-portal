@@ -45,7 +45,7 @@ describe("designer sidecar helpers", () => {
 		expect(payload.groups).toEqual([{ id: "g2", label: "Group", nodeIds: ["r1"] }]);
 		expect(payload.labName).toBe("new-lab");
 		expect(payload.defaultKind).toBe("vr-n9kv");
-		expect(payload.version).toBe(1);
+		expect(payload.version).toBe(2);
 		expect(Array.isArray(payload.nodes)).toBe(true);
 		expect(Array.isArray(payload.edges)).toBe(true);
 	});

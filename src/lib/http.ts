@@ -54,18 +54,11 @@ function shouldRedirectOnUnauthorized(
 ): boolean {
 	if (authRedirect === "never") return false;
 	if (authRedirect === "always") return true;
-	const normalizedPath = String(path).trim().toLowerCase();
-	if (
-		normalizedPath === "/api/auth/session" ||
-		normalizedPath === "/api/auth/login"
-	) {
-		return false;
-	}
-	if (typeof window === "undefined") return false;
-	// Avoid recursive login redirects while already on a login route.
-	if (window.location.pathname.startsWith("/login")) return false;
-	if (method === "GET") return true;
-	return isProtectedPath(window.location.pathname);
+	// In auto mode, never redirect implicitly. This keeps landing/login behavior
+	// user-driven and avoids automatic OIDC jumps on first page load.
+	void path;
+	void method;
+	return false;
 }
 
 export function extractErrorMessage(bodyText: string): string {

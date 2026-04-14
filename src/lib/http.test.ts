@@ -32,15 +32,13 @@ describe("apiFetch unauthorized handling", () => {
 		});
 	});
 
-	it("logs out before redirecting on unauthorized responses", async () => {
+	it("does not redirect in auto mode on unauthorized responses", async () => {
 		const fetchMock = vi
 			.fn<typeof fetch>()
-			.mockResolvedValueOnce(new Response("expired", { status: 401 }))
-			.mockResolvedValueOnce(new Response("", { status: 200 }));
+			.mockResolvedValueOnce(new Response("expired", { status: 401 }));
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(apiFetch("/api/tooling/catalog")).rejects.toBeInstanceOf(ApiError);
-		await Promise.resolve();
 		await Promise.resolve();
 
 		expect(fetchMock).toHaveBeenNthCalledWith(
@@ -51,6 +49,23 @@ describe("apiFetch unauthorized handling", () => {
 				headers: { "Content-Type": "application/json" },
 			}),
 		);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(window.location.replace).not.toHaveBeenCalled();
+	});
+
+	it("redirects when authRedirect is explicitly always", async () => {
+		const fetchMock = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(new Response("expired", { status: 401 }))
+			.mockResolvedValueOnce(new Response("", { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(
+			apiFetch("/api/tooling/catalog", { authRedirect: "always" }),
+		).rejects.toBeInstanceOf(ApiError);
+		await Promise.resolve();
+		await Promise.resolve();
+
 		expect(fetchMock).toHaveBeenNthCalledWith(
 			2,
 			"/api/auth/logout",

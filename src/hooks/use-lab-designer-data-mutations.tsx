@@ -1,4 +1,8 @@
-import type { SavedConfigRef } from "@/components/lab-designer-types";
+import type {
+	ImportedNodeMetadata,
+	SavedConfigRef,
+	StartupConfigData,
+} from "@/components/lab-designer-types";
 import { resolveTopologyImageTags } from "@/hooks/lab-designer-utils";
 import {
 	createKneDeploymentFromTemplate,
@@ -10,6 +14,7 @@ import {
 	validateKneTopologyYAML,
 } from "@/lib/api-client";
 import { kneYamlToDesign } from "@/lib/kne-yaml";
+import { normalizeStartupConfig } from "@/lib/lab-designer-startup-config";
 import { queryKeys } from "@/lib/query-keys";
 import { useMutation } from "@tanstack/react-query";
 import { useRef } from "react";
@@ -47,11 +52,13 @@ type DesignerSidecarState = {
 		x: number;
 		y: number;
 		mgmtIpv4?: string;
-		startupConfig?: string;
+		runtime?: string;
+		startupConfig?: StartupConfigData;
 		env?: Record<string, string>;
 		interfaces?: unknown;
 		notes?: string;
 		status?: string;
+		importMeta?: ImportedNodeMetadata;
 	}>;
 	edges: Array<{
 		id: string;
@@ -100,7 +107,7 @@ export function buildDesignerSidecarStateForSave(args: {
 }): Record<string, unknown> {
 	return {
 		...args.preserved,
-		version: 1,
+		version: 2,
 		labName: args.labName,
 		defaultKind: String(args.defaultKind ?? "").trim() || undefined,
 		viewport: args.viewport,
@@ -183,13 +190,14 @@ export function useLabDesignerDataMutations(args: {
 				image: String(node.data?.image ?? ""),
 				x: Number(node.position?.x ?? 0),
 				y: Number(node.position?.y ?? 0),
+				runtime: String(node.data?.runtime ?? "").trim() || undefined,
 				mgmtIpv4: String(node.data?.mgmtIpv4 ?? "").trim() || undefined,
-				startupConfig:
-					String(node.data?.startupConfig ?? "").trim() || undefined,
+				startupConfig: normalizeStartupConfig(node.data?.startupConfig),
 				env: node.data?.env,
 				interfaces: node.data?.interfaces,
 				notes: String(node.data?.notes ?? "").trim() || undefined,
 				status: String(node.data?.status ?? "").trim() || undefined,
+				importMeta: node.data?.importMeta,
 			})),
 			edges: opts.edges.map((edge) => ({
 				id: String(edge.id),
@@ -261,10 +269,18 @@ export function useLabDesignerDataMutations(args: {
 								typeof saved.mgmtIpv4 === "string"
 									? saved.mgmtIpv4
 									: node.data?.mgmtIpv4,
+							runtime:
+								typeof saved.runtime === "string"
+									? saved.runtime
+									: node.data?.runtime,
 							startupConfig:
-								typeof saved.startupConfig === "string"
-									? saved.startupConfig
-									: node.data?.startupConfig,
+								normalizeStartupConfig(saved.startupConfig) ??
+								node.data?.startupConfig,
+							importMeta:
+								saved.importMeta &&
+								typeof saved.importMeta === "object"
+									? (saved.importMeta as ImportedNodeMetadata)
+									: node.data?.importMeta,
 						},
 					};
 				}),
@@ -419,12 +435,14 @@ export function useLabDesignerDataMutations(args: {
 					label: node.label ?? node.id,
 					kind: node.kind ?? "",
 					image: node.image ?? "",
+					runtime: node.runtime,
 					mgmtIpv4: node.mgmtIpv4,
 					startupConfig: node.startupConfig,
 					env: node.env,
 					interfaces: node.interfaces,
 					notes: node.notes,
 					status: node.status,
+					importMeta: node.importMeta,
 				},
 				type: "designerNode",
 			})),
@@ -452,6 +470,11 @@ export function useLabDesignerDataMutations(args: {
 		opts.setYamlMode("generated");
 		opts.setCustomYaml("");
 		opts.setImportOpen(false);
+	};
+
+	const applyImportedTopology = (yaml: string) => {
+		preservedSidecarRef.current = {};
+		applyImportedDesign(yaml);
 	};
 
 	const validateBeforePersist = async () => {
@@ -671,20 +694,22 @@ export function useLabDesignerDataMutations(args: {
 
 	const importTopologyMutation = useMutation({
 		mutationFn: async (args: {
-			source: "containerlab" | "eve-ng" | "gns3";
+			source?: "containerlab" | "eve-ng" | "gns3";
 			topologyYAML: string;
+			filename?: string;
 		}) => {
 			if (!opts.userId) throw new Error("Select a user");
 			const payload = String(args.topologyYAML ?? "").trim();
-			if (!payload) throw new Error("Paste topology YAML");
+			if (!payload) throw new Error("Select a topology file");
 			return importTopology(opts.userId, {
 				source: args.source,
 				topologyYAML: payload,
+				filename: args.filename,
 			});
 		},
 		onSuccess: (resp) => {
 			setLastImportResult(resp);
-			if (resp.blocking) {
+			if (resp.canImport === false || resp.blocking) {
 				const firstError = resp.issues.find(
 					(issue) => issue.severity === "error",
 				);
@@ -694,11 +719,8 @@ export function useLabDesignerDataMutations(args: {
 				});
 				return;
 			}
-			preservedSidecarRef.current = {};
-			applyImportedDesign(resp.convertedYAML);
-			const warning = resp.issues.find((issue) => issue.severity === "warning");
-			toast.success("Topology imported", {
-				description: warning?.message ?? "Converted to canonical KNE topology.",
+			toast.success("Topology converted", {
+				description: "Review the converted topology, then confirm replace.",
 			});
 		},
 		onError: (e) =>
@@ -712,6 +734,7 @@ export function useLabDesignerDataMutations(args: {
 		createDeployment,
 		saveConfig,
 		importTemplate,
+		applyImportedTopology,
 		importTopology: importTopologyMutation,
 	};
 }

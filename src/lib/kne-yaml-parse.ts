@@ -1,5 +1,6 @@
 import YAML from "yaml";
 
+import { normalizeStartupConfig } from "./lab-designer-startup-config";
 import {
 	normalizeInterfaceList,
 	splitEndpoint,
@@ -44,6 +45,36 @@ export function kneYamlToDesign(yamlContent: string): {
 						]),
 					)
 				: undefined;
+		const config = nodeConfig.config as Record<string, unknown> | undefined;
+		const runtime = String(nodeConfig.runtime ?? "").trim() || undefined;
+		const startupConfig = normalizeStartupConfig(
+			(config?.startupConfig as unknown) ??
+				nodeConfig.startupConfig ??
+				nodeConfig["startup-config"] ??
+				nodeConfig.config_path ??
+				nodeConfig.config_file,
+		);
+		const importMetaAny = nodeConfig.importMeta;
+		const importMeta =
+			importMetaAny && typeof importMetaAny === "object" && !Array.isArray(importMetaAny)
+				? {
+						isPlaceholder: Boolean(
+							(importMetaAny as Record<string, unknown>).isPlaceholder,
+						),
+						sourceType:
+							String(
+								(importMetaAny as Record<string, unknown>).sourceType ?? "",
+							).trim() || undefined,
+						sourceTemplate:
+							String(
+								(importMetaAny as Record<string, unknown>).sourceTemplate ?? "",
+							).trim() || undefined,
+						sourceImage:
+							String(
+								(importMetaAny as Record<string, unknown>).sourceImage ?? "",
+							).trim() || undefined,
+					}
+				: undefined;
 
 		designNodes.push({
 			id: nodeName,
@@ -56,27 +87,25 @@ export function kneYamlToDesign(yamlContent: string): {
 				.join("/")
 				.trim(),
 			image: String(
-				(nodeConfig.config as Record<string, unknown> | undefined)?.image ??
+				config?.image ??
 					nodeConfig.image ??
 					"",
 			).trim(),
+			runtime,
 			mgmtIpv4:
 				String(
 					(nodeConfig.mgmt as Record<string, unknown> | undefined)?.ipv4 ?? "",
 				).trim() || undefined,
-			startupConfig:
-				String(
-					(nodeConfig.config as Record<string, unknown> | undefined)
-						?.startupConfig ??
-						nodeConfig.startupConfig ??
-						"",
-				).trim() || undefined,
+			startupConfig,
 			env: env && Object.keys(env).length ? env : undefined,
 			position: {
 				x: 120 + (idx % layoutCols) * 260,
 				y: 120 + Math.floor(idx / layoutCols) * 180,
 			},
 			interfaces: [],
+			notes: String(nodeConfig.notes ?? "").trim() || undefined,
+			status: String(nodeConfig.status ?? "").trim() || undefined,
+			importMeta,
 		});
 		idx += 1;
 	}

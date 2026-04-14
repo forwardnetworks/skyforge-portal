@@ -114,10 +114,12 @@ export function LabDesignerPalettePanel(props: Props) {
 							</div>
 						) : (
 							<div className="space-y-1">
-								<div className="font-medium text-foreground">No images yet</div>
+								<div className="font-medium text-foreground">
+									No cataloged NOS images yet
+								</div>
 								<div>
-									Add container images to your registry (e.g. GHCR) or adjust
-									registry repo prefixes.
+									Add enabled rows in Registry & NOS Catalog to populate the
+									designer palette.
 								</div>
 							</div>
 						)}

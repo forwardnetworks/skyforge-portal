@@ -7,56 +7,9 @@ import type {
 	SavedConfigRef,
 } from "@/components/lab-designer-types";
 import { hostLabelFromURL } from "@/hooks/lab-designer-utils";
+import { normalizeStartupConfig } from "@/lib/lab-designer-startup-config";
 import { type LabDesign, designToKneYaml } from "@/lib/kne-yaml";
 import { useMemo } from "react";
-
-const BUILTIN_PALETTE_ITEMS = [
-	{
-		id: "builtin:linux",
-		label: "Host · Linux",
-		category: "Hosts",
-		kind: "linux",
-		role: "host",
-		vendor: "Linux",
-		model: "Generic",
-	},
-	{
-		id: "builtin:ceos",
-		label: "Switch · Arista cEOS",
-		category: "Switches",
-		kind: "ceos",
-		role: "switch",
-		vendor: "Arista",
-		model: "cEOS",
-	},
-	{
-		id: "builtin:cisco_iol",
-		label: "Router · Cisco IOL (IOS)",
-		category: "Routers",
-		kind: "cisco_iol",
-		role: "router",
-		vendor: "Cisco",
-		model: "IOL",
-	},
-	{
-		id: "builtin:juniper_vjunos-router",
-		label: "Router · Juniper vJunos Router",
-		category: "Routers",
-		kind: "juniper_vjunos-router",
-		role: "router",
-		vendor: "Juniper",
-		model: "vJunos-router",
-	},
-	{
-		id: "builtin:vsrx",
-		label: "Firewall · Juniper SRX",
-		category: "Firewalls",
-		kind: "vsrx",
-		role: "firewall",
-		vendor: "Juniper",
-		model: "SRX",
-	},
-] as const;
 
 type RegistryCatalogImage = {
 	id?: string;
@@ -85,9 +38,6 @@ export function buildPaletteBaseItems(args: {
 		...entry,
 		repo: normalizeRepo(entry.repository),
 	}));
-	const catalogRepos = new Set(
-		catalogRows.map((entry) => entry.repo).filter(Boolean),
-	);
 	const fromCatalog = catalogRows
 		.filter((entry) => Boolean(entry?.enabled) && Boolean(entry.repo))
 		.map((entry) => {
@@ -127,19 +77,7 @@ export function buildPaletteBaseItems(args: {
 					String(entry.model ?? inferred.model ?? "").trim() || inferred.model,
 			};
 		});
-	const fromRepos = (args.registryRepos ?? [])
-		.map((repo) => normalizeRepo(repo))
-		.filter((repo) => Boolean(repo) && !catalogRepos.has(repo))
-		.map((repo) => inferPaletteItemFromRepo(repo));
-	if (fromCatalog.length > 0 || fromRepos.length > 0) {
-		return [...fromCatalog, ...fromRepos];
-	}
-	return BUILTIN_PALETTE_ITEMS.map((item) => ({
-		...item,
-		image: "",
-		repo: undefined,
-		defaultTag: "latest",
-	}));
+	return fromCatalog;
 }
 
 export function useLabDesignerDerived(opts: {
@@ -180,13 +118,14 @@ export function useLabDesignerDerived(opts: {
 				label: String(n.data?.label ?? n.id),
 				kind: String((n.data as any)?.kind ?? ""),
 				image: String((n.data as any)?.image ?? ""),
+				runtime: String((n.data as any)?.runtime ?? "").trim() || undefined,
 				mgmtIpv4: String((n.data as any)?.mgmtIpv4 ?? "").trim() || undefined,
-				startupConfig:
-					String((n.data as any)?.startupConfig ?? "").trim() || undefined,
+				startupConfig: normalizeStartupConfig((n.data as any)?.startupConfig),
 				env: (n.data as any)?.env,
 				interfaces: (n.data as any)?.interfaces,
 				notes: String((n.data as any)?.notes ?? "").trim() || undefined,
 				status: String((n.data as any)?.status ?? "").trim() || undefined,
+				importMeta: (n.data as any)?.importMeta,
 				position: { x: n.position.x, y: n.position.y },
 			})),
 			links: opts.edges.map((e) => ({

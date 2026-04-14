@@ -50,7 +50,7 @@ export type ValidateKneTopologyYAMLResponse = {
 export type ImportTopologySource = "containerlab" | "eve-ng" | "gns3";
 
 export type ImportTopologyRequest = {
-	source: ImportTopologySource;
+	source?: ImportTopologySource;
 	topologyYAML: string;
 	filename?: string;
 };
@@ -73,11 +73,20 @@ export type ImportTopologyImageMapping = {
 export type ImportTopologyResponse = {
 	userId?: string;
 	source: ImportTopologySource;
+	detectedSource?: ImportTopologySource;
 	convertedYAML: string;
 	issues: ImportTopologyIssue[];
 	imageMappings: ImportTopologyImageMapping[];
 	unsupportedFeatures?: string[];
 	blocking: boolean;
+	canImport?: boolean;
+	stats?: {
+		nodes: number;
+		links: number;
+		placeholderNodes: number;
+		warnings: number;
+		errors: number;
+	};
 };
 
 export async function validateKneTopologyYAML(

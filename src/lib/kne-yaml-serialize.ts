@@ -1,5 +1,6 @@
 import YAML from "yaml";
 
+import { startupConfigPath } from "./lab-designer-startup-config";
 import {
 	nextInterfaceName,
 	sanitizeKneNodeName,
@@ -75,18 +76,28 @@ export function designToKneYaml(design: LabDesign): {
 		const { vendor, model } = parseNodeKind(rawKind);
 
 		const env = node.env && Object.keys(node.env).length ? node.env : undefined;
+		const runtime = String(node.runtime ?? "").trim();
+		const startupPath = startupConfigPath(node.startupConfig);
 		nodes[nodeName] = {
 			vendor,
 			model,
-			runtime: "containerlab",
 			config: {
 				...(node.image ? { image: node.image.trim() } : {}),
-				...(node.startupConfig ? { startupConfig: node.startupConfig.trim() } : {}),
+				...(startupPath ? { startupConfig: startupPath } : {}),
 			},
+			...(runtime && runtime.toLowerCase() !== "containerlab"
+				? { runtime }
+				: {}),
 			...(node.mgmtIpv4
 				? { mgmt: { ipv4: node.mgmtIpv4.trim() } }
 				: {}),
 			...(env ? { environment: env } : {}),
+			...(node.notes ? { notes: node.notes.trim() } : {}),
+			...(node.status ? { status: node.status.trim() } : {}),
+			...(node.importMeta &&
+			Object.values(node.importMeta).some((value) => Boolean(String(value ?? "").trim()))
+				? { importMeta: node.importMeta }
+				: {}),
 		};
 	}
 

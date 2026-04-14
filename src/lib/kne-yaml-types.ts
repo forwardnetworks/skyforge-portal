@@ -8,13 +8,24 @@ export type LabDesignNode = {
 	label?: string;
 	kind?: string;
 	image?: string;
+	runtime?: string;
 	mgmtIpv4?: string;
-	startupConfig?: string;
+	startupConfig?: {
+		mode: "path" | "inline";
+		path?: string;
+		content?: string;
+	};
 	env?: Record<string, string>;
 	interfaces?: LabNodeInterface[];
 	notes?: string;
 	position?: { x: number; y: number };
 	status?: string;
+	importMeta?: {
+		isPlaceholder?: boolean;
+		sourceType?: string;
+		sourceTemplate?: string;
+		sourceImage?: string;
+	};
 };
 
 export type LabDesignLink = {

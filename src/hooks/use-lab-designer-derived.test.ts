@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildPaletteBaseItems } from "./use-lab-designer-derived";
 
 describe("buildPaletteBaseItems", () => {
-	it("merges enabled catalog rows with discovered registry repos", () => {
+	it("returns enabled catalog rows only", () => {
 		const items = buildPaletteBaseItems({
 			registryCatalogImages: [
 				{
@@ -27,18 +27,28 @@ describe("buildPaletteBaseItems", () => {
 			],
 		});
 
-		expect(items.some((item) => item.repo === "ghcr.io/example/kubevirt/juniper_vsrx")).toBe(true);
-		expect(items.some((item) => item.repo === "ghcr.io/example/kubevirt/juniper_vjunos-router")).toBe(true);
-		expect(items.some((item) => item.repo === "ghcr.io/example/kubevirt/vr-n9kv")).toBe(false);
+		expect(
+			items.some(
+				(item) => item.repo === "ghcr.io/example/kubevirt/juniper_vsrx",
+			),
+		).toBe(true);
+		expect(
+			items.some(
+				(item) =>
+					item.repo === "ghcr.io/example/kubevirt/juniper_vjunos-router",
+			),
+		).toBe(false);
+		expect(
+			items.some((item) => item.repo === "ghcr.io/example/kubevirt/vr-n9kv"),
+		).toBe(false);
 	});
 
-	it("falls back to built-in palette items when registry is empty", () => {
+	it("returns an empty palette when no catalog rows are enabled", () => {
 		const items = buildPaletteBaseItems({
 			registryCatalogImages: [],
 			registryRepos: [],
 		});
 
-		expect(items.length).toBeGreaterThan(0);
-		expect(items.some((item) => item.id === "builtin:linux")).toBe(true);
+		expect(items).toEqual([]);
 	});
 });

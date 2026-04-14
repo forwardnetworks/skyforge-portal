@@ -2,6 +2,7 @@ import type {
 	DesignEdge,
 	DesignNode,
 } from "@/components/lab-designer-types";
+import { normalizeStartupConfig } from "@/lib/lab-designer-startup-config";
 import {
 	type LabDesign,
 	designToKneYaml,
@@ -27,13 +28,14 @@ export function useLabDesignerPageModel(opts: {
 				label: String(n.data?.label ?? n.id),
 				kind: String((n.data as any)?.kind ?? ""),
 				image: String((n.data as any)?.image ?? ""),
+				runtime: String((n.data as any)?.runtime ?? "").trim() || undefined,
 				mgmtIpv4: String((n.data as any)?.mgmtIpv4 ?? "").trim() || undefined,
-				startupConfig:
-					String((n.data as any)?.startupConfig ?? "").trim() || undefined,
+				startupConfig: normalizeStartupConfig((n.data as any)?.startupConfig),
 				env: (n.data as any)?.env,
 				interfaces: (n.data as any)?.interfaces,
 				notes: String((n.data as any)?.notes ?? "").trim() || undefined,
 				status: String((n.data as any)?.status ?? "").trim() || undefined,
+				importMeta: (n.data as any)?.importMeta,
 				position: { x: n.position.x, y: n.position.y },
 			})),
 			links: opts.edges.map((e) => ({

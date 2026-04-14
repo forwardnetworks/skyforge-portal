@@ -5,16 +5,31 @@ export type LabNodeInterface = {
 	name: string;
 };
 
+export type StartupConfigData = {
+	mode: "path" | "inline";
+	path?: string;
+	content?: string;
+};
+
+export type ImportedNodeMetadata = {
+	isPlaceholder?: boolean;
+	sourceType?: string;
+	sourceTemplate?: string;
+	sourceImage?: string;
+};
+
 export type DesignNodeData = {
 	label: string;
 	kind: string;
 	image: string;
 	mgmtIpv4?: string;
-	startupConfig?: string;
+	runtime?: string;
+	startupConfig?: StartupConfigData;
 	env?: Record<string, string>;
 	interfaces?: LabNodeInterface[];
 	notes?: string;
 	status?: string;
+	importMeta?: ImportedNodeMetadata;
 };
 
 export type DesignNode = Node<DesignNodeData>;

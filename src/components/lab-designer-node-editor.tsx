@@ -6,11 +6,35 @@ import {
 	parseInterfaces,
 	updateSelectedNode,
 } from "@/components/lab-designer-editor-utils";
+import type { StartupConfigData } from "@/components/lab-designer-types";
 import { RegistryImagePicker } from "@/components/registry-image-picker";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { normalizeStartupConfig } from "@/lib/lab-designer-startup-config";
+
+function nextStartupConfig(
+	current: StartupConfigData | undefined,
+	mode: "path" | "inline",
+): StartupConfigData | undefined {
+	const normalized = normalizeStartupConfig(current);
+	if (mode === "path") {
+		return { mode: "path", path: normalized?.path ?? "" };
+	}
+	return {
+		mode: "inline",
+		path: normalized?.path,
+		content: normalized?.content ?? "",
+	};
+}
 
 function NodeEditorHeader({ page }: LabDesignerNodeEditorProps) {
 	return (
@@ -99,19 +123,72 @@ function NodeImageField({ page }: LabDesignerNodeEditorProps) {
 }
 
 function NodeStartupField({ page }: LabDesignerNodeEditorProps) {
+	const startupConfig = normalizeStartupConfig(page.selectedNode?.data?.startupConfig);
+	const mode = startupConfig?.mode ?? "path";
 	return (
-		<div className="space-y-1">
-			<Label>Startup config</Label>
-			<Input
-				value={String(page.selectedNode?.data?.startupConfig ?? "")}
-				onChange={(e) =>
-					updateSelectedNode(page, (data) => ({
-						...data,
-						startupConfig: e.target.value || undefined,
-					}))
-				}
-				placeholder="configs/r1.cfg"
-			/>
+		<div className="space-y-3">
+			<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-end">
+				<div className="space-y-1">
+					<Label>Startup config mode</Label>
+					<Select
+						value={mode}
+						onValueChange={(value) =>
+							updateSelectedNode(page, (data) => ({
+								...data,
+								startupConfig: nextStartupConfig(
+									data.startupConfig,
+									value as "path" | "inline",
+								),
+							}))
+						}
+					>
+						<SelectTrigger>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="path">Path reference</SelectItem>
+							<SelectItem value="inline">Inline text</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+				<div className="space-y-1">
+					<Label>Startup config path</Label>
+					<Input
+						value={String(startupConfig?.path ?? "")}
+						onChange={(e) =>
+							updateSelectedNode(page, (data) => ({
+								...data,
+								startupConfig: normalizeStartupConfig({
+									...(data.startupConfig ?? { mode }),
+									mode,
+									path: e.target.value,
+								}),
+							}))
+						}
+						placeholder="configs/r1.cfg"
+					/>
+				</div>
+			</div>
+			{mode === "inline" ? (
+				<div className="space-y-1">
+					<Label>Startup config content</Label>
+					<Textarea
+						value={String(startupConfig?.content ?? "")}
+						onChange={(e) =>
+							updateSelectedNode(page, (data) => ({
+								...data,
+								startupConfig: normalizeStartupConfig({
+									...(data.startupConfig ?? { mode: "inline" }),
+									mode: "inline",
+									content: e.target.value,
+								}),
+							}))
+						}
+						className="min-h-[160px] font-mono text-xs"
+						placeholder="hostname r1"
+					/>
+				</div>
+			) : null}
 		</div>
 	);
 }

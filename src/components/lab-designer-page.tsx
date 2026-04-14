@@ -184,10 +184,13 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 				importTopologyPending={page.importTopology.isPending}
 				lastImportResult={page.lastImportResult}
 				onImport={() => page.importTemplate.mutate()}
+				onApplyImportedTopology={page.applyImportedTopology}
+				canvasHasContent={page.nodes.length > 0 || page.edges.length > 0}
 				onImportTopology={(args) =>
 					page.importTopology.mutate({
 						source: args.source,
 						topologyYAML: args.yaml,
+						filename: args.filename,
 					})
 				}
 			/>
