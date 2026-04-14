@@ -1,7 +1,7 @@
 export function defaultLabDesignerImportDir(
 	source: "user" | "blueprints",
 ): string {
-	return source === "user" ? "kne/designer" : "netlab";
+	return source === "user" ? "kne/designer" : "kne";
 }
 
 export function normalizeLabDesignerImportDir(
@@ -10,18 +10,24 @@ export function normalizeLabDesignerImportDir(
 ): string {
 	const trimmed = String(dir ?? "").trim().replace(/^\/+|\/+$/g, "");
 	if (source === "user") {
-		if (!trimmed || trimmed === "kne") {
+		if (
+			!trimmed ||
+			trimmed === "kne" ||
+			trimmed === "netlab" ||
+			trimmed === "blueprints/netlab"
+		) {
 			return "kne/designer";
 		}
 		return trimmed;
 	}
 	if (
 		!trimmed ||
-		trimmed === "kne" ||
+		trimmed === "netlab" ||
+		trimmed === "kne/designer" ||
 		trimmed === "blueprints/kne" ||
 		trimmed === "blueprints/netlab"
 	) {
-		return "netlab";
+		return "kne";
 	}
 	return trimmed;
 }

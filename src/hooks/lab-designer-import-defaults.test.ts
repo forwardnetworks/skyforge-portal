@@ -5,16 +5,19 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("lab-designer-import-defaults", () => {
-	it("uses netlab for blueprint imports and kne/designer for user imports", () => {
-		expect(defaultLabDesignerImportDir("blueprints")).toBe("netlab");
+	it("uses kne for blueprint imports and kne/designer for user imports", () => {
+		expect(defaultLabDesignerImportDir("blueprints")).toBe("kne");
 		expect(defaultLabDesignerImportDir("user")).toBe("kne/designer");
 	});
 
 	it("normalizes stale blueprint import dirs", () => {
-		expect(normalizeLabDesignerImportDir("blueprints", "")).toBe("netlab");
-		expect(normalizeLabDesignerImportDir("blueprints", "kne")).toBe("netlab");
+		expect(normalizeLabDesignerImportDir("blueprints", "")).toBe("kne");
+		expect(normalizeLabDesignerImportDir("blueprints", "netlab")).toBe("kne");
+		expect(normalizeLabDesignerImportDir("blueprints", "kne/designer")).toBe(
+			"kne",
+		);
 		expect(normalizeLabDesignerImportDir("blueprints", "blueprints/netlab")).toBe(
-			"netlab",
+			"kne",
 		);
 	});
 

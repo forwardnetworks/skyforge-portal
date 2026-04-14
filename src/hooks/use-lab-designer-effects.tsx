@@ -1,5 +1,5 @@
 import type { LabDesignerSearch } from "@/components/lab-designer-types";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
 	defaultLabDesignerImportDir,
@@ -15,9 +15,16 @@ export function useLabDesignerImportPrefsEffect(props: {
 	setImportDir: (value: string) => void;
 	userRepoSource: "user";
 }) {
+	const hydratedKeyRef = useRef<string>("");
+
 	useEffect(() => {
-		if (!props.importOpen || !props.userId) return;
+		if (!props.importOpen || !props.userId) {
+			hydratedKeyRef.current = "";
+			return;
+		}
 		const key = `skyforge.labDesigner.importPrefs.${props.userId}`;
+		if (hydratedKeyRef.current === key) return;
+		hydratedKeyRef.current = key;
 		try {
 			const raw = window.localStorage.getItem(key);
 			if (!raw) {
@@ -43,7 +50,6 @@ export function useLabDesignerImportPrefsEffect(props: {
 		}
 	}, [
 		props.importOpen,
-		props.importSource,
 		props.setImportDir,
 		props.setImportSource,
 		props.userId,
