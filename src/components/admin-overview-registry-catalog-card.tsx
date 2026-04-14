@@ -15,7 +15,8 @@ export function AdminOverviewRegistryCatalogCard(
 				<CardTitle>Registry & NOS Catalog</CardTitle>
 				<CardDescription>
 					Define the shared registry endpoint, credentials, and curated NOS images
-					used by Designer and containerlab import.
+					used by Designer and containerlab import. For GHCR, use your GitHub
+					username and a PAT in the password field.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -39,23 +40,28 @@ export function AdminOverviewRegistryCatalogCard(
 					<div className="space-y-1">
 						<Label>Username</Label>
 						<Input
+							placeholder="captainpacket"
 							value={props.registryUsernameDraft}
 							onChange={(e) => props.onRegistryUsernameChange(e.target.value)}
 						/>
 					</div>
 					<div className="space-y-1">
-						<Label>Password</Label>
+						<Label>Password or PAT</Label>
 						<Input
 							type="password"
 							placeholder={
 								props.adminRegistryCatalog?.hasPassword
-									? "Stored (leave blank to keep)"
-									: "Optional"
+									? "Stored PAT or password (leave blank to keep)"
+									: "Optional PAT or password"
 							}
 							value={props.registryPasswordDraft}
 							onChange={(e) => props.onRegistryPasswordChange(e.target.value)}
 						/>
 					</div>
+				</div>
+				<div className="text-xs text-muted-foreground">
+					GHCR authentication uses your GitHub username plus a Personal Access
+					Token. Account password auth is not recommended.
 				</div>
 
 				<div className="flex flex-wrap items-center gap-4 rounded-md border p-3">

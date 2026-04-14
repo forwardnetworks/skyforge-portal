@@ -8,6 +8,7 @@ import type { LabDesignerSearch } from "@/components/lab-designer-types";
 import { LabDesignerWorkspace } from "@/components/lab-designer-workspace";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLabDesignerPage } from "@/hooks/use-lab-designer-page";
+import { defaultLabDesignerImportDir } from "@/hooks/lab-designer-import-defaults";
 
 function validationTone(page: ReturnType<typeof useLabDesignerPage>) {
 	if (page.validateTopology.isPending) {
@@ -167,7 +168,7 @@ export function LabDesignerPage({ search }: { search: LabDesignerSearch }) {
 				onImportSourceChange={(value) => {
 					page.setImportSource(value);
 					page.setImportDir(
-						value === page.USER_REPO_SOURCE ? "kne/designer" : "kne",
+						defaultLabDesignerImportDir(value),
 					);
 					page.setImportFile("");
 				}}

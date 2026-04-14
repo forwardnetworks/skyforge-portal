@@ -1,6 +1,10 @@
 import type { LabDesignerSearch } from "@/components/lab-designer-types";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import {
+	defaultLabDesignerImportDir,
+	normalizeLabDesignerImportDir,
+} from "./lab-designer-import-defaults";
 
 export function useLabDesignerImportPrefsEffect(props: {
 	importOpen: boolean;
@@ -16,7 +20,10 @@ export function useLabDesignerImportPrefsEffect(props: {
 		const key = `skyforge.labDesigner.importPrefs.${props.userId}`;
 		try {
 			const raw = window.localStorage.getItem(key);
-			if (!raw) return;
+			if (!raw) {
+				props.setImportDir(defaultLabDesignerImportDir(props.importSource));
+				return;
+			}
 			const parsed = JSON.parse(raw) as any;
 			if (parsed?.source === "user") {
 				props.setImportSource(props.userRepoSource);
@@ -26,12 +33,17 @@ export function useLabDesignerImportPrefsEffect(props: {
 			) {
 				props.setImportSource(parsed.source);
 			}
-			if (typeof parsed?.dir === "string") props.setImportDir(parsed.dir);
+			const nextSource =
+				parsed?.source === "user" ? props.userRepoSource : "blueprints";
+			props.setImportDir(
+				normalizeLabDesignerImportDir(nextSource, parsed?.dir),
+			);
 		} catch {
-			// ignore
+			props.setImportDir(defaultLabDesignerImportDir(props.importSource));
 		}
 	}, [
 		props.importOpen,
+		props.importSource,
 		props.setImportDir,
 		props.setImportSource,
 		props.userId,
@@ -41,10 +53,14 @@ export function useLabDesignerImportPrefsEffect(props: {
 	useEffect(() => {
 		if (!props.userId) return;
 		const key = `skyforge.labDesigner.importPrefs.${props.userId}`;
+		const normalizedDir = normalizeLabDesignerImportDir(
+			props.importSource,
+			props.importDir,
+		);
 		try {
 			window.localStorage.setItem(
 				key,
-				JSON.stringify({ source: props.importSource, dir: props.importDir }),
+				JSON.stringify({ source: props.importSource, dir: normalizedDir }),
 			);
 		} catch {
 			// ignore

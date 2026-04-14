@@ -93,7 +93,7 @@ function makePage(overrides: Record<string, unknown> = {}) {
 		setImportOpen: vi.fn(),
 		importSource: "blueprints",
 		setImportSource: vi.fn(),
-		importDir: "kne",
+		importDir: "netlab",
 		setImportDir: vi.fn(),
 		importFile: "",
 		setImportFile: vi.fn(),

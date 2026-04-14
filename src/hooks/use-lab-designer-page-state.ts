@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { ReactFlowInstance } from "@xyflow/react";
 import { useEdgesState, useNodesState } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { defaultLabDesignerImportDir } from "./lab-designer-import-defaults";
 
 export const USER_REPO_SOURCE = "user" as const;
 export const LAB_DESIGNER_STORAGE_KEY = "skyforge.labDesigner.v1";
@@ -85,7 +86,9 @@ export function useLabDesignerPageState() {
 	const [importSource, setImportSource] = useState<"user" | "blueprints">(
 		"blueprints",
 	);
-	const [importDir, setImportDir] = useState("kne");
+	const [importDir, setImportDir] = useState(
+		defaultLabDesignerImportDir("blueprints"),
+	);
 	const [importFile, setImportFile] = useState("");
 	const [quickstartOpen, setQuickstartOpen] = useState(false);
 	const [qsName, setQsName] = useState("clos");
@@ -104,14 +107,7 @@ export function useLabDesignerPageState() {
 	const [canvasMenu, setCanvasMenu] = useState<CanvasMenuState | null>(null);
 	const [showWarnings, setShowWarnings] = useState(false);
 
-	const [nodes, setNodes, onNodesChange] = useNodesState<DesignNode>([
-		{
-			id: "r1",
-			position: { x: 80, y: 220 },
-			data: { label: "r1", kind: "linux", image: "", interfaces: [] },
-			type: "designerNode",
-		},
-	]);
+	const [nodes, setNodes, onNodesChange] = useNodesState<DesignNode>([]);
 	const [edges, setEdges, onEdgesChange] = useEdgesState<DesignEdge>([]);
 
 	const markWarningsVisible = useCallback(() => {
