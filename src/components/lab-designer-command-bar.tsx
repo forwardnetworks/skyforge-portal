@@ -65,14 +65,7 @@ export function LabDesignerCommandBar({
 					disabled={!page.userId}
 				>
 					<FolderOpen className="mr-2 h-4 w-4" />
-					Import
-				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => page.loadDraft(page.storageKey)}
-				>
-					Load draft
+					Load / Import
 				</Button>
 				<Button
 					variant="outline"

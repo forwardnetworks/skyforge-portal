@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { resolveRepoTag } from "@/hooks/lab-designer-utils";
+import {
+	imageDisplayName,
+	resolveRepoTag,
+} from "@/hooks/lab-designer-utils";
 import { listRegistryRepositories, listRegistryTags } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -51,6 +54,11 @@ export function RegistryImagePicker(props: {
 					onChange={(e) => props.onChange(e.target.value)}
 					placeholder="repo or repo:tag"
 				/>
+				{props.value ? (
+					<div className="text-xs text-muted-foreground">
+						Display name: {imageDisplayName(props.value)}
+					</div>
+				) : null}
 				<div className="text-xs text-muted-foreground">
 					Registry-backed picker. Requires server env `SKYFORGE_REGISTRY_URL`.
 				</div>
@@ -97,7 +105,10 @@ export function RegistryImagePicker(props: {
 										}`}
 										onClick={() => setRepo(r)}
 									>
-										{r}
+										<div>{imageDisplayName(r)}</div>
+										<div className="text-[11px] text-muted-foreground">
+											{r}
+										</div>
 									</button>
 								))}
 							</div>

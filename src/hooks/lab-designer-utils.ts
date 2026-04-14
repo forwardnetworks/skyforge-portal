@@ -69,6 +69,16 @@ export function imageRefParts(rawImage: string): {
 	return { repo: image, tag: "", digest: "" };
 }
 
+export function imageDisplayName(rawImage: string): string {
+	const parts = imageRefParts(rawImage);
+	const repo = String(parts.repo ?? "").trim();
+	if (!repo) return "";
+	const leaf = repo.split("/").filter(Boolean).pop() ?? repo;
+	if (parts.tag) return `${leaf}:${parts.tag}`;
+	if (parts.digest) return `${leaf}@${parts.digest}`;
+	return leaf;
+}
+
 export function imageIsRepoOnly(rawImage: string): boolean {
 	const parts = imageRefParts(rawImage);
 	return Boolean(parts.repo) && !parts.tag && !parts.digest;

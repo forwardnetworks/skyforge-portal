@@ -1,5 +1,6 @@
 import {
 	hostLabelFromURL,
+	imageDisplayName,
 	imageIsRepoOnly,
 	imageRefParts,
 	resolveRepoTag,
@@ -30,6 +31,16 @@ describe("lab-designer-utils", () => {
 			tag: "",
 			digest: "sha256:abc",
 		});
+	});
+
+	it("formats short image display names", () => {
+		expect(imageDisplayName("ghcr.io/forwardnetworks/kne/ceos:4.34.2F")).toBe(
+			"ceos:4.34.2F",
+		);
+		expect(imageDisplayName("ghcr.io/forwardnetworks/kne/ceos")).toBe("ceos");
+		expect(imageDisplayName("ghcr.io/example/repo@sha256:abc")).toBe(
+			"repo@sha256:abc",
+		);
 	});
 
 	it("detects repo-only image references", () => {

@@ -21,6 +21,7 @@ import type {
 	ImportTopologyResponse,
 	ImportTopologySource,
 } from "@/lib/api-client";
+import { readImportedTopologyUpload } from "@/lib/lab-designer-import-archive";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 
 type Props = {
@@ -46,6 +47,7 @@ type Props = {
 		source?: ImportTopologySource;
 		yaml: string;
 		filename?: string;
+		sidecarFiles?: Record<string, string>;
 	}) => void;
 	onApplyImportedTopology: (yaml: string) => void;
 	canvasHasContent: boolean;
@@ -54,9 +56,13 @@ type Props = {
 export function LabDesignerImportDialog(props: Props) {
 	const [importYAML, setImportYAML] = useState("");
 	const [importFilename, setImportFilename] = useState("");
+	const [importDisplayName, setImportDisplayName] = useState("");
 	const [importTopologySource, setImportTopologySource] = useState<
 		"auto" | ImportTopologySource
 	>("auto");
+	const [importSidecarFiles, setImportSidecarFiles] = useState<
+		Record<string, string> | undefined
+	>(undefined);
 	const issues = props.lastImportResult?.issues ?? [];
 	const unsupported = props.lastImportResult?.unsupportedFeatures ?? [];
 	const followUpHints = deriveImportFollowUpHints(issues);
@@ -82,16 +88,19 @@ export function LabDesignerImportDialog(props: Props) {
 					? "EVE-NG"
 					: "GNS3";
 	const uploadSummary = useMemo(() => {
+		if (importDisplayName) return importDisplayName;
 		if (!importFilename && !importYAML.trim()) return "No topology file selected";
 		const lines = importYAML ? importYAML.split(/\r?\n/).length : 0;
 		return `${importFilename || "Pasted topology"} • ${lines} lines`;
-	}, [importFilename, importYAML]);
+	}, [importDisplayName, importFilename, importYAML]);
 
 	useEffect(() => {
 		if (!props.open) {
 			setImportYAML("");
 			setImportFilename("");
+			setImportDisplayName("");
 			setImportTopologySource("auto");
+			setImportSidecarFiles(undefined);
 		}
 	}, [props.open]);
 
@@ -101,24 +110,28 @@ export function LabDesignerImportDialog(props: Props) {
 		const file = event.target.files?.[0];
 		if (!file) {
 			setImportFilename("");
+			setImportDisplayName("");
 			setImportYAML("");
+			setImportSidecarFiles(undefined);
 			return;
 		}
-		const text = await readFileText(file);
-		setImportFilename(file.name);
-		setImportYAML(text);
+		const imported = await readImportedTopologyUpload(file, importTopologySource);
+		setImportFilename(imported.filename);
+		setImportDisplayName(imported.displayName);
+		setImportYAML(imported.topologyYAML);
+		setImportSidecarFiles(imported.sidecarFiles);
 	};
 
 	return (
 		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent className="border-border/70 bg-card/95 sm:max-w-4xl">
-				<DialogHeader>
-					<DialogTitle>Import into designer</DialogTitle>
-					<DialogDescription>
-						Load an existing saved template or import an external topology and
-						review the KNE conversion before applying it to the canvas.
-					</DialogDescription>
-				</DialogHeader>
+				<DialogContent className="border-border/70 bg-card/95 sm:max-w-4xl">
+					<DialogHeader>
+						<DialogTitle>Load / Import into designer</DialogTitle>
+						<DialogDescription>
+							Load a saved template or import an external topology, then review
+							the KNE conversion before applying it to the canvas.
+						</DialogDescription>
+					</DialogHeader>
 				<div className="space-y-5">
 					<div className="space-y-4 rounded-2xl border border-border bg-muted/20 p-4">
 						<div>
@@ -217,7 +230,7 @@ export function LabDesignerImportDialog(props: Props) {
 								<Label>Topology file</Label>
 							<Input
 								type="file"
-								accept=".yaml,.yml,.xml,.json,.txt"
+								accept=".yaml,.yml,.xml,.json,.txt,.zip"
 								data-testid="external-topology-file"
 								onChange={handleFileChange}
 							/>
@@ -261,6 +274,7 @@ export function LabDesignerImportDialog(props: Props) {
 												: importTopologySource,
 										yaml: importYAML,
 										filename: importFilename || undefined,
+										sidecarFiles: importSidecarFiles,
 									})
 								}
 								disabled={props.importTopologyPending || !importYAML.trim()}
@@ -367,19 +381,6 @@ export function LabDesignerImportDialog(props: Props) {
 			</DialogContent>
 		</Dialog>
 	);
-}
-
-async function readFileText(file: File): Promise<string> {
-	if (typeof file.text === "function") {
-		return file.text();
-	}
-	return new Promise<string>((resolve, reject) => {
-		const reader = new FileReader();
-		reader.onload = () => resolve(String(reader.result ?? ""));
-		reader.onerror = () =>
-			reject(reader.error ?? new Error("Failed to read file"));
-		reader.readAsText(file);
-	});
 }
 
 function deriveImportFollowUpHints(
