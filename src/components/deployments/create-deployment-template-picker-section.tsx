@@ -1,8 +1,10 @@
-import { Loader2 } from "lucide-react";
+import * as React from "react";
+import { Loader2, Upload } from "lucide-react";
 import {
 	type CreateDeploymentPageState,
 	formatResourceEstimate,
 } from "../../hooks/use-create-deployment-page";
+import type { NetlabValidationDiagnostic } from "../../lib/api-client-deployments-actions-estimates";
 import { Button } from "../ui/button";
 import {
 	FormControl,
@@ -24,6 +26,7 @@ import {
 type Props = { page: CreateDeploymentPageState };
 
 export function CreateDeploymentTemplatePickerSection({ page }: Props) {
+	const uploadInputRef = React.useRef<HTMLInputElement | null>(null);
 	const {
 		form,
 		watchKind,
@@ -37,9 +40,13 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 		selectedTemplateEstimate,
 		templateEstimatePending,
 		validateTemplate,
+		uploadNetlabTemplate,
+		effectiveSource,
+		netlabValidationResult,
 		awsSsoStatusQ,
 		awsTerraformReadinessQ,
 	} = page;
+	const showTemplateUpload = watchKind === "netlab" || watchKind === "kne_netlab";
 	const selectedTerraformProvider = String(
 		watchTemplate?.split("/")[0] ||
 			(terraformProviderFilter !== "all" ? terraformProviderFilter : ""),
@@ -117,6 +124,42 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 												"Validate"
 											)}
 										</Button>
+									) : null}
+									{showTemplateUpload ? (
+										<>
+											<input
+												ref={uploadInputRef}
+												type="file"
+												accept=".zip,.yml,.yaml,application/zip"
+												className="hidden"
+												onChange={(event) => {
+													const file = event.target.files?.[0];
+													if (file) {
+														uploadNetlabTemplate.mutate(file);
+													}
+													event.currentTarget.value = "";
+												}}
+											/>
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												disabled={uploadNetlabTemplate.isPending}
+												onClick={() => uploadInputRef.current?.click()}
+											>
+												{uploadNetlabTemplate.isPending ? (
+													<>
+														<Loader2 className="mr-2 h-3 w-3 animate-spin" />
+														Uploading…
+													</>
+												) : (
+													<>
+														<Upload className="mr-2 h-3 w-3" />
+														Upload YAML/ZIP
+													</>
+												)}
+											</Button>
+										</>
 									) : null}
 								</div>
 							)}
@@ -204,6 +247,40 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 								Failed to load templates.
 							</div>
 						)}
+						{showTemplateUpload ? (
+							<div className="text-xs text-muted-foreground">
+								Upload a single `topology.yml`/`topology.yaml` file or a ZIP of the template folder. Skyforge commits it into the user repo, switches the source to `User repo`, and blocks launch until validation passes.
+							</div>
+						) : null}
+						{netlabValidationResult ? (
+							<div className={
+								netlabValidationResult.valid
+									? "rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs space-y-2"
+									: "rounded-md border border-destructive/20 bg-destructive/10 p-3 text-xs space-y-2"
+							}>
+								<div className="font-medium">
+									{netlabValidationResult.valid
+										? netlabValidationResult.summary || "Validation passed"
+										: netlabValidationResult.summary || "Validation failed"}
+								</div>
+								{(netlabValidationResult.diagnostics ?? [])
+									.slice(0, 4)
+									.map((diagnostic: NetlabValidationDiagnostic) => (
+										<div
+											key={`${diagnostic.code}-${diagnostic.message}`}
+											className="space-y-1"
+										>
+											<div>{diagnostic.message}</div>
+											{diagnostic.suggestion ? (
+												<div className="text-muted-foreground">
+													Suggestion: {diagnostic.suggestion}
+												</div>
+											) : null}
+										</div>
+									))}
+							</div>
+						) : null}
+
 						{watchTemplate ? (
 							<div className="rounded-md border p-3 text-xs space-y-1">
 								<div className="font-medium text-foreground">

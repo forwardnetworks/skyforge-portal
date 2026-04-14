@@ -23,8 +23,14 @@ vi.mock("../ui/select", () => ({
 
 function RenderTemplatePicker({
 	status,
+	watchKind = "terraform",
+	effectiveSource = "blueprints",
+	netlabValidationResult = null,
 }: {
 	status: "connected" | "reauth_required" | "missing_account_role";
+	watchKind?: string;
+	effectiveSource?: string;
+	netlabValidationResult?: any;
 }) {
 	const form = useForm({
 		defaultValues: {
@@ -35,7 +41,7 @@ function RenderTemplatePicker({
 
 	const page = {
 		form,
-		watchKind: "terraform",
+		watchKind,
 		watchTemplate: "aws/CloudAWS",
 		templates: ["aws/CloudAWS"],
 		templatesQ: { isLoading: false, isError: false },
@@ -46,6 +52,9 @@ function RenderTemplatePicker({
 		selectedTemplateEstimate: null,
 		templateEstimatePending: false,
 		validateTemplate: { isPending: false, mutate: vi.fn() },
+		uploadNetlabTemplate: { isPending: false, mutate: vi.fn() },
+		effectiveSource,
+		netlabValidationResult,
 		awsTerraformReadinessQ: {
 			data: {
 				configured: true,
@@ -109,5 +118,50 @@ describe("CreateDeploymentTemplatePickerSection", () => {
 			screen.getByText(/blocked until AWS account ID and role name are saved/i),
 		).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /validate/i })).toBeDisabled();
+	});
+
+	it("shows ZIP upload for user netlab templates", () => {
+		render(
+			<RenderTemplatePicker
+				status="connected"
+				watchKind="netlab"
+				effectiveSource="blueprints"
+			/>,
+		);
+
+		expect(
+			screen.getByRole("button", { name: /upload yaml\/zip/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/switches the source to `User repo`/i),
+		).toBeInTheDocument();
+	});
+
+	it("renders netlab validation suggestions", () => {
+		render(
+			<RenderTemplatePicker
+				status="connected"
+				watchKind="netlab"
+				effectiveSource="user"
+				netlabValidationResult={{
+					valid: false,
+					summary: "Validation failed",
+					diagnostics: [
+						{
+							code: "missing-sidecar-file",
+							message: "startup-config configs/r1.cfg: no such file",
+							suggestion: "Check relative startup-config paths.",
+						},
+					],
+				}}
+			/>,
+		);
+
+		expect(
+			screen.getByText(/startup-config configs\/r1\.cfg: no such file/i),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/Check relative startup-config paths\./i),
+		).toBeInTheDocument();
 	});
 });

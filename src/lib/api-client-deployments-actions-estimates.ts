@@ -47,6 +47,47 @@ export type UserScopeRunResponse = {
 	user?: string;
 };
 
+export type NetlabValidationDiagnostic = {
+	severity: string;
+	code: string;
+	message: string;
+	suggestion?: string;
+};
+
+export type NetlabValidationResult = {
+	valid: boolean;
+	infrastructureFailure?: boolean;
+	summary?: string;
+	topologyPath?: string;
+	diagnostics?: NetlabValidationDiagnostic[];
+	rawLogTail?: string;
+};
+
+export type ValidateUserScopeNetlabTemplateSyncResponse = {
+	userId: string;
+	source?: string;
+	repo?: string;
+	dir?: string;
+	template?: string;
+	result: NetlabValidationResult;
+};
+
+export type UploadUserScopeNetlabTemplateArchiveRequest = {
+	filename: string;
+	fileBase64: string;
+	environment?: JSONMap;
+};
+
+export type UploadUserScopeNetlabTemplateArchiveResponse = {
+	userId: string;
+	repo: string;
+	dir: string;
+	template: string;
+	uploadedFiles: number;
+	commitMessage?: string;
+	result: NetlabValidationResult;
+};
+
 export type ValidateUserScopeNetlabTemplateRequest = {
 	source?: string;
 	repo?: string;
@@ -70,6 +111,26 @@ export async function validateUserScopeNetlabTemplate(
 ): Promise<UserScopeRunResponse> {
 	return apiFetch<UserScopeRunResponse>(
 		`/api/users/${encodeURIComponent(userId)}/netlab/validate`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function validateUserScopeNetlabTemplateSync(
+	userId: string,
+	body: ValidateUserScopeNetlabTemplateRequest,
+): Promise<ValidateUserScopeNetlabTemplateSyncResponse> {
+	return apiFetch<ValidateUserScopeNetlabTemplateSyncResponse>(
+		`/api/users/${encodeURIComponent(userId)}/netlab/validate-sync`,
+		{ method: "POST", body: JSON.stringify(body) },
+	);
+}
+
+export async function uploadUserScopeNetlabTemplateArchive(
+	userId: string,
+	body: UploadUserScopeNetlabTemplateArchiveRequest,
+): Promise<UploadUserScopeNetlabTemplateArchiveResponse> {
+	return apiFetch<UploadUserScopeNetlabTemplateArchiveResponse>(
+		`/api/users/${encodeURIComponent(userId)}/netlab/templates/upload`,
 		{ method: "POST", body: JSON.stringify(body) },
 	);
 }

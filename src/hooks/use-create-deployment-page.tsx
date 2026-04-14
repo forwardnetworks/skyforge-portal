@@ -81,6 +81,36 @@ export function useCreateDeploymentPage(userId?: string) {
 		watchUserScopeId,
 	});
 
+	const { mutation, validateTemplate, uploadNetlabTemplate } =
+		useCreateDeploymentMutations({
+			navigate,
+			queryClient,
+			form,
+			watchUserScopeId,
+			watchKind,
+			watchSource,
+			watchTemplate,
+			watchTemplateRepoId,
+			effectiveSource: data.effectiveSource,
+			templatesDir: data.templatesQ.data?.dir,
+			allowNoExpiry: data.allowNoExpiry,
+			managedFamilies: data.managedFamilies,
+			lifetimeAllowedHours: data.lifetimeAllowedHours,
+			variableGroups: data.variableGroups,
+		});
+
+	useEffect(() => {
+		validateTemplate.reset();
+		uploadNetlabTemplate.reset();
+	}, [
+		watchKind,
+		watchSource,
+		watchTemplateRepoId,
+		watchUserScopeId,
+		validateTemplate,
+		uploadNetlabTemplate,
+	]);
+
 	useEffect(() => {
 		const defaults = data.userSettingsQ.data?.defaultEnv ?? [];
 		if (!defaults.length) return;
@@ -93,22 +123,6 @@ export function useCreateDeploymentPage(userId?: string) {
 		});
 	}, [data.userSettingsQ.data?.defaultEnv, form, setValue]);
 
-	const { mutation, validateTemplate } = useCreateDeploymentMutations({
-			navigate,
-			queryClient,
-			form,
-			watchUserScopeId,
-			watchKind,
-			watchTemplate,
-			watchTemplateRepoId,
-			effectiveSource: data.effectiveSource,
-			templatesDir: data.templatesQ.data?.dir,
-			allowNoExpiry: data.allowNoExpiry,
-			managedFamilies: data.managedFamilies,
-			lifetimeAllowedHours: data.lifetimeAllowedHours,
-			variableGroups: data.variableGroups,
-		});
-
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		mutation.mutate(values);
 	}
@@ -119,6 +133,7 @@ export function useCreateDeploymentPage(userId?: string) {
 		onSubmit,
 		watchUserScopeId,
 		watchKind,
+		watchSource,
 		watchTemplate,
 		watchName,
 		watchEnv,
@@ -159,6 +174,11 @@ export function useCreateDeploymentPage(userId?: string) {
 		templateEstimateQ: data.templateEstimateQ,
 		mutation,
 		validateTemplate,
+		uploadNetlabTemplate,
+		netlabValidationResult:
+			(uploadNetlabTemplate.data as any)?.result ??
+			(validateTemplate.data as any)?.result ??
+			null,
 		variableGroups: data.variableGroups,
 		fields,
 		netlabDeviceOptions: data.netlabDeviceOptions,

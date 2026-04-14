@@ -9,6 +9,7 @@ export type CreateDeploymentMutationsArgs = {
 	form: UseFormReturn<z.infer<typeof formSchema>>;
 	watchUserScopeId: string;
 	watchKind: z.infer<typeof formSchema>["kind"];
+	watchSource: z.infer<typeof formSchema>["source"];
 	watchTemplate: string;
 	watchTemplateRepoId: string | undefined;
 	effectiveSource: z.infer<typeof formSchema>["source"];
