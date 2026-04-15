@@ -13,6 +13,7 @@ import {
 	saveKneTopologyYAML,
 	validateKneTopologyYAML,
 } from "@/lib/api-client";
+import { invalidateDashboardQueries } from "@/lib/dashboard-query-sync";
 import { kneYamlToDesign } from "@/lib/kne-yaml";
 import { normalizeStartupConfig } from "@/lib/lab-designer-startup-config";
 import { queryKeys } from "@/lib/query-keys";
@@ -596,9 +597,7 @@ export function useLabDesignerDataMutations(args: {
 			toast.success("Deployment created", {
 				description: resp.deployment?.name ?? opts.labName,
 			});
-			await opts.queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(opts.queryClient);
 			const id = resp.deployment?.id;
 			if (opts.openDeploymentOnCreate && id) {
 				window.open(
@@ -697,6 +696,7 @@ export function useLabDesignerDataMutations(args: {
 			source?: "containerlab" | "eve-ng" | "gns3";
 			topologyYAML: string;
 			filename?: string;
+			sidecarFiles?: Record<string, string>;
 		}) => {
 			if (!opts.userId) throw new Error("Select a user");
 			const payload = String(args.topologyYAML ?? "").trim();
@@ -705,6 +705,7 @@ export function useLabDesignerDataMutations(args: {
 				source: args.source,
 				topologyYAML: payload,
 				filename: args.filename,
+				sidecarFiles: args.sidecarFiles,
 			});
 		},
 		onSuccess: (resp) => {

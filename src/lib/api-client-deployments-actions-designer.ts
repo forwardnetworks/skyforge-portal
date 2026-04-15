@@ -53,6 +53,7 @@ export type ImportTopologyRequest = {
 	source?: ImportTopologySource;
 	topologyYAML: string;
 	filename?: string;
+	sidecarFiles?: Record<string, string>;
 };
 
 export type ImportTopologyIssue = {

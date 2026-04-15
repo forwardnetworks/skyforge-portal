@@ -11,7 +11,7 @@ import {
 	type SkyforgeUserScope,
 	getAwsTerraformReadiness,
 	getAwsSsoStatus,
-	getDashboardSnapshot,
+	getDashboardSummary,
 	getDeploymentLifetimePolicy,
 	getSession,
 	getUserAWSSSOCredentials,
@@ -55,14 +55,18 @@ export function useCreateDeploymentSettings(args: {
 	const scopeId = watchUserScopeId ?? "";
 
 	const dash = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: getDashboardSnapshot,
+		queryKey: queryKeys.dashboardSummary(),
+		queryFn: getDashboardSummary,
 		initialData: () =>
+			queryClient.getQueryData<DashboardSnapshot>(
+				queryKeys.dashboardSummary(),
+			) ??
 			queryClient.getQueryData<DashboardSnapshot>(
 				queryKeys.dashboardSnapshot(),
 			) ?? null,
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 	});
 	const userSettingsQ = useQuery({
 		queryKey: queryKeys.userSettings(),

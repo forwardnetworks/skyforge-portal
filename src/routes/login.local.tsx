@@ -11,7 +11,6 @@ import {
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import { sanitizeNextPath } from "../lib/skyforge-config";
-import { useStatusSummaryEvents } from "../lib/status-events";
 
 const localLoginSearchSchema = z.object({
 	next: z.string().optional().catch("/dashboard"),
@@ -50,12 +49,11 @@ function LocalLoginPage() {
 	const statusSummary = useQuery({
 		queryKey: queryKeys.statusSummary(),
 		queryFn: getPublicStatusSummary,
-		staleTime: 15_000,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 		retry: false,
 		refetchOnWindowFocus: false,
 	});
-
-	useStatusSummaryEvents(true);
 
 	useEffect(() => {
 		if (session.isLoading) return;

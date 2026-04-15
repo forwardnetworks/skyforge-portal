@@ -6,6 +6,7 @@ import {
 	getDashboardSnapshot,
 } from "@/lib/api-client";
 import { loginWithPopup } from "@/lib/auth-popup";
+import { invalidateDashboardQueries } from "@/lib/dashboard-query-sync";
 import { queryKeys } from "@/lib/query-keys";
 import { type RunLogState, useRunEvents } from "@/lib/run-events";
 import {
@@ -93,9 +94,7 @@ export function useRunDetailPage(args: { runId: string }) {
 		try {
 			await cancelRun(runId, userId);
 			toast.success("Run canceled");
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(queryClient);
 			navigate({
 				to: "/dashboard/deployments",
 				search: { userId } as never,

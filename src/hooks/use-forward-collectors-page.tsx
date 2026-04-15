@@ -33,8 +33,8 @@ export function useForwardCollectorsPage() {
 	const collectorsQ = useQuery({
 		queryKey: collectorsKey,
 		queryFn: listUserForwardCollectorConfigs,
-		refetchInterval: 5000,
-		staleTime: 10_000,
+		refetchInterval: 60_000,
+		staleTime: 60_000,
 		retry: false,
 	});
 
@@ -50,7 +50,7 @@ export function useForwardCollectorsPage() {
 		queryKey: queryKeys.userForwardCollectorConfigLogs(showLogsId),
 		queryFn: async () => getUserForwardCollectorConfigLogs(showLogsId, 300),
 		enabled: !!showLogsId,
-		refetchInterval: showLogsId ? 3000 : false,
+		refetchInterval: showLogsId ? 10_000 : false,
 		retry: false,
 	});
 

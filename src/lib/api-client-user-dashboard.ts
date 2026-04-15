@@ -39,3 +39,7 @@ export async function listUserScopes(): Promise<SkyforgeUserScope[]> {
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
 	return apiFetch<DashboardSnapshot>("/api/dashboard/snapshot");
 }
+
+export async function getDashboardSummary(): Promise<DashboardSnapshot> {
+	return apiFetch<DashboardSnapshot>("/api/dashboard/summary");
+}

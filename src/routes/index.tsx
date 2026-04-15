@@ -12,10 +12,10 @@ import {
 } from "../lib/api-client";
 import { queryKeys } from "../lib/query-keys";
 import type { SkyforgeAuthMode } from "../lib/skyforge-config";
-import { useStatusSummaryEvents } from "../lib/status-events";
 
 const landingSearchSchema = z.object({
 	next: z.string().optional().catch("/dashboard"),
+	reauth: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/")({
@@ -41,12 +41,11 @@ function LandingPage() {
 	const statusSummary = useQuery({
 		queryKey: queryKeys.statusSummary(),
 		queryFn: getPublicStatusSummary,
-		staleTime: 15_000,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 		retry: false,
 		refetchOnWindowFocus: false,
 	});
-
-	useStatusSummaryEvents(!session.data?.authenticated);
 
 	useEffect(() => {
 		if (session.isLoading) return;
@@ -94,6 +93,7 @@ function LandingPage() {
 			breakGlassEnabled={breakGlassEnabled}
 			breakGlassLabel={breakGlassLabel}
 			authModeLabel={authModeLabel}
+			reauthRequired={search.reauth === "1" || search.reauth === "true"}
 		/>
 	);
 }

@@ -13,9 +13,8 @@ import { Input } from "../../../components/ui/input";
 import type { JSONMap } from "../../../lib/api-client";
 import {
 	type DashboardSnapshot,
-	getDashboardSnapshot,
+	getDashboardSummary,
 } from "../../../lib/api-client";
-import { useDashboardEvents } from "../../../lib/dashboard-events";
 import { queryKeys } from "../../../lib/query-keys";
 
 export const Route = createFileRoute("/dashboard/runs/")({
@@ -23,18 +22,21 @@ export const Route = createFileRoute("/dashboard/runs/")({
 });
 
 function RunsIndexPage() {
-	useDashboardEvents(true);
 	const queryClient = useQueryClient();
 
 	const snap = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: getDashboardSnapshot,
+		queryKey: queryKeys.dashboardSummary(),
+		queryFn: getDashboardSummary,
 		initialData: () =>
+			(queryClient.getQueryData(queryKeys.dashboardSummary()) as
+				| DashboardSnapshot
+				| undefined) ??
 			(queryClient.getQueryData(queryKeys.dashboardSnapshot()) as
 				| DashboardSnapshot
 				| undefined) ?? null,
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 	});
 
 	const runs = (snap.data?.runs ?? []) as JSONMap[];

@@ -30,7 +30,6 @@ import {
 	lookupCatalogRouteAccess,
 } from "../lib/catalog-route-access";
 import { queryKeys } from "../lib/query-keys";
-import { useStatusSummaryEvents } from "../lib/status-events";
 import {
 	type ToolCatalogActionEntry,
 	type ToolCatalogContentEntry,
@@ -144,19 +143,19 @@ export function useDashboardPage(): DashboardPageState {
 		return catalogRouteAllowsAccess(route);
 	}, [toolCatalogQ.data?.routes]);
 
-	useStatusSummaryEvents(sessionQ.data?.authenticated === true);
-
 	const overviewQ = useQuery({
 		queryKey: queryKeys.adminPlatformOverview(),
 		queryFn: getAdminPlatformOverview,
-		staleTime: 30_000,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 		retry: false,
 		enabled: canAccessPlatformView,
 	});
 	const statusSummaryQ = useQuery({
 		queryKey: queryKeys.statusSummary(),
 		queryFn: getPublicStatusSummary,
-		staleTime: 15_000,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 		retry: false,
 		enabled: sessionQ.data?.authenticated === true,
 	});

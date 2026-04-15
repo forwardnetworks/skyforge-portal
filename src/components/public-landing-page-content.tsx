@@ -28,6 +28,7 @@ type PublicLandingPageContentProps = {
 	breakGlassEnabled: boolean;
 	breakGlassLabel: string;
 	authModeLabel: string;
+	reauthRequired: boolean;
 };
 
 type WorkflowCard = {
@@ -201,6 +202,22 @@ export function PublicLandingPageContent(
 								</Button>
 							) : null}
 						</div>
+						{props.reauthRequired ? (
+							<div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+								<div className="flex items-start gap-3">
+									<TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+									<div>
+										<div className="font-medium">Session refresh required</div>
+										<div className="mt-1 text-muted-foreground">
+											Your Skyforge or linked OIDC session expired. Use{" "}
+											<span className="font-medium text-foreground">Sign in</span>{" "}
+											to perform a full reauthentication before returning to Git
+											or other linked services.
+										</div>
+									</div>
+								</div>
+							</div>
+						) : null}
 					</div>
 
 					<div className="grid gap-4">

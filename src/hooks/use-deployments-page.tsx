@@ -1,6 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useDashboardEvents } from "../lib/dashboard-events";
 import {
 		resolveDeploymentDisplayStatus,
 		resolveDeploymentPrimaryAction,
@@ -13,7 +12,6 @@ import { useDeploymentsPageActions } from "./use-deployments-page-actions";
 import { useDeploymentsPageData } from "./use-deployments-page-data";
 
 export function useDeploymentsPage(userId?: string) {
-	useDashboardEvents(true);
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 

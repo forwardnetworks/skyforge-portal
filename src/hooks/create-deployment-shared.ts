@@ -78,6 +78,20 @@ export const supportedEnvKeys = [
 	},
 ];
 
+export function resolveLabLifetimeSelectValue(args: {
+	currentValue?: string;
+	lifetimeManaged: boolean;
+	lifetimeOptions: Array<{ value: string }>;
+}): string {
+	const { currentValue, lifetimeManaged, lifetimeOptions } = args;
+	if (!lifetimeManaged) return "not_managed";
+	const normalized = String(currentValue ?? "").trim();
+	if (!normalized) return "";
+	return lifetimeOptions.some((option) => option.value === normalized)
+		? normalized
+		: "";
+}
+
 export const formSchema = z.object({
 	userId: z.string().min(1, "User is required"),
 	name: z.string().min(1, "Deployment name is required").max(100),

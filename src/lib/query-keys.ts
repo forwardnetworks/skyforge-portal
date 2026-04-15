@@ -4,6 +4,7 @@ export const queryKeys = {
 	toolCatalog: () => ["toolCatalog"] as const,
 	deploymentLifetimePolicy: () => ["deploymentLifetimePolicy"] as const,
 	dashboardSnapshot: () => ["dashboardSnapshot"] as const,
+	dashboardSummary: () => ["dashboardSummary"] as const,
 	statusSummary: () => ["statusSummary"] as const,
 	managedIntegrationsStatus: () => ["managedIntegrationsStatus"] as const,
 	runLogs: (runId: string) => ["runLogs", runId] as const,

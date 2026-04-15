@@ -9,7 +9,7 @@ import type {
 } from "../lib/api-client";
 import {
 	buildLoginUrl,
-	getDashboardSnapshot,
+	getDashboardSummary,
 	getDeploymentLifetimePolicy,
 	getSession,
 	listUserScopes,
@@ -41,14 +41,18 @@ export function useDeploymentsPageData(args: {
 	const [isFeedOpen, setIsFeedOpen] = useState(true);
 
 	const snap = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: getDashboardSnapshot,
+		queryKey: queryKeys.dashboardSummary(),
+		queryFn: getDashboardSummary,
 		initialData: () =>
+			(queryClient.getQueryData(queryKeys.dashboardSummary()) as
+				| DashboardSnapshot
+				| undefined) ??
 			(queryClient.getQueryData(queryKeys.dashboardSnapshot()) as
 				| DashboardSnapshot
 				| undefined) ?? null,
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 	});
 
 	const session = useQuery({

@@ -10,7 +10,7 @@ import {
 	noOpMessageForDeploymentAction,
 	runDeploymentActionWithRetry,
 } from "../lib/deployment-actions";
-import { queryKeys } from "../lib/query-keys";
+import { invalidateDashboardQueries } from "../lib/dashboard-query-sync";
 import {
 	type DeploymentMode,
 	applyDeploymentModeToKind,
@@ -168,9 +168,7 @@ export function useCreateDeploymentCreateMutation(
 					description: (error as Error).message,
 				});
 			}
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(queryClient);
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId },

@@ -20,14 +20,16 @@ export function usePlatformCapacityOverview() {
 	const overviewQ = useQuery({
 		queryKey: queryKeys.adminPlatformOverview(),
 		queryFn: getAdminPlatformOverview,
-		staleTime: 15_000,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 		retry: false,
 	});
 
 	const reservationsQ = useQuery({
 		queryKey: queryKeys.adminPlatformReservations(),
 		queryFn: getAdminPlatformReservations,
-		staleTime: 15_000,
+		staleTime: 60_000,
+		refetchInterval: 60_000,
 		retry: false,
 	});
 

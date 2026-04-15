@@ -272,7 +272,7 @@ export function RootLayoutShell(props: { page: RootLayoutState }) {
 										</div>
 										<a
 											className="hover:text-foreground transition-colors underline hover:no-underline"
-											href="/git/user/oauth2/oidc?redirect_to=/git/skyforge/skyforge/issues/new"
+											href="/api/git/sso?next=/git/skyforge/skyforge/issues/new"
 											target="_blank"
 											rel="noreferrer"
 										>

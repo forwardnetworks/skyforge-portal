@@ -14,6 +14,7 @@ import {
 	noOpMessageForDeploymentAction,
 	runDeploymentActionWithRetry,
 } from "../lib/deployment-actions";
+import { invalidateDashboardQueries } from "../lib/dashboard-query-sync";
 import { queryKeys } from "../lib/query-keys";
 import { forwardNetworkSessionHref } from "../lib/tool-launches";
 import { resolveLifetimeSelection } from "./deployments-page-utils";
@@ -57,10 +58,7 @@ export function useDeploymentsPageActions(args: {
 	}, []);
 
 	const invalidateDashboardSnapshot = useCallback(
-		() =>
-			queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			}),
+		() => invalidateDashboardQueries(queryClient),
 		[queryClient],
 	);
 

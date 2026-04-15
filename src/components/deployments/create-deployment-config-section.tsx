@@ -4,6 +4,7 @@ import {
 	applyDeploymentModeToKind,
 	deploymentModeFromKind,
 } from "../../hooks/use-create-deployment-page";
+import { resolveLabLifetimeSelectValue } from "../../hooks/create-deployment-shared";
 import {
 	FormControl,
 	FormDescription,
@@ -132,45 +133,52 @@ export function CreateDeploymentConfigSection({ page }: Props) {
 			<FormField
 				control={form.control}
 				name="labLifetime"
-				render={({ field }) => (
-					<FormItem>
-						<FormLabel>Lab lifetime</FormLabel>
-						<Select
-							value={String(field.value ?? "")}
-							onValueChange={field.onChange}
-							disabled={!lifetimeManaged || !lifetimeCanEdit}
-						>
-							<FormControl>
-								<SelectTrigger>
-									<SelectValue placeholder="Select lifetime" />
-								</SelectTrigger>
-							</FormControl>
-							<SelectContent>
-								{lifetimeManaged ? (
-									lifetimeOptions.map((option) => (
-										<SelectItem key={option.value} value={option.value}>
-											{option.label}
+				render={({ field }) => {
+					const lifetimeValue = resolveLabLifetimeSelectValue({
+						currentValue: field.value,
+						lifetimeManaged,
+						lifetimeOptions,
+					});
+					return (
+						<FormItem>
+							<FormLabel>Lab lifetime</FormLabel>
+							<Select
+								value={lifetimeValue}
+								onValueChange={field.onChange}
+								disabled={!lifetimeManaged || !lifetimeCanEdit}
+							>
+								<FormControl>
+									<SelectTrigger>
+										<SelectValue placeholder="Select lifetime" />
+									</SelectTrigger>
+								</FormControl>
+								<SelectContent>
+									{lifetimeManaged ? (
+										lifetimeOptions.map((option) => (
+											<SelectItem key={option.value} value={option.value}>
+												{option.label}
+											</SelectItem>
+										))
+									) : (
+										<SelectItem value="not_managed">
+											Not managed for this provider
 										</SelectItem>
-									))
-								) : (
-									<SelectItem value="not_managed">
-										Not managed for this provider
-									</SelectItem>
-								)}
-							</SelectContent>
-						</Select>
-						<FormDescription>
-							{lifetimeManaged
-								? `Expiry action: ${expiryAction}. ${
-										lifetimeCanEdit
-											? "Set lifetime before create."
-											: `Applied by policy (${lifetimeDefaultHours}h).`
-									}`
-								: "Lifetime policy does not apply to this provider family."}
-						</FormDescription>
-						<FormMessage />
-					</FormItem>
-				)}
+									)}
+								</SelectContent>
+							</Select>
+							<FormDescription>
+								{lifetimeManaged
+									? `Expiry action: ${expiryAction}. ${
+											lifetimeCanEdit
+												? "Set lifetime before create."
+												: `Applied by policy (${lifetimeDefaultHours}h).`
+										}`
+									: "Lifetime policy does not apply to this provider family."}
+							</FormDescription>
+							<FormMessage />
+						</FormItem>
+					);
+				}}
 			/>
 
 			{["kne_netlab", "kne_raw", "terraform"].includes(watchKind) && (

@@ -12,6 +12,7 @@ import {
 	noOpMessageForDeploymentAction,
 	runDeploymentActionWithRetry,
 } from "@/lib/deployment-actions";
+import { invalidateDashboardQueries } from "@/lib/dashboard-query-sync";
 import { queryKeys } from "@/lib/query-keys";
 import { type QueryClient, useMutation } from "@tanstack/react-query";
 import type { NavigateFn } from "@tanstack/react-router";
@@ -52,9 +53,7 @@ export function useDeploymentDetailActions(args: {
 					),
 				});
 			}
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(queryClient);
 		} catch (error) {
 			toast.error("Start action failed", {
 				description: (error as Error).message,
@@ -89,9 +88,7 @@ export function useDeploymentDetailActions(args: {
 					),
 				});
 			}
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(queryClient);
 		} catch (error) {
 			toast.error("Stop action failed", {
 				description: (error as Error).message,
@@ -108,9 +105,7 @@ export function useDeploymentDetailActions(args: {
 			if (!deployment) throw new Error("deployment not found");
 			await deleteDeployment(deployment.userId, deployment.id);
 			toast.success("Deployment deleted");
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(queryClient);
 			navigate({
 				to: "/dashboard/deployments",
 				search: { userId: deployment.userId },
@@ -242,9 +237,7 @@ export function useDeploymentDetailActions(args: {
 		},
 		onSuccess: async () => {
 			toast.success("Forward settings updated");
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(queryClient);
 		},
 		onError: (error) =>
 			toast.error("Failed to update Forward settings", {
@@ -314,9 +307,7 @@ export function useDeploymentDetailActions(args: {
 			toast.success(`Forward ${mode} sync queued`, {
 				description: `Run ${String(resp.run?.id ?? "")}`,
 			});
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(queryClient);
 		},
 		onError: (error) =>
 			toast.error("Failed to sync to Forward", {

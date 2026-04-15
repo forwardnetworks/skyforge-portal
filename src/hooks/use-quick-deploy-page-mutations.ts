@@ -1,5 +1,5 @@
 import { runQuickDeploy } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-keys";
+import { invalidateDashboardQueries } from "@/lib/dashboard-query-sync";
 import type { QueryClient, UseMutationResult } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -37,9 +37,7 @@ export function useQuickDeployDeployMutation(args: {
 					description: result.deploymentName,
 				});
 			}
-			await queryClient.invalidateQueries({
-				queryKey: queryKeys.dashboardSnapshot(),
-			});
+			await invalidateDashboardQueries(queryClient);
 
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",

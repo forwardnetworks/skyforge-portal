@@ -8,6 +8,7 @@ export * from "./api-client-deployments-detail";
 export * from "./api-client-deployments-list";
 export * from "./api-client-deployments-actions-designer";
 export * from "./api-client-public-status";
+export * from "./api-client-user-dashboard";
 export * from "./api-client-platform";
 export * from "./api-client-config-changes";
 export * from "./api-client-composite-plans";

@@ -4,7 +4,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type * as z from "zod";
-import { useDashboardEvents } from "../lib/dashboard-events";
 import { USER_REPO_SOURCE, formSchema } from "./create-deployment-shared";
 import { useCreateDeploymentData } from "./use-create-deployment-data";
 import { useCreateDeploymentMutations } from "./use-create-deployment-mutations";
@@ -25,7 +24,6 @@ export type { DeploymentMode } from "./create-deployment-shared";
 export function useCreateDeploymentPage(userId?: string) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	useDashboardEvents(true);
 
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] = useState("all");
@@ -42,7 +40,7 @@ export function useCreateDeploymentPage(userId?: string) {
 			netlabServer: "",
 			forwardCollectorId: "none",
 			deploymentMode: "in_cluster",
-			labLifetime: "never",
+			labLifetime: "",
 			netlabInitialDebug: "",
 			variableGroupId: "none",
 			env: [],
