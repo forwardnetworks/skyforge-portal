@@ -295,7 +295,7 @@ export function DeploymentDetailConfigTab({
 							<div className="text-muted-foreground mt-1">
 								Last sync: {new Date(deployment.lastSyncAt).toLocaleString()}
 								{deployment.lastSyncStatus
-									? ` (${deployment.lastSyncStatus})`
+									? ` (${String(deployment.lastSyncStatus).replaceAll("_", " ")})`
 									: ""}
 							</div>
 						) : (

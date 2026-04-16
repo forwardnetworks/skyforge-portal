@@ -74,8 +74,10 @@ export function useRootLayout() {
 	const toolCatalogQ = useQuery({
 		queryKey: queryKeys.toolCatalog(),
 		queryFn: getToolCatalog,
+		enabled: false,
 		retry: false,
 		staleTime: 5 * 60_000,
+		initialData: () => queryClient.getQueryData(queryKeys.toolCatalog()),
 	});
 
 	const productName = uiConfig.data?.productName || "Skyforge";

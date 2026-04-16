@@ -141,7 +141,9 @@ const DashboardObservabilityRoute = DashboardObservabilityRouteImport.update({
   id: '/dashboard/observability',
   path: '/dashboard/observability',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/dashboard/observability.lazy').then((d) => d.Route),
+)
 const DashboardInfobloxRoute = DashboardInfobloxRouteImport.update({
   id: '/dashboard/infoblox',
   path: '/dashboard/infoblox',
@@ -161,7 +163,9 @@ const DashboardRunsIndexRoute = DashboardRunsIndexRouteImport.update({
   id: '/dashboard/runs/',
   path: '/dashboard/runs/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/dashboard/runs/index.lazy').then((d) => d.Route),
+)
 const DashboardForwardIndexRoute = DashboardForwardIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -183,7 +187,9 @@ const DashboardDeploymentsIndexRoute =
     id: '/dashboard/deployments/',
     path: '/dashboard/deployments/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any).lazy(() =>
+    import('./routes/dashboard/deployments/index.lazy').then((d) => d.Route),
+  )
 const DashboardToolsToolRoute = DashboardToolsToolRouteImport.update({
   id: '/dashboard/tools/$tool',
   path: '/dashboard/tools/$tool',
@@ -193,17 +199,23 @@ const DashboardRunsRunIdRoute = DashboardRunsRunIdRouteImport.update({
   id: '/dashboard/runs/$runId',
   path: '/dashboard/runs/$runId',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/dashboard/runs/$runId.lazy').then((d) => d.Route),
+)
 const DashboardLabsMapRoute = DashboardLabsMapRouteImport.update({
   id: '/dashboard/labs/map',
   path: '/dashboard/labs/map',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/dashboard/labs/map.lazy').then((d) => d.Route),
+)
 const DashboardLabsDesignerRoute = DashboardLabsDesignerRouteImport.update({
   id: '/dashboard/labs/designer',
   path: '/dashboard/labs/designer',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/dashboard/labs/designer.lazy').then((d) => d.Route),
+)
 const DashboardForwardCredentialsRoute =
   DashboardForwardCredentialsRouteImport.update({
     id: '/credentials',
@@ -231,7 +243,9 @@ const DashboardDeploymentsNewRoute = DashboardDeploymentsNewRouteImport.update({
   id: '/dashboard/deployments/new',
   path: '/dashboard/deployments/new',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/dashboard/deployments/new.lazy').then((d) => d.Route),
+)
 const DashboardDeploymentsCompositeRoute =
   DashboardDeploymentsCompositeRouteImport.update({
     id: '/dashboard/deployments/composite',
@@ -248,7 +262,11 @@ const DashboardDeploymentsDeploymentIdIndexRoute =
     id: '/dashboard/deployments/$deploymentId/',
     path: '/dashboard/deployments/$deploymentId/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any).lazy(() =>
+    import('./routes/dashboard/deployments/$deploymentId.index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 const DashboardForwardAnalyticsNetworkRefInsightsRoute =
   DashboardForwardAnalyticsNetworkRefInsightsRouteImport.update({
     id: '/dashboard/forward-analytics/$networkRef/insights',

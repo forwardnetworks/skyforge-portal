@@ -14,7 +14,7 @@ import {
 	noOpMessageForDeploymentAction,
 	runDeploymentActionWithRetry,
 } from "../lib/deployment-actions";
-import { invalidateDashboardQueries } from "../lib/dashboard-query-sync";
+import { invalidateUserScopeActivityQueries } from "../lib/dashboard-query-sync";
 import { queryKeys } from "../lib/query-keys";
 import { forwardNetworkSessionHref } from "../lib/tool-launches";
 import { resolveLifetimeSelection } from "./deployments-page-utils";
@@ -57,8 +57,10 @@ export function useDeploymentsPageActions(args: {
 		});
 	}, []);
 
-	const invalidateDashboardSnapshot = useCallback(
-		() => invalidateDashboardQueries(queryClient),
+	const invalidateDeploymentListState = useCallback(
+		async (userId?: string) => {
+			await invalidateUserScopeActivityQueries(queryClient, userId);
+		},
 		[queryClient],
 	);
 
@@ -92,7 +94,7 @@ export function useDeploymentsPageActions(args: {
 						),
 					});
 				}
-				await invalidateDashboardSnapshot();
+				await invalidateDeploymentListState(deployment.userId);
 			} catch (error) {
 				toast.error(failureTitle, {
 					description: (error as Error).message,
@@ -101,7 +103,7 @@ export function useDeploymentsPageActions(args: {
 				clearPendingAction(deployment.id);
 			}
 		},
-		[clearPendingAction, invalidateDashboardSnapshot, pendingActions],
+		[clearPendingAction, invalidateDeploymentListState, pendingActions],
 	);
 
 	const handleStart = useCallback(
@@ -168,7 +170,7 @@ export function useDeploymentsPageActions(args: {
 		},
 		onSuccess: async () => {
 			toast.success("Deployment lifetime updated");
-			await invalidateDashboardSnapshot();
+			await invalidateDeploymentListState(lifetimeTarget?.userId);
 			setLifetimeDialogOpen(false);
 			setLifetimeTarget(null);
 		},
@@ -189,9 +191,12 @@ export function useDeploymentsPageActions(args: {
 			window.location.href = loginHref;
 			return;
 		}
-		await queryClient.invalidateQueries({ queryKey: queryKeys.session() });
-		await invalidateDashboardSnapshot();
-	}, [authMode, invalidateDashboardSnapshot, loginHref, queryClient]);
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: queryKeys.session() }),
+			queryClient.invalidateQueries({ queryKey: queryKeys.userScopes() }),
+			invalidateDeploymentListState(),
+		]);
+	}, [authMode, invalidateDeploymentListState, loginHref, queryClient]);
 
 	const openDeploymentInForward = useCallback(
 		async (deployment: UserScopeDeployment) => {

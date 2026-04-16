@@ -1,7 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { DeploymentsPageContent } from "../../../components/deployments/deployments-page-content";
-import { useDeploymentsPage } from "../../../hooks/use-deployments-page";
 import { listUserScopes } from "../../../lib/api-client";
 import { queryKeys } from "../../../lib/query-keys";
 
@@ -19,11 +17,4 @@ export const Route = createFileRoute("/dashboard/deployments/")({
 			staleTime: 30_000,
 		});
 	},
-	component: DeploymentsPage,
 });
-
-function DeploymentsPage() {
-	const { userId } = Route.useSearch();
-	const state = useDeploymentsPage(userId);
-	return <DeploymentsPageContent state={state} />;
-}

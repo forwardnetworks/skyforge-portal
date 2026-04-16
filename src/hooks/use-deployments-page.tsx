@@ -44,6 +44,7 @@ export function useDeploymentsPage(userId?: string) {
 		isManagedDeploymentType: data.isManagedDeploymentType,
 		lifetimeDialogOpen: actions.lifetimeDialogOpen,
 		lifetimeHoursOptions: data.lifetimeHoursOptions,
+		loadErrorMessage: data.loadErrorMessage,
 		lifetimeSelection: actions.lifetimeSelection,
 		lifetimeTarget: actions.lifetimeTarget,
 		loginHref: data.loginHref,
@@ -52,6 +53,7 @@ export function useDeploymentsPage(userId?: string) {
 		openLifetimeDialog: actions.openLifetimeDialog,
 		pendingActions: actions.pendingActions,
 		runs: data.runs,
+		runsLoading: data.runsLoading,
 		saveLifetimeMutation: actions.saveLifetimeMutation,
 		searchQuery: data.searchQuery,
 		userScopes: data.userScopes,
@@ -76,6 +78,7 @@ export function useDeploymentsPage(userId?: string) {
 			});
 		},
 		snap: data.snap,
+		isPageLoading: data.isPageLoading,
 		statusFilter: data.statusFilter,
 		typeFilter: data.typeFilter,
 		allowNoExpiry: data.allowNoExpiry,

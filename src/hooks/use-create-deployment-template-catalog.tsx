@@ -8,15 +8,11 @@ import { useCreateDeploymentTemplateCatalogNetlab } from "./use-create-deploymen
 import { useCreateDeploymentTemplateCatalogTemplates } from "./use-create-deployment-template-catalog-templates";
 
 export function useCreateDeploymentTemplateCatalog(args: {
-	queryClient: {
-		invalidateQueries: (args: { queryKey: unknown[] }) => Promise<unknown>;
-	};
 	setTerraformProviderFilter: (value: string) => void;
 	setValue: (name: "forwardCollectorId", value: string) => void;
 	terraformProviderFilter: string;
 	templatePreviewOpen: boolean;
 	externalTemplateRepos?: ExternalTemplateRepo[];
-	templatesUpdatedAt?: string;
 	watchForwardCollectorId?: string;
 	watchKind: DeploymentKind;
 	watchSource: string;
@@ -29,12 +25,10 @@ export function useCreateDeploymentTemplateCatalog(args: {
 	const {
 		defaultForwardCollectorConfigId,
 		externalTemplateRepos,
-		queryClient,
 		setTerraformProviderFilter,
 		setValue,
 		terraformProviderFilter,
 		templatePreviewOpen,
-		templatesUpdatedAt,
 		watchForwardCollectorId,
 		watchKind,
 		watchSource,
@@ -56,11 +50,9 @@ export function useCreateDeploymentTemplateCatalog(args: {
 		watchKind,
 	});
 	const templateCatalog = useCreateDeploymentTemplateCatalogTemplates({
-		queryClient,
 		setTerraformProviderFilter,
 		terraformProviderFilter,
 		templatePreviewOpen,
-		templatesUpdatedAt,
 		watchKind,
 		watchSource,
 		watchSpec,

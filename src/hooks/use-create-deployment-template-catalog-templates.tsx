@@ -34,13 +34,9 @@ function getTemplateQuery(source: TemplateSource, templateRepoId: string) {
 }
 
 export function useCreateDeploymentTemplateCatalogTemplates(args: {
-	queryClient: {
-		invalidateQueries: (args: { queryKey: unknown[] }) => Promise<unknown>;
-	};
 	setTerraformProviderFilter: (value: string) => void;
 	terraformProviderFilter: string;
 	templatePreviewOpen: boolean;
-	templatesUpdatedAt?: string;
 	watchKind: DeploymentKind;
 	watchSource: string;
 	watchSpec: { family: string; engine?: string };
@@ -49,11 +45,9 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 	watchUserScopeId?: string;
 }) {
 	const {
-		queryClient,
 		setTerraformProviderFilter,
 		terraformProviderFilter,
 		templatePreviewOpen,
-		templatesUpdatedAt,
 		watchKind,
 		watchSource,
 		watchSpec,
@@ -97,11 +91,6 @@ export function useCreateDeploymentTemplateCatalogTemplates(args: {
 		staleTime: 5 * 60_000,
 		refetchOnWindowFocus: false,
 	});
-
-	useEffect(() => {
-		if (!templatesUpdatedAt) return;
-		void queryClient.invalidateQueries({ queryKey: ["userScopeTemplates"] });
-	}, [queryClient, templatesUpdatedAt]);
 
 	const rawTemplates = templatesQ.data?.templates ?? [];
 	const templates = useMemo(() => {

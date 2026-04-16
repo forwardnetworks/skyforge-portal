@@ -1,4 +1,3 @@
-import type { QueryClient } from "@tanstack/react-query";
 import type { UseFormReturn, UseFormSetValue } from "react-hook-form";
 import type { z } from "zod";
 import type { ExternalTemplateRepo } from "../lib/api-client";
@@ -9,7 +8,6 @@ import { useCreateDeploymentTemplateCatalog } from "./use-create-deployment-temp
 type CreateDeploymentForm = z.infer<typeof formSchema>;
 
 type Args = {
-	queryClient: QueryClient;
 	setTerraformProviderFilter: (value: string) => void;
 	setValue: UseFormSetValue<CreateDeploymentForm>;
 	terraformProviderFilter: string;
@@ -28,7 +26,6 @@ type Args = {
 
 export function useCreateDeploymentData(args: Args) {
 	const settings = useCreateDeploymentSettings({
-		queryClient: args.queryClient,
 		setValue: args.setValue,
 		userId: args.userId,
 		watchDeploymentMode: args.watchDeploymentMode,
@@ -39,7 +36,6 @@ export function useCreateDeploymentData(args: Args) {
 	});
 
 	const catalog = useCreateDeploymentTemplateCatalog({
-		queryClient: args.queryClient,
 		setTerraformProviderFilter: args.setTerraformProviderFilter,
 		setValue: (name, value) => args.setValue(name, value),
 		terraformProviderFilter: args.terraformProviderFilter,
@@ -47,7 +43,6 @@ export function useCreateDeploymentData(args: Args) {
 		externalTemplateRepos: settings.userSettingsQ.data?.externalTemplateRepos as
 			| ExternalTemplateRepo[]
 			| undefined,
-		templatesUpdatedAt: settings.templatesUpdatedAt,
 		watchForwardCollectorId: args.watchForwardCollectorId,
 		watchKind: args.watchKind,
 		watchSource: args.watchSource,

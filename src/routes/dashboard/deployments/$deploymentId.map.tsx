@@ -10,8 +10,7 @@ import { EmptyState } from "../../../components/ui/empty-state";
 import { Skeleton } from "../../../components/ui/skeleton";
 import {
 	type DeploymentMap,
-	type DashboardSnapshot,
-	type UserScopeDeployment,
+	getDeploymentInfoById,
 	getDeploymentMap,
 } from "../../../lib/api-client";
 import { deploymentMapToTopology } from "../../../lib/deployment-map-utils";
@@ -21,6 +20,14 @@ import { queryKeys } from "../../../lib/query-keys";
 export const Route = createFileRoute(
 	"/dashboard/deployments/$deploymentId/map",
 )({
+	loader: async ({ context: { queryClient }, params: { deploymentId } }) => {
+		await queryClient.ensureQueryData({
+			queryKey: queryKeys.deploymentDetail(deploymentId),
+			queryFn: () => getDeploymentInfoById(deploymentId),
+			retry: false,
+			staleTime: 30_000,
+		});
+	},
 	component: DeploymentMapPage,
 });
 
@@ -28,20 +35,15 @@ function DeploymentMapPage() {
 	const { deploymentId } = Route.useParams();
 	useDashboardEvents(true);
 
-	const snap = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: async () => null,
-		initialData: null,
+	const deploymentInfoQ = useQuery({
+		queryKey: queryKeys.deploymentDetail(deploymentId),
+		queryFn: async () => getDeploymentInfoById(deploymentId),
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 30_000,
+		refetchOnWindowFocus: false,
 	});
 
-	const deployment = useMemo(() => {
-		return (snap.data?.deployments ?? []).find(
-			(d: UserScopeDeployment) => d.id === deploymentId,
-		);
-	}, [deploymentId, snap.data?.deployments]);
-
+	const deployment = deploymentInfoQ.data?.deployment;
 	const userId = String(deployment?.userId ?? "");
 	const deploymentFamily = String(deployment?.family ?? "")
 		.trim()
@@ -76,7 +78,7 @@ function DeploymentMapPage() {
 	}, [mapQ.data]);
 
 	if (!deployment) {
-		if (snap.isLoading || snap.isFetching) {
+		if (deploymentInfoQ.isLoading || deploymentInfoQ.isFetching) {
 			return (
 				<div className="h-screen w-screen p-6">
 					<div className="flex items-center gap-3">

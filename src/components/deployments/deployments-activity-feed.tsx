@@ -9,12 +9,13 @@ import { DeploymentStatusBadge } from "./deployment-status-badge";
 
 export function DeploymentsActivityFeed({
 	isFeedOpen,
+	runsLoading,
 	runs,
 	setIsFeedOpen,
 	snap,
 }: Pick<
 	DeploymentsPageState,
-	"isFeedOpen" | "runs" | "setIsFeedOpen" | "snap"
+	"isFeedOpen" | "runs" | "runsLoading" | "setIsFeedOpen" | "snap"
 >) {
 	return (
 		<div
@@ -61,7 +62,7 @@ export function DeploymentsActivityFeed({
 			</div>
 
 			<div className={cn("space-y-3", !isFeedOpen && "hidden")}>
-				{!snap.data ? (
+				{runsLoading || !snap.data ? (
 					<div className="space-y-3">
 						<Skeleton className="h-20 w-full" />
 						<Skeleton className="h-20 w-full" />

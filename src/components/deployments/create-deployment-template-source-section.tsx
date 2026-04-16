@@ -67,7 +67,7 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 								form.setValue("templateRepoId", "");
 								form.setValue("template", "");
 							}}
-							defaultValue={field.value}
+							value={field.value ?? ""}
 						>
 							<FormControl>
 								<SelectTrigger>
@@ -128,7 +128,7 @@ export function CreateDeploymentTemplateSourceSection({ page }: Props) {
 									field.onChange(val);
 									form.setValue("template", "");
 								}}
-								defaultValue={field.value}
+								value={field.value ?? ""}
 							>
 								<FormControl>
 									<SelectTrigger>

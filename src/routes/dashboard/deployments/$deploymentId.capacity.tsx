@@ -5,12 +5,22 @@ import { DeploymentCapacityTabs } from "@/components/capacity/deployment-capacit
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDeploymentCapacityPage } from "@/hooks/use-deployment-capacity-page";
+import { getDeploymentInfoById } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute(
 	"/dashboard/deployments/$deploymentId/capacity",
 )({
+	loader: async ({ context: { queryClient }, params: { deploymentId } }) => {
+		await queryClient.ensureQueryData({
+			queryKey: queryKeys.deploymentDetail(deploymentId),
+			queryFn: () => getDeploymentInfoById(deploymentId),
+			retry: false,
+			staleTime: 30_000,
+		});
+	},
 	component: DeploymentCapacityPage,
 });
 
@@ -19,6 +29,31 @@ function DeploymentCapacityPage() {
 	const page = useDeploymentCapacityPage(deploymentId);
 
 	if (!page.deployment) {
+		if (page.deploymentInfoQ.isLoading || page.deploymentInfoQ.isFetching) {
+			return (
+				<div className="space-y-6 p-6">
+					<div className="flex items-center gap-3">
+						<Link
+							to="/dashboard/deployments/$deploymentId"
+							params={{ deploymentId }}
+							className={buttonVariants({
+								variant: "outline",
+								size: "icon",
+								className: "h-9 w-9",
+							})}
+						>
+							<ArrowLeft className="h-4 w-4" />
+						</Link>
+						<h1 className="text-2xl font-bold tracking-tight">Capacity</h1>
+					</div>
+					<Card>
+						<CardContent className="pt-6 text-sm text-muted-foreground">
+							Loading deployment…
+						</CardContent>
+					</Card>
+				</div>
+			);
+		}
 		return (
 			<div className="space-y-6 p-6">
 				<div className="flex items-center gap-3">

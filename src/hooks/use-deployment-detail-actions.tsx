@@ -12,7 +12,10 @@ import {
 	noOpMessageForDeploymentAction,
 	runDeploymentActionWithRetry,
 } from "@/lib/deployment-actions";
-import { invalidateDashboardQueries } from "@/lib/dashboard-query-sync";
+import {
+	invalidateDashboardSnapshotQuery,
+	invalidateUserScopeActivityQueries,
+} from "@/lib/dashboard-query-sync";
 import { queryKeys } from "@/lib/query-keys";
 import { type QueryClient, useMutation } from "@tanstack/react-query";
 import type { NavigateFn } from "@tanstack/react-router";
@@ -27,6 +30,29 @@ export function useDeploymentDetailActions(args: {
 }) {
 	const { deployment, navigate, queryClient, topologyNodes } = args;
 	const [actionPending, setActionPending] = useState(false);
+
+	const invalidateDeploymentViewState = async () => {
+		if (!deployment) return;
+		await Promise.all([
+			invalidateDashboardSnapshotQuery(queryClient),
+			invalidateUserScopeActivityQueries(queryClient, deployment.userId),
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.deploymentTopology(
+					deployment.userId,
+					deployment.id,
+				),
+			}),
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.deploymentMap(deployment.userId, deployment.id),
+			}),
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.deploymentUIEvents(
+					deployment.userId,
+					deployment.id,
+				),
+			}),
+		]);
+	};
 
 	const handleStart = async () => {
 		if (actionPending) return;
@@ -53,7 +79,7 @@ export function useDeploymentDetailActions(args: {
 					),
 				});
 			}
-			await invalidateDashboardQueries(queryClient);
+			await invalidateDeploymentViewState();
 		} catch (error) {
 			toast.error("Start action failed", {
 				description: (error as Error).message,
@@ -88,7 +114,7 @@ export function useDeploymentDetailActions(args: {
 					),
 				});
 			}
-			await invalidateDashboardQueries(queryClient);
+			await invalidateDeploymentViewState();
 		} catch (error) {
 			toast.error("Stop action failed", {
 				description: (error as Error).message,
@@ -105,7 +131,10 @@ export function useDeploymentDetailActions(args: {
 			if (!deployment) throw new Error("deployment not found");
 			await deleteDeployment(deployment.userId, deployment.id);
 			toast.success("Deployment deleted");
-			await invalidateDashboardQueries(queryClient);
+			await Promise.all([
+				invalidateDashboardSnapshotQuery(queryClient),
+				invalidateUserScopeActivityQueries(queryClient, deployment.userId),
+			]);
 			navigate({
 				to: "/dashboard/deployments",
 				search: { userId: deployment.userId },
@@ -237,7 +266,7 @@ export function useDeploymentDetailActions(args: {
 		},
 		onSuccess: async () => {
 			toast.success("Forward settings updated");
-			await invalidateDashboardQueries(queryClient);
+			await invalidateDeploymentViewState();
 		},
 		onError: (error) =>
 			toast.error("Failed to update Forward settings", {
@@ -307,7 +336,7 @@ export function useDeploymentDetailActions(args: {
 			toast.success(`Forward ${mode} sync queued`, {
 				description: `Run ${String(resp.run?.id ?? "")}`,
 			});
-			await invalidateDashboardQueries(queryClient);
+			await invalidateDeploymentViewState();
 		},
 		onError: (error) =>
 			toast.error("Failed to sync to Forward", {

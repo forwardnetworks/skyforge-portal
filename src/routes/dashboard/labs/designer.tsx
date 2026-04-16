@@ -1,4 +1,3 @@
-import { LabDesignerPage } from "@/components/lab-designer-page";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { requireCatalogRouteAccess } from "../../../lib/ui-experience-route";
@@ -12,10 +11,4 @@ export const Route = createFileRoute("/dashboard/labs/designer")({
 	validateSearch: (search) => designerSearchSchema.parse(search),
 	beforeLoad: async ({ context }) =>
 		requireCatalogRouteAccess(context, "/dashboard/labs/designer"),
-	component: LabDesignerRoute,
 });
-
-function LabDesignerRoute() {
-	const search = Route.useSearch();
-	return <LabDesignerPage search={search} />;
-}

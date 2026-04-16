@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type * as z from "zod";
 import { USER_REPO_SOURCE, formSchema } from "./create-deployment-shared";
@@ -27,6 +27,7 @@ export function useCreateDeploymentPage(userId?: string) {
 
 	const [templatePreviewOpen, setTemplatePreviewOpen] = useState(false);
 	const [terraformProviderFilter, setTerraformProviderFilter] = useState("all");
+	const lastAutoNameRef = useRef("");
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -63,7 +64,6 @@ export function useCreateDeploymentPage(userId?: string) {
 
 	const data = useCreateDeploymentData({
 		form,
-		queryClient,
 		setTerraformProviderFilter,
 		setValue,
 		terraformProviderFilter,
@@ -96,17 +96,20 @@ export function useCreateDeploymentPage(userId?: string) {
 			lifetimeAllowedHours: data.lifetimeAllowedHours,
 			variableGroups: data.variableGroups,
 		});
+	const resetValidateTemplate = validateTemplate.reset;
+	const resetUploadNetlabTemplate = uploadNetlabTemplate.reset;
 
 	useEffect(() => {
-		validateTemplate.reset();
-		uploadNetlabTemplate.reset();
+		resetValidateTemplate();
+		resetUploadNetlabTemplate();
 	}, [
 		watchKind,
 		watchSource,
+		watchTemplate,
 		watchTemplateRepoId,
 		watchUserScopeId,
-		validateTemplate,
-		uploadNetlabTemplate,
+		resetValidateTemplate,
+		resetUploadNetlabTemplate,
 	]);
 
 	useEffect(() => {
@@ -120,6 +123,34 @@ export function useCreateDeploymentPage(userId?: string) {
 			shouldValidate: true,
 		});
 	}, [data.userSettingsQ.data?.defaultEnv, form, setValue]);
+
+	useEffect(() => {
+		const base = (watchTemplate || watchKind).split("/").pop() || watchKind;
+		const ts = new Date()
+			.toISOString()
+			.replace(/[-:]/g, "")
+			.replace(/\..+/, "")
+			.slice(0, 15);
+		const nextAutoName = `${base}-${ts}`;
+		const currentName = String(form.getValues("name") ?? "").trim();
+		const previousAutoName = lastAutoNameRef.current;
+		if (
+			currentName !== "" &&
+			currentName !== previousAutoName &&
+			currentName !== nextAutoName
+		) {
+			return;
+		}
+		lastAutoNameRef.current = nextAutoName;
+		if (currentName === nextAutoName) {
+			return;
+		}
+		setValue("name", nextAutoName, {
+			shouldDirty: false,
+			shouldTouch: false,
+			shouldValidate: false,
+		});
+	}, [form, setValue, watchKind, watchTemplate]);
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		mutation.mutate(values);

@@ -128,3 +128,33 @@ export async function cancelRun(
 		},
 	);
 }
+
+export type RunDetailResponse = {
+	task_id: number;
+	userId: string;
+	task: JSONMap;
+	user: string;
+};
+
+export async function getRunDetail(
+	taskId: string | number,
+): Promise<RunDetailResponse> {
+	return apiFetch<RunDetailResponse>(
+		`/api/runs/${encodeURIComponent(String(taskId))}`,
+	);
+}
+
+export type RecentRunsResponse = {
+	user: string;
+	tasks: JSONMap[];
+};
+
+export async function getRecentRuns(limit = 50): Promise<RecentRunsResponse> {
+	const qs = new URLSearchParams();
+	if (Number.isFinite(limit) && limit > 0) {
+		qs.set("limit", String(Math.trunc(limit)));
+	}
+	return apiFetch<RecentRunsResponse>(
+		`/api/recent-runs${qs.toString() ? `?${qs.toString()}` : ""}`,
+	);
+}

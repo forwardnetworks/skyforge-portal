@@ -1,8 +1,22 @@
 import type {
 	DeploymentUIEventsResponse,
 	ISO8601,
+	UserScopeDeployment,
 } from "./api-client-user-user-scope";
 import { apiFetch } from "./http";
+
+export type UserScopeDeploymentListResponse = {
+	userId: string;
+	deployments: UserScopeDeployment[];
+};
+
+export async function listUserScopeDeployments(
+	userId: string,
+): Promise<UserScopeDeploymentListResponse> {
+	return apiFetch<UserScopeDeploymentListResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments`,
+	);
+}
 
 export async function listDeploymentUIEvents(
 	userId: string,

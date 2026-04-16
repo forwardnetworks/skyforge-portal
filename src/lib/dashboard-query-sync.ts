@@ -16,3 +16,53 @@ export async function invalidateDashboardQueries(queryClient: QueryClient) {
 		queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary() }),
 	]);
 }
+
+export async function invalidateDashboardSnapshotQuery(
+	queryClient: QueryClient,
+) {
+	await queryClient.invalidateQueries({
+		queryKey: queryKeys.dashboardSnapshot(),
+	});
+}
+
+export async function invalidateDashboardSummaryQuery(
+	queryClient: QueryClient,
+) {
+	await queryClient.invalidateQueries({
+		queryKey: queryKeys.dashboardSummary(),
+	});
+}
+
+export async function invalidateUserScopeDeploymentsQueries(
+	queryClient: QueryClient,
+	userId?: string,
+) {
+	const scopeId = String(userId ?? "").trim();
+	await queryClient.invalidateQueries({
+		queryKey: scopeId
+			? queryKeys.userScopeDeployments(scopeId)
+			: (["userScopeDeployments"] as const),
+	});
+}
+
+export async function invalidateUserScopeRunsQueries(
+	queryClient: QueryClient,
+	userId?: string,
+) {
+	const scopeId = String(userId ?? "").trim();
+	await queryClient.invalidateQueries({
+		queryKey: scopeId
+			? (["userScopeRuns", scopeId] as const)
+			: (["userScopeRuns"] as const),
+	});
+}
+
+export async function invalidateUserScopeActivityQueries(
+	queryClient: QueryClient,
+	userId?: string,
+) {
+	await Promise.all([
+		invalidateUserScopeDeploymentsQueries(queryClient, userId),
+		invalidateUserScopeRunsQueries(queryClient, userId),
+	]);
+}

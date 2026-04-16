@@ -13,7 +13,7 @@ import {
 	saveKneTopologyYAML,
 	validateKneTopologyYAML,
 } from "@/lib/api-client";
-import { invalidateDashboardQueries } from "@/lib/dashboard-query-sync";
+import { invalidateUserScopeActivityQueries } from "@/lib/dashboard-query-sync";
 import { kneYamlToDesign } from "@/lib/kne-yaml";
 import { normalizeStartupConfig } from "@/lib/lab-designer-startup-config";
 import { queryKeys } from "@/lib/query-keys";
@@ -597,7 +597,7 @@ export function useLabDesignerDataMutations(args: {
 			toast.success("Deployment created", {
 				description: resp.deployment?.name ?? opts.labName,
 			});
-			await invalidateDashboardQueries(opts.queryClient);
+			await invalidateUserScopeActivityQueries(opts.queryClient, opts.userId);
 			const id = resp.deployment?.id;
 			if (opts.openDeploymentOnCreate && id) {
 				window.open(

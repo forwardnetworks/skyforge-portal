@@ -1,19 +1,22 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
 	DashboardSnapshot,
 	DeploymentLifetimePolicyResponse,
+	RunsListResponse,
 	SkyforgeUserScope,
 	UserScopeDeployment,
+	UserScopeDeploymentListResponse,
 } from "../lib/api-client";
 import {
 	buildLoginUrl,
-	getDashboardSummary,
 	getDeploymentLifetimePolicy,
 	getSession,
 	listUserScopes,
 } from "../lib/api-client";
+import { listUserScopeRuns } from "../lib/api-client-composite-plans";
+import { listUserScopeDeployments } from "../lib/api-client-deployments-list";
 import { queryKeys } from "../lib/query-keys";
 import { getRuntimeAuthMode } from "../lib/skyforge-config";
 import {
@@ -34,26 +37,10 @@ export function useDeploymentsPageData(args: {
 	userId?: string;
 }) {
 	const { navigate, userId } = args;
-	const queryClient = useQueryClient();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [typeFilter, setTypeFilter] = useState("all");
 	const [isFeedOpen, setIsFeedOpen] = useState(true);
-
-	const snap = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSummary(),
-		queryFn: getDashboardSummary,
-		initialData: () =>
-			(queryClient.getQueryData(queryKeys.dashboardSummary()) as
-				| DashboardSnapshot
-				| undefined) ??
-			(queryClient.getQueryData(queryKeys.dashboardSnapshot()) as
-				| DashboardSnapshot
-				| undefined) ?? null,
-		retry: false,
-		staleTime: 60_000,
-		refetchInterval: 60_000,
-	});
 
 	const session = useQuery({
 		queryKey: queryKeys.session(),
@@ -113,13 +100,54 @@ export function useDeploymentsPageData(args: {
 		[selectedUserScopeId, userScopes],
 	);
 
+	const deploymentsQ = useQuery<UserScopeDeploymentListResponse>({
+		queryKey: queryKeys.userScopeDeployments(selectedUserScopeId || "__none"),
+		queryFn: () => listUserScopeDeployments(selectedUserScopeId),
+		enabled: Boolean(selectedUserScopeId),
+		retry: false,
+		staleTime: 30_000,
+		refetchInterval: 60_000,
+	});
+	const runsQ = useQuery<RunsListResponse>({
+		queryKey: queryKeys.userScopeRuns(selectedUserScopeId || "__none", 15),
+		queryFn: () => listUserScopeRuns(selectedUserScopeId, { limit: 15 }),
+		enabled: Boolean(selectedUserScopeId),
+		retry: false,
+		staleTime: 30_000,
+		refetchInterval: 60_000,
+	});
+
+	const isPageLoading =
+		session.isLoading ||
+		userScopesQ.isLoading ||
+		lifetimePolicyQ.isLoading ||
+		(Boolean(selectedUserScopeId) && deploymentsQ.isLoading);
+	const loadError =
+		session.error ??
+		userScopesQ.error ??
+		lifetimePolicyQ.error ??
+		deploymentsQ.error;
+	const loadErrorMessage = loadError
+		? loadError instanceof Error
+			? loadError.message
+			: String(loadError)
+		: "";
+	const runsLoading = Boolean(selectedUserScopeId) && runsQ.isLoading;
+	const snap = useMemo<{ data: Pick<DashboardSnapshot, "deployments" | "runs"> | null }>(
+		() => ({
+			data: isPageLoading
+				? null
+				: {
+						deployments: deploymentsQ.data?.deployments ?? [],
+						runs: runsQ.data?.tasks ?? [],
+					},
+		}),
+		[deploymentsQ.data?.deployments, isPageLoading, runsQ.data?.tasks],
+	);
+
 	const allDeployments = useMemo(() => {
-		const all = (snap.data?.deployments ?? []) as UserScopeDeployment[];
-		if (!selectedUserScopeId) return all;
-		return all.filter(
-			(deployment) => deployment.userId === selectedUserScopeId,
-		);
-	}, [selectedUserScopeId, snap.data?.deployments]);
+		return (snap.data?.deployments ?? []) as UserScopeDeployment[];
+	}, [snap.data?.deployments]);
 
 	const deployments = useMemo(
 		() =>
@@ -168,10 +196,10 @@ export function useDeploymentsPageData(args: {
 	const runs = useMemo(
 		() =>
 			filterRunsForUserScope(
-				(snap.data?.runs ?? []) as Record<string, unknown>[],
+				(runsQ.data?.tasks ?? []) as Record<string, unknown>[],
 				selectedUserScopeId,
 			),
-		[selectedUserScopeId, snap.data?.runs],
+		[runsQ.data?.tasks, selectedUserScopeId],
 	);
 
 	const loginHref = buildLoginUrl(
@@ -190,8 +218,10 @@ export function useDeploymentsPageData(args: {
 		isFeedOpen,
 		isManagedDeploymentType: isManagedDeploymentFamily,
 		lifetimeHoursOptions,
+		loadErrorMessage,
 		loginHref,
 		runs,
+		runsLoading,
 		searchQuery,
 		userScopes,
 		selectedUserScope,
@@ -201,6 +231,7 @@ export function useDeploymentsPageData(args: {
 		setStatusFilter,
 		setTypeFilter,
 		snap,
+		isPageLoading,
 		statusFilter,
 		typeFilter,
 	};

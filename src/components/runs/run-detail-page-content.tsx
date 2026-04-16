@@ -30,10 +30,60 @@ export function RunDetailPageContent(props: {
 		provenance,
 		run,
 		runId,
-		snap,
+		runQ,
 	} = props.page;
 	const metadataItems = buildRunMetadataItems(run, execution);
 	const executionItems = buildExecutionItems(provenance);
+
+	if (!run) {
+		return (
+			<div className="space-y-6 p-6">
+				<Card variant="glass">
+					<CardHeader>
+						<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+							<div>
+								<CardTitle>Run {runId}</CardTitle>
+							</div>
+							<div className="flex items-center gap-2">
+								<Link
+									className={buttonVariants({ variant: "outline", size: "sm" })}
+									to="/dashboard/deployments"
+								>
+									Back
+								</Link>
+								<Button variant="destructive" size="sm" disabled>
+									Cancel
+								</Button>
+								<Button variant="outline" size="sm" onClick={handleClear}>
+									Clear
+								</Button>
+							</div>
+						</div>
+					</CardHeader>
+				</Card>
+
+				<Card className="border-dashed">
+					<CardContent className="pt-6 text-center text-muted-foreground">
+						{runQ.isError ? "Run not found." : "Loading run…"}
+						<div className="mt-2 text-xs">
+							If you are logged out,{" "}
+							<a
+								className="text-primary underline hover:no-underline"
+								href={loginHref}
+								onClick={(event) => {
+									event.preventDefault();
+									void handleLogin();
+								}}
+							>
+								login
+							</a>
+							.
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-6 p-6">
@@ -67,28 +117,6 @@ export function RunDetailPageContent(props: {
 					</div>
 				</CardHeader>
 			</Card>
-
-			{!snap.data && (
-				<Card className="border-dashed">
-					<CardContent className="pt-6 text-center text-muted-foreground">
-						Loading dashboard…
-						<div className="mt-2 text-xs">
-							If you are logged out,{" "}
-							<a
-								className="text-primary underline hover:no-underline"
-								href={loginHref}
-								onClick={(event) => {
-									event.preventDefault();
-									void handleLogin();
-								}}
-							>
-								login
-							</a>
-							.
-						</div>
-					</CardContent>
-				</Card>
-			)}
 
 			<Card>
 				<CardHeader>

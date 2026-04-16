@@ -10,7 +10,10 @@ import {
 	noOpMessageForDeploymentAction,
 	runDeploymentActionWithRetry,
 } from "../lib/deployment-actions";
-import { invalidateDashboardQueries } from "../lib/dashboard-query-sync";
+import {
+	invalidateDashboardSnapshotQuery,
+	invalidateUserScopeActivityQueries,
+} from "../lib/dashboard-query-sync";
 import {
 	type DeploymentMode,
 	applyDeploymentModeToKind,
@@ -168,7 +171,10 @@ export function useCreateDeploymentCreateMutation(
 					description: (error as Error).message,
 				});
 			}
-			await invalidateDashboardQueries(queryClient);
+			await Promise.all([
+				invalidateDashboardSnapshotQuery(queryClient),
+				invalidateUserScopeActivityQueries(queryClient, scopeId),
+			]);
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId },

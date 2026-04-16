@@ -1,13 +1,11 @@
 import {
-	type DashboardSnapshot,
 	type DeploymentInfoResponse,
 	type DeploymentMap,
 	type DeploymentResourceEstimateResponse,
 	type DeploymentSourceShare,
 	type SharedDeploymentSource,
 	type UserForwardCollectorConfigSummary,
-	type UserScopeDeployment,
-	getDeploymentInfo,
+	getDeploymentInfoById,
 	getDeploymentMap,
 	getDeploymentResourceEstimate,
 	getDeploymentTopology,
@@ -16,6 +14,7 @@ import {
 	listSharedDeploymentSources,
 	listUserForwardCollectorConfigs,
 } from "@/lib/api-client";
+import { listUserScopeRuns } from "@/lib/api-client-composite-plans";
 import { queryKeys } from "@/lib/query-keys";
 import { type RunLogState, useRunEvents } from "@/lib/run-events";
 import { useQuery } from "@tanstack/react-query";
@@ -48,21 +47,15 @@ export function useDeploymentDetailData(args: {
 		normalizedTab,
 	);
 
-	const snap = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: async () => null,
-		initialData: null,
+	const deploymentInfoQ = useQuery<DeploymentInfoResponse>({
+		queryKey: queryKeys.deploymentDetail(deploymentId),
+		queryFn: async () => getDeploymentInfoById(deploymentId),
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 30_000,
+		refetchOnWindowFocus: false,
 	});
 
-	const deployment = useMemo(
-		() =>
-			(snap.data?.deployments ?? []).find(
-				(d: UserScopeDeployment) => d.id === deploymentId,
-			),
-		[snap.data?.deployments, deploymentId],
-	);
+	const deployment = deploymentInfoQ.data?.deployment;
 
 	const userId = String(deployment?.userId ?? "");
 	const deploymentType = String(deployment?.family ?? "");
@@ -113,25 +106,30 @@ export function useDeploymentDetailData(args: {
 		? resolveDeploymentPrimaryAction(deployment)
 		: "none";
 
+	const runsForDeploymentQ = useQuery({
+		queryKey: queryKeys.userScopeRuns(userId, 50),
+		queryFn: async () => listUserScopeRuns(userId, { limit: 50 }),
+		enabled: Boolean(userId),
+		retry: false,
+		staleTime: 30_000,
+	});
+
 	const runsForDeployment = useMemo(() => {
 		if (!deployment) return [];
-		const all = (snap.data?.runs ?? []) as Record<string, unknown>[];
-		const filtered = all.filter(
-			(r) => String(r.userId ?? "") === deployment.userId,
-		);
-		const depRuns = filtered.filter(
+		const all = (runsForDeploymentQ.data?.tasks ?? []) as Record<string, unknown>[];
+		const depRuns = all.filter(
 			(r) => String(r.deploymentId ?? "") === deployment.id,
 		);
-		return depRuns.length > 0 ? depRuns : filtered;
-	}, [deployment, snap.data?.runs]);
+		return depRuns.length > 0 ? depRuns : all;
+	}, [deployment, runsForDeploymentQ.data?.tasks]);
 
 	const topology = useQuery({
 		queryKey: queryKeys.deploymentTopology(userId, deploymentId),
 		queryFn: async () => {
-			if (!deployment) throw new Error("deployment not found");
-			return getDeploymentTopology(deployment.userId, deployment.id);
+			if (!userId || !deployment) throw new Error("deployment not found");
+			return getDeploymentTopology(userId, deployment.id);
 		},
-		enabled: Boolean(deployment) && ["kne", "byos"].includes(deploymentType),
+		enabled: Boolean(userId && deployment) && ["kne", "byos"].includes(deploymentType),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -139,24 +137,12 @@ export function useDeploymentDetailData(args: {
 	const deploymentMap = useQuery<DeploymentMap>({
 		queryKey: queryKeys.deploymentMap(userId, deploymentId),
 		queryFn: async () => {
-			if (!deployment) throw new Error("deployment not found");
-			return getDeploymentMap(deployment.userId, deployment.id);
+			if (!userId || !deployment) throw new Error("deployment not found");
+			return getDeploymentMap(userId, deployment.id);
 		},
-		enabled: Boolean(deployment),
+		enabled: Boolean(userId && deployment),
 		retry: false,
 		staleTime: 10_000,
-	});
-
-	const deploymentInfoQ = useQuery<DeploymentInfoResponse>({
-		queryKey: ["deployment-info", userId, deploymentId],
-		queryFn: async () => {
-			if (!deployment) throw new Error("deployment not found");
-			return getDeploymentInfo(deployment.userId, deployment.id);
-		},
-		enabled: Boolean(deployment),
-		retry: false,
-		staleTime: 30_000,
-		refetchOnWindowFocus: false,
 	});
 	const forwardNetworkID = String(
 		deploymentInfoQ.data?.forwardNetworkId ?? "",
@@ -165,15 +151,12 @@ export function useDeploymentDetailData(args: {
 	const resourceEstimateQ = useQuery<DeploymentResourceEstimateResponse>({
 		queryKey: ["deployment-resource-estimate", userId, deploymentId],
 		queryFn: async () => {
-			if (!deployment) throw new Error("deployment not found");
+			if (!userId || !deployment) throw new Error("deployment not found");
 			try {
-				return await getDeploymentResourceEstimate(
-					deployment.userId,
-					deployment.id,
-				);
+				return await getDeploymentResourceEstimate(userId, deployment.id);
 			} catch (err) {
 				return {
-					userId: deployment.userId,
+					userId,
 					deploymentId: deployment.id,
 					family: String(deployment.family ?? ""),
 					engine: String(deployment.engine ?? ""),
@@ -192,7 +175,7 @@ export function useDeploymentDetailData(args: {
 				};
 			}
 		},
-		enabled: Boolean(deployment),
+		enabled: Boolean(userId && deployment),
 		retry: false,
 		staleTime: 30_000,
 		refetchOnWindowFocus: false,
@@ -218,10 +201,10 @@ export function useDeploymentDetailData(args: {
 	const deploymentSourceSharesQ = useQuery({
 		queryKey: queryKeys.deploymentSourceShares(userId, deploymentId),
 		queryFn: async () => {
-			if (!deployment) throw new Error("deployment not found");
-			return listDeploymentSourceShares(deployment.userId, deployment.id);
+			if (!userId || !deployment) throw new Error("deployment not found");
+			return listDeploymentSourceShares(userId, deployment.id);
 		},
-		enabled: Boolean(deployment),
+		enabled: Boolean(userId && deployment),
 		retry: false,
 		staleTime: 30_000,
 	});
@@ -279,7 +262,6 @@ export function useDeploymentDetailData(args: {
 		deploymentSourceSharesQ,
 		sharedDeploymentSources,
 		sharedDeploymentSourcesQ,
-		snap,
 		status,
 		topology,
 		userId,

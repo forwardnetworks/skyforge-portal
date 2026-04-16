@@ -344,19 +344,6 @@ const toolLaunches: ToolLaunchMap = {
 		navigationMode: "router",
 		launchMode: "embedded",
 	},
-	elk: {
-		id: "elk",
-		title: "Kibana",
-		category: "integrations",
-		experience: "advanced",
-		navigationSection: "integrations",
-		navigationLabel: "Kibana",
-		navigationOrder: 50,
-		navigationIcon: "database",
-		navigationHref: toolRouteHref("elk"),
-		navigationMode: "router",
-		launchMode: "embedded",
-	},
 	infoblox: {
 		id: "infoblox",
 		title: "Infoblox",
@@ -552,7 +539,6 @@ describe("side nav model", () => {
 				netboxEnabled: true,
 				jiraEnabled: true,
 				rapid7Enabled: true,
-				elkEnabled: true,
 				infobloxEnabled: true,
 				dnsEnabled: true,
 				swaggerUIEnabled: true,
@@ -584,9 +570,11 @@ describe("side nav model", () => {
 				"Nautobot",
 				"Jira",
 				"Rapid7",
-				"Kibana",
 				"Infoblox",
 			]),
+		);
+		expect(integrations?.children?.map((c) => c.label)).not.toContain(
+			"Kibana",
 		);
 		expect(integrations?.children?.map((c) => c.label)).not.toContain(
 			"Overview",

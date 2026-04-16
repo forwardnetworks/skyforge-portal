@@ -247,3 +247,11 @@ export async function getDeploymentInfo(
 		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/info`,
 	);
 }
+
+export async function getDeploymentInfoById(
+	deploymentId: string,
+): Promise<DeploymentInfoResponse> {
+	return apiFetch<DeploymentInfoResponse>(
+		`/api/deployments/by-id/${encodeURIComponent(deploymentId)}/info`,
+	);
+}

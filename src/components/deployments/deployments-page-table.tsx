@@ -16,13 +16,13 @@ export function DeploymentsPageTable({
 	return (
 		<Card>
 			<CardContent className="p-0">
-				{!state.snap.data ? (
+				{state.isPageLoading ? (
 					<div className="space-y-4 p-6">
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
 					</div>
-				) : state.deployments.length === 0 ? (
+				) : state.loadErrorMessage ? null : !state.snap.data ? null : state.deployments.length === 0 ? (
 					<EmptyState
 						icon={Inbox}
 						title="No deployments found"

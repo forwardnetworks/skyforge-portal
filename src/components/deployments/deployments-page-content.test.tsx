@@ -27,7 +27,9 @@ vi.mock("./deployments-delete-dialog", () => ({
 describe("DeploymentsPageContent", () => {
 	it("shows loading state until snapshot data arrives and always renders split shells", () => {
 		const { rerender } = render(
-			<DeploymentsPageContent state={{ snap: { data: null } } as never} />,
+			<DeploymentsPageContent
+				state={{ isPageLoading: true, snap: { data: null } } as never}
+			/>,
 		);
 
 		expect(screen.getByTestId("deployments-loading")).toBeInTheDocument();
@@ -39,7 +41,12 @@ describe("DeploymentsPageContent", () => {
 		expect(screen.getByTestId("deployments-delete-dialog")).toBeInTheDocument();
 
 		rerender(
-			<DeploymentsPageContent state={{ snap: { data: { runs: [] } } } as never} />,
+			<DeploymentsPageContent
+				state={{
+					isPageLoading: false,
+					snap: { data: { deployments: [], runs: [] } },
+				} as never}
+			/>,
 		);
 		expect(screen.queryByTestId("deployments-loading")).not.toBeInTheDocument();
 	});

@@ -6,12 +6,10 @@ import type { z } from "zod";
 import {
 	type AwsSsoStatusResponse,
 	type AwsSsoStartResponse,
-	type DashboardSnapshot,
 	type DeploymentLifetimePolicyResponse,
 	type SkyforgeUserScope,
 	getAwsTerraformReadiness,
 	getAwsSsoStatus,
-	getDashboardSummary,
 	getDeploymentLifetimePolicy,
 	getSession,
 	getUserAWSSSOCredentials,
@@ -32,7 +30,6 @@ import {
 } from "./create-deployment-shared";
 
 export function useCreateDeploymentSettings(args: {
-	queryClient: { getQueryData: <T>(key: readonly unknown[]) => T | undefined };
 	setValue: UseFormSetValue<z.infer<typeof formSchema>>;
 	userId?: string;
 	watchDeploymentMode?: string;
@@ -42,7 +39,6 @@ export function useCreateDeploymentSettings(args: {
 	watchUserScopeId?: string;
 }) {
 	const {
-		queryClient,
 		setValue,
 		userId,
 		watchDeploymentMode,
@@ -54,20 +50,6 @@ export function useCreateDeploymentSettings(args: {
 	const queryClientLive = useQueryClient();
 	const scopeId = watchUserScopeId ?? "";
 
-	const dash = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSummary(),
-		queryFn: getDashboardSummary,
-		initialData: () =>
-			queryClient.getQueryData<DashboardSnapshot>(
-				queryKeys.dashboardSummary(),
-			) ??
-			queryClient.getQueryData<DashboardSnapshot>(
-				queryKeys.dashboardSnapshot(),
-			) ?? null,
-		retry: false,
-		staleTime: 60_000,
-		refetchInterval: 60_000,
-	});
 	const userSettingsQ = useQuery({
 		queryKey: queryKeys.userSettings(),
 		queryFn: getUserSettings,
@@ -143,7 +125,6 @@ export function useCreateDeploymentSettings(args: {
 		});
 		return mine.length > 0 ? mine : allUserScopes;
 	}, [allUserScopes, effectiveUsername]);
-	const templatesUpdatedAt = dash.data?.templatesIndexUpdatedAt ?? "";
 	const watchSpec = useMemo(() => deploymentKindToSpec(watchKind), [watchKind]);
 	const managedFamilies = useMemo(
 		() =>
@@ -268,16 +249,6 @@ export function useCreateDeploymentSettings(args: {
 	]);
 
 	useEffect(() => {
-		const base = (watchTemplate || watchKind).split("/").pop() || watchKind;
-		const ts = new Date()
-			.toISOString()
-			.replace(/[-:]/g, "")
-			.replace(/\..+/, "")
-			.slice(0, 15);
-		setValue("name", `${base}-${ts}`);
-	}, [setValue, watchKind, watchTemplate]);
-
-	useEffect(() => {
 		if (!awsSsoSession?.requestId) return;
 
 		let cancelled = false;
@@ -333,7 +304,6 @@ export function useCreateDeploymentSettings(args: {
 	}, [awsSsoSession, queryClientLive]);
 
 	return {
-		dash,
 		awsSsoStatusQ,
 		awsTerraformReadinessQ,
 		userAwsSsoQ,
@@ -351,7 +321,6 @@ export function useCreateDeploymentSettings(args: {
 		lifetimeOptions,
 		managedFamilies,
 		sessionQ,
-		templatesUpdatedAt,
 		userScopes,
 		userSettingsQ,
 		watchSpec,

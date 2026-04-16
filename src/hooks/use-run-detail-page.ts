@@ -1,12 +1,13 @@
 import {
-	type DashboardSnapshot,
+	type DeploymentInfoResponse,
 	type JSONMap,
 	buildLoginUrl,
 	cancelRun,
-	getDashboardSnapshot,
+	getDeploymentInfoById,
+	getRunDetail,
 } from "@/lib/api-client";
 import { loginWithPopup } from "@/lib/auth-popup";
-import { invalidateDashboardQueries } from "@/lib/dashboard-query-sync";
+import { invalidateUserScopeActivityQueries } from "@/lib/dashboard-query-sync";
 import { queryKeys } from "@/lib/query-keys";
 import { type RunLogState, useRunEvents } from "@/lib/run-events";
 import {
@@ -28,22 +29,37 @@ export function useRunDetailPage(args: { runId: string }) {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 
-	const snap = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: getDashboardSnapshot,
+	const runQ = useQuery({
+		queryKey: queryKeys.runDetail(runId),
+		queryFn: async () => getRunDetail(runId),
 		initialData: () =>
-			(queryClient.getQueryData(queryKeys.dashboardSnapshot()) as
-				| DashboardSnapshot
-				| undefined) ?? null,
+			queryClient.getQueryData(queryKeys.runDetail(runId)) as
+				| Awaited<ReturnType<typeof getRunDetail>>
+				| undefined,
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 30_000,
+		refetchOnWindowFocus: false,
 	});
 
-	const run = (snap.data?.runs ?? []).find(
-		(entry: JSONMap) => String(entry.id ?? "") === runId,
-	) as JSONMap | undefined;
+	const run = runQ.data?.task as JSONMap | undefined;
 	const runStatus = String(run?.status ?? "").toLowerCase();
 	const canCancel = runStatus === "queued" || runStatus === "running";
+	const deploymentId = asString(run?.deploymentId);
+
+	const deploymentInfoQ = useQuery<DeploymentInfoResponse>({
+		queryKey: queryKeys.deploymentDetail(deploymentId),
+		queryFn: async () => getDeploymentInfoById(deploymentId),
+		initialData: () =>
+			deploymentId
+				? (queryClient.getQueryData(
+						queryKeys.deploymentDetail(deploymentId),
+					) as DeploymentInfoResponse | undefined)
+				: undefined,
+		enabled: Boolean(deploymentId),
+		retry: false,
+		staleTime: 30_000,
+		refetchOnWindowFocus: false,
+	});
 
 	const logs = useQuery({
 		queryKey: queryKeys.runLogs(runId),
@@ -71,8 +87,8 @@ export function useRunDetailPage(args: { runId: string }) {
 	);
 	const nodeSample = provenance.nodeResolutionSample.slice(0, 10);
 	const execution = useMemo(
-		() => buildRunExecutionContext(run, snap.data?.deployments ?? []),
-		[run, snap.data?.deployments],
+		() => buildRunExecutionContext(run, deploymentInfoQ.data?.deployment),
+		[deploymentInfoQ.data?.deployment, run],
 	);
 
 	const loginHref = buildLoginUrl(
@@ -83,7 +99,7 @@ export function useRunDetailPage(args: { runId: string }) {
 	async function handleCancel() {
 		if (!run) return;
 
-		const userId = String((run as { userId?: unknown }).userId ?? "");
+		const userId = String(runQ.data?.userId ?? (run as { userId?: unknown }).userId ?? "");
 		if (!userId) {
 			toast.error("Cannot cancel run", {
 				description: "Missing user ID.",
@@ -94,7 +110,7 @@ export function useRunDetailPage(args: { runId: string }) {
 		try {
 			await cancelRun(runId, userId);
 			toast.success("Run canceled");
-			await invalidateDashboardQueries(queryClient);
+			await invalidateUserScopeActivityQueries(queryClient, userId);
 			navigate({
 				to: "/dashboard/deployments",
 				search: { userId } as never,
@@ -149,8 +165,9 @@ export function useRunDetailPage(args: { runId: string }) {
 		nodeSample,
 		provenance,
 		run,
+		runQ,
 		runId,
-		snap,
+		deploymentInfoQ,
 	};
 }
 
@@ -247,12 +264,14 @@ function buildRunProvenance(run: JSONMap | undefined): RunProvenance {
 
 function buildRunExecutionContext(
 	run: JSONMap | undefined,
-	deployments: DashboardSnapshot["deployments"],
+	deployment?: {
+		id?: string;
+		name?: string;
+		family?: string;
+		engine?: string;
+	},
 ): RunExecutionContext {
 	const deploymentId = asString(run?.deploymentId);
-	const deployment = deployments.find(
-		(entry) => String(entry.id ?? "") === deploymentId,
-	);
 	const taskType = asString(run?.tpl_alias).toLowerCase();
 
 	let family = asString(run?.family || deployment?.family).toLowerCase();

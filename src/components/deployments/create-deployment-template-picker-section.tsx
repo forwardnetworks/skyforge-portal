@@ -218,7 +218,7 @@ export function CreateDeploymentTemplatePickerSection({ page }: Props) {
 							onValueChange={(value) => {
 								field.onChange(value);
 							}}
-							defaultValue={field.value}
+							value={field.value ?? ""}
 							disabled={templatesQ.isLoading || templates.length === 0}
 						>
 							<FormControl>

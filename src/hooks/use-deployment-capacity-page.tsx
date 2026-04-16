@@ -9,13 +9,12 @@ import { useDeploymentCapacityDerived } from "@/hooks/use-deployment-capacity-de
 import { useDeploymentCapacityRollups } from "@/hooks/use-deployment-capacity-rollups";
 import type {
 	CapacityRollupRow,
-	DashboardSnapshot,
 	DeploymentCapacityInventoryResponse,
-	UserScopeDeployment,
 } from "@/lib/api-client";
 import {
 	getDeploymentCapacityInventory,
 	getDeploymentCapacitySummary,
+	getDeploymentInfoById,
 	getDeploymentCapacityUnhealthyDevices,
 	refreshDeploymentCapacityRollups,
 } from "@/lib/api-client";
@@ -66,23 +65,20 @@ export function useDeploymentCapacityPage(deploymentId: string) {
 	const [tcamDialogOpen, setTcamDialogOpen] = useState(false);
 	const [tcamDialogText, setTcamDialogText] = useState("");
 
-	const snap = useQuery<DashboardSnapshot | null>({
-		queryKey: queryKeys.dashboardSnapshot(),
-		queryFn: async () => null,
-		initialData: null,
+	const deploymentInfoQ = useQuery({
+		queryKey: queryKeys.deploymentDetail(deploymentId),
+		queryFn: async () => getDeploymentInfoById(deploymentId),
 		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
+		staleTime: 30_000,
+		refetchOnWindowFocus: false,
 	});
 
-	const deployment = useMemo(() => {
-		return (snap.data?.deployments ?? []).find(
-			(d: UserScopeDeployment) => d.id === deploymentId,
-		);
-	}, [snap.data?.deployments, deploymentId]);
-
+	const deployment = deploymentInfoQ.data?.deployment;
 	const userId = String(deployment?.userId ?? "");
 	const forwardNetworkId = String(
-		(deployment?.config ?? {})["forwardNetworkId"] ?? "",
+		deploymentInfoQ.data?.forwardNetworkId ??
+			(deployment?.config ?? {})["forwardNetworkId"] ??
+			"",
 	);
 	const forwardEnabled = Boolean((deployment?.config ?? {})["forwardEnabled"]);
 
@@ -240,6 +236,7 @@ export function useDeploymentCapacityPage(deploymentId: string) {
 		tcamDialogText,
 		setTcamDialogText,
 		deployment,
+		deploymentInfoQ,
 		forwardNetworkId,
 		forwardEnabled,
 		summary,
