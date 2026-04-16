@@ -234,7 +234,7 @@ export function useDeploymentsPageActions(args: {
 			toast.success("Deployment deleted", {
 				description: `${target.name} has been removed.`,
 			});
-			await invalidateDashboardSnapshot();
+			await invalidateDeploymentListState(target.userId);
 			setDestroyDialogOpen(false);
 			setDestroyTarget(null);
 			setDestroyAlsoDeleteForward(false);
@@ -249,7 +249,7 @@ export function useDeploymentsPageActions(args: {
 		clearPendingAction,
 		destroyAlsoDeleteForward,
 		destroyTarget,
-		invalidateDashboardSnapshot,
+		invalidateDeploymentListState,
 		pendingActions,
 	]);
 
