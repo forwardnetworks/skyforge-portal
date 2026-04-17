@@ -26,6 +26,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "./ui/card";
+import type { PlatformWarning } from "../lib/api-client-platform";
 
 type DashboardPageContentProps = {
 	page: DashboardPageState;
@@ -112,6 +113,28 @@ function dashboardContentDetail(
 	return out;
 }
 
+function dedupePlatformWarnings(warnings: PlatformWarning[]): PlatformWarning[] {
+	const seen = new Set<string>();
+	const out: PlatformWarning[] = [];
+	for (const warning of warnings) {
+		if (!warning) {
+			continue;
+		}
+		const key = [
+			String(warning.code ?? "").trim(),
+			String(warning.summary ?? "").trim(),
+			String(warning.recommendedAction ?? "").trim(),
+			String(warning.severity ?? "").trim(),
+		].join("|");
+		if (seen.has(key)) {
+			continue;
+		}
+		seen.add(key);
+		out.push(warning);
+	}
+	return out;
+}
+
 export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const availability = page.platformAvailability;
 	const policy = availability?.policy;
@@ -120,7 +143,7 @@ export function DashboardPageContent({ page }: DashboardPageContentProps) {
 	const availabilityWarnings = availability?.warnings ?? [];
 	const overviewWarnings = page.adminOverview?.warnings ?? [];
 	const warnings = page.canAccessPlatformView
-		? [...availabilityWarnings, ...overviewWarnings]
+		? dedupePlatformWarnings([...availabilityWarnings, ...overviewWarnings])
 		: availabilityWarnings;
 	const simpleMode = page.uiExperienceMode === "simple";
 	const dashboardHeroActions = page.dashboardHeroActions;

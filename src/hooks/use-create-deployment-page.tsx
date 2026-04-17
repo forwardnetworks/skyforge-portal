@@ -5,8 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type * as z from "zod";
 import { USER_REPO_SOURCE, formSchema } from "./create-deployment-shared";
+import { validateUserScopeNetlabTemplateSync } from "../lib/api-client-deployments-actions-estimates";
+import { toAPITemplateSource } from "./create-deployment-shared";
 import { useCreateDeploymentData } from "./use-create-deployment-data";
 import { useCreateDeploymentMutations } from "./use-create-deployment-mutations";
+import { buildValidationEnvironment } from "./use-create-deployment-validate-mutation";
 
 export {
 	USER_REPO_SOURCE,
@@ -96,6 +99,13 @@ export function useCreateDeploymentPage(userId?: string) {
 			lifetimeAllowedHours: data.lifetimeAllowedHours,
 			variableGroups: data.variableGroups,
 		});
+
+	const validationEnvironment = buildValidationEnvironment(form, data.variableGroups);
+	const validationEnvKey = JSON.stringify(
+		Object.entries(validationEnvironment).sort(([left], [right]) =>
+			left.localeCompare(right),
+		),
+	);
 	const resetValidateTemplate = validateTemplate.reset;
 	const resetUploadNetlabTemplate = uploadNetlabTemplate.reset;
 
@@ -110,6 +120,58 @@ export function useCreateDeploymentPage(userId?: string) {
 		watchUserScopeId,
 		resetValidateTemplate,
 		resetUploadNetlabTemplate,
+	]);
+
+	useEffect(() => {
+		if (!watchUserScopeId || !watchTemplate) return;
+		if (data.watchSpec.engine !== "netlab") return;
+		if (watchKind === "terraform") return;
+		const body: {
+			source: string;
+			repo?: string;
+			dir?: string;
+			template: string;
+			environment?: Record<string, string>;
+		} = {
+			source: toAPITemplateSource(data.effectiveSource),
+			template: watchTemplate,
+		};
+		if (
+			(data.effectiveSource === "external" || data.effectiveSource === "custom") &&
+			watchTemplateRepoId
+		) {
+			body.repo = watchTemplateRepoId;
+		}
+		if (data.templatesQ.data?.dir) {
+			body.dir = data.templatesQ.data.dir;
+		}
+		if (Object.keys(validationEnvironment).length > 0) {
+			body.environment = validationEnvironment;
+		}
+		void queryClient.prefetchQuery({
+			queryKey: [
+				"userScopeNetlabValidationWarm",
+				watchUserScopeId,
+				watchKind,
+				data.effectiveSource,
+				watchTemplateRepoId ?? "",
+				data.templatesQ.data?.dir ?? "",
+				watchTemplate,
+				validationEnvKey,
+			],
+			queryFn: () => validateUserScopeNetlabTemplateSync(watchUserScopeId, body),
+			staleTime: 30_000,
+		});
+	}, [
+		data.effectiveSource,
+		data.templatesQ.data?.dir,
+		data.watchSpec.engine,
+		queryClient,
+		validationEnvKey,
+		watchKind,
+		watchTemplate,
+		watchTemplateRepoId,
+		watchUserScopeId,
 	]);
 
 	useEffect(() => {

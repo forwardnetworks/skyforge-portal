@@ -16,7 +16,7 @@ import {
 } from "../lib/deployment-actions";
 import { invalidateUserScopeActivityQueries } from "../lib/dashboard-query-sync";
 import { queryKeys } from "../lib/query-keys";
-import { forwardNetworkSessionHref } from "../lib/tool-launches";
+import { forwardDeploymentSessionHref } from "../lib/tool-launches";
 import { resolveLifetimeSelection } from "./deployments-page-utils";
 
 export function useDeploymentsPageActions(args: {
@@ -201,17 +201,22 @@ export function useDeploymentsPageActions(args: {
 	const openDeploymentInForward = useCallback(
 		async (deployment: UserScopeDeployment) => {
 			let forwardNetworkID = "";
+			let forwardSnapshotURL = "";
 			try {
 				const info = await getDeploymentInfo(deployment.userId, deployment.id);
 				forwardNetworkID = String(info.forwardNetworkId ?? "").trim();
+				forwardSnapshotURL = String(info.forwardSnapshotUrl ?? "").trim();
 			} catch {
 				// If lookup fails, keep the primary message below.
 			}
-			if (!forwardNetworkID) {
+			if (!forwardNetworkID && !forwardSnapshotURL) {
 				toast.message("Forward network is not available yet");
 				return;
 			}
-			const url = forwardNetworkSessionHref(forwardNetworkID);
+			const url = forwardDeploymentSessionHref({
+				networkID: forwardNetworkID,
+				snapshotURL: forwardSnapshotURL,
+			});
 			const popup = window.open(url, "_blank", "noopener,noreferrer");
 			if (!popup) {
 				toast.error("Pop-up blocked", {

@@ -147,6 +147,9 @@ export function useDeploymentDetailData(args: {
 	const forwardNetworkID = String(
 		deploymentInfoQ.data?.forwardNetworkId ?? "",
 	).trim();
+	const forwardSnapshotURL = String(
+		deploymentInfoQ.data?.forwardSnapshotUrl ?? "",
+	).trim();
 
 	const resourceEstimateQ = useQuery<DeploymentResourceEstimateResponse>({
 		queryKey: ["deployment-resource-estimate", userId, deploymentId],
@@ -245,6 +248,7 @@ export function useDeploymentDetailData(args: {
 		forwardTopologySourceDeploymentId,
 		forwardTopologySourceUserId,
 		forwardNetworkID,
+		forwardSnapshotURL,
 		isKNEDeployment,
 		primaryAction,
 		resourceEstimate,

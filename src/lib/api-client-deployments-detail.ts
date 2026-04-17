@@ -218,6 +218,8 @@ type DeploymentPlacementSummaryCompat = {
 	availablePoolClasses?: string[];
 	actualPoolClasses?: string[];
 	actualNodes?: string[];
+	inventorySnapshotAvailable?: boolean;
+	capacityPreflightAvailable?: boolean;
 	actualNodeCount?: number;
 	readyPodCount?: number;
 	candidateNodeCount?: number;

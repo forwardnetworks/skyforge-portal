@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DashboardPageContent } from "./dashboard-page-content";
+import type { PlatformWarning } from "../lib/api-client-platform";
 
 vi.mock("@tanstack/react-router", () => ({
 	Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
@@ -38,12 +39,12 @@ vi.mock("./platform-warnings-card", () => ({
 	}: {
 		title?: string;
 		description?: string;
-		warnings?: string[];
+		warnings?: PlatformWarning[];
 	}) => (
 		<div data-testid="platform-warnings">
 			<div>{title}</div>
 			<div>{description}</div>
-			<div>{(warnings ?? []).join("|")}</div>
+			<div>{(warnings ?? []).map((warning) => warning.code ?? warning.summary ?? "").join("|")}</div>
 		</div>
 	),
 }));
@@ -73,6 +74,16 @@ vi.mock("./dashboard-shared", () => ({
 }));
 
 function makePage(overrides: Record<string, unknown> = {}) {
+	const availabilityWarning: PlatformWarning = {
+		code: "availability-warning",
+		severity: "warning",
+		summary: "availability warning",
+	};
+	const adminWarning: PlatformWarning = {
+		code: "admin-warning",
+		severity: "warning",
+		summary: "admin warning",
+	};
 	return {
 		canAccessPlatformView: false,
 		statusSummary: undefined,
@@ -319,9 +330,9 @@ function makePage(overrides: Record<string, unknown> = {}) {
 			{ id: "one", text: "step one", order: 10 },
 			{ id: "two", text: "step two", order: 20 },
 		],
-		adminOverview: { warnings: ["admin warning"] },
+		adminOverview: { warnings: [adminWarning] },
 		platformAvailability: {
-			warnings: ["availability warning"],
+			warnings: [availabilityWarning],
 			policy: {
 				primaryOperatingMode: "curated-demo",
 				quota: { maxConcurrentLabs: 4, maxPersistentLabs: 2 },
@@ -349,7 +360,7 @@ describe("DashboardPageContent", () => {
 		expect(screen.getByTestId("next-steps-card")).toBeInTheDocument();
 		expect(screen.queryByTestId("admin-summary-card")).not.toBeInTheDocument();
 		expect(screen.getByTestId("platform-warnings").textContent).toBe(
-			"Platform conditionsLive hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions.availability warning",
+			"Platform conditionsLive hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions.availability-warning",
 		);
 	});
 
@@ -363,7 +374,7 @@ describe("DashboardPageContent", () => {
 		expect(screen.getByTestId("admin-summary-card")).toBeInTheDocument();
 		expect(screen.queryByTestId("next-steps-card")).not.toBeInTheDocument();
 		expect(screen.getByTestId("platform-warnings").textContent).toBe(
-			"Platform conditionsLive hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions.availability warning|admin warning",
+			"Platform conditionsLive hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions.availability-warning|admin-warning",
 		);
 		expect(screen.getByText("Concurrent headroom")).toBeInTheDocument();
 		expect(screen.getByText("Primary mode")).toBeInTheDocument();
@@ -389,5 +400,43 @@ describe("DashboardPageContent", () => {
 		expect(screen.queryByTestId("system-status-card")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("availability-card")).not.toBeInTheDocument();
 		expect(screen.queryByTestId("policy-summary-card")).not.toBeInTheDocument();
+	});
+
+	it("dedupes duplicated warning payloads across availability and admin overview", () => {
+		const duplicateWarning: PlatformWarning = {
+			code: "inventory-snapshot-missing",
+			severity: "warning",
+			summary: "Cluster inventory snapshot is not available yet.",
+			recommendedAction: "Verify the platform inventory refresh worker cron is healthy.",
+		};
+		render(
+			<DashboardPageContent
+				page={
+					makePage({
+						canAccessPlatformView: true,
+						adminOverview: { warnings: [duplicateWarning] },
+						platformAvailability: {
+							warnings: [duplicateWarning],
+							policy: {
+								primaryOperatingMode: "curated-demo",
+								quota: { maxConcurrentLabs: 4, maxPersistentLabs: 2 },
+							},
+							usage: {
+								remainingConcurrentLabs: 2,
+								remainingPersistentLabs: 1,
+								activeDeployments: 2,
+								persistentLabs: 1,
+								requestedReservations: 3,
+								approvedReservations: 1,
+							},
+						},
+					}) as never
+				}
+			/>,
+		);
+
+		expect(screen.getByTestId("platform-warnings").textContent).toBe(
+			"Platform conditionsLive hybrid-placement, capacity, and degraded-mode warnings affecting launch decisions.inventory-snapshot-missing",
+		);
 	});
 });

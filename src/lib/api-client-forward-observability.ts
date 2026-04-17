@@ -67,6 +67,12 @@ export type ForwardObservabilitySummary = {
 	prometheusReachable: boolean;
 	prometheusUpSum?: number;
 	prometheusTargetCount?: number;
+	targetJobs?: {
+		job: string;
+		totalTargets: number;
+		upTargets: number;
+		downTargets: number;
+	}[];
 	error?: string;
 	checkedAt: ISO8601;
 };

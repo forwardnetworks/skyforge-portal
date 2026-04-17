@@ -13,6 +13,11 @@ function formatList(values?: string[] | null): string {
 	return values.join(", ");
 }
 
+function formatMaybeCount(value: number | undefined, known: boolean | undefined): string {
+	if (!known) return "—";
+	return String(value ?? 0);
+}
+
 export function DeploymentDetailPlacementCard({
 	page,
 }: { page: DeploymentDetailPageState }) {
@@ -73,7 +78,15 @@ export function DeploymentDetailPlacementCard({
 									Candidates / ready pods
 								</div>
 								<div className="mt-1 font-medium">
-									{placement.candidateNodeCount ?? 0} / {placement.readyPodCount ?? 0}
+									{formatMaybeCount(
+										placement.candidateNodeCount,
+										placement.capacityPreflightAvailable,
+									)}{" "}
+									/{" "}
+									{formatMaybeCount(
+										placement.readyPodCount,
+										placement.inventorySnapshotAvailable,
+									)}
 								</div>
 							</div>
 						</div>

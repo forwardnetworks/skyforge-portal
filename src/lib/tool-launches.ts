@@ -183,6 +183,43 @@ export function forwardNetworkSessionHref(networkID: string): string {
 	return `/api/forward/networks/${encodeURIComponent(id)}/session`;
 }
 
+function normalizeForwardNextPath(raw: string): string {
+	const value = String(raw ?? "").trim();
+	if (!value) return "";
+	const isAbsoluteUrl = /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
+	if (!isAbsoluteUrl && !value.startsWith("/")) return "";
+	try {
+		const base =
+			typeof window !== "undefined"
+				? window.location.origin
+				: "https://skyforge.invalid";
+		const parsed = new URL(value, base);
+		const next = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+		return next.startsWith("/") ? next : "";
+	} catch {
+		return value.startsWith("/") ? value : "";
+	}
+}
+
+export function forwardSessionHref(nextPath: string): string {
+	const next = normalizeForwardNextPath(nextPath);
+	if (!next) return "";
+	return `/api/forward/session?next=${encodeURIComponent(next)}`;
+}
+
+export function forwardSnapshotSessionHref(snapshotURL: string): string {
+	return forwardSessionHref(snapshotURL);
+}
+
+export function forwardDeploymentSessionHref(args: {
+	networkID?: string;
+	snapshotURL?: string;
+}): string {
+	const snapshotHref = forwardSnapshotSessionHref(args.snapshotURL ?? "");
+	if (snapshotHref) return snapshotHref;
+	return forwardNetworkSessionHref(args.networkID ?? "");
+}
+
 export function isDirectToolLaunch(tool?: ToolLaunchEntry | null): boolean {
 	return String(tool?.navigationMode ?? "").trim() === "direct";
 }

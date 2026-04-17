@@ -1,7 +1,7 @@
 import { DeploymentStatusBadge } from "@/components/deployments/deployment-status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { DeploymentDetailPageState } from "@/hooks/use-deployment-detail-page";
-import { forwardNetworkSessionHref } from "@/lib/tool-launches";
+import { forwardDeploymentSessionHref } from "@/lib/tool-launches";
 import { Link } from "@tanstack/react-router";
 import {
 	ArrowLeft,
@@ -23,13 +23,17 @@ export function DeploymentDetailHeader({
 		primaryAction,
 		isBusy,
 		forwardNetworkID,
+		forwardSnapshotURL,
 		handleStart,
 		handleStop,
 		setDestroyDialogOpen,
 		actionPending,
 	} = page;
 	if (!deployment) return null;
-	const forwardOpenHref = forwardNetworkSessionHref(forwardNetworkID);
+	const forwardOpenHref = forwardDeploymentSessionHref({
+		networkID: forwardNetworkID,
+		snapshotURL: forwardSnapshotURL,
+	});
 	return (
 		<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 			<div className="flex items-center gap-3">

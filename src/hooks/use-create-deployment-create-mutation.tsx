@@ -40,6 +40,16 @@ export function useCreateDeploymentCreateMutation(
 	} = args;
 
 	return useMutation({
+		onMutate: async (values) => {
+			const toastId = `create-deployment-${Date.now()}`;
+			toast.loading("Creating deployment…", {
+				id: toastId,
+				description:
+					"Opening deployments while Skyforge validates the template and queues bring-up.",
+			});
+			await navigate({ to: "/dashboard/deployments" });
+			return { toastId };
+		},
 		mutationFn: async (values: z.infer<typeof formSchema>) => {
 			const normalizedKind = applyDeploymentModeToKind(
 				values.kind,
@@ -135,7 +145,7 @@ export function useCreateDeploymentCreateMutation(
 			};
 			return createUserScopeDeployment(values.userId, body);
 		},
-		onSuccess: async (created, variables) => {
+		onSuccess: async (created, variables, context) => {
 			const deploymentId = String(created?.id ?? "").trim();
 			const scopeId = String(created?.userId ?? variables.userId ?? "").trim();
 			if (!deploymentId || !scopeId) {
@@ -155,6 +165,7 @@ export function useCreateDeploymentCreateMutation(
 				);
 				if (action.queued) {
 					toast.success("Deployment created and bring-up queued", {
+						id: context?.toastId,
 						description: deploymentActionQueueDescription(
 							action.queue,
 							variables.name,
@@ -163,23 +174,24 @@ export function useCreateDeploymentCreateMutation(
 				} else {
 					toast.message(
 						noOpMessageForDeploymentAction("create", action.meta.reason),
-						{ description: variables.name },
+						{ id: context?.toastId, description: variables.name },
 					);
 				}
 			} catch (error) {
 				toast.error("Deployment created, but bring-up was not queued", {
+					id: context?.toastId,
 					description: (error as Error).message,
 				});
 			}
-			await Promise.all([
-				invalidateDashboardSnapshotQuery(queryClient),
-				invalidateUserScopeActivityQueries(queryClient, scopeId),
-			]);
 			await navigate({
 				to: "/dashboard/deployments/$deploymentId",
 				params: { deploymentId },
 				search: { tab: "topology" } as any,
 			});
+			void Promise.all([
+				invalidateDashboardSnapshotQuery(queryClient),
+				invalidateUserScopeActivityQueries(queryClient, scopeId),
+			]);
 			if (shouldOpenForward && typeof window !== "undefined") {
 				void (async () => {
 					try {
@@ -198,8 +210,9 @@ export function useCreateDeploymentCreateMutation(
 				})();
 			}
 		},
-		onError: (error) => {
+		onError: (error, _variables, context) => {
 			toast.error("Failed to create deployment", {
+				id: context?.toastId,
 				description: (error as Error).message,
 			});
 		},
