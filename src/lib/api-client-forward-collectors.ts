@@ -110,7 +110,6 @@ export type RequestCurrentUserForwardTenantRebuildRequest = {
 	mode: string;
 	reason?: string;
 	metadata?: Record<string, string>;
-	tenantKind?: ForwardTenantKind;
 };
 export type ForwardTenantResetRunsResponse =
 	operations["GET:skyforge.ListCurrentUserForwardTenantRebuildRuns"]["responses"][200]["content"]["application/json"];

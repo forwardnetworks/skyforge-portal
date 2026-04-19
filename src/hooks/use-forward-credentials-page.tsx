@@ -24,7 +24,6 @@ import {
 	revealCurrentUserForwardTenantCredentialPassword,
 	type ForwardTenantCredentialResponse,
 	type ForwardTenantFeatureFlags,
-	type ForwardTenantKind,
 	type ForwardTenantResetRunsResponse,
 } from "@/lib/api-client-forward-collectors";
 import {
@@ -89,12 +88,6 @@ function tenantKindLabel(kind: ManagedForwardTenantKind): string {
 	if (kind === "demo") return "demo org";
 	if (kind === "customer") return "customer org";
 	return "deployment org";
-}
-
-function tenantKindPath(kind: ManagedForwardTenantKind): ForwardTenantKind {
-	if (kind === "demo") return "demo";
-	if (kind === "customer") return "customer";
-	return "primary";
 }
 
 export function useForwardCredentialsPage() {
@@ -293,20 +286,17 @@ export function useForwardCredentialsPage() {
 			input.tenant === "demo"
 				? requestCurrentUserForwardDemoTenantRebuild({
 						mode: input.mode,
-						tenantKind: tenantKindPath(input.tenant),
 						reason: "",
 						metadata: {},
 					})
 				: input.tenant === "customer"
 					? requestCurrentUserForwardCustomerTenantRebuild({
 							mode: input.mode,
-							tenantKind: tenantKindPath(input.tenant),
 							reason: "",
 							metadata: {},
 						})
 					: requestCurrentUserForwardTenantRebuild({
 							mode: input.mode,
-							tenantKind: tenantKindPath(input.tenant),
 							reason: "",
 							metadata: {},
 						}),
