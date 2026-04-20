@@ -15,6 +15,7 @@ import {
 	adminListEphemeralRuntimes,
 	getAdminForwardSupportCredential,
 	getAdminImpersonateStatus,
+	getAdminTaskQueueDiag,
 	reconcileAdminForwardCustomerBannerAllUsers,
 	reconcileQueuedTasks,
 	reconcileRunningTasks,
@@ -72,12 +73,20 @@ export function useAdminSettingsOperations({
 		},
 	});
 
+	const adminTaskQueueDiagQ = useQuery({
+		queryKey: queryKeys.adminTaskQueueDiag(),
+		queryFn: getAdminTaskQueueDiag,
+		staleTime: 10_000,
+		retry: false,
+	});
+
 	const reconcileQueued = useMutation({
 		mutationFn: async (limit: number) => reconcileQueuedTasks({ limit }),
 		onSuccess: (res) => {
 			toast.success("Reconciled queued tasks", {
 				description: `Considered ${res.consideredTasks}, republished ${res.republished}, errors ${res.publishErrors}`,
 			});
+			void adminTaskQueueDiagQ.refetch();
 		},
 		onError: (e) => {
 			toast.error("Failed to reconcile queued tasks", {
@@ -101,6 +110,7 @@ export function useAdminSettingsOperations({
 			toast.success("Reconciled running tasks", {
 				description: `Considered ${res.consideredTasks}, marked failed ${res.markedFailed}, errors ${res.finishErrors}`,
 			});
+			void adminTaskQueueDiagQ.refetch();
 		},
 		onError: (e) => {
 			toast.error("Failed to reconcile running tasks", {
@@ -138,6 +148,7 @@ export function useAdminSettingsOperations({
 					description: `Namespaces ${res.namespacesConsidered}, owners ${res.topologyOwnersFound}, deleted topologies ${res.topologiesDeleted}`,
 				},
 			);
+			void adminTaskQueueDiagQ.refetch();
 		},
 		onError: (e) => {
 			toast.error("Failed to clean scoped pods", {
@@ -158,7 +169,9 @@ export function useAdminSettingsOperations({
 		onSuccess: (res, dryRun) => {
 			setWorkspaceCleanupResult(res);
 			toast.success(
-				dryRun ? "Workspace cleanup preview complete" : "Workspace cleanup complete",
+				dryRun
+					? "Workspace cleanup preview complete"
+					: "Workspace cleanup complete",
 				{
 					description: `scopes matched ${res.scopesMatched}, deleted ${res.scopesDeleted}, namespaces matched ${res.namespacesMatched}, deleted ${res.namespacesDeleted}`,
 				},
@@ -284,18 +297,19 @@ export function useAdminSettingsOperations({
 	return {
 		impersonateStatusQ,
 		adminForwardSupportCredentialQ,
+		adminTaskQueueDiagQ,
 		adminForwardSupportPassword,
 		setAdminForwardSupportPassword,
 		revealAdminForwardSupportCredentialMutation,
 		reconcileAdminForwardCustomerBannerMutation,
 		reconcileQueued,
 		reconcileRunning,
-			adminEphemeralRuntimesQ,
-			cleanupEphemeralRuntimesResult,
-			cleanupEphemeralRuntimes,
-			forceFinalizeEphemeralRuntimesResult,
-			forceFinalizeEphemeralRuntimes,
-			cleanupScopeMode,
+		adminEphemeralRuntimesQ,
+		cleanupEphemeralRuntimesResult,
+		cleanupEphemeralRuntimes,
+		forceFinalizeEphemeralRuntimesResult,
+		forceFinalizeEphemeralRuntimes,
+		cleanupScopeMode,
 		setCleanupScopeMode,
 		cleanupScopeID,
 		setCleanupScopeID,

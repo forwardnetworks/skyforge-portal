@@ -36,6 +36,46 @@ export async function reconcileRunningTasks(
 	);
 }
 
+export type AdminTaskQueueTypeCount = {
+	taskType: string;
+	count: number;
+	oldestAgeSec?: number;
+};
+
+export type AdminTaskQueueOffender = {
+	taskId: number;
+	userScopeId: string;
+	deploymentId?: string;
+	taskType: string;
+	priority: number;
+	ageSeconds: number;
+	publishFailures: number;
+	capacityRequeues: number;
+	latestEventType?: string;
+	latestEventAt?: string;
+};
+
+export type AdminTaskQueueDiagResponse = {
+	queued: number;
+	running: number;
+	oldestQueuedAgeSec: number;
+	workerHeartbeatAgeSec: number;
+	publishFailures10m: number;
+	publishFailuresLatest?: string;
+	stuckQueuedCandidates: number;
+	status: string;
+	queuedByType: AdminTaskQueueTypeCount[];
+	runningByType: AdminTaskQueueTypeCount[];
+	queuedOffenders: AdminTaskQueueOffender[];
+	signals: string[];
+};
+
+export async function getAdminTaskQueueDiag(): Promise<AdminTaskQueueDiagResponse> {
+	return apiFetch<AdminTaskQueueDiagResponse>("/api/admin/tasks/diag", {
+		method: "GET",
+	});
+}
+
 export type AdminTenantPodCleanupRequest = {
 	userScopeId?: string;
 	namespace?: string;

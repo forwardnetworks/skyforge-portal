@@ -5,28 +5,33 @@ import type {
 	AdminTasksSectionProps,
 } from "../components/settings-section-types";
 import type { SkyforgeUserScope } from "../lib/api-client";
-import { useAdminSettingsAudit } from "./use-admin-settings-audit";
-import { useAdminSettingsAuth } from "./use-admin-settings-auth";
-import { useAdminSettingsOperations } from "./use-admin-settings-operations";
+import type { useAdminSettingsAudit } from "./use-admin-settings-audit";
+import type { useAdminSettingsAuth } from "./use-admin-settings-auth";
+import type { useAdminSettingsOperations } from "./use-admin-settings-operations";
 
-export function buildRuntimeSummary(data: {
-	total?: number;
-	active?: number;
-	inactive?: number;
-	expired?: number;
-	eligibleForCleanup?: number;
-	eligibleForForceFinalize?: number;
-	terminating?: number;
-	resourceTotals?: {
-		pods?: number;
-		services?: number;
-		jobs?: number;
-		configMaps?: number;
-		topologies?: number;
-		virtualMachines?: number;
-		virtualMachineInstances?: number;
-	};
-} | null | undefined) {
+export function buildRuntimeSummary(
+	data:
+		| {
+				total?: number;
+				active?: number;
+				inactive?: number;
+				expired?: number;
+				eligibleForCleanup?: number;
+				eligibleForForceFinalize?: number;
+				terminating?: number;
+				resourceTotals?: {
+					pods?: number;
+					services?: number;
+					jobs?: number;
+					configMaps?: number;
+					topologies?: number;
+					virtualMachines?: number;
+					virtualMachineInstances?: number;
+				};
+		  }
+		| null
+		| undefined,
+) {
 	return {
 		total: data?.total ?? 0,
 		active: data?.active ?? 0,
@@ -105,7 +110,8 @@ function useAdminSettingsAuditSection(args: {
 			auditSummary: audit.auditQ.data?.summary,
 			auditIntegrityStatus: audit.auditIntegrityQ.data?.status,
 			auditIntegrityLoading: audit.auditIntegrityQ.isLoading,
-			auditExportSignatures: audit.auditExportSignaturesQ.data?.signatures ?? [],
+			auditExportSignatures:
+				audit.auditExportSignaturesQ.data?.signatures ?? [],
 			auditExportSignaturesLoading: audit.auditExportSignaturesQ.isLoading,
 			auditVerifyResult: audit.auditVerifyResult,
 			auditVerifyPending: audit.auditVerifyPending,
@@ -142,6 +148,11 @@ function useAdminSettingsTasksSection(args: {
 		() => ({
 			reconcileQueuedPending: ops.reconcileQueued.isPending,
 			reconcileRunningPending: ops.reconcileRunning.isPending,
+			adminTaskQueueDiagLoading: ops.adminTaskQueueDiagQ.isLoading,
+			adminTaskQueueDiag: ops.adminTaskQueueDiagQ.data,
+			onRefreshTaskQueueDiag: () => {
+				void ops.adminTaskQueueDiagQ.refetch();
+			},
 			onReconcileQueued: () => ops.reconcileQueued.mutate(200),
 			onReconcileRunning: () =>
 				ops.reconcileRunning.mutate({
@@ -173,10 +184,8 @@ function useAdminSettingsTasksSection(args: {
 			adminEphemeralRuntimeSummary: buildRuntimeSummary(
 				ops.adminEphemeralRuntimesQ.data,
 			),
-			cleanupEphemeralRuntimesPending:
-				ops.cleanupEphemeralRuntimes.isPending,
-			cleanupEphemeralRuntimesResult:
-				ops.cleanupEphemeralRuntimesResult,
+			cleanupEphemeralRuntimesPending: ops.cleanupEphemeralRuntimes.isPending,
+			cleanupEphemeralRuntimesResult: ops.cleanupEphemeralRuntimesResult,
 			forceFinalizeEphemeralRuntimesPending:
 				ops.forceFinalizeEphemeralRuntimes.isPending,
 			forceFinalizeEphemeralRuntimesResult:

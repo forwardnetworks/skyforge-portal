@@ -1,11 +1,5 @@
 import { useRef, useState } from "react";
-import type {
-	AdminAuditSectionProps,
-	AdminMaintenanceSectionProps,
-	AdminTasksSectionProps,
-	AdminUsersSectionProps,
-	SettingsAdminSectionProps,
-} from "./settings-section-types";
+import type { SettingsSectionId } from "../lib/settings-sections";
 import { AdminOverviewAuthCard } from "./admin-overview-auth-card";
 import { AdminOverviewConfigCard } from "./admin-overview-config-card";
 import { AdminOverviewForwardDemoSeedsCard } from "./admin-overview-forward-demo-seeds-card";
@@ -25,6 +19,13 @@ import { AdminUsersManagementCard } from "./admin-users-management-card";
 import { AdminUsersPlatformPolicyCard } from "./admin-users-platform-policy-card";
 import { AdminUsersPurgeCard } from "./admin-users-purge-card";
 import { AdminUsersRbacCard } from "./admin-users-rbac-card";
+import type {
+	AdminAuditSectionProps,
+	AdminMaintenanceSectionProps,
+	AdminTasksSectionProps,
+	AdminUsersSectionProps,
+	SettingsAdminSectionProps,
+} from "./settings-section-types";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -50,7 +51,6 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "./ui/sheet";
-import type { SettingsSectionId } from "../lib/settings-sections";
 
 export function renderAdminSettingsSection(
 	section: Exclude<SettingsSectionId, "profile">,
@@ -156,8 +156,14 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 	}
 
 	async function onCopySignatureMetadata(signatureID: string) {
-		const signature = props.auditExportSignatures.find((item) => item.id === signatureID);
-		if (!signature || typeof navigator === "undefined" || !navigator.clipboard) {
+		const signature = props.auditExportSignatures.find(
+			(item) => item.id === signatureID,
+		);
+		if (
+			!signature ||
+			typeof navigator === "undefined" ||
+			!navigator.clipboard
+		) {
 			return;
 		}
 		try {
@@ -232,7 +238,9 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 									</Badge>
 								))
 							) : (
-								<span className="text-sm text-muted-foreground">No outcomes</span>
+								<span className="text-sm text-muted-foreground">
+									No outcomes
+								</span>
 							)}
 						</div>
 					</div>
@@ -247,10 +255,14 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 								<div className="flex items-center gap-2">
 									<Badge
 										variant={
-											props.auditIntegrityStatus.verified ? "secondary" : "destructive"
+											props.auditIntegrityStatus.verified
+												? "secondary"
+												: "destructive"
 										}
 									>
-										{props.auditIntegrityStatus.verified ? "verified" : "broken"}
+										{props.auditIntegrityStatus.verified
+											? "verified"
+											: "broken"}
 									</Badge>
 									<span className="text-muted-foreground">
 										v{props.auditIntegrityStatus.chainVersion}
@@ -262,7 +274,8 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 								{props.auditIntegrityStatus.firstBrokenId ? (
 									<div className="text-destructive text-xs">
 										first broken id {props.auditIntegrityStatus.firstBrokenId}:{" "}
-										{props.auditIntegrityStatus.firstBrokenError || "verification error"}
+										{props.auditIntegrityStatus.firstBrokenError ||
+											"verification error"}
 									</div>
 								) : null}
 							</div>
@@ -373,10 +386,18 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 							{range}
 						</Button>
 					))}
-					<Button variant="outline" size="sm" onClick={props.onAuditClearFilters}>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={props.onAuditClearFilters}
+					>
 						Clear
 					</Button>
-					<Button variant="outline" size="sm" onClick={() => props.onAuditExport("csv")}>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => props.onAuditExport("csv")}
+					>
 						Export CSV
 					</Button>
 					<Button
@@ -442,23 +463,35 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 						}}
 					/>
 					{props.auditVerifyError ? (
-						<div className="mt-2 text-sm text-destructive">{props.auditVerifyError}</div>
+						<div className="mt-2 text-sm text-destructive">
+							{props.auditVerifyError}
+						</div>
 					) : null}
 					{props.auditVerifyResult ? (
 						<div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-							<Badge variant={props.auditVerifyResult.verified ? "secondary" : "destructive"}>
-								{props.auditVerifyResult.verified ? "Signature verified" : "Verification failed"}
+							<Badge
+								variant={
+									props.auditVerifyResult.verified ? "secondary" : "destructive"
+								}
+							>
+								{props.auditVerifyResult.verified
+									? "Signature verified"
+									: "Verification failed"}
 							</Badge>
 							<span className="font-mono text-xs text-muted-foreground">
 								{props.auditVerifyResult.signatureId}
 							</span>
 							{props.auditVerifyResult.reason ? (
-								<span className="text-muted-foreground">{props.auditVerifyResult.reason}</span>
+								<span className="text-muted-foreground">
+									{props.auditVerifyResult.reason}
+								</span>
 							) : null}
 						</div>
 					) : null}
 					{copyStatus ? (
-						<div className="mt-2 text-xs text-muted-foreground">{copyStatus}</div>
+						<div className="mt-2 text-xs text-muted-foreground">
+							{copyStatus}
+						</div>
 					) : null}
 					{props.auditExportSignaturesLoading ? (
 						<div className="mt-2 text-sm text-muted-foreground">Loading…</div>
@@ -485,12 +518,18 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 								<tbody>
 									{props.auditExportSignatures.slice(0, 20).map((sig) => (
 										<tr key={sig.id} className="border-t">
-											<td className="px-2 py-1 font-mono text-xs">{sig.createdAt}</td>
+											<td className="px-2 py-1 font-mono text-xs">
+												{sig.createdAt}
+											</td>
 											<td className="px-2 py-1">{sig.actorUsername}</td>
 											<td className="px-2 py-1">{sig.exportFormat}</td>
 											<td className="px-2 py-1">{sig.eventCount}</td>
-											<td className="px-2 py-1 font-mono text-xs">{sig.keyId}</td>
-											<td className="px-2 py-1 font-mono text-xs">{sig.bodySha256}</td>
+											<td className="px-2 py-1 font-mono text-xs">
+												{sig.keyId}
+											</td>
+											<td className="px-2 py-1 font-mono text-xs">
+												{sig.bodySha256}
+											</td>
 											<td className="px-2 py-1 font-mono text-xs">{sig.id}</td>
 											<td className="px-2 py-1">
 												<Button
@@ -664,6 +703,8 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 }
 
 function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
+	const diag = props.adminTaskQueueDiag;
+
 	return (
 		<>
 			<Card>
@@ -674,6 +715,166 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-6">
+					<div className="space-y-3 rounded-md border p-3">
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+							<div>
+								<div className="font-medium">Live queue diagnostics</div>
+								<div className="text-sm text-muted-foreground">
+									Recent queue pressure, worker heartbeat age, type breakdowns,
+									and the oldest queued offenders.
+								</div>
+							</div>
+							<Button
+								variant="outline"
+								disabled={props.adminTaskQueueDiagLoading}
+								onClick={props.onRefreshTaskQueueDiag}
+							>
+								{props.adminTaskQueueDiagLoading
+									? "Refreshing…"
+									: "Refresh diagnostics"}
+							</Button>
+						</div>
+						{diag ? (
+							<>
+								<div className="flex flex-wrap gap-2 text-sm">
+									<Badge
+										variant={diag.status === "ok" ? "secondary" : "destructive"}
+									>
+										{diag.status}
+									</Badge>
+									<Badge variant="outline">queued {diag.queued}</Badge>
+									<Badge variant="outline">running {diag.running}</Badge>
+									<Badge variant="outline">
+										oldest queued {diag.oldestQueuedAgeSec}s
+									</Badge>
+									<Badge variant="outline">
+										worker heartbeat {diag.workerHeartbeatAgeSec}s
+									</Badge>
+									<Badge variant="outline">
+										publish failures 10m {diag.publishFailures10m}
+									</Badge>
+									<Badge variant="outline">
+										stuck candidates {diag.stuckQueuedCandidates}
+									</Badge>
+								</div>
+								{diag.signals.length ? (
+									<div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+										<div className="font-medium text-amber-700">
+											Queue signals
+										</div>
+										<div className="mt-2 space-y-1 text-amber-700">
+											{diag.signals.map((signal) => (
+												<div key={signal}>{signal}</div>
+											))}
+										</div>
+									</div>
+								) : (
+									<div className="rounded-md border border-emerald-500/40 bg-emerald-500/5 p-3 text-sm text-emerald-700">
+										No queue degradation signals detected.
+									</div>
+								)}
+								<div className="grid gap-3 lg:grid-cols-2">
+									<div className="rounded-md border p-3">
+										<div className="font-medium">Queued by type</div>
+										<div className="mt-2 flex flex-wrap gap-2">
+											{diag.queuedByType.length ? (
+												diag.queuedByType.map((entry) => (
+													<Badge
+														key={`queued-${entry.taskType}`}
+														variant="outline"
+													>
+														{entry.taskType} · {entry.count}
+														{entry.oldestAgeSec
+															? ` · ${entry.oldestAgeSec}s`
+															: ""}
+													</Badge>
+												))
+											) : (
+												<span className="text-sm text-muted-foreground">
+													No queued tasks.
+												</span>
+											)}
+										</div>
+									</div>
+									<div className="rounded-md border p-3">
+										<div className="font-medium">Running by type</div>
+										<div className="mt-2 flex flex-wrap gap-2">
+											{diag.runningByType.length ? (
+												diag.runningByType.map((entry) => (
+													<Badge
+														key={`running-${entry.taskType}`}
+														variant="outline"
+													>
+														{entry.taskType} · {entry.count}
+														{entry.oldestAgeSec
+															? ` · ${entry.oldestAgeSec}s`
+															: ""}
+													</Badge>
+												))
+											) : (
+												<span className="text-sm text-muted-foreground">
+													No running tasks.
+												</span>
+											)}
+										</div>
+									</div>
+								</div>
+								<div className="rounded-md border p-3">
+									<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+										<div className="font-medium">Queued offenders</div>
+										{diag.publishFailuresLatest ? (
+											<div className="text-xs text-muted-foreground">
+												last publish failure {diag.publishFailuresLatest}
+											</div>
+										) : null}
+									</div>
+									<div className="mt-3 space-y-2">
+										{diag.queuedOffenders.length ? (
+											diag.queuedOffenders.map((item) => (
+												<div
+													key={item.taskId}
+													className="rounded-md border bg-muted/30 p-3 text-sm"
+												>
+													<div className="flex flex-wrap items-center gap-2">
+														<Badge variant="outline">task {item.taskId}</Badge>
+														<Badge variant="outline">{item.taskType}</Badge>
+														<Badge variant="outline">
+															age {item.ageSeconds}s
+														</Badge>
+														<Badge variant="outline">
+															publish failures {item.publishFailures}
+														</Badge>
+														<Badge variant="outline">
+															capacity requeues {item.capacityRequeues}
+														</Badge>
+													</div>
+													<div className="mt-2 text-muted-foreground">
+														scope={item.userScopeId || "—"} deployment=
+														{item.deploymentId || "—"} priority={item.priority}
+													</div>
+													{item.latestEventType || item.latestEventAt ? (
+														<div className="mt-1 text-xs text-muted-foreground">
+															last event {item.latestEventType || "—"} at{" "}
+															{item.latestEventAt || "—"}
+														</div>
+													) : null}
+												</div>
+											))
+										) : (
+											<div className="text-sm text-muted-foreground">
+												No stale queued offenders found.
+											</div>
+										)}
+									</div>
+								</div>
+							</>
+						) : (
+							<div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+								Queue diagnostics unavailable yet.
+							</div>
+						)}
+					</div>
+
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<div className="font-medium">Queued tasks</div>
@@ -710,8 +911,8 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 						<div>
 							<div className="font-medium">Workspace + namespace cleanup</div>
 							<div className="text-sm text-muted-foreground">
-								Delete matching user scopes from Skyforge inventory and (optionally)
-								matching Kubernetes namespaces in one admin action.
+								Delete matching user scopes from Skyforge inventory and
+								(optionally) matching Kubernetes namespaces in one admin action.
 							</div>
 						</div>
 						<div className="grid gap-2 md:grid-cols-2">
@@ -732,7 +933,9 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 									<SelectValue placeholder="Include Kubernetes cleanup" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="yes">Include Kubernetes namespaces</SelectItem>
+									<SelectItem value="yes">
+										Include Kubernetes namespaces
+									</SelectItem>
 									<SelectItem value="no">Skyforge inventory only</SelectItem>
 								</SelectContent>
 							</Select>
@@ -758,8 +961,10 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 						{props.workspaceCleanupResult ? (
 							<div className="rounded-md border bg-muted/40 p-3 text-xs">
 								<div>
-									scopes matched={props.workspaceCleanupResult.scopesMatched} deleted=
-									{props.workspaceCleanupResult.scopesDeleted} namespaces matched=
+									scopes matched={props.workspaceCleanupResult.scopesMatched}{" "}
+									deleted=
+									{props.workspaceCleanupResult.scopesDeleted} namespaces
+									matched=
 									{props.workspaceCleanupResult.namespacesMatched} deleted=
 									{props.workspaceCleanupResult.namespacesDeleted}
 								</div>
@@ -892,7 +1097,8 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 							eligible {props.adminEphemeralRuntimeSummary.eligibleForCleanup}
 						</Badge>
 						<Badge variant="outline">
-							finalize {props.adminEphemeralRuntimeSummary.eligibleForForceFinalize}
+							finalize{" "}
+							{props.adminEphemeralRuntimeSummary.eligibleForForceFinalize}
 						</Badge>
 						<Badge variant="outline">
 							terminating {props.adminEphemeralRuntimeSummary.terminating}
@@ -901,10 +1107,18 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 							pods {props.adminEphemeralRuntimeSummary.resourceTotals.pods}
 						</Badge>
 						<Badge variant="outline">
-							vms {props.adminEphemeralRuntimeSummary.resourceTotals.virtualMachines}
+							vms{" "}
+							{
+								props.adminEphemeralRuntimeSummary.resourceTotals
+									.virtualMachines
+							}
 						</Badge>
 						<Badge variant="outline">
-							vmis {props.adminEphemeralRuntimeSummary.resourceTotals.virtualMachineInstances}
+							vmis{" "}
+							{
+								props.adminEphemeralRuntimeSummary.resourceTotals
+									.virtualMachineInstances
+							}
 						</Badge>
 					</div>
 
@@ -932,7 +1146,8 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 							variant="destructive"
 							disabled={
 								props.forceFinalizeEphemeralRuntimesPending ||
-								props.adminEphemeralRuntimeSummary.eligibleForForceFinalize === 0
+								props.adminEphemeralRuntimeSummary.eligibleForForceFinalize ===
+									0
 							}
 							onClick={props.onForceFinalizeEligibleEphemeralRuntimes}
 						>
@@ -943,13 +1158,16 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 					</div>
 					{props.cleanupEphemeralRuntimesResult ? (
 						<div className="rounded-md border bg-muted/40 p-3 text-xs">
-							cleaned={props.cleanupEphemeralRuntimesResult.namespacesCleaned} errors=
+							cleaned={props.cleanupEphemeralRuntimesResult.namespacesCleaned}{" "}
+							errors=
 							{props.cleanupEphemeralRuntimesResult.errors?.length ?? 0}
 						</div>
 					) : null}
 					{props.forceFinalizeEphemeralRuntimesResult ? (
 						<div className="rounded-md border bg-muted/40 p-3 text-xs">
-							finalized={props.forceFinalizeEphemeralRuntimesResult.namespacesFinalized} errors=
+							finalized=
+							{props.forceFinalizeEphemeralRuntimesResult.namespacesFinalized}{" "}
+							errors=
 							{props.forceFinalizeEphemeralRuntimesResult.errors?.length ?? 0}
 						</div>
 					) : null}
@@ -962,7 +1180,8 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 								<div className="space-y-1 text-sm">
 									<div className="font-medium">{runtime.namespace}</div>
 									<div className="text-muted-foreground">
-										phase={runtime.phase} scope={runtime.userScopeId ?? "—"} owner=
+										phase={runtime.phase} scope={runtime.userScopeId ?? "—"}{" "}
+										owner=
 										{runtime.owner}
 									</div>
 								</div>
@@ -971,7 +1190,9 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 										variant="outline"
 										size="sm"
 										onClick={() =>
-											props.onCleanupEphemeralRuntimeNamespace(runtime.namespace)
+											props.onCleanupEphemeralRuntimeNamespace(
+												runtime.namespace,
+											)
 										}
 									>
 										Cleanup namespace
@@ -980,7 +1201,9 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 										variant="destructive"
 										size="sm"
 										onClick={() =>
-											props.onForceFinalizeEphemeralRuntimeNamespace(runtime.namespace)
+											props.onForceFinalizeEphemeralRuntimeNamespace(
+												runtime.namespace,
+											)
 										}
 									>
 										Force finalize

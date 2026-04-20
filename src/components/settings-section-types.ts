@@ -17,10 +17,11 @@ import type {
 	AdminOIDCSettingsResponse,
 	AdminRegistryCatalogResponse,
 	AdminServiceNowGlobalConfigResponse,
+	AdminTaskQueueDiagResponse,
 	AdminTeamsGlobalConfigResponse,
 	AdminTenantPodCleanupResponse,
-	AdminWorkspaceCleanupResponse,
 	AdminUserRoleRecord,
+	AdminWorkspaceCleanupResponse,
 	QuickDeployTemplate,
 	SkyforgeUserScope,
 	VerifyAdminAuditExportSignatureResponse,
@@ -306,6 +307,9 @@ export type AdminAuditSectionProps = {
 export type AdminTasksSectionProps = {
 	reconcileQueuedPending: boolean;
 	reconcileRunningPending: boolean;
+	adminTaskQueueDiagLoading: boolean;
+	adminTaskQueueDiag?: AdminTaskQueueDiagResponse;
+	onRefreshTaskQueueDiag: () => void;
 	onReconcileQueued: () => void;
 	onReconcileRunning: () => void;
 	cleanupScopeMode: "all" | "scope";
