@@ -5,7 +5,7 @@ import {
 } from "./tool-launches";
 
 describe("forward launch helpers", () => {
-	it("prefers the snapshot path when one is available", () => {
+	it("prefers the network session route when a network id is available", () => {
 		expect(
 			forwardDeploymentSessionHref({
 				networkID: "326",
@@ -13,11 +13,22 @@ describe("forward launch helpers", () => {
 					"https://fwd-appserver.forward.svc:8443/api/networks/326/performance/raw-data?snapshotId=328",
 			}),
 		).toBe(
-			"/api/forward/session?next=%2Fapi%2Fnetworks%2F326%2Fperformance%2Fraw-data%3FsnapshotId%3D328",
+			forwardNetworkSessionHref("326"),
 		);
 	});
 
-	it("falls back to the network session route when no snapshot is present", () => {
+	it("falls back to the snapshot path when a network id is not available", () => {
+		expect(
+			forwardDeploymentSessionHref({
+				snapshotURL:
+					"https://fwd-appserver.forward.svc:8443/api/networks/326/performance/raw-data?snapshotId=328",
+			}),
+		).toBe(
+			forwardNetworkSessionHref("326"),
+		);
+	});
+
+	it("uses the network session route when no snapshot is present", () => {
 		expect(forwardDeploymentSessionHref({ networkID: "326" })).toBe(
 			forwardNetworkSessionHref("326"),
 		);
@@ -25,5 +36,17 @@ describe("forward launch helpers", () => {
 
 	it("ignores invalid snapshot values", () => {
 		expect(forwardSnapshotSessionHref("network-326")).toBe("");
+	});
+
+	it("falls back to the snapshot session only when no network id can be derived", () => {
+		expect(
+			forwardDeploymentSessionHref({
+				snapshotURL: "https://fwd-appserver.forward.svc:8443/search?networkId=326",
+			}),
+		).toBe(
+			forwardSnapshotSessionHref(
+				"https://fwd-appserver.forward.svc:8443/search?networkId=326",
+			),
+		);
 	});
 });

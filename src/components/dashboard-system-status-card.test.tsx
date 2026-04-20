@@ -81,4 +81,45 @@ describe("DashboardSystemStatusCard", () => {
 		).toBeInTheDocument();
 		expect(screen.getByText("2")).toBeInTheDocument();
 	});
+
+	it("renders core services separately from managed integrations", () => {
+		renderCard({
+			statusSummary: {
+				status: "ok",
+				up: 2,
+				down: 0,
+				checks: [
+					{ name: "postgres", status: "up", detail: "connected" },
+					{ name: "redis", status: "up", detail: "connected" },
+				],
+			},
+			managedIntegrations: {
+				integrations: [
+					{ id: "coder", label: "Coder", status: "ready", detail: "1/1 replicas available" },
+					{ id: "jira", label: "Jira", status: "ready", detail: "1/1 replicas available" },
+				],
+			},
+			observabilitySummary: {
+				scope: "admin",
+				skyforge: {
+					queueQueued: 0,
+					queueRunning: 0,
+					queueOldestSec: 0,
+					workerHeartbeatSec: 5,
+					advisories: [],
+				},
+				forward: {
+					sourceStatus: "ok",
+					prometheusTargetCount: 0,
+					prometheusUpSum: 0,
+					targetJobs: [],
+				},
+			},
+		});
+
+		expect(screen.getAllByText("Core service")).toHaveLength(2);
+		expect(screen.getAllByText("Managed integration")).toHaveLength(2);
+		expect(screen.getByText("Coder")).toBeInTheDocument();
+		expect(screen.getByText("Jira")).toBeInTheDocument();
+	});
 });

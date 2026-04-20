@@ -708,6 +708,72 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 
 					<div className="space-y-3 rounded-md border p-3">
 						<div>
+							<div className="font-medium">Workspace + namespace cleanup</div>
+							<div className="text-sm text-muted-foreground">
+								Delete matching user scopes from Skyforge inventory and (optionally)
+								matching Kubernetes namespaces in one admin action.
+							</div>
+						</div>
+						<div className="grid gap-2 md:grid-cols-2">
+							<Input
+								placeholder="Prefixes (comma separated): smoke,tmp,diag"
+								value={props.workspaceCleanupPrefixes}
+								onChange={(e) =>
+									props.onWorkspaceCleanupPrefixesChange(e.target.value)
+								}
+							/>
+							<Select
+								value={props.workspaceCleanupIncludeK8s ? "yes" : "no"}
+								onValueChange={(value) =>
+									props.onWorkspaceCleanupIncludeK8sChange(value === "yes")
+								}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Include Kubernetes cleanup" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="yes">Include Kubernetes namespaces</SelectItem>
+									<SelectItem value="no">Skyforge inventory only</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="flex flex-wrap gap-2">
+							<Button
+								variant="outline"
+								disabled={props.workspaceCleanupPending}
+								onClick={props.onPreviewWorkspaceCleanup}
+							>
+								Preview workspace cleanup
+							</Button>
+							<Button
+								variant="destructive"
+								disabled={props.workspaceCleanupPending}
+								onClick={props.onRunWorkspaceCleanup}
+							>
+								{props.workspaceCleanupPending
+									? "Running…"
+									: "Run workspace cleanup"}
+							</Button>
+						</div>
+						{props.workspaceCleanupResult ? (
+							<div className="rounded-md border bg-muted/40 p-3 text-xs">
+								<div>
+									scopes matched={props.workspaceCleanupResult.scopesMatched} deleted=
+									{props.workspaceCleanupResult.scopesDeleted} namespaces matched=
+									{props.workspaceCleanupResult.namespacesMatched} deleted=
+									{props.workspaceCleanupResult.namespacesDeleted}
+								</div>
+								{props.workspaceCleanupResult.errors?.length ? (
+									<div className="mt-2 text-amber-600">
+										{props.workspaceCleanupResult.errors.join(" | ")}
+									</div>
+								) : null}
+							</div>
+						) : null}
+					</div>
+
+					<div className="space-y-3 rounded-md border p-3">
+						<div>
 							<div className="font-medium">Tenant pod cleanup</div>
 							<div className="text-sm text-muted-foreground">
 								Force-clean lingering topology pods and resources after failed

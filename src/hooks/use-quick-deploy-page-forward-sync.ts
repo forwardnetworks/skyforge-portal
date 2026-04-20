@@ -43,17 +43,15 @@ export async function waitForForwardSyncAndNetwork(
 		try {
 			const info = await getDeploymentForwardInfo(userId, deploymentId);
 			const networkId = String(info.forwardNetworkId ?? "").trim();
-			const snapshotURL = String(info.forwardSnapshotUrl ?? "").trim();
 			const syncState = String(info.deployment?.syncState ?? "")
 				.trim()
 				.toLowerCase();
-			const lastSyncAt = String(info.deployment?.lastSyncAt ?? "").trim();
 			const syncError = String(info.deployment?.lastSyncError ?? "").trim();
 
 			if (syncState === "sync_failed") {
 				throw new Error(syncError || "Forward sync failed");
 			}
-			if (networkId && lastSyncAt && (syncState === "synced" || snapshotURL)) {
+			if (networkId) {
 				return networkId;
 			}
 		} catch {
@@ -61,7 +59,7 @@ export async function waitForForwardSyncAndNetwork(
 		}
 		await sleep(FORWARD_NETWORK_POLL_INTERVAL_MS);
 	}
-	throw new Error("Forward sync did not complete within the wait window.");
+	throw new Error("Forward network was not created within the wait window.");
 }
 
 export function hardRefreshToDeploymentTopology(deploymentId: string): void {

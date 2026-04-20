@@ -19,6 +19,7 @@ import type {
 	AdminServiceNowGlobalConfigResponse,
 	AdminTeamsGlobalConfigResponse,
 	AdminTenantPodCleanupResponse,
+	AdminWorkspaceCleanupResponse,
 	AdminUserRoleRecord,
 	QuickDeployTemplate,
 	SkyforgeUserScope,
@@ -313,6 +314,14 @@ export type AdminTasksSectionProps = {
 	onCleanupScopeIDChange: (value: string) => void;
 	cleanupNamespace: string;
 	onCleanupNamespaceChange: (value: string) => void;
+	workspaceCleanupPrefixes: string;
+	onWorkspaceCleanupPrefixesChange: (value: string) => void;
+	workspaceCleanupIncludeK8s: boolean;
+	onWorkspaceCleanupIncludeK8sChange: (value: boolean) => void;
+	workspaceCleanupPending: boolean;
+	onPreviewWorkspaceCleanup: () => void;
+	onRunWorkspaceCleanup: () => void;
+	workspaceCleanupResult: AdminWorkspaceCleanupResponse | null;
 	allUserScopes: SkyforgeUserScope[];
 	cleanupTenantPodsPending: boolean;
 	onPreviewCleanup: () => void;

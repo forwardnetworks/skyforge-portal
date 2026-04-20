@@ -216,3 +216,51 @@ export async function adminPurgeUser(
 		body: JSON.stringify(body),
 	});
 }
+
+export type AdminWorkspaceCleanupRequest = {
+	prefixes?: string[];
+	includeK8s?: boolean;
+	dryRun?: boolean;
+};
+
+export type AdminWorkspaceCleanupScopeResult = {
+	id: string;
+	slug: string;
+	name: string;
+	matched: boolean;
+	deleted: boolean;
+	errors?: string[];
+};
+
+export type AdminWorkspaceCleanupNamespaceResult = {
+	namespace: string;
+	matched: boolean;
+	deleted: boolean;
+	errors?: string[];
+};
+
+export type AdminWorkspaceCleanupResponse = {
+	status: string;
+	dryRun: boolean;
+	includeK8s: boolean;
+	prefixes: string[];
+	scopesMatched: number;
+	scopesDeleted: number;
+	namespacesMatched: number;
+	namespacesDeleted: number;
+	workspaceResults: AdminWorkspaceCleanupScopeResult[];
+	namespaceResults?: AdminWorkspaceCleanupNamespaceResult[];
+	errors?: string[];
+};
+
+export async function adminCleanupWorkspaces(
+	body: AdminWorkspaceCleanupRequest,
+): Promise<AdminWorkspaceCleanupResponse> {
+	return apiFetch<AdminWorkspaceCleanupResponse>(
+		"/api/admin/tasks/workspaces/cleanup",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}

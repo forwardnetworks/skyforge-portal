@@ -86,13 +86,13 @@ export function useQuickDeployDeployMutation(args: {
 									result.userId,
 									result.deploymentId,
 								);
-								toast.success("Forward sync completed", {
+								toast.success("Forward network ready", {
 									description:
 										"Use the deployment page buttons to open the network in Forward.",
 								});
 								hardRefreshToDeploymentTopology(result.deploymentId);
 							} catch (error) {
-								toast.error("Forward sync did not complete", {
+								toast.error("Forward network was not created", {
 									description:
 										error instanceof Error ? error.message : String(error),
 								});

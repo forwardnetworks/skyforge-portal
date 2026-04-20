@@ -4,6 +4,7 @@ import type {
 	AdminConfigSectionProps,
 	AdminTasksSectionProps,
 } from "../components/settings-section-types";
+import type { SkyforgeUserScope } from "../lib/api-client";
 import { useAdminSettingsAudit } from "./use-admin-settings-audit";
 import { useAdminSettingsAuth } from "./use-admin-settings-auth";
 import { useAdminSettingsOperations } from "./use-admin-settings-operations";
@@ -133,11 +134,7 @@ function useAdminSettingsAuditSection(args: {
 }
 
 function useAdminSettingsTasksSection(args: {
-	allUserScopes: {
-		id: string;
-		slug?: string | null;
-		username?: string | null;
-	}[];
+	allUserScopes: SkyforgeUserScope[];
 	ops: ReturnType<typeof useAdminSettingsOperations>;
 }): AdminTasksSectionProps {
 	const { allUserScopes, ops } = args;
@@ -158,6 +155,14 @@ function useAdminSettingsTasksSection(args: {
 			onCleanupScopeIDChange: ops.setCleanupScopeID,
 			cleanupNamespace: ops.cleanupNamespace,
 			onCleanupNamespaceChange: ops.setCleanupNamespace,
+			workspaceCleanupPrefixes: ops.workspaceCleanupPrefixes,
+			onWorkspaceCleanupPrefixesChange: ops.setWorkspaceCleanupPrefixes,
+			workspaceCleanupIncludeK8s: ops.workspaceCleanupIncludeK8s,
+			onWorkspaceCleanupIncludeK8sChange: ops.setWorkspaceCleanupIncludeK8s,
+			workspaceCleanupPending: ops.cleanupWorkspaces.isPending,
+			onPreviewWorkspaceCleanup: () => ops.cleanupWorkspaces.mutate(true),
+			onRunWorkspaceCleanup: () => ops.cleanupWorkspaces.mutate(false),
+			workspaceCleanupResult: ops.workspaceCleanupResult,
 			allUserScopes,
 			cleanupTenantPodsPending: ops.cleanupTenantPods.isPending,
 			onPreviewCleanup: () => ops.cleanupTenantPods.mutate(true),
@@ -195,11 +200,7 @@ function useAdminSettingsTasksSection(args: {
 export function useAdminSettingsMaintenanceSection(args: {
 	auth: ReturnType<typeof useAdminSettingsAuth>;
 	audit: ReturnType<typeof useAdminSettingsAudit>;
-	allUserScopes: {
-		id: string;
-		slug?: string | null;
-		username?: string | null;
-	}[];
+	allUserScopes: SkyforgeUserScope[];
 	ops: ReturnType<typeof useAdminSettingsOperations>;
 }) {
 	const { auth, audit, allUserScopes, ops } = args;

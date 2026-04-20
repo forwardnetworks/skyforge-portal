@@ -1,14 +1,16 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-	import {
-		type AdminEphemeralRuntimeCleanupResponse,
-		type AdminEphemeralRuntimeFinalizeResponse,
-		type AdminTenantPodCleanupResponse,
-		adminCleanupEphemeralRuntimes,
-		adminCleanupTenantPods,
-		adminForceFinalizeEphemeralRuntimes,
-		adminImpersonateStart,
+import {
+	type AdminEphemeralRuntimeCleanupResponse,
+	type AdminEphemeralRuntimeFinalizeResponse,
+	type AdminTenantPodCleanupResponse,
+	type AdminWorkspaceCleanupResponse,
+	adminCleanupEphemeralRuntimes,
+	adminCleanupTenantPods,
+	adminCleanupWorkspaces,
+	adminForceFinalizeEphemeralRuntimes,
+	adminImpersonateStart,
 	adminImpersonateStop,
 	adminListEphemeralRuntimes,
 	getAdminForwardSupportCredential,
@@ -114,6 +116,12 @@ export function useAdminSettingsOperations({
 	const [cleanupNamespace, setCleanupNamespace] = useState("");
 	const [cleanupResult, setCleanupResult] =
 		useState<AdminTenantPodCleanupResponse | null>(null);
+	const [workspaceCleanupPrefixes, setWorkspaceCleanupPrefixes] =
+		useState("smoke,tmp,diag");
+	const [workspaceCleanupIncludeK8s, setWorkspaceCleanupIncludeK8s] =
+		useState(true);
+	const [workspaceCleanupResult, setWorkspaceCleanupResult] =
+		useState<AdminWorkspaceCleanupResponse | null>(null);
 	const cleanupTenantPods = useMutation({
 		mutationFn: async (dryRun: boolean) =>
 			adminCleanupTenantPods({
@@ -133,6 +141,31 @@ export function useAdminSettingsOperations({
 		},
 		onError: (e) => {
 			toast.error("Failed to clean scoped pods", {
+				description: (e as Error).message,
+			});
+		},
+	});
+	const cleanupWorkspaces = useMutation({
+		mutationFn: async (dryRun: boolean) =>
+			adminCleanupWorkspaces({
+				dryRun,
+				includeK8s: workspaceCleanupIncludeK8s,
+				prefixes: workspaceCleanupPrefixes
+					.split(",")
+					.map((value) => value.trim())
+					.filter(Boolean),
+			}),
+		onSuccess: (res, dryRun) => {
+			setWorkspaceCleanupResult(res);
+			toast.success(
+				dryRun ? "Workspace cleanup preview complete" : "Workspace cleanup complete",
+				{
+					description: `scopes matched ${res.scopesMatched}, deleted ${res.scopesDeleted}, namespaces matched ${res.namespacesMatched}, deleted ${res.namespacesDeleted}`,
+				},
+			);
+		},
+		onError: (e) => {
+			toast.error("Failed to clean workspaces", {
 				description: (e as Error).message,
 			});
 		},
@@ -270,6 +303,12 @@ export function useAdminSettingsOperations({
 		setCleanupNamespace,
 		cleanupResult,
 		cleanupTenantPods,
+		workspaceCleanupPrefixes,
+		setWorkspaceCleanupPrefixes,
+		workspaceCleanupIncludeK8s,
+		setWorkspaceCleanupIncludeK8s,
+		workspaceCleanupResult,
+		cleanupWorkspaces,
 		impersonateTarget,
 		setImpersonateTarget,
 		impersonateUserOptions,

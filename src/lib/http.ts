@@ -54,11 +54,13 @@ function shouldRedirectOnUnauthorized(
 ): boolean {
 	if (authRedirect === "never") return false;
 	if (authRedirect === "always") return true;
-	// In auto mode, never redirect implicitly. This keeps landing/login behavior
-	// user-driven and avoids automatic OIDC jumps on first page load.
+	// In auto mode, only force re-auth when the user is already in a protected
+	// area. This avoids login loops on public/landing pages, but prevents 401s
+	// from surfacing as hard app errors on authenticated routes.
 	void path;
 	void method;
-	return false;
+	if (typeof window === "undefined") return false;
+	return isProtectedPath(window.location.pathname);
 }
 
 export function extractErrorMessage(bodyText: string): string {

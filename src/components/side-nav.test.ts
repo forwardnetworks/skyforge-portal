@@ -399,11 +399,11 @@ const toolLaunches: ToolLaunchMap = {
 	coder: {
 		id: "coder",
 		title: "Coder",
-		category: "platform",
+		category: "integrations",
 		experience: "advanced",
-		navigationSection: "platform",
+		navigationSection: "integrations",
 		navigationLabel: "Coder",
-		navigationOrder: 40,
+		navigationOrder: 50,
 		navigationIcon: "cloud",
 		navigationHref: toolRouteHref("coder"),
 		navigationMode: "router",
@@ -568,6 +568,7 @@ describe("side nav model", () => {
 			expect.arrayContaining([
 				"NetBox",
 				"Nautobot",
+				"Coder",
 				"Jira",
 				"Rapid7",
 				"Infoblox",
@@ -592,7 +593,6 @@ describe("side nav model", () => {
 				"Git",
 				"Artifacts",
 				"DNS",
-				"Coder",
 				"Reservations",
 				"Infoblox Console",
 				"API",
@@ -606,7 +606,7 @@ describe("side nav model", () => {
 			"API Spec",
 			"API Testing",
 		]);
-		const coder = platform?.children?.find((c) => c.label === "Coder");
+		const coder = integrations?.children?.find((c) => c.label === "Coder");
 		expect(coder?.href).toBe(toolRouteHref("coder"));
 		const nautobot = integrations?.children?.find(
 			(c) => c.label === "Nautobot",
@@ -655,7 +655,7 @@ describe("side nav model", () => {
 		);
 		const platform = findGroup("Platform", items);
 		const integrations = findGroup("Integrations", items);
-		const coder = platform?.children?.find((i) => i.label === "Coder");
+		const coder = integrations?.children?.find((i) => i.label === "Coder");
 		const nautobot = integrations?.children?.find(
 			(i) => i.label === "Nautobot",
 		);

@@ -201,6 +201,18 @@ function normalizeForwardNextPath(raw: string): string {
 	}
 }
 
+function extractForwardNetworkID(raw: string): string {
+	const next = normalizeForwardNextPath(raw);
+	if (!next) return "";
+	const match = next.match(/\/api\/networks\/([^/?#]+)/i);
+	if (!match?.[1]) return "";
+	try {
+		return decodeURIComponent(match[1]).trim();
+	} catch {
+		return String(match[1] ?? "").trim();
+	}
+}
+
 export function forwardSessionHref(nextPath: string): string {
 	const next = normalizeForwardNextPath(nextPath);
 	if (!next) return "";
@@ -215,9 +227,13 @@ export function forwardDeploymentSessionHref(args: {
 	networkID?: string;
 	snapshotURL?: string;
 }): string {
-	const snapshotHref = forwardSnapshotSessionHref(args.snapshotURL ?? "");
-	if (snapshotHref) return snapshotHref;
-	return forwardNetworkSessionHref(args.networkID ?? "");
+	const networkHref = forwardNetworkSessionHref(args.networkID ?? "");
+	if (networkHref) return networkHref;
+	const snapshotNetworkHref = forwardNetworkSessionHref(
+		extractForwardNetworkID(args.snapshotURL ?? ""),
+	);
+	if (snapshotNetworkHref) return snapshotNetworkHref;
+	return forwardSnapshotSessionHref(args.snapshotURL ?? "");
 }
 
 export function isDirectToolLaunch(tool?: ToolLaunchEntry | null): boolean {
