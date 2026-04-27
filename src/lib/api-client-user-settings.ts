@@ -1,10 +1,12 @@
-import { apiFetch } from "./http";
 import type { ExternalTemplateRepo, ISO8601 } from "./api-client-user-shared";
+import { apiFetch } from "./http";
 
 export type UserGitCredentialsResponse = {
 	username: string;
 	sshPublicKey: string;
+	authorizedSshPublicKey: string;
 	hasSshKey: boolean;
+	hasAuthorizedSshKey: boolean;
 	httpsUsername?: string;
 	hasHttpsToken: boolean;
 };
@@ -17,6 +19,7 @@ export async function updateUserGitCredentials(payload: {
 	httpsUsername?: string;
 	httpsToken?: string;
 	clearToken?: boolean;
+	authorizedSshPublicKey?: string;
 }): Promise<UserGitCredentialsResponse> {
 	return apiFetch<UserGitCredentialsResponse>("/api/git-credentials", {
 		method: "PUT",

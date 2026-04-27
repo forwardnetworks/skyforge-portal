@@ -9,6 +9,7 @@ import {
 	useUserSettingsForm,
 	userSettingsFormSchema,
 } from "./use-user-settings-form";
+import { useUserSettingsSshKeys } from "./use-user-settings-ssh-keys";
 
 export { userSettingsFormSchema };
 export type { UserSettingsFormValues };
@@ -22,6 +23,7 @@ export function useUserSettingsPage() {
 	});
 	const settingsForm = useUserSettingsForm();
 	const apiTokens = useUserSettingsApiTokens();
+	const sshKeys = useUserSettingsSshKeys();
 	const cloudCredentials = useUserSettingsCloudCredentials();
 	const byolServers = useUserSettingsByolServers();
 
@@ -29,6 +31,7 @@ export function useUserSettingsPage() {
 		currentPlatformPolicyQ,
 		...settingsForm,
 		...apiTokens,
+		...sshKeys,
 		...cloudCredentials,
 		...byolServers,
 	};

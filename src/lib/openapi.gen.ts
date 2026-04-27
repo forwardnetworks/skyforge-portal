@@ -3608,11 +3608,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * GetCurrentUserCredentials returns the current user's deploy key (public) and
-         *     HTTPS token status.
+         * GetCurrentUserCredentials returns the current user's SSH keys and HTTPS token
+         *     status.
          */
         get: operations["GET:gitcredentials.GetCurrentUserCredentials"];
-        /** UpdateCurrentUserCredentials sets (or clears) the user's HTTPS git token. */
+        /** UpdateCurrentUserCredentials updates per-user Git and SSH credentials. */
         put: operations["PUT:gitcredentials.UpdateCurrentUserCredentials"];
         post?: never;
         delete?: never;
@@ -19884,6 +19884,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        authorizedSshPublicKey: string;
+                        hasAuthorizedSshKey: boolean;
                         hasHttpsToken: boolean;
                         hasSshKey: boolean;
                         httpsUsername: string;
@@ -19905,6 +19907,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    authorizedSshPublicKey: string;
                     clearToken: boolean;
                     httpsToken: string;
                     httpsUsername: string;
@@ -19919,6 +19922,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        authorizedSshPublicKey: string;
+                        hasAuthorizedSshKey: boolean;
                         hasHttpsToken: boolean;
                         hasSshKey: boolean;
                         httpsUsername: string;
@@ -19946,6 +19951,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        authorizedSshPublicKey: string;
+                        hasAuthorizedSshKey: boolean;
                         hasHttpsToken: boolean;
                         hasSshKey: boolean;
                         httpsUsername: string;
@@ -29213,6 +29220,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        authorizedSshPublicKey: string;
+                        hasAuthorizedSshKey: boolean;
                         hasHttpsToken: boolean;
                         hasSshKey: boolean;
                         httpsUsername: string;
@@ -29247,6 +29256,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        authorizedSshPublicKey: string;
+                        hasAuthorizedSshKey: boolean;
                         hasHttpsToken: boolean;
                         hasSshKey: boolean;
                         httpsUsername: string;
@@ -29268,6 +29279,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    authorizedSshPublicKey: string;
                     clearToken: boolean;
                     httpsToken: string;
                     httpsUsername: string;
@@ -29284,6 +29296,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        authorizedSshPublicKey: string;
+                        hasAuthorizedSshKey: boolean;
                         hasHttpsToken: boolean;
                         hasSshKey: boolean;
                         httpsUsername: string;
