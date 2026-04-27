@@ -135,6 +135,7 @@ export function useAdminSettingsAuth({
 	const quickDeploy = useAdminSettingsAuthQuickDeploy({
 		quickDeployCatalog: quickDeployCatalogQ.data,
 		refetchQuickDeployCatalog: quickDeployCatalogQ.refetch,
+		refetchQuickDeployTemplateOptions: quickDeployTemplateOptionsQ.refetch,
 		quickDeployTemplateOptions: quickDeployTemplateOptionsQ.data,
 		blueprintNetlabTemplates: blueprintNetlabTemplatesQ.data,
 	});

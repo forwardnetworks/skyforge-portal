@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useDeploymentDetailActions } from "./use-deployment-detail-actions";
 import { useDeploymentDetailData } from "./use-deployment-detail-data";
+export type { DeploymentDetailTab } from "./use-deployment-detail-data";
 export {
 	formatResourceEstimateSummary,
 	resolveDeploymentDisplayStatus,

@@ -17,6 +17,8 @@ export const queryKeys = {
 		["deploymentTopology", userId, deploymentId] as const,
 	deploymentMap: (userId: string, deploymentId: string) =>
 		["deploymentMap", userId, deploymentId] as const,
+	deploymentManagementAccess: (userId: string, deploymentId: string) =>
+		["deploymentManagementAccess", userId, deploymentId] as const,
 	deploymentSourceShares: (userId: string, deploymentId: string) =>
 		["deploymentSourceShares", userId, deploymentId] as const,
 	deploymentUIEvents: (userId: string, deploymentId: string) =>
@@ -159,8 +161,10 @@ export const queryKeys = {
 		["userForwardTenantRebuildRuns", tenantKind] as const,
 	userForwardManagedTenantCredential: (tenantKind: string) =>
 		["userForwardManagedTenantCredential", tenantKind] as const,
+	userForwardOrgShares: () => ["userForwardOrgShares"] as const,
 	userForwardManagedTenantPerformanceNetworks: (tenantKind: string) =>
 		["userForwardManagedTenantPerformanceNetworks", tenantKind] as const,
+	userForwardTestDrives: () => ["userForwardTestDrives"] as const,
 	userForwardCollectorConfigRuntime: (id: string) =>
 		["userForwardCollectorConfigRuntime", id] as const,
 	userForwardCollectorConfigLogs: (id: string) =>
@@ -224,6 +228,7 @@ export const queryKeys = {
 	adminPlatformReservations: () => ["adminPlatformReservations"] as const,
 	adminPlatformUserPolicy: (username: string) =>
 		["adminPlatformUserPolicy", username] as const,
+	adminPlatformRoleProfiles: () => ["adminPlatformRoleProfiles"] as const,
 	adminForwardTenantRebuildRuns: (username: string) =>
 		["adminForwardTenantRebuildRuns", username] as const,
 	adminRbacUsers: () => ["adminRbacUsers"] as const,
@@ -233,6 +238,8 @@ export const queryKeys = {
 	adminApiCatalog: () => ["adminApiCatalog"] as const,
 	adminUserApiPermissions: (username: string) =>
 		["adminUserApiPermissions", username] as const,
+	adminRoleApiPermissions: (profile: string) =>
+		["adminRoleApiPermissions", profile] as const,
 	adminAuditSavedViews: () => ["adminAuditSavedViews"] as const,
 	adminAudit: (params?: {
 		limit?: string;

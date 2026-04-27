@@ -2,6 +2,7 @@ import { DeploymentDetailConfigTab } from "@/components/deployments/deployment-d
 import { DeploymentDetailDeleteDialog } from "@/components/deployments/deployment-detail-delete-dialog";
 import { DeploymentDetailHeader } from "@/components/deployments/deployment-detail-header";
 import { DeploymentDetailLogsTab } from "@/components/deployments/deployment-detail-logs-tab";
+import { DeploymentDetailManagementAccessTab } from "@/components/deployments/deployment-detail-management-access-tab";
 import { DeploymentDetailPlacementCard } from "@/components/deployments/deployment-detail-placement-card";
 import { DeploymentDetailStandaloneView } from "@/components/deployments/deployment-detail-standalone-view";
 import { DeploymentDetailTopologyTab } from "@/components/deployments/deployment-detail-topology-tab";
@@ -16,17 +17,18 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+	type DeploymentDetailTab,
 	formatResourceEstimateSummary,
 	useDeploymentDetailPage,
 } from "@/hooks/use-deployment-detail-page";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Box, FileJson, Network, Terminal } from "lucide-react";
+import { Box, FileJson, KeyRound, Network, Terminal } from "lucide-react";
 
-export const Route = createLazyFileRoute("/dashboard/deployments/$deploymentId/")(
-	{
-		component: DeploymentDetailPage,
-	},
-);
+export const Route = createLazyFileRoute(
+	"/dashboard/deployments/$deploymentId/",
+)({
+	component: DeploymentDetailPage,
+});
 
 function DeploymentDetailPage() {
 	const { deploymentId } = Route.useParams();
@@ -99,9 +101,7 @@ function DeploymentDetailPage() {
 			<DeploymentDetailPlacementCard page={page} />
 			<Tabs
 				value={page.activeTab}
-				onValueChange={(v) =>
-					page.setActiveTab(v as "topology" | "logs" | "config")
-				}
+				onValueChange={(v) => page.setActiveTab(v as DeploymentDetailTab)}
 				className="space-y-6"
 			>
 				<TabsList>
@@ -114,10 +114,14 @@ function DeploymentDetailPage() {
 					<TabsTrigger value="config" className="gap-2">
 						<FileJson className="h-4 w-4" /> Configuration
 					</TabsTrigger>
+					<TabsTrigger value="access" className="gap-2">
+						<KeyRound className="h-4 w-4" /> Management
+					</TabsTrigger>
 				</TabsList>
 				<DeploymentDetailTopologyTab page={page} />
 				<DeploymentDetailLogsTab page={page} />
 				<DeploymentDetailConfigTab page={page} />
+				<DeploymentDetailManagementAccessTab page={page} />
 			</Tabs>
 			<DeploymentDetailDeleteDialog page={page} />
 		</div>

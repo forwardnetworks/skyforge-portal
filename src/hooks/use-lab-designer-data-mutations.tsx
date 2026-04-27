@@ -594,9 +594,19 @@ export function useLabDesignerDataMutations(args: {
 			});
 		},
 		onSuccess: async (resp) => {
-			toast.success("Deployment created", {
-				description: resp.deployment?.name ?? opts.labName,
-			});
+			const deploymentName = resp.deployment?.name ?? opts.labName;
+			const bringUpQueued =
+				resp.run != null &&
+				(typeof resp.run !== "object" || Object.keys(resp.run).length > 0);
+			if (bringUpQueued) {
+				toast.success("Deployment created and bring-up queued", {
+					description: deploymentName,
+				});
+			} else {
+				toast.error("Deployment created, but bring-up was not queued", {
+					description: deploymentName,
+				});
+			}
 			await invalidateUserScopeActivityQueries(opts.queryClient, opts.userId);
 			const id = resp.deployment?.id;
 			if (opts.openDeploymentOnCreate && id) {
@@ -639,8 +649,8 @@ export function useLabDesignerDataMutations(args: {
 				filePath: resp.filePath,
 				branch: resp.branch,
 			});
-			toast.success("Saved to repo", {
-				description: `${resp.filePath} (${resp.branch})`,
+			toast.success("Topology saved to repo", {
+				description: `${resp.filePath} (${resp.branch}) • Bring-up not started`,
 			});
 		},
 		onError: (e) =>

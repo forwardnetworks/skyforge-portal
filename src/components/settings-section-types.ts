@@ -165,8 +165,12 @@ export type AdminForwardSectionProps = {
 	quickDeployLookupFailed: boolean;
 	quickDeployCatalogLoading: boolean;
 	saveQuickDeployCatalogPending: boolean;
+	saveQuickDeployRepoPending: boolean;
 	hasQuickDeployTemplateRows: boolean;
+	quickDeployRepoDraft: string;
 	onSelectedQuickDeployOptionChange: (value: string) => void;
+	onQuickDeployRepoDraftChange: (value: string) => void;
+	onSaveQuickDeployRepo: () => void;
 	onAddQuickDeployTemplateFromOption: () => void;
 	onQuickDeployTemplateFieldChange: (
 		index: number,

@@ -1,6 +1,7 @@
 export const platformProfiles = [
 	"viewer",
 	"demo-user",
+	"lab-user",
 	"sandbox-user",
 	"trainer",
 	"integration-user",
@@ -11,22 +12,31 @@ export type PlatformPolicyProfile = (typeof platformProfiles)[number];
 
 export const profileDescriptions: Record<PlatformPolicyProfile, string> = {
 	viewer: "Read-only access to curated platform surfaces.",
-	"demo-user": "Launch curated labs and short-lived demo workflows.",
+	"demo-user": "Constrained demo profile for read-only-style access.",
+	"lab-user":
+		"Schedule and run curated labs without custom or admin privileges.",
 	"sandbox-user": "Launch custom labs and retain sandbox state.",
 	trainer: "Provision training environments with broader persistence.",
 	"integration-user": "Operate integrations without full admin access.",
 	admin: "Full platform policy and operational control.",
 };
 
-export const resourceClasses = ["small", "standard", "heavy", "demo-foundry"] as const;
+export const resourceClasses = [
+	"small",
+	"standard",
+	"heavy",
+	"demo-foundry",
+] as const;
 export type PlatformResourceClass = (typeof resourceClasses)[number];
 
-export const resourceClassDescriptions: Record<PlatformResourceClass, string> = {
-	small: "Lower-cost labs for quick demos and validation.",
-	standard: "General-purpose demos with moderate compute profiles.",
-	heavy: "Large integrations or multi-device demos needing extra CPU.",
-	"demo-foundry": "Full Demo Foundry workloads with persistence and analytics.",
-};
+export const resourceClassDescriptions: Record<PlatformResourceClass, string> =
+	{
+		small: "Lower-cost labs for quick demos and validation.",
+		standard: "General-purpose demos with moderate compute profiles.",
+		heavy: "Large integrations or multi-device demos needing extra CPU.",
+		"demo-foundry":
+			"Full Demo Foundry workloads with persistence and analytics.",
+	};
 
 export function formatPlatformMode(value: string | null | undefined): string {
 	if (!value) return "unreported";

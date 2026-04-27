@@ -219,6 +219,22 @@ export function forwardSessionHref(nextPath: string): string {
 	return `/api/forward/session?next=${encodeURIComponent(next)}`;
 }
 
+export function forwardSharedOrgSessionHref(args: {
+	ownerUsername: string;
+	tenantKind: string;
+	nextPath?: string;
+}): string {
+	const ownerUsername = String(args.ownerUsername ?? "").trim();
+	const tenantKind = String(args.tenantKind ?? "").trim();
+	if (!ownerUsername || !tenantKind) return "";
+	const params = new URLSearchParams();
+	params.set("owner", ownerUsername);
+	params.set("tenant", tenantKind);
+	const next = normalizeForwardNextPath(args.nextPath ?? "/");
+	if (next) params.set("next", next);
+	return `/api/forward/session?${params.toString()}`;
+}
+
 export function forwardSnapshotSessionHref(snapshotURL: string): string {
 	return forwardSessionHref(snapshotURL);
 }

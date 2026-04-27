@@ -221,6 +221,22 @@ describe("LabDesignerPage", () => {
 		expect(mockPage.setDefaultKind).toHaveBeenCalledWith("ceos");
 	});
 
+	it("distinguishes save-only from save-and-deploy actions", () => {
+		render(<LabDesignerPage search={{}} />);
+
+		expect(
+			screen.getByText(
+				"Save only updates the topology in the user repo. Save and deploy creates a deployment and queues bring-up.",
+			),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Save topology" }));
+		expect(mockPage.saveConfig.mutate).toHaveBeenCalled();
+
+		fireEvent.click(screen.getByRole("button", { name: "Save and deploy" }));
+		expect(mockPage.createDeployment.mutate).toHaveBeenCalled();
+	});
+
 	it("applies node inspector edits through setNodes", async () => {
 		const selectedNode = {
 			id: "r1",

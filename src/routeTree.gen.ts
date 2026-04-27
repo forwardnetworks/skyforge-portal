@@ -39,6 +39,7 @@ import { Route as DashboardToolsToolRouteImport } from './routes/dashboard/tools
 import { Route as DashboardRunsRunIdRouteImport } from './routes/dashboard/runs/$runId'
 import { Route as DashboardLabsMapRouteImport } from './routes/dashboard/labs/map'
 import { Route as DashboardLabsDesignerRouteImport } from './routes/dashboard/labs/designer'
+import { Route as DashboardForwardTestdrivesRouteImport } from './routes/dashboard/forward.testdrives'
 import { Route as DashboardForwardCredentialsRouteImport } from './routes/dashboard/forward.credentials'
 import { Route as DashboardForwardCollectorsRouteImport } from './routes/dashboard/forward.collectors'
 import { Route as DashboardDocsSlugRouteImport } from './routes/dashboard/docs/$slug'
@@ -216,6 +217,12 @@ const DashboardLabsDesignerRoute = DashboardLabsDesignerRouteImport.update({
 } as any).lazy(() =>
   import('./routes/dashboard/labs/designer.lazy').then((d) => d.Route),
 )
+const DashboardForwardTestdrivesRoute =
+  DashboardForwardTestdrivesRouteImport.update({
+    id: '/testdrives',
+    path: '/testdrives',
+    getParentRoute: () => DashboardForwardRoute,
+  } as any)
 const DashboardForwardCredentialsRoute =
   DashboardForwardCredentialsRouteImport.update({
     id: '/credentials',
@@ -321,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
+  '/dashboard/forward/testdrives': typeof DashboardForwardTestdrivesRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -364,6 +372,7 @@ export interface FileRoutesByTo {
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
+  '/dashboard/forward/testdrives': typeof DashboardForwardTestdrivesRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -409,6 +418,7 @@ export interface FileRoutesById {
   '/dashboard/docs/$slug': typeof DashboardDocsSlugRoute
   '/dashboard/forward/collectors': typeof DashboardForwardCollectorsRoute
   '/dashboard/forward/credentials': typeof DashboardForwardCredentialsRoute
+  '/dashboard/forward/testdrives': typeof DashboardForwardTestdrivesRoute
   '/dashboard/labs/designer': typeof DashboardLabsDesignerRoute
   '/dashboard/labs/map': typeof DashboardLabsMapRoute
   '/dashboard/runs/$runId': typeof DashboardRunsRunIdRoute
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
+    | '/dashboard/forward/testdrives'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -498,6 +509,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
+    | '/dashboard/forward/testdrives'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -542,6 +554,7 @@ export interface FileRouteTypes {
     | '/dashboard/docs/$slug'
     | '/dashboard/forward/collectors'
     | '/dashboard/forward/credentials'
+    | '/dashboard/forward/testdrives'
     | '/dashboard/labs/designer'
     | '/dashboard/labs/map'
     | '/dashboard/runs/$runId'
@@ -812,6 +825,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLabsDesignerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/forward/testdrives': {
+      id: '/dashboard/forward/testdrives'
+      path: '/testdrives'
+      fullPath: '/dashboard/forward/testdrives'
+      preLoaderRoute: typeof DashboardForwardTestdrivesRouteImport
+      parentRoute: typeof DashboardForwardRoute
+    }
     '/dashboard/forward/credentials': {
       id: '/dashboard/forward/credentials'
       path: '/credentials'
@@ -902,12 +922,14 @@ declare module '@tanstack/react-router' {
 interface DashboardForwardRouteChildren {
   DashboardForwardCollectorsRoute: typeof DashboardForwardCollectorsRoute
   DashboardForwardCredentialsRoute: typeof DashboardForwardCredentialsRoute
+  DashboardForwardTestdrivesRoute: typeof DashboardForwardTestdrivesRoute
   DashboardForwardIndexRoute: typeof DashboardForwardIndexRoute
 }
 
 const DashboardForwardRouteChildren: DashboardForwardRouteChildren = {
   DashboardForwardCollectorsRoute: DashboardForwardCollectorsRoute,
   DashboardForwardCredentialsRoute: DashboardForwardCredentialsRoute,
+  DashboardForwardTestdrivesRoute: DashboardForwardTestdrivesRoute,
   DashboardForwardIndexRoute: DashboardForwardIndexRoute,
 }
 

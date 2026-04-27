@@ -21,10 +21,43 @@ import {
 const platformProfileOptions = [
 	"viewer",
 	"demo-user",
+	"lab-user",
 	"sandbox-user",
 	"trainer",
 	"integration-user",
 	"admin",
+] as const;
+
+const quickDeployTagVocabulary = [
+	"advanced",
+	"bgp",
+	"campus",
+	"curated-demo",
+	"dc-fabric",
+	"eos",
+	"evpn",
+	"forward-sync",
+	"integration",
+	"intermediate",
+	"intro",
+	"mpls",
+	"multicast",
+	"nautobot",
+	"netbox",
+	"ospf",
+	"performance",
+	"policy",
+	"public",
+	"qos",
+	"routing",
+	"sandbox",
+	"segment-routing",
+	"servicenow",
+	"training",
+	"troubleshooting",
+	"vlan",
+	"vrf",
+	"vxlan",
 ] as const;
 
 export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
@@ -47,6 +80,23 @@ export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
 					Blueprint repo: {props.quickDeployRepo ?? "skyforge/blueprints"} @{" "}
 					{props.quickDeployBranch ?? "main"} (dir:{" "}
 					{props.quickDeployDir ?? "netlab"})
+				</div>
+				<div className="grid gap-2 md:grid-cols-[1fr_auto]">
+					<Input
+						placeholder="owner/repo (example: skyforge/blueprints)"
+						value={props.quickDeployRepoDraft}
+						onChange={(e) => props.onQuickDeployRepoDraftChange(e.target.value)}
+					/>
+					<Button
+						variant="outline"
+						onClick={props.onSaveQuickDeployRepo}
+						disabled={
+							props.saveQuickDeployRepoPending ||
+							!props.quickDeployRepoDraft.trim()
+						}
+					>
+						{props.saveQuickDeployRepoPending ? "Saving repo…" : "Save repo"}
+					</Button>
 				</div>
 				<div className="grid gap-2 md:grid-cols-[1fr_auto]">
 					<Select
@@ -142,6 +192,26 @@ export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
 											)
 										}
 									/>
+								</div>
+								<div className="mt-2 space-y-1">
+									<Label>Tags</Label>
+									<Input
+										value={(item.tags ?? []).join(", ")}
+										onChange={(event) =>
+											props.onQuickDeployTemplateFieldChange(
+												index,
+												"tags",
+												event.target.value,
+											)
+										}
+										placeholder="eos, evpn, bgp, intro"
+									/>
+									<div className="text-xs text-muted-foreground">
+										Comma-separated filter tags shown in Launch Lab.
+									</div>
+									<div className="text-xs text-muted-foreground">
+										Allowed tags: {quickDeployTagVocabulary.join(", ")}.
+									</div>
 								</div>
 								<Select
 									value={item.template}
@@ -247,8 +317,8 @@ export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
 										placeholder="lab-pool, burst"
 									/>
 									<div className="text-xs text-muted-foreground">
-										Comma-separated scheduler hints, for example `lab`,
-										`burst`, or `onprem-lab`.
+										Comma-separated scheduler hints, for example `lab`, `burst`,
+										or `onprem-lab`.
 									</div>
 								</div>
 								<div className="mt-2 space-y-1">
@@ -258,7 +328,7 @@ export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
 										onChange={(event) =>
 											onAllowedProfilesChange(index, event.target.value)
 										}
-										placeholder="demo-user, trainer, admin"
+										placeholder="lab-user, trainer, admin"
 									/>
 									<div className="text-xs text-muted-foreground">
 										Leave blank for the default launch-capable profiles.

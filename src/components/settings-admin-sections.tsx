@@ -19,6 +19,7 @@ import { AdminUsersManagementCard } from "./admin-users-management-card";
 import { AdminUsersPlatformPolicyCard } from "./admin-users-platform-policy-card";
 import { AdminUsersPurgeCard } from "./admin-users-purge-card";
 import { AdminUsersRbacCard } from "./admin-users-rbac-card";
+import { AdminUsersRoleProfilesCard } from "./admin-users-role-profiles-card";
 import type {
 	AdminAuditSectionProps,
 	AdminMaintenanceSectionProps,
@@ -64,7 +65,12 @@ export function renderAdminSettingsSection(
 		case "forward":
 			return <ForwardSettingsSection {...adminProps.forward} />;
 		case "runtime":
-			return <RuntimeSettingsSection {...adminProps.runtime} />;
+			return (
+				<RuntimeSettingsSection
+					runtime={adminProps.runtime}
+					forward={adminProps.forward}
+				/>
+			);
 		case "users":
 			return <UsersSettingsSection {...adminProps.users} />;
 		case "maintenance":
@@ -99,17 +105,23 @@ function ForwardSettingsSection(props: SettingsAdminSectionProps["forward"]) {
 		<>
 			<AdminOverviewForwardSupportCard {...props} />
 			<AdminOverviewForwardDemoSeedsCard {...props} />
-			<AdminOverviewQuickDeployCard {...props} />
 		</>
 	);
 }
 
-function RuntimeSettingsSection(props: SettingsAdminSectionProps["runtime"]) {
+function RuntimeSettingsSection({
+	runtime,
+	forward,
+}: {
+	runtime: SettingsAdminSectionProps["runtime"];
+	forward: SettingsAdminSectionProps["forward"];
+}) {
 	return (
 		<>
-			<AdminOverviewHetznerBurstCard {...props} />
-			<AdminOverviewRuntimePressureCard {...props} />
-			<AdminOverviewPublicAccessCard {...props} />
+			<AdminOverviewQuickDeployCard {...forward} />
+			<AdminOverviewHetznerBurstCard {...runtime} />
+			<AdminOverviewRuntimePressureCard {...runtime} />
+			<AdminOverviewPublicAccessCard {...runtime} />
 		</>
 	);
 }
@@ -119,6 +131,7 @@ function UsersSettingsSection(props: AdminUsersSectionProps) {
 		<>
 			<AdminUsersManagementCard {...props} />
 			<AdminUsersRbacCard {...props} />
+			<AdminUsersRoleProfilesCard />
 			<AdminUsersPlatformPolicyCard {...props} />
 			<AdminUsersForwardResetCard {...props} />
 			<AdminUsersApiPermissionsCard {...props} />
@@ -704,6 +717,10 @@ function AdminAuditSectionCard(props: AdminAuditSectionProps) {
 
 function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 	const diag = props.adminTaskQueueDiag;
+	const diagSignals = diag?.signals ?? [];
+	const queuedByType = diag?.queuedByType ?? [];
+	const runningByType = diag?.runningByType ?? [];
+	const queuedOffenders = diag?.queuedOffenders ?? [];
 
 	return (
 		<>
@@ -757,13 +774,13 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 										stuck candidates {diag.stuckQueuedCandidates}
 									</Badge>
 								</div>
-								{diag.signals.length ? (
+								{diagSignals.length ? (
 									<div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
 										<div className="font-medium text-amber-700">
 											Queue signals
 										</div>
 										<div className="mt-2 space-y-1 text-amber-700">
-											{diag.signals.map((signal) => (
+											{diagSignals.map((signal) => (
 												<div key={signal}>{signal}</div>
 											))}
 										</div>
@@ -777,8 +794,8 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 									<div className="rounded-md border p-3">
 										<div className="font-medium">Queued by type</div>
 										<div className="mt-2 flex flex-wrap gap-2">
-											{diag.queuedByType.length ? (
-												diag.queuedByType.map((entry) => (
+											{queuedByType.length ? (
+												queuedByType.map((entry) => (
 													<Badge
 														key={`queued-${entry.taskType}`}
 														variant="outline"
@@ -799,8 +816,8 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 									<div className="rounded-md border p-3">
 										<div className="font-medium">Running by type</div>
 										<div className="mt-2 flex flex-wrap gap-2">
-											{diag.runningByType.length ? (
-												diag.runningByType.map((entry) => (
+											{runningByType.length ? (
+												runningByType.map((entry) => (
 													<Badge
 														key={`running-${entry.taskType}`}
 														variant="outline"
@@ -829,8 +846,8 @@ function AdminMaintenanceTasksSection(props: AdminTasksSectionProps) {
 										) : null}
 									</div>
 									<div className="mt-3 space-y-2">
-										{diag.queuedOffenders.length ? (
-											diag.queuedOffenders.map((item) => (
+										{queuedOffenders.length ? (
+											queuedOffenders.map((item) => (
 												<div
 													key={item.taskId}
 													className="rounded-md border bg-muted/30 p-3 text-sm"

@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import {
-	useQuickDeployPageQueries,
-} from "@/hooks/use-quick-deploy-page-queries";
-import { useQuickDeployTemplateSelection } from "@/hooks/use-quick-deploy-page-template-selection";
 import { useQuickDeployDeployMutation } from "@/hooks/use-quick-deploy-page-mutations";
+import { useQuickDeployPageQueries } from "@/hooks/use-quick-deploy-page-queries";
+import { useQuickDeployTemplateSelection } from "@/hooks/use-quick-deploy-page-template-selection";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 export { formatQuickDeployEstimate } from "@/hooks/use-quick-deploy-page-estimate";
 
@@ -14,6 +12,11 @@ export function useQuickDeployPage(args?: { mode?: string }) {
 	const navigate = useNavigate();
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const [previewTemplate, setPreviewTemplate] = useState("");
+	const [previewSource, setPreviewSource] = useState<"blueprints" | "custom">(
+		"blueprints",
+	);
+	const [previewRepo, setPreviewRepo] = useState("");
+	const [previewDir, setPreviewDir] = useState("");
 	const [leaseHours, setLeaseHours] = useState("24");
 
 	const {
@@ -27,9 +30,14 @@ export function useQuickDeployPage(args?: { mode?: string }) {
 	} = useQuickDeployPageQueries({
 		previewOpen,
 		previewTemplate,
+		previewSource,
+		previewRepo,
+		previewDir,
 	});
 
-	const requestedMode = String(args?.mode ?? "").trim().toLowerCase();
+	const requestedMode = String(args?.mode ?? "")
+		.trim()
+		.toLowerCase();
 	const primaryOperatingMode = String(
 		availabilityQ.data?.policy?.primaryOperatingMode ?? "",
 	)
@@ -44,6 +52,9 @@ export function useQuickDeployPage(args?: { mode?: string }) {
 		recommendedTemplates,
 		leaseOptions,
 		loadError,
+		selectedTag,
+		setSelectedTag,
+		availableTags,
 	} = useQuickDeployTemplateSelection({
 		requestedMode,
 		primaryOperatingMode,
@@ -75,6 +86,12 @@ export function useQuickDeployPage(args?: { mode?: string }) {
 		setPreviewOpen,
 		previewTemplate,
 		setPreviewTemplate,
+		previewSource,
+		setPreviewSource,
+		previewRepo,
+		setPreviewRepo,
+		previewDir,
+		setPreviewDir,
 		leaseHours,
 		setLeaseHours,
 		deployMutation,
@@ -83,6 +100,9 @@ export function useQuickDeployPage(args?: { mode?: string }) {
 		recommendedTemplates,
 		selectedMode,
 		setSelectedMode,
+		selectedTag,
+		setSelectedTag,
+		availableTags,
 		primaryOperatingMode,
 		availabilityQ,
 		sessionQ,

@@ -38,12 +38,24 @@ export type AdminUserAPIPermissionsResponse = {
 	generatedAt: ISO8601;
 };
 
+export type AdminRoleAPIPermissionsResponse = {
+	profile: string;
+	permissions: AdminUserAPIPermission[];
+	generatedAt: ISO8601;
+};
+
 export type PutAdminUserAPIPermissionsRequest = {
 	permissions: AdminUserAPIPermission[];
 };
 
 export type PutAdminUserAPIPermissionsResponse = {
 	username: string;
+	permissions: AdminUserAPIPermission[];
+	updatedAt: ISO8601;
+};
+
+export type PutAdminRoleAPIPermissionsResponse = {
+	profile: string;
 	permissions: AdminUserAPIPermission[];
 	updatedAt: ISO8601;
 };
@@ -66,6 +78,27 @@ export async function putAdminUserAPIPermissions(
 ): Promise<PutAdminUserAPIPermissionsResponse> {
 	return apiFetch<PutAdminUserAPIPermissionsResponse>(
 		`/api/admin/rbac/users/${encodeURIComponent(username)}/api-permissions`,
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function getAdminRoleAPIPermissions(
+	profile: string,
+): Promise<AdminRoleAPIPermissionsResponse> {
+	return apiFetch<AdminRoleAPIPermissionsResponse>(
+		`/api/admin/rbac/role-profiles/${encodeURIComponent(profile)}/api-permissions`,
+	);
+}
+
+export async function putAdminRoleAPIPermissions(
+	profile: string,
+	body: PutAdminUserAPIPermissionsRequest,
+): Promise<PutAdminRoleAPIPermissionsResponse> {
+	return apiFetch<PutAdminRoleAPIPermissionsResponse>(
+		`/api/admin/rbac/role-profiles/${encodeURIComponent(profile)}/api-permissions`,
 		{
 			method: "PUT",
 			body: JSON.stringify(body),

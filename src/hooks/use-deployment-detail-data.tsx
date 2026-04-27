@@ -1,11 +1,13 @@
 import {
 	type DeploymentInfoResponse,
+	type DeploymentManagementAccessResponse,
 	type DeploymentMap,
 	type DeploymentResourceEstimateResponse,
 	type DeploymentSourceShare,
 	type SharedDeploymentSource,
 	type UserForwardCollectorConfigSummary,
 	getDeploymentInfoById,
+	getDeploymentManagementAccess,
 	getDeploymentMap,
 	getDeploymentResourceEstimate,
 	getDeploymentTopology,
@@ -25,6 +27,8 @@ import {
 	resourceEstimateReasonFromError,
 } from "./deployment-detail-utils";
 
+export type DeploymentDetailTab = "topology" | "logs" | "config" | "access";
+
 export function useDeploymentDetailData(args: {
 	deploymentId: string;
 	tab?: string;
@@ -41,11 +45,12 @@ export function useDeploymentDetailData(args: {
 	] = useState("");
 	const [forwardAutoSyncOnBringUp, setForwardAutoSyncOnBringUp] =
 		useState(false);
-	const normalizedTab =
-		tab === "logs" || tab === "config" || tab === "topology" ? tab : "topology";
-	const [activeTab, setActiveTab] = useState<"topology" | "logs" | "config">(
-		normalizedTab,
-	);
+	const normalizedTab: DeploymentDetailTab =
+		tab === "logs" || tab === "config" || tab === "topology" || tab === "access"
+			? tab
+			: "topology";
+	const [activeTab, setActiveTab] =
+		useState<DeploymentDetailTab>(normalizedTab);
 
 	const deploymentInfoQ = useQuery<DeploymentInfoResponse>({
 		queryKey: queryKeys.deploymentDetail(deploymentId),
@@ -116,7 +121,10 @@ export function useDeploymentDetailData(args: {
 
 	const runsForDeployment = useMemo(() => {
 		if (!deployment) return [];
-		const all = (runsForDeploymentQ.data?.tasks ?? []) as Record<string, unknown>[];
+		const all = (runsForDeploymentQ.data?.tasks ?? []) as Record<
+			string,
+			unknown
+		>[];
 		const depRuns = all.filter(
 			(r) => String(r.deploymentId ?? "") === deployment.id,
 		);
@@ -129,7 +137,8 @@ export function useDeploymentDetailData(args: {
 			if (!userId || !deployment) throw new Error("deployment not found");
 			return getDeploymentTopology(userId, deployment.id);
 		},
-		enabled: Boolean(userId && deployment) && ["kne", "byos"].includes(deploymentType),
+		enabled:
+			Boolean(userId && deployment) && ["kne", "byos"].includes(deploymentType),
 		retry: false,
 		staleTime: 10_000,
 	});
@@ -144,6 +153,18 @@ export function useDeploymentDetailData(args: {
 		retry: false,
 		staleTime: 10_000,
 	});
+	const deploymentManagementAccessQ =
+		useQuery<DeploymentManagementAccessResponse>({
+			queryKey: queryKeys.deploymentManagementAccess(userId, deploymentId),
+			queryFn: async () => {
+				if (!userId || !deployment) throw new Error("deployment not found");
+				return getDeploymentManagementAccess(userId, deployment.id);
+			},
+			enabled: Boolean(userId && deployment && isKNEDeployment),
+			retry: false,
+			staleTime: 30_000,
+			refetchOnWindowFocus: false,
+		});
 	const forwardNetworkID = String(
 		deploymentInfoQ.data?.forwardNetworkId ?? "",
 	).trim();
@@ -236,6 +257,7 @@ export function useDeploymentDetailData(args: {
 		deployment,
 		deploymentEngine,
 		deploymentInfoQ,
+		deploymentManagementAccessQ,
 		deploymentMap,
 		deploymentId,
 		deploymentType,

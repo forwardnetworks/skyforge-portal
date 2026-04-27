@@ -1,44 +1,51 @@
+import { listAssignableUsers } from "@/lib/api-client-deployment-source-shares";
 import {
+	type ForwardTenantCredentialResponse,
+	type ForwardTenantFeatureFlags,
+	type ForwardTenantResetRunsResponse,
 	createUserForwardCollectorConfig,
+	deleteUserForwardCollectorConfig,
 	getCurrentUserForwardCustomerTenantCredential,
 	getCurrentUserForwardCustomerTenantFeatures,
 	getCurrentUserForwardDemoTenantCredential,
 	getCurrentUserForwardTenantCredential,
 	getCurrentUserForwardTenantFeatures,
-	deleteUserForwardCollectorConfig,
 	listCurrentUserForwardCustomerTenantRebuildRuns,
 	listCurrentUserForwardDemoTenantRebuildRuns,
 	listCurrentUserForwardTenantRebuildRuns,
 	listUserForwardCollectorConfigs,
 	putCurrentUserForwardCustomerTenantFeatures,
 	putCurrentUserForwardTenantFeatures,
+	reconcileCurrentUserForwardCustomerBanner,
 	requestCurrentUserForwardCustomerTenantRebuild,
 	requestCurrentUserForwardDemoTenantRebuild,
 	requestCurrentUserForwardTenantRebuild,
-	reconcileCurrentUserForwardCustomerBanner,
 	resetCurrentUserForwardCustomerTenantCredential,
 	resetCurrentUserForwardDemoTenantCredential,
 	resetCurrentUserForwardTenantCredential,
 	revealCurrentUserForwardCustomerTenantCredentialPassword,
 	revealCurrentUserForwardDemoTenantCredentialPassword,
 	revealCurrentUserForwardTenantCredentialPassword,
-	type ForwardTenantCredentialResponse,
-	type ForwardTenantFeatureFlags,
-	type ForwardTenantResetRunsResponse,
 } from "@/lib/api-client-forward-collectors";
 import {
+	type ForwardOrgShareTenantKind,
+	deleteForwardOrgShare,
+	listForwardOrgShares,
+	putForwardOrgShare,
+} from "@/lib/api-client-forward-org-shares";
+import {
+	type ForwardPerformanceNetworksResponse,
+	type ManagedForwardTenantKind,
 	generateManagedForwardTenantPerformance,
 	injectManagedForwardTenantSnapshotDataFile,
 	listManagedForwardTenantPerformanceNetworks,
-	type ForwardPerformanceNetworksResponse,
-	type ManagedForwardTenantKind,
 } from "@/lib/api-client-forward-performance";
 import { queryKeys } from "@/lib/query-keys";
 import {
+	type UseQueryResult,
 	useMutation,
 	useQuery,
 	useQueryClient,
-	type UseQueryResult,
 } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -47,7 +54,10 @@ type ForwardCredentialTarget = "in_cluster_org" | "custom_onprem";
 type ManagedTenantState = {
 	credentialQ: UseQueryResult<ForwardTenantCredentialResponse, Error>;
 	resetRunsQ: UseQueryResult<ForwardTenantResetRunsResponse, Error>;
-	performanceNetworksQ: UseQueryResult<ForwardPerformanceNetworksResponse, Error>;
+	performanceNetworksQ: UseQueryResult<
+		ForwardPerformanceNetworksResponse,
+		Error
+	>;
 	revealedPassword: string;
 	confirmHardReset: boolean;
 };
@@ -109,6 +119,16 @@ export function useForwardCredentialsPage() {
 	const customerTenantFeaturesQ = useQuery({
 		queryKey: tenantFeaturesKey("customer"),
 		queryFn: getCurrentUserForwardCustomerTenantFeatures,
+		staleTime: 10_000,
+	});
+	const assignableUsersQ = useQuery({
+		queryKey: ["assignableUsers", "forward-org-shares"],
+		queryFn: listAssignableUsers,
+		staleTime: 30_000,
+	});
+	const forwardOrgSharesQ = useQuery({
+		queryKey: queryKeys.userForwardOrgShares(),
+		queryFn: listForwardOrgShares,
 		staleTime: 10_000,
 	});
 
@@ -251,9 +271,12 @@ export function useForwardCredentialsPage() {
 			}
 		},
 		onError: (err, tenant) =>
-			toast.error(`Failed to reset Forward ${tenantKindLabel(tenant)} credential`, {
-				description: err instanceof Error ? err.message : String(err),
-			}),
+			toast.error(
+				`Failed to reset Forward ${tenantKindLabel(tenant)} credential`,
+				{
+					description: err instanceof Error ? err.message : String(err),
+				},
+			),
 	});
 
 	const revealTenantCredentialMutation = useMutation({
@@ -425,18 +448,22 @@ export function useForwardCredentialsPage() {
 			content: string;
 			snapshotNote?: string;
 		}) =>
-			injectManagedForwardTenantSnapshotDataFile(input.tenant, input.networkRef, {
-				snapshotId: input.snapshotId,
-				pricingSourceUrl: input.pricingSourceUrl,
-				dataFileName: input.dataFileName,
-				nqeName: input.nqeName,
-				description: input.description,
-				storedFileName: input.storedFileName,
-				fileTypeProto: input.fileTypeProto,
-				schemaFields: input.schemaFields,
-				content: input.content,
-				snapshotNote: input.snapshotNote,
-			}),
+			injectManagedForwardTenantSnapshotDataFile(
+				input.tenant,
+				input.networkRef,
+				{
+					snapshotId: input.snapshotId,
+					pricingSourceUrl: input.pricingSourceUrl,
+					dataFileName: input.dataFileName,
+					nqeName: input.nqeName,
+					description: input.description,
+					storedFileName: input.storedFileName,
+					fileTypeProto: input.fileTypeProto,
+					schemaFields: input.schemaFields,
+					content: input.content,
+					snapshotNote: input.snapshotNote,
+				},
+			),
 		onSuccess: async (resp, input) => {
 			toast.success("Snapshot data file injected", {
 				description: `new snapshot ${resp.injectedSnapshotId}`,
@@ -449,6 +476,49 @@ export function useForwardCredentialsPage() {
 		},
 		onError: (err) =>
 			toast.error("Failed to inject data file into snapshot", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
+	const grantForwardOrgShareMutation = useMutation({
+		mutationFn: async (input: {
+			tenantKind: ForwardOrgShareTenantKind;
+			username: string;
+		}) =>
+			putForwardOrgShare({
+				tenantKind: input.tenantKind,
+				username: input.username,
+				access: "impersonate",
+			}),
+		onSuccess: async (_resp, input) => {
+			toast.success("Forward org access granted", {
+				description: `${input.username} can now open your ${tenantKindLabel(input.tenantKind)}.`,
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardOrgShares(),
+			});
+		},
+		onError: (err) =>
+			toast.error("Failed to grant Forward org access", {
+				description: err instanceof Error ? err.message : String(err),
+			}),
+	});
+
+	const revokeForwardOrgShareMutation = useMutation({
+		mutationFn: async (input: {
+			tenantKind: ForwardOrgShareTenantKind;
+			username: string;
+		}) => deleteForwardOrgShare(input.tenantKind, input.username),
+		onSuccess: async (_resp, input) => {
+			toast.success("Forward org access revoked", {
+				description: `${input.username} can no longer open your ${tenantKindLabel(input.tenantKind)}.`,
+			});
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.userForwardOrgShares(),
+			});
+		},
+		onError: (err) =>
+			toast.error("Failed to revoke Forward org access", {
 				description: err instanceof Error ? err.message : String(err),
 			}),
 	});
@@ -506,6 +576,8 @@ export function useForwardCredentialsPage() {
 
 	return {
 		collectorsQ,
+		assignableUsersQ,
+		forwardOrgSharesQ,
 		tenantFeaturesQueries,
 		tenants,
 		customHost,
@@ -522,10 +594,7 @@ export function useForwardCredentialsPage() {
 		) => {
 			setRevealedPasswords((prev) => ({ ...prev, [tenant]: value }));
 		},
-		setConfirmHardReset: (
-			tenant: ManagedForwardTenantKind,
-			value: boolean,
-		) => {
+		setConfirmHardReset: (tenant: ManagedForwardTenantKind, value: boolean) => {
 			setConfirmHardResetByTenant((prev) => ({ ...prev, [tenant]: value }));
 		},
 		tlsCheckboxDisabled,
@@ -540,6 +609,8 @@ export function useForwardCredentialsPage() {
 		saveTenantFeaturesMutation,
 		generateSyntheticPerformanceMutation,
 		injectSnapshotDataFileMutation,
+		grantForwardOrgShareMutation,
+		revokeForwardOrgShareMutation,
 		managedTenantKeys: MANAGED_TENANT_KEYS,
 	};
 }

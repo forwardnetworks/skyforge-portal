@@ -1,12 +1,12 @@
 import type {
-	DeploymentMap,
 	DeploymentInventoryResponse,
+	DeploymentMap,
 	DeploymentNodeInterfacesResponse,
 	DeploymentTopology,
 	ISO8601,
 } from "./api-client-user-user-scope";
-import type { components, operations } from "./openapi.gen";
 import { apiFetch } from "./http";
+import type { components, operations } from "./openapi.gen";
 
 export async function getDeploymentNodeInterfaces(
 	userId: string,
@@ -205,6 +205,58 @@ export async function getDeploymentMap(
 	);
 }
 
+export type DeploymentManagementAccessNode = {
+	id: string;
+	label?: string;
+	kind?: string;
+	mgmtIp?: string;
+	status?: string;
+	podName?: string;
+	tunnelPath?: string;
+};
+
+export type DeploymentManagementAccessCommands = {
+	tunnel?: string;
+	proxyCommand?: string;
+	sshConfig?: string;
+	ansibleSshArgs?: string;
+	tokenEnvVarName?: string;
+};
+
+export type DeploymentManagementAccessResponse = {
+	userId: string;
+	deploymentId: string;
+	enabled: boolean;
+	ready: boolean;
+	status: string;
+	message?: string;
+	namespace?: string;
+	topologyName?: string;
+	defaultPort: number;
+	tunnelPath?: string;
+	nodes?: DeploymentManagementAccessNode[];
+	commands?: DeploymentManagementAccessCommands;
+};
+
+export async function getDeploymentManagementAccess(
+	userId: string,
+	deploymentId: string,
+): Promise<DeploymentManagementAccessResponse> {
+	return apiFetch<DeploymentManagementAccessResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/management-access`,
+	);
+}
+
+export async function reconcileDeploymentManagementAccess(
+	userId: string,
+	deploymentId: string,
+): Promise<DeploymentManagementAccessResponse> {
+	return apiFetch<DeploymentManagementAccessResponse>(
+		`/api/users/${encodeURIComponent(userId)}/deployments/${encodeURIComponent(deploymentId)}/management-access/reconcile`,
+		{ method: "POST" },
+	);
+}
+
 type DeploymentPlacementSummaryCompat = {
 	generatedAt?: string;
 	userScopeId?: string;
@@ -230,11 +282,10 @@ type DeploymentPlacementSummaryCompat = {
 	metadata?: Record<string, string>;
 };
 
-type DeploymentKneInfoCompat =
-	components["schemas"]["skyforge.KneInfo"] & {
-		placementSummary?: DeploymentPlacementSummaryCompat;
-		warnings?: string[];
-	};
+type DeploymentKneInfoCompat = components["schemas"]["skyforge.KneInfo"] & {
+	placementSummary?: DeploymentPlacementSummaryCompat;
+	warnings?: string[];
+};
 
 export type DeploymentInfoResponse =
 	operations["GET:skyforge.GetUserScopeDeploymentInfo"]["responses"][200]["content"]["application/json"] & {

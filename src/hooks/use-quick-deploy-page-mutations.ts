@@ -23,7 +23,12 @@ type QuickDeployRunResult = {
 
 type QuickDeployDeployController = {
 	isPending: boolean;
-	mutate: (template: string) => void;
+	mutate: (request: {
+		template: string;
+		templateSource?: "blueprints" | "external" | "custom" | string;
+		templateRepo?: string;
+		templatesDir?: string;
+	}) => void;
 };
 
 export function useQuickDeployDeployMutation(args: {
@@ -35,7 +40,12 @@ export function useQuickDeployDeployMutation(args: {
 	const [isPending, setIsPending] = useState(false);
 
 	const mutate = useCallback(
-		(template: string) => {
+		(request: {
+			template: string;
+			templateSource?: "blueprints" | "external" | "custom" | string;
+			templateRepo?: string;
+			templatesDir?: string;
+		}) => {
 			if (isPending) {
 				return;
 			}
@@ -52,7 +62,10 @@ export function useQuickDeployDeployMutation(args: {
 					await navigate({ to: "/dashboard/deployments" });
 
 					const result: QuickDeployRunResult = await runQuickDeploy({
-						template,
+						template: request.template,
+						templateSource: request.templateSource,
+						templateRepo: request.templateRepo,
+						templatesDir: request.templatesDir,
 						leaseHours: Number.parseInt(leaseHours, 10) || 4,
 					});
 

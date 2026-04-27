@@ -83,7 +83,39 @@ export type ForwardTenantCredentialResponse = {
 	source?: string;
 };
 
-export type ForwardTenantKind = "primary" | "demo" | "customer";
+export type ForwardTenantKind = "primary" | "demo" | "customer" | "testdrive";
+
+export type ForwardTestDriveRecord = {
+	testDriveId: string;
+	customerName: string;
+	status: string;
+	provisioningStatus?: "queued" | "running" | "ready" | "failed";
+	provisioningStep?: string;
+	provisioningError?: string;
+	createdAt?: ISO8601;
+	updatedAt?: ISO8601;
+	lastSeededAt?: ISO8601;
+	lastResetAt?: ISO8601;
+};
+
+export type ForwardTestDriveSummary = {
+	record: ForwardTestDriveRecord;
+	credential?: ForwardTenantCredentialResponse;
+};
+
+export type ListForwardTestDrivesResponse = {
+	items: ForwardTestDriveSummary[];
+};
+
+export type CreateForwardTestDriveRequest = {
+	testDriveId?: string;
+	customerName: string;
+};
+
+export type ForwardTestDriveCredentialResponse = {
+	record: ForwardTestDriveRecord;
+	credential?: ForwardTenantCredentialResponse;
+};
 
 export type ForwardTenantFeatureFlags = {
 	predictModeling: boolean;
@@ -290,6 +322,67 @@ export async function reconcileCurrentUserForwardCustomerBanner(): Promise<Forwa
 			method: "POST",
 			body: "{}",
 		},
+	);
+}
+
+export async function listForwardTestDrives(): Promise<ListForwardTestDrivesResponse> {
+	return apiFetch<ListForwardTestDrivesResponse>("/api/forward/testdrives");
+}
+
+export async function createForwardTestDrive(
+	body: CreateForwardTestDriveRequest,
+): Promise<ForwardTestDriveCredentialResponse> {
+	return apiFetch<ForwardTestDriveCredentialResponse>(
+		"/api/forward/testdrives",
+		{
+			method: "POST",
+			body: JSON.stringify(body),
+		},
+	);
+}
+
+export async function revealForwardTestDriveCredential(
+	testDriveID: string,
+): Promise<ForwardTestDriveCredentialResponse> {
+	return apiFetch<ForwardTestDriveCredentialResponse>(
+		`/api/forward/testdrives/${encodeURIComponent(testDriveID)}/credential/reveal`,
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
+export async function resetForwardTestDriveCredential(
+	testDriveID: string,
+): Promise<ForwardTestDriveCredentialResponse> {
+	return apiFetch<ForwardTestDriveCredentialResponse>(
+		`/api/forward/testdrives/${encodeURIComponent(testDriveID)}/credential/reset`,
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
+export async function resetForwardTestDriveTopology(
+	testDriveID: string,
+): Promise<ForwardTestDriveCredentialResponse> {
+	return apiFetch<ForwardTestDriveCredentialResponse>(
+		`/api/forward/testdrives/${encodeURIComponent(testDriveID)}/reset`,
+		{
+			method: "POST",
+			body: "{}",
+		},
+	);
+}
+
+export async function deleteForwardTestDrive(
+	testDriveID: string,
+): Promise<{ deleted: boolean }> {
+	return apiFetch<{ deleted: boolean }>(
+		`/api/forward/testdrives/${encodeURIComponent(testDriveID)}`,
+		{ method: "DELETE" },
 	);
 }
 

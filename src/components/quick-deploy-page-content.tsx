@@ -45,7 +45,6 @@ function describeMode(value: string | undefined): string {
 			return "Persistent integration mode emphasizes labs that pair with Forward and external integrations over longer workflows.";
 		case "admin-advanced":
 			return "Admin mode includes curated launchers plus the platform controls needed to support other users.";
-		case "curated-demo":
 		default:
 			return "Curated demo mode keeps the catalog focused on repeatable GTM launchers with known-good reset behavior.";
 	}
@@ -76,12 +75,15 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 				<CardHeader>
 					<CardTitle>Mode-aware launchpad</CardTitle>
 					<CardDescription>
-						Curated launchers adapt to your current operating mode and template intent.
+						Curated launchers adapt to your current operating mode and template
+						intent.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="flex flex-wrap items-center gap-2">
-						<Badge>{formatMode(page.primaryOperatingMode || page.selectedMode)}</Badge>
+						<Badge>
+							{formatMode(page.primaryOperatingMode || page.selectedMode)}
+						</Badge>
 						{page.primaryOperatingMode &&
 						page.selectedMode !== page.primaryOperatingMode ? (
 							<Badge variant="outline">
@@ -95,7 +97,10 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 					<div className="grid gap-3 md:grid-cols-[240px_1fr]">
 						<div className="space-y-2">
 							<Label>Launch mode</Label>
-							<Select value={page.selectedMode} onValueChange={page.setSelectedMode}>
+							<Select
+								value={page.selectedMode}
+								onValueChange={page.setSelectedMode}
+							>
 								<SelectTrigger>
 									<SelectValue />
 								</SelectTrigger>
@@ -103,6 +108,23 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 									{modeOptions.map((mode) => (
 										<SelectItem key={mode} value={mode}>
 											{formatMode(mode)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Label>Topology tag</Label>
+							<Select
+								value={page.selectedTag}
+								onValueChange={page.setSelectedTag}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">all tags</SelectItem>
+									{page.availableTags.map((tag) => (
+										<SelectItem key={tag} value={tag}>
+											{tag}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -117,8 +139,17 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 										type="button"
 										variant="outline"
 										size="sm"
-										onClick={() => page.deployMutation.mutate(entry.template)}
-										disabled={page.catalogQ.isLoading || page.deployMutation.isPending}
+										onClick={() =>
+											page.deployMutation.mutate({
+												template: entry.template,
+												templateSource: entry.templateSource || "blueprints",
+												templateRepo: entry.templateRepo,
+												templatesDir: entry.templatesDir,
+											})
+										}
+										disabled={
+											page.catalogQ.isLoading || page.deployMutation.isPending
+										}
 									>
 										{entry.name}
 									</Button>
@@ -131,7 +162,8 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 							</div>
 							{page.primaryOperatingMode === "training" ? (
 								<div className="mt-3 text-xs text-muted-foreground">
-									Training users should pair these launchers with reservations for scheduled sessions.
+									Training users should pair these launchers with reservations
+									for scheduled sessions.
 									<Link className="ml-1 underline" to="/dashboard/reservations">
 										Open reservations
 									</Link>
@@ -168,6 +200,15 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 					</div>
 				</CardContent>
 			</Card>
+			<Card>
+				<CardHeader>
+					<CardTitle>Tag-Driven Catalog</CardTitle>
+					<CardDescription>
+						Quick Deploy is driven by topology tags and operating mode. Public
+						Gitea templates appear here automatically when compatible.
+					</CardDescription>
+				</CardHeader>
+			</Card>
 
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
 				{page.catalogQ.isError ? (
@@ -193,6 +234,11 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 								{entry.operatingModes?.map((mode) => (
 									<Badge key={mode} variant="secondary">
 										{formatMode(mode)}
+									</Badge>
+								))}
+								{entry.tags?.map((tag) => (
+									<Badge key={tag} variant="outline">
+										{tag}
 									</Badge>
 								))}
 								{entry.owner ? (
@@ -231,6 +277,14 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 											return;
 										}
 										page.setPreviewTemplate(entry.template);
+										page.setPreviewSource(
+											entry.templateSource &&
+												entry.templateSource !== "blueprints"
+												? "custom"
+												: "blueprints",
+										);
+										page.setPreviewRepo(entry.templateRepo ?? "");
+										page.setPreviewDir(entry.templatesDir ?? "");
 										page.setPreviewOpen(true);
 									}}
 									disabled={
@@ -241,7 +295,14 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 								</Button>
 								<Button
 									className="flex-1"
-									onClick={() => page.deployMutation.mutate(entry.template)}
+									onClick={() =>
+										page.deployMutation.mutate({
+											template: entry.template,
+											templateSource: entry.templateSource || "blueprints",
+											templateRepo: entry.templateRepo,
+											templatesDir: entry.templatesDir,
+										})
+									}
 									disabled={
 										page.catalogQ.isLoading || page.deployMutation.isPending
 									}

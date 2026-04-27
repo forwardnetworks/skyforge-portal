@@ -48,9 +48,34 @@ export type AdminQuickDeployTemplateOptionsResponse = {
 	retrievedAt: string;
 };
 
+export type UpdateAdminQuickDeployRepoRequest = {
+	repo: string;
+};
+
+export type UpdateAdminQuickDeployRepoResponse = {
+	status: "ok";
+	repo: string;
+	branch: string;
+	dir: string;
+	templates: string[];
+	retrievedAt: string;
+};
+
 export async function getAdminQuickDeployTemplateOptions(): Promise<AdminQuickDeployTemplateOptionsResponse> {
 	return apiFetch<AdminQuickDeployTemplateOptionsResponse>(
 		"/api/admin/quick-deploy/template-options",
+	);
+}
+
+export async function updateAdminQuickDeployRepo(
+	body: UpdateAdminQuickDeployRepoRequest,
+): Promise<UpdateAdminQuickDeployRepoResponse> {
+	return apiFetch<UpdateAdminQuickDeployRepoResponse>(
+		"/api/admin/quick-deploy/repo",
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
 	);
 }
 
@@ -59,6 +84,10 @@ export type QuickDeployTemplate = {
 	name: string;
 	description: string;
 	template: string;
+	templateSource?: "blueprints" | "external" | "custom" | string;
+	templateRepo?: string;
+	templatesDir?: string;
+	tags?: string[];
 	owner?: string;
 	operatingModes?: string[];
 	resourceClass: string;
@@ -77,6 +106,9 @@ export type QuickDeployCatalogResponse = {
 
 export type QuickDeployRunRequest = {
 	template: string;
+	templateSource?: "blueprints" | "external" | "custom" | string;
+	templateRepo?: string;
+	templatesDir?: string;
 	leaseHours?: number;
 	name?: string;
 };

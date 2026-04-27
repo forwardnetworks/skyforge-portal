@@ -103,7 +103,8 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 					<div>
 						<div className="text-sm font-medium">Deployment behavior</div>
 						<div className="text-xs text-muted-foreground">
-							Same validated topology drives save and deploy.
+							Same validated topology drives both repo save and deployment
+							create.
 						</div>
 					</div>
 				</div>
@@ -113,7 +114,7 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 						<div className="truncate text-xs text-muted-foreground">
 							{page.lastSaved?.userId === page.userId
 								? `${page.lastSaved.filePath} (${page.lastSaved.branch})`
-								: "Validate and save before deploy"}
+								: "Save topology before reusing a repo-backed template for deploy"}
 						</div>
 					</div>
 					<Switch
@@ -126,7 +127,9 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 						<div className="text-sm font-medium">
 							Open deployment on create
 						</div>
-						<div className="text-xs text-muted-foreground">Keep the designer open in this tab.</div>
+						<div className="text-xs text-muted-foreground">
+							Open the deployment detail view after bring-up is queued.
+						</div>
 					</div>
 					<Switch
 						checked={page.openDeploymentOnCreate}
@@ -134,6 +137,10 @@ export function LabDesignerLabTab({ page }: LabDesignerInspectorLabTabProps) {
 							page.setOpenDeploymentOnCreate(Boolean(value))
 						}
 					/>
+				</div>
+				<div className="rounded-md border border-border/70 bg-muted/30 p-2 text-xs text-muted-foreground">
+					A saved topology can be active in the designer without any running
+					deployment. Bring-up only starts when you use Save and deploy.
 				</div>
 			</div>
 

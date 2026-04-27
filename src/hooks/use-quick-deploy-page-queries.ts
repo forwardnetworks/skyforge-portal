@@ -14,8 +14,17 @@ import { useQuery } from "@tanstack/react-query";
 export function useQuickDeployPageQueries(args: {
 	previewOpen: boolean;
 	previewTemplate: string;
+	previewSource: "blueprints" | "custom";
+	previewRepo: string;
+	previewDir: string;
 }) {
-	const { previewOpen, previewTemplate } = args;
+	const {
+		previewOpen,
+		previewTemplate,
+		previewSource,
+		previewRepo,
+		previewDir,
+	} = args;
 	const catalogQ = useQuery({
 		queryKey: ["quick-deploy", "catalog"],
 		queryFn: getQuickDeployCatalog,
@@ -67,6 +76,9 @@ export function useQuickDeployPageQueries(args: {
 			"quick-deploy",
 			"template-preview",
 			previewUserScopeId,
+			previewSource,
+			previewRepo,
+			previewDir,
 			previewTemplate,
 		],
 		queryFn: async () => {
@@ -75,12 +87,17 @@ export function useQuickDeployPageQueries(args: {
 			}
 			if (!previewTemplate) throw new Error("Template is required.");
 			return getUserScopeNetlabTemplate(previewUserScopeId, {
-				source: "blueprints",
+				source: previewSource,
+				repo: previewSource === "custom" ? previewRepo : undefined,
+				dir: previewSource === "custom" ? previewDir : undefined,
 				template: previewTemplate,
 			});
 		},
 		enabled:
-			previewOpen && Boolean(previewTemplate) && Boolean(previewUserScopeId),
+			previewOpen &&
+			Boolean(previewTemplate) &&
+			Boolean(previewUserScopeId) &&
+			(previewSource !== "custom" || Boolean(previewRepo.trim())),
 		retry: false,
 		staleTime: 30_000,
 	});

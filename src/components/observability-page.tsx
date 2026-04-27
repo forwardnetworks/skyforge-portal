@@ -65,6 +65,31 @@ const seriesCards = [
 		unit: "ms",
 	},
 	{
+		metric: "labs_queue_weighted",
+		label: "Labs queue weighted",
+		description:
+			"Weighted queue pressure signal (queued and running task demand).",
+		unit: "score",
+	},
+	{
+		metric: "labs_queue_oldest_sec",
+		label: "Labs queue oldest",
+		description: "Oldest queued task age from native request observations.",
+		unit: "sec",
+	},
+	{
+		metric: "labs_reservation_prewarm",
+		label: "Reservation prewarm",
+		description: "Weighted approved reservation demand within the pre-warm window.",
+		unit: "score",
+	},
+	{
+		metric: "task_worker_heartbeat_sec",
+		label: "Worker heartbeat age",
+		description: "Task worker heartbeat age trend (lower is better).",
+		unit: "sec",
+	},
+	{
 		metric: "node_cpu_p95",
 		label: "Node CPU p95",
 		description:
@@ -88,6 +113,9 @@ function formatMetricValue(value: number | null | undefined, unit: string) {
 	}
 	if (unit === "ms") {
 		return `${Math.round(value)} ms`;
+	}
+	if (unit === "sec") {
+		return `${Math.round(value)} sec`;
 	}
 	return `${Math.round(value)}`;
 }
@@ -382,6 +410,56 @@ export function ObservabilityPage() {
 		queryFn: () =>
 			getUserObservabilitySeries({
 				metric: "node_mem_p95",
+				window,
+			}),
+		staleTime: 30_000,
+		retry: false,
+	});
+
+	const weightedQueueSeries = useQuery({
+		queryKey: queryKeys.userObservabilitySeries("labs_queue_weighted", window),
+		queryFn: () =>
+			getUserObservabilitySeries({
+				metric: "labs_queue_weighted",
+				window,
+			}),
+		staleTime: 30_000,
+		retry: false,
+	});
+
+	const oldestQueueSeries = useQuery({
+		queryKey: queryKeys.userObservabilitySeries("labs_queue_oldest_sec", window),
+		queryFn: () =>
+			getUserObservabilitySeries({
+				metric: "labs_queue_oldest_sec",
+				window,
+			}),
+		staleTime: 30_000,
+		retry: false,
+	});
+
+	const reservationPrewarmSeries = useQuery({
+		queryKey: queryKeys.userObservabilitySeries(
+			"labs_reservation_prewarm",
+			window,
+		),
+		queryFn: () =>
+			getUserObservabilitySeries({
+				metric: "labs_reservation_prewarm",
+				window,
+			}),
+		staleTime: 30_000,
+		retry: false,
+	});
+
+	const workerHeartbeatSeries = useQuery({
+		queryKey: queryKeys.userObservabilitySeries(
+			"task_worker_heartbeat_sec",
+			window,
+		),
+		queryFn: () =>
+			getUserObservabilitySeries({
+				metric: "task_worker_heartbeat_sec",
 				window,
 			}),
 		staleTime: 30_000,
@@ -683,14 +761,46 @@ export function ObservabilityPage() {
 						label={seriesCards[2].label}
 						description={seriesCards[2].description}
 						unit={seriesCards[2].unit}
-						isLoading={nodeCpuSeries.isLoading}
-						error={nodeCpuSeries.error as Error | null}
-						points={nodeCpuSeries.data?.points ?? []}
+						isLoading={weightedQueueSeries.isLoading}
+						error={weightedQueueSeries.error as Error | null}
+						points={weightedQueueSeries.data?.points ?? []}
 					/>
 					<SeriesSummaryCard
 						label={seriesCards[3].label}
 						description={seriesCards[3].description}
 						unit={seriesCards[3].unit}
+						isLoading={oldestQueueSeries.isLoading}
+						error={oldestQueueSeries.error as Error | null}
+						points={oldestQueueSeries.data?.points ?? []}
+					/>
+					<SeriesSummaryCard
+						label={seriesCards[4].label}
+						description={seriesCards[4].description}
+						unit={seriesCards[4].unit}
+						isLoading={reservationPrewarmSeries.isLoading}
+						error={reservationPrewarmSeries.error as Error | null}
+						points={reservationPrewarmSeries.data?.points ?? []}
+					/>
+					<SeriesSummaryCard
+						label={seriesCards[5].label}
+						description={seriesCards[5].description}
+						unit={seriesCards[5].unit}
+						isLoading={workerHeartbeatSeries.isLoading}
+						error={workerHeartbeatSeries.error as Error | null}
+						points={workerHeartbeatSeries.data?.points ?? []}
+					/>
+					<SeriesSummaryCard
+						label={seriesCards[6].label}
+						description={seriesCards[6].description}
+						unit={seriesCards[6].unit}
+						isLoading={nodeCpuSeries.isLoading}
+						error={nodeCpuSeries.error as Error | null}
+						points={nodeCpuSeries.data?.points ?? []}
+					/>
+					<SeriesSummaryCard
+						label={seriesCards[7].label}
+						description={seriesCards[7].description}
+						unit={seriesCards[7].unit}
 						isLoading={nodeMemSeries.isLoading}
 						error={nodeMemSeries.error as Error | null}
 						points={nodeMemSeries.data?.points ?? []}

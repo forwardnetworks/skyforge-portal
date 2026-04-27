@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import type { QuickDeployTemplate } from "@/lib/api-client";
+import { useEffect, useMemo, useState } from "react";
 
 const FALLBACK_LEASE_OPTIONS = [4, 8, 24, 72];
 
@@ -21,21 +21,48 @@ export function useQuickDeployTemplateSelection(args: {
 	} = args;
 
 	const [selectedMode, setSelectedMode] = useState("curated-demo");
+	const [selectedTag, setSelectedTag] = useState("all");
 	useEffect(() => {
 		setSelectedMode(requestedMode || primaryOperatingMode || "curated-demo");
 	}, [requestedMode, primaryOperatingMode]);
+
+	const availableTags = useMemo(() => {
+		const tags = new Set<string>();
+		for (const entry of allTemplates) {
+			for (const tag of entry.tags ?? []) {
+				const normalized = String(tag).trim().toLowerCase();
+				if (normalized) tags.add(normalized);
+			}
+		}
+		return Array.from(tags).sort((a, b) => a.localeCompare(b));
+	}, [allTemplates]);
+
+	useEffect(() => {
+		if (selectedTag === "all") return;
+		if (!availableTags.includes(selectedTag)) setSelectedTag("all");
+	}, [availableTags, selectedTag]);
 
 	const templates = useMemo(() => {
 		return allTemplates.filter((entry) => {
 			const modes = (entry.operatingModes ?? []).map((mode) =>
 				String(mode).trim().toLowerCase(),
 			);
-			if (selectedMode === "all" || modes.length === 0) {
+			if (
+				selectedMode !== "all" &&
+				modes.length > 0 &&
+				!modes.includes(selectedMode)
+			) {
+				return false;
+			}
+			if (selectedTag === "all") {
 				return true;
 			}
-			return modes.includes(selectedMode);
+			const tags = (entry.tags ?? []).map((tag) =>
+				String(tag).trim().toLowerCase(),
+			);
+			return tags.includes(selectedTag);
 		});
-	}, [allTemplates, selectedMode]);
+	}, [allTemplates, selectedMode, selectedTag]);
 
 	const recommendedTemplates = useMemo(() => {
 		return allTemplates.filter((entry) => {
@@ -64,6 +91,9 @@ export function useQuickDeployTemplateSelection(args: {
 	return {
 		selectedMode,
 		setSelectedMode,
+		selectedTag,
+		setSelectedTag,
+		availableTags,
 		templates,
 		recommendedTemplates,
 		leaseOptions,

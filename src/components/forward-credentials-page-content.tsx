@@ -2,6 +2,7 @@ import type { useForwardCredentialsPage } from "@/hooks/use-forward-credentials-
 import { ForwardCredentialsAddCard } from "./forward-credentials-add-card";
 import { ForwardCredentialsManagedTenantCard } from "./forward-credentials-managed-tenant-card";
 import { ForwardCredentialsSavedCard } from "./forward-credentials-saved-card";
+import { ForwardOrgSharingCard } from "./forward-org-sharing-card";
 import { ForwardTenantFeaturesCard } from "./forward-tenant-features-card";
 import { ForwardTenantPerformanceCard } from "./forward-tenant-performance-card";
 import { ForwardTenantRebuildCard } from "./forward-tenant-rebuild-card";
@@ -20,9 +21,9 @@ export function ForwardCredentialsPageContent(props: {
 					Forward Org Access
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Manage your deployment, demo, and customer Forward orgs,
-					experimental deployment-org feature flags, and any additional
-					on-prem credential sets.
+					Manage your deployment, demo, and customer Forward orgs, experimental
+					deployment-org feature flags, and any additional on-prem credential
+					sets.
 				</p>
 			</div>
 
@@ -47,21 +48,21 @@ export function ForwardCredentialsPageContent(props: {
 					</p>
 				</div>
 				<ForwardCredentialsManagedTenantCard page={page} tenant="primary" />
+				<ForwardOrgSharingCard page={page} tenant="primary" />
 				<ForwardTenantFeaturesCard page={page} />
 				<ForwardTenantRebuildCard page={page} tenant="primary" />
 			</section>
 
 			<section id="customer-org" className="space-y-4">
 				<div className="space-y-1">
-					<h2 className="text-xl font-semibold tracking-tight">
-						Customer Org
-					</h2>
+					<h2 className="text-xl font-semibold tracking-tight">Customer Org</h2>
 					<p className="text-sm text-muted-foreground">
 						Managed customer snapshot-analysis org with a confidentiality
 						banner.
 					</p>
 				</div>
 				<ForwardCredentialsManagedTenantCard page={page} tenant="customer" />
+				<ForwardOrgSharingCard page={page} tenant="customer" />
 				<ForwardTenantRebuildCard page={page} tenant="customer" />
 			</section>
 
@@ -71,8 +72,8 @@ export function ForwardCredentialsPageContent(props: {
 						Performance Data
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						Generate synthetic performance data for either managed Forward
-						org, defaulting to the deployment org.
+						Generate synthetic performance data for either managed Forward org,
+						defaulting to the deployment org.
 					</p>
 				</div>
 				<ForwardTenantPerformanceCard page={page} />

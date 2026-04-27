@@ -5,12 +5,14 @@ import {
 	type AdminQuickDeployCatalogResponse,
 	type AdminQuickDeployTemplateOptionsResponse,
 	type QuickDeployTemplate,
+	updateAdminQuickDeployRepo,
 	updateAdminQuickDeployCatalog,
 } from "../lib/api-client";
 
 type UseAdminSettingsAuthQuickDeployArgs = {
 	quickDeployCatalog: AdminQuickDeployCatalogResponse | undefined;
 	refetchQuickDeployCatalog: () => Promise<unknown>;
+	refetchQuickDeployTemplateOptions: () => Promise<unknown>;
 	quickDeployTemplateOptions:
 		| AdminQuickDeployTemplateOptionsResponse
 		| undefined;
@@ -45,6 +47,7 @@ function quickDeployTemplateNameFromPath(path: string): string {
 export function useAdminSettingsAuthQuickDeploy({
 	quickDeployCatalog,
 	refetchQuickDeployCatalog,
+	refetchQuickDeployTemplateOptions,
 	quickDeployTemplateOptions,
 	blueprintNetlabTemplates,
 }: UseAdminSettingsAuthQuickDeployArgs) {
@@ -53,6 +56,7 @@ export function useAdminSettingsAuthQuickDeploy({
 	>([]);
 	const [selectedQuickDeployOption, setSelectedQuickDeployOption] =
 		useState("");
+	const [quickDeployRepoDraft, setQuickDeployRepoDraft] = useState("");
 
 	useEffect(() => {
 		if (!quickDeployCatalog?.templates) {
@@ -64,6 +68,10 @@ export function useAdminSettingsAuthQuickDeploy({
 				name: item.name,
 				description: item.description,
 				template: item.template,
+				templateSource: item.templateSource,
+				templateRepo: item.templateRepo,
+				templatesDir: item.templatesDir,
+				tags: item.tags ?? [],
 				owner: item.owner ?? "skyforge-platform",
 				operatingModes: item.operatingModes ?? ["curated-demo", "training"],
 				resourceClass: item.resourceClass,
@@ -78,6 +86,18 @@ export function useAdminSettingsAuthQuickDeploy({
 		);
 	}, [quickDeployCatalog?.templates]);
 
+	useEffect(() => {
+		const nextRepo = (
+			quickDeployTemplateOptions?.repo ??
+			quickDeployCatalog?.repo ??
+			""
+		).trim();
+		if (!nextRepo) {
+			return;
+		}
+		setQuickDeployRepoDraft(nextRepo);
+	}, [quickDeployCatalog?.repo, quickDeployTemplateOptions?.repo]);
+
 	const saveQuickDeployCatalog = useMutation({
 		mutationFn: async () =>
 			updateAdminQuickDeployCatalog({
@@ -89,6 +109,25 @@ export function useAdminSettingsAuthQuickDeploy({
 		},
 		onError: (e) => {
 			toast.error("Failed to save quick deploy catalog", {
+				description: (e as Error).message,
+			});
+		},
+	});
+
+	const saveQuickDeployRepo = useMutation({
+		mutationFn: async () =>
+			updateAdminQuickDeployRepo({
+				repo: quickDeployRepoDraft.trim(),
+			}),
+		onSuccess: async () => {
+			toast.success("Quick deploy template repo updated");
+			await Promise.all([
+				refetchQuickDeployCatalog(),
+				refetchQuickDeployTemplateOptions(),
+			]);
+		},
+		onError: (e) => {
+			toast.error("Failed to update quick deploy template repo", {
 				description: (e as Error).message,
 			});
 		},
@@ -108,6 +147,7 @@ export function useAdminSettingsAuthQuickDeploy({
 		const nextValue =
 			field === "allowedProfiles" ||
 			field === "operatingModes" ||
+			field === "tags" ||
 			field === "integrationDependencies" ||
 			field === "placementHints"
 				? parseCommaList(value)
@@ -136,6 +176,7 @@ export function useAdminSettingsAuthQuickDeploy({
 				owner: "skyforge-platform",
 				operatingModes: ["curated-demo", "training"],
 				resourceClass: "standard",
+				tags: [],
 				allowedProfiles: [],
 				resetBaselineMode: "curated-reset",
 				integrationDependencies: ["forward", "managed-collector"],
@@ -159,6 +200,28 @@ export function useAdminSettingsAuthQuickDeploy({
 		return "small";
 	};
 
+	const inferTagsFromTemplate = (template: string): string[] => {
+		const normalized = template.trim().toLowerCase();
+		const tags = new Set<string>(["eos"]);
+		for (const tag of [
+			"bgp",
+			"evpn",
+			"mpls",
+			"ospf",
+			"routing",
+			"vlan",
+			"vrf",
+			"vxlan",
+		]) {
+			if (normalized.includes(tag)) tags.add(tag);
+		}
+		if (normalized.includes("sr-") || normalized.includes("segment")) {
+			tags.add("segment-routing");
+		}
+		tags.add("forward-sync");
+		return Array.from(tags);
+	};
+
 	const addQuickDeployTemplateFromOption = () => {
 		const template = selectedQuickDeployOption.trim();
 		if (!template) return;
@@ -178,9 +241,11 @@ export function useAdminSettingsAuthQuickDeploy({
 				name,
 				description: `Blueprint topology: ${template}`,
 				template,
+				templateSource: "blueprints",
 				owner: "skyforge-platform",
 				operatingModes: ["curated-demo", "training"],
 				resourceClass: inferResourceClassFromTemplate(template),
+				tags: inferTagsFromTemplate(template),
 				allowedProfiles: [],
 				resetBaselineMode: "curated-reset",
 				integrationDependencies: ["forward", "managed-collector"],
@@ -214,6 +279,9 @@ export function useAdminSettingsAuthQuickDeploy({
 		setSelectedQuickDeployOption,
 		availableQuickDeployTemplates,
 		quickDeployTemplates,
+		quickDeployRepoDraft,
+		setQuickDeployRepoDraft,
+		saveQuickDeployRepo,
 		saveQuickDeployCatalog,
 		hasQuickDeployTemplateRows,
 		upsertQuickDeployTemplateField,

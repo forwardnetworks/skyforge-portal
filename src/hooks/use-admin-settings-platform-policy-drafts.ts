@@ -248,7 +248,12 @@ function syncPlatformPolicyDrafts(
 
 const profileCapabilityHints: Record<string, string[]> = {
 	viewer: ["view_overview", "list_deployments"],
-	"demo-user": ["view_curated_catalog", "launch_curated_templates"],
+	"demo-user": ["view_curated_catalog"],
+	"lab-user": [
+		"view_curated_catalog",
+		"launch_curated_templates",
+		"reserve_future_capacity",
+	],
 	"sandbox-user": ["create_custom_templates", "reserve_resources"],
 	trainer: ["persist_labs", "run_training_templates"],
 	"integration-user": ["manage_integrations", "consume_external_data"],

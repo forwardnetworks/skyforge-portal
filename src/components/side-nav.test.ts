@@ -116,6 +116,15 @@ const toolEntries: ToolNavigationEntry[] = [
 		experience: "both",
 	},
 	{
+		id: "forward-testdrives",
+		label: "TestDrives",
+		navigationSection: "forward",
+		navigationOrder: 3,
+		navigationIcon: "network",
+		navigationHref: "/dashboard/forward/testdrives",
+		experience: "both",
+	},
+	{
 		id: "forward-analytics",
 		label: "Analytics",
 		navigationSection: "forward",
@@ -481,6 +490,7 @@ describe("side nav model", () => {
 			expect.arrayContaining([
 				"Org Access",
 				"Collector",
+				"TestDrives",
 				"Analytics",
 				"ServiceNow",
 			]),
@@ -687,6 +697,7 @@ describe("side nav model", () => {
 		expect(forward?.children?.map((child) => child.label)).toEqual([
 			"Org Access",
 			"Collector",
+			"TestDrives",
 		]);
 		expect(orgAccess?.children?.map((child) => child.label)).toEqual([
 			"Demo Org",

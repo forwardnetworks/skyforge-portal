@@ -47,6 +47,10 @@ export function LabDesignerCommandBar({
 						preview, save, and deploy. YAML remains available, but it is no
 						longer the primary editing surface.
 					</div>
+					<div className="max-w-3xl pt-1 text-xs text-muted-foreground">
+						Save only updates the topology in the user repo. Save and deploy
+						creates a deployment and queues bring-up.
+					</div>
 				</div>
 			</div>
 			<div className="flex flex-wrap items-center gap-2">
@@ -97,7 +101,7 @@ export function LabDesignerCommandBar({
 					disabled={page.saveConfig.isPending || !page.userId}
 				>
 					<Save className="mr-2 h-4 w-4" />
-					{page.saveConfig.isPending ? "Saving…" : "Save"}
+					{page.saveConfig.isPending ? "Saving topology…" : "Save topology"}
 				</Button>
 				<Button variant="outline" size="sm" onClick={page.exportYaml}>
 					<Download className="mr-2 h-4 w-4" />
@@ -109,7 +113,7 @@ export function LabDesignerCommandBar({
 					disabled={page.createDeployment.isPending || !page.userId}
 				>
 					<Rocket className="mr-2 h-4 w-4" />
-					{page.createDeployment.isPending ? "Deploying…" : "Deploy"}
+					{page.createDeployment.isPending ? "Saving + deploying…" : "Save and deploy"}
 				</Button>
 			</div>
 		</div>

@@ -1,4 +1,4 @@
-import type { operations, components } from "./openapi.gen";
+import type { components, operations } from "./openapi.gen";
 
 import { apiFetch } from "./http";
 
@@ -108,8 +108,14 @@ export type AdminPlatformWarning = {
 
 export type AdminPlatformOverviewResponseWithCapacity =
 	AdminPlatformOverviewResponse & {
-		capacityPools?: AdminPlatformCapacityPool[] | Record<string, unknown>[] | null;
-		capacityPoolInventory?: AdminPlatformCapacityPool[] | Record<string, unknown>[] | null;
+		capacityPools?:
+			| AdminPlatformCapacityPool[]
+			| Record<string, unknown>[]
+			| null;
+		capacityPoolInventory?:
+			| AdminPlatformCapacityPool[]
+			| Record<string, unknown>[]
+			| null;
 		pools?: AdminPlatformCapacityPool[] | Record<string, unknown>[] | null;
 		demandByClass?:
 			| Record<string, number>
@@ -145,7 +151,10 @@ export type AdminPlatformOverviewResponseWithCapacity =
 			| AdminPlatformMarginalCostByClass[]
 			| Record<string, AdminPlatformMarginalCostByClass>
 			| null;
-		poolCostInputs?: AdminPlatformPoolCostInput[] | Record<string, unknown>[] | null;
+		poolCostInputs?:
+			| AdminPlatformPoolCostInput[]
+			| Record<string, unknown>[]
+			| null;
 		infraComparison?: AdminPlatformInfraComparison | null;
 		baselineMonthlyCostCents?: number;
 		warnings?: AdminPlatformWarning[] | null;
@@ -222,6 +231,31 @@ export type PutAdminPlatformUserQuotaRequest = NonNullable<
 	operations["PUT:skyforge.PutAdminPlatformUserQuota"]["requestBody"]
 >["content"]["application/json"];
 
+export type AdminPlatformRoleProfileDefinition = {
+	profile: string;
+	displayName: string;
+	description: string;
+	enabled: boolean;
+	system: boolean;
+	defaultForNewUsers: boolean;
+	sortOrder: number;
+	quota: {
+		maxConcurrentLabs: number;
+		maxPersistentLabs: number;
+		maxPersistentHours: number;
+		maxResourceClass: string;
+	};
+	capabilities: string[];
+	operatingModes: string[];
+};
+
+export type AdminPlatformRoleProfilesResponse = {
+	profiles: AdminPlatformRoleProfileDefinition[];
+};
+
+export type PutAdminPlatformRoleProfileRequest =
+	AdminPlatformRoleProfileDefinition;
+
 export async function getAdminPlatformUserPolicy(
 	username: string,
 ): Promise<AdminPlatformUserPolicyResponse> {
@@ -274,6 +308,24 @@ export async function putAdminPlatformUserQuota(
 	);
 }
 
+export async function getAdminPlatformRoleProfiles(): Promise<AdminPlatformRoleProfilesResponse> {
+	return apiFetch<AdminPlatformRoleProfilesResponse>(
+		"/api/admin/platform/role-profiles",
+	);
+}
+
+export async function putAdminPlatformRoleProfile(
+	profile: string,
+	body: PutAdminPlatformRoleProfileRequest,
+): Promise<AdminPlatformRoleProfileDefinition> {
+	return apiFetch<AdminPlatformRoleProfileDefinition>(
+		`/api/admin/platform/role-profiles/${encodeURIComponent(profile)}`,
+		{
+			method: "PUT",
+			body: JSON.stringify(body),
+		},
+	);
+}
 
 export type AdminHetznerBurstResource = {
 	resourceKey: string;
