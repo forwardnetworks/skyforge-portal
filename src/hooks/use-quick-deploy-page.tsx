@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 
 export { formatQuickDeployEstimate } from "@/hooks/use-quick-deploy-page-estimate";
 
+const EMPTY_QUICK_DEPLOY_TEMPLATES = [];
+
 export function useQuickDeployPage(args?: { mode?: string }) {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -43,7 +45,7 @@ export function useQuickDeployPage(args?: { mode?: string }) {
 	)
 		.trim()
 		.toLowerCase();
-	const allTemplates = catalogQ.data?.templates ?? [];
+	const allTemplates = catalogQ.data?.templates ?? EMPTY_QUICK_DEPLOY_TEMPLATES;
 
 	const {
 		templates,

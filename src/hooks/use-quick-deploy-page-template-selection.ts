@@ -3,6 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 
 const FALLBACK_LEASE_OPTIONS = [4, 8, 24, 72];
 
+function sameStringList(left: string[], right: string[]): boolean {
+	if (left.length !== right.length) return false;
+	return left.every((value, index) => value === right[index]);
+}
+
 export function useQuickDeployTemplateSelection(args: {
 	requestedMode: string;
 	primaryOperatingMode: string;
@@ -24,15 +29,17 @@ export function useQuickDeployTemplateSelection(args: {
 	useEffect(() => {
 		const initial = requestedMode || primaryOperatingMode;
 		if (!initial) {
-			setSelectedTags([]);
+			setSelectedTags((current) => (current.length === 0 ? current : []));
 			return;
 		}
 		if (initial === "all") {
-			setSelectedTags([]);
+			setSelectedTags((current) => (current.length === 0 ? current : []));
 			return;
 		}
 		const tag = initial === "curated-demo" ? "curated" : initial;
-		setSelectedTags([tag]);
+		setSelectedTags((current) =>
+			sameStringList(current, [tag]) ? current : [tag],
+		);
 	}, [requestedMode, primaryOperatingMode]);
 
 	const availableTags = useMemo(() => {
@@ -47,9 +54,10 @@ export function useQuickDeployTemplateSelection(args: {
 	}, [allTemplates]);
 
 	useEffect(() => {
-		setSelectedTags((current) =>
-			current.filter((tag) => availableTags.includes(tag)),
-		);
+		setSelectedTags((current) => {
+			const filtered = current.filter((tag) => availableTags.includes(tag));
+			return sameStringList(current, filtered) ? current : filtered;
+		});
 	}, [availableTags]);
 
 	const toggleSelectedTag = (tag: string) => {
@@ -62,7 +70,8 @@ export function useQuickDeployTemplateSelection(args: {
 		);
 	};
 
-	const clearSelectedTags = () => setSelectedTags([]);
+	const clearSelectedTags = () =>
+		setSelectedTags((current) => (current.length === 0 ? current : []));
 
 	const templates = useMemo(() => {
 		if (selectedTags.length === 0) {
