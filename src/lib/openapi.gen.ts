@@ -11437,6 +11437,9 @@ export interface components {
             ansibleSshArgs: string;
             proxyCommand: string;
             sshConfig: string;
+            sshExample: string;
+            sshHostPattern: string;
+            sshJumpHost: string;
             tokenEnvVarName: string;
             tunnel: string;
         };
@@ -11446,6 +11449,8 @@ export interface components {
             label: string;
             mgmtIp: string;
             podName: string;
+            sshCommand: string;
+            sshHost: string;
             status: string;
             tunnelPath: string;
         };

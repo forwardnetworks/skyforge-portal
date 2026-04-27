@@ -66,8 +66,8 @@ export function DeploymentDetailManagementAccessTab({
 								<KeyRound className="h-5 w-5" /> Management Access
 							</CardTitle>
 							<CardDescription>
-								Use Skyforge authentication as an SSH ProxyCommand into this
-								deployment's KNE management services.
+								Use standard SSH through the Skyforge jump endpoint to reach
+								this deployment's KNE management services.
 							</CardDescription>
 						</div>
 						<div className="flex items-center gap-2">
@@ -126,22 +126,22 @@ export function DeploymentDetailManagementAccessTab({
 							) : null}
 							<div className="grid gap-4 lg:grid-cols-2">
 								<CommandBlock
-									title="SSH ProxyCommand"
-									description="Use this in ~/.ssh/config, Ansible, or any automation that supports ProxyCommand."
-									value={access.commands?.proxyCommand || ""}
-									onCopy={(value) => copy(value, "ProxyCommand")}
+									title="SSH"
+									description="Use your Skyforge API token as the jump-host password when prompted."
+									value={access.commands?.sshExample || ""}
+									onCopy={(value) => copy(value, "SSH command")}
 								/>
 								<CommandBlock
 									title="SSH config"
-									description={`Requires ${access.commands?.tokenEnvVarName || "SKYFORGE_API_TOKEN"} in your shell.`}
+									description="Optional OpenSSH config for plain ssh/Ansible workflows."
 									value={access.commands?.sshConfig || ""}
 									onCopy={(value) => copy(value, "SSH config")}
 								/>
 								<CommandBlock
-									title="Direct tunnel"
-									description="Useful for testing the bridge before wiring it into SSH."
-									value={access.commands?.tunnel || ""}
-									onCopy={(value) => copy(value, "tunnel command")}
+									title="Jump host"
+									description="Skyforge-authenticated SSH endpoint used by ProxyJump."
+									value={access.commands?.sshJumpHost || ""}
+									onCopy={(value) => copy(value, "jump host")}
 								/>
 								<CommandBlock
 									title="Ansible common args"
@@ -174,17 +174,17 @@ export function DeploymentDetailManagementAccessTab({
 												{node.mgmtIp ? (
 													<Badge variant="outline">{node.mgmtIp}</Badge>
 												) : null}
-												{node.tunnelPath ? (
+												{node.sshCommand ? (
 													<Button
 														variant="ghost"
 														size="sm"
 														onClick={() =>
-															node.tunnelPath &&
-															copy(node.tunnelPath, `${node.id} tunnel path`)
+															node.sshCommand &&
+															copy(node.sshCommand, `${node.id} ssh command`)
 														}
 													>
 														<Copy className="mr-2 h-4 w-4" />
-														Path
+														SSH
 													</Button>
 												) : null}
 											</div>

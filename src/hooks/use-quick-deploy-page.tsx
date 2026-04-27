@@ -1,13 +1,14 @@
 import { useQuickDeployDeployMutation } from "@/hooks/use-quick-deploy-page-mutations";
 import { useQuickDeployPageQueries } from "@/hooks/use-quick-deploy-page-queries";
 import { useQuickDeployTemplateSelection } from "@/hooks/use-quick-deploy-page-template-selection";
+import type { QuickDeployTemplate } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 export { formatQuickDeployEstimate } from "@/hooks/use-quick-deploy-page-estimate";
 
-const EMPTY_QUICK_DEPLOY_TEMPLATES = [];
+const EMPTY_QUICK_DEPLOY_TEMPLATES: QuickDeployTemplate[] = [];
 
 export function useQuickDeployPage(args?: { mode?: string }) {
 	const queryClient = useQueryClient();

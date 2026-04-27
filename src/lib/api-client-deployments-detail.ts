@@ -212,6 +212,8 @@ export type DeploymentManagementAccessNode = {
 	mgmtIp?: string;
 	status?: string;
 	podName?: string;
+	sshHost?: string;
+	sshCommand?: string;
 	tunnelPath?: string;
 };
 
@@ -219,6 +221,9 @@ export type DeploymentManagementAccessCommands = {
 	tunnel?: string;
 	proxyCommand?: string;
 	sshConfig?: string;
+	sshJumpHost?: string;
+	sshHostPattern?: string;
+	sshExample?: string;
 	ansibleSshArgs?: string;
 	tokenEnvVarName?: string;
 };

@@ -26,6 +26,12 @@ export function useQuickDeployTemplateSelection(args: {
 	} = args;
 
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
+	const taggedTemplates = useMemo(() => {
+		return allTemplates.filter((entry) =>
+			(entry.tags ?? []).some((tag) => String(tag).trim() !== ""),
+		);
+	}, [allTemplates]);
+
 	useEffect(() => {
 		const initial = requestedMode || primaryOperatingMode;
 		if (!initial) {
@@ -44,14 +50,14 @@ export function useQuickDeployTemplateSelection(args: {
 
 	const availableTags = useMemo(() => {
 		const tags = new Set<string>();
-		for (const entry of allTemplates) {
+		for (const entry of taggedTemplates) {
 			for (const tag of entry.tags ?? []) {
 				const normalized = String(tag).trim().toLowerCase();
 				if (normalized) tags.add(normalized);
 			}
 		}
 		return Array.from(tags).sort((a, b) => a.localeCompare(b));
-	}, [allTemplates]);
+	}, [taggedTemplates]);
 
 	useEffect(() => {
 		setSelectedTags((current) => {
@@ -75,15 +81,15 @@ export function useQuickDeployTemplateSelection(args: {
 
 	const templates = useMemo(() => {
 		if (selectedTags.length === 0) {
-			return allTemplates;
+			return taggedTemplates;
 		}
-		return allTemplates.filter((entry) => {
+		return taggedTemplates.filter((entry) => {
 			const tags = (entry.tags ?? []).map((tag) =>
 				String(tag).trim().toLowerCase(),
 			);
 			return selectedTags.some((tag) => tags.includes(tag));
 		});
-	}, [allTemplates, selectedTags]);
+	}, [taggedTemplates, selectedTags]);
 
 	const recommendedTemplates = useMemo(() => {
 		const recommendationTags =
@@ -94,13 +100,13 @@ export function useQuickDeployTemplateSelection(args: {
 							? "training"
 							: "curated",
 					];
-		return allTemplates.filter((entry) => {
+		return taggedTemplates.filter((entry) => {
 			const tags = (entry.tags ?? []).map((tag) =>
 				String(tag).trim().toLowerCase(),
 			);
 			return recommendationTags.some((tag) => tags.includes(tag));
 		});
-	}, [allTemplates, primaryOperatingMode, selectedTags]);
+	}, [primaryOperatingMode, selectedTags, taggedTemplates]);
 
 	const leaseOptions = useMemo(() => {
 		return lifetimeAllowedHours && lifetimeAllowedHours.length > 0

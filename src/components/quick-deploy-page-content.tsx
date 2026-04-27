@@ -52,8 +52,8 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 				<CardHeader>
 					<CardTitle>Tag-driven launchpad</CardTitle>
 					<CardDescription>
-						Toggle one or more topology tags. With no tag selected, every
-						eligible Quick Deploy lab is shown.
+						Toggle one or more topology tags. With no tag selected, every tagged
+						Quick Deploy lab is shown.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -95,7 +95,7 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 								})}
 								{page.availableTags.length === 0 ? (
 									<span className="text-sm text-muted-foreground">
-										No topology tags are currently assigned.
+										No tagged Quick Deploy labs are currently published.
 									</span>
 								) : null}
 							</div>
@@ -174,8 +174,8 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 				<CardHeader>
 					<CardTitle>Tag-Driven Catalog</CardTitle>
 					<CardDescription>
-						Quick Deploy is driven by topology tags. Public Gitea templates
-						appear here automatically when compatible.
+						Quick Deploy only shows tagged launchers. Public Gitea templates
+						become visible here after they are tagged as training or curated.
 					</CardDescription>
 				</CardHeader>
 			</Card>
