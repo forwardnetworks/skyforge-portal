@@ -34,6 +34,7 @@ type FeatureToggleField = {
 		| "aiChats";
 	label: string;
 	description: string;
+	productNote?: string;
 };
 
 const FEATURE_FIELDS: FeatureToggleField[] = [
@@ -65,8 +66,7 @@ const FEATURE_FIELDS: FeatureToggleField[] = [
 	{
 		key: "devParser",
 		label: "Dev parser",
-		description:
-			"Use the development parser set for the selected Forward org.",
+		description: "Use the development parser set for the selected Forward org.",
 	},
 	{
 		key: "aiAllowed",
@@ -77,6 +77,7 @@ const FEATURE_FIELDS: FeatureToggleField[] = [
 		key: "predictAiAssist",
 		label: "Predict AI assist",
 		description: "Enable Predict AI assistant flows.",
+		productNote: "Not yet functional in product.",
 	},
 	{
 		key: "aiChats",
@@ -168,7 +169,16 @@ export function ForwardTenantFeaturesCard(props: {
 									}
 								/>
 								<div className="space-y-1">
-									<Label className="text-sm font-medium">{feature.label}</Label>
+									<div className="flex flex-wrap items-center gap-2">
+										<Label className="text-sm font-medium">
+											{feature.label}
+										</Label>
+										{feature.productNote ? (
+											<span className="rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-destructive">
+												{feature.productNote}
+											</span>
+										) : null}
+									</div>
 									<div className="text-xs text-muted-foreground">
 										{feature.description}
 									</div>
