@@ -32,6 +32,7 @@ const quickDeployTagVocabulary = [
 	"advanced",
 	"bgp",
 	"campus",
+	"curated",
 	"curated-demo",
 	"dc-fabric",
 	"eos",
@@ -169,7 +170,7 @@ export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
 										}
 									/>
 								</div>
-								<div className="mt-2 grid gap-2 md:grid-cols-2">
+								<div className="mt-2">
 									<Input
 										placeholder="Catalog owner"
 										value={item.owner ?? ""}
@@ -177,17 +178,6 @@ export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
 											props.onQuickDeployTemplateFieldChange(
 												index,
 												"owner",
-												e.target.value,
-											)
-										}
-									/>
-									<Input
-										placeholder="Operating modes"
-										value={(item.operatingModes ?? []).join(", ")}
-										onChange={(e) =>
-											props.onQuickDeployTemplateFieldChange(
-												index,
-												"operatingModes",
 												e.target.value,
 											)
 										}
@@ -204,7 +194,7 @@ export function AdminOverviewQuickDeployCard(props: AdminForwardSectionProps) {
 												event.target.value,
 											)
 										}
-										placeholder="eos, evpn, bgp, intro"
+										placeholder="training, curated"
 									/>
 									<div className="text-xs text-muted-foreground">
 										Comma-separated filter tags shown in Launch Lab.

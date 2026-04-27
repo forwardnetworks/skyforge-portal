@@ -20,10 +20,19 @@ export function useQuickDeployTemplateSelection(args: {
 		catalogError,
 	} = args;
 
-	const [selectedMode, setSelectedMode] = useState("curated-demo");
-	const [selectedTag, setSelectedTag] = useState("all");
+	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	useEffect(() => {
-		setSelectedMode(requestedMode || primaryOperatingMode || "curated-demo");
+		const initial = requestedMode || primaryOperatingMode;
+		if (!initial) {
+			setSelectedTags([]);
+			return;
+		}
+		if (initial === "all") {
+			setSelectedTags([]);
+			return;
+		}
+		const tag = initial === "curated-demo" ? "curated" : initial;
+		setSelectedTags([tag]);
 	}, [requestedMode, primaryOperatingMode]);
 
 	const availableTags = useMemo(() => {
@@ -38,40 +47,51 @@ export function useQuickDeployTemplateSelection(args: {
 	}, [allTemplates]);
 
 	useEffect(() => {
-		if (selectedTag === "all") return;
-		if (!availableTags.includes(selectedTag)) setSelectedTag("all");
-	}, [availableTags, selectedTag]);
+		setSelectedTags((current) =>
+			current.filter((tag) => availableTags.includes(tag)),
+		);
+	}, [availableTags]);
+
+	const toggleSelectedTag = (tag: string) => {
+		const normalized = String(tag).trim().toLowerCase();
+		if (!normalized) return;
+		setSelectedTags((current) =>
+			current.includes(normalized)
+				? current.filter((item) => item !== normalized)
+				: [...current, normalized].sort((a, b) => a.localeCompare(b)),
+		);
+	};
+
+	const clearSelectedTags = () => setSelectedTags([]);
 
 	const templates = useMemo(() => {
+		if (selectedTags.length === 0) {
+			return allTemplates;
+		}
 		return allTemplates.filter((entry) => {
-			const modes = (entry.operatingModes ?? []).map((mode) =>
-				String(mode).trim().toLowerCase(),
-			);
-			if (
-				selectedMode !== "all" &&
-				modes.length > 0 &&
-				!modes.includes(selectedMode)
-			) {
-				return false;
-			}
-			if (selectedTag === "all") {
-				return true;
-			}
 			const tags = (entry.tags ?? []).map((tag) =>
 				String(tag).trim().toLowerCase(),
 			);
-			return tags.includes(selectedTag);
+			return selectedTags.some((tag) => tags.includes(tag));
 		});
-	}, [allTemplates, selectedMode, selectedTag]);
+	}, [allTemplates, selectedTags]);
 
 	const recommendedTemplates = useMemo(() => {
+		const recommendationTags =
+			selectedTags.length > 0
+				? selectedTags
+				: [
+						(primaryOperatingMode || "curated-demo") === "training"
+							? "training"
+							: "curated",
+					];
 		return allTemplates.filter((entry) => {
-			const modes = (entry.operatingModes ?? []).map((mode) =>
-				String(mode).trim().toLowerCase(),
+			const tags = (entry.tags ?? []).map((tag) =>
+				String(tag).trim().toLowerCase(),
 			);
-			return modes.includes(primaryOperatingMode || "curated-demo");
+			return recommendationTags.some((tag) => tags.includes(tag));
 		});
-	}, [allTemplates, primaryOperatingMode]);
+	}, [allTemplates, primaryOperatingMode, selectedTags]);
 
 	const leaseOptions = useMemo(() => {
 		return lifetimeAllowedHours && lifetimeAllowedHours.length > 0
@@ -89,10 +109,9 @@ export function useQuickDeployTemplateSelection(args: {
 				: "";
 
 	return {
-		selectedMode,
-		setSelectedMode,
-		selectedTag,
-		setSelectedTag,
+		selectedTags,
+		toggleSelectedTag,
+		clearSelectedTags,
 		availableTags,
 		templates,
 		recommendedTemplates,

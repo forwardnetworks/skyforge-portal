@@ -30,36 +30,13 @@ import { Textarea } from "./ui/textarea";
 
 type QuickDeployPageState = ReturnType<typeof useQuickDeployPage>;
 
-function formatMode(value: string | undefined): string {
+function formatTag(value: string | undefined): string {
 	if (!value) return "unreported";
 	return value.replace(/[-_]/g, " ");
 }
 
-function describeMode(value: string | undefined): string {
-	switch (value) {
-		case "training":
-			return "Training mode prioritizes repeatable labs and reserved capacity for enablement sessions.";
-		case "sandbox":
-			return "Sandbox mode keeps curated labs available while allowing broader experimentation elsewhere in the platform.";
-		case "persistent-integration":
-			return "Persistent integration mode emphasizes labs that pair with Forward and external integrations over longer workflows.";
-		case "admin-advanced":
-			return "Admin mode includes curated launchers plus the platform controls needed to support other users.";
-		default:
-			return "Curated demo mode keeps the catalog focused on repeatable GTM launchers with known-good reset behavior.";
-	}
-}
-
 export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 	const { page } = props;
-	const modeOptions = [
-		"all",
-		"curated-demo",
-		"training",
-		"sandbox",
-		"persistent-integration",
-		"admin-advanced",
-	];
 	return (
 		<div className="w-full space-y-5 p-4 lg:p-5">
 			<div className="space-y-1">
@@ -73,65 +50,58 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Mode-aware launchpad</CardTitle>
+					<CardTitle>Tag-driven launchpad</CardTitle>
 					<CardDescription>
-						Curated launchers adapt to your current operating mode and template
-						intent.
+						Toggle one or more topology tags. With no tag selected, every
+						eligible Quick Deploy lab is shown.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="flex flex-wrap items-center gap-2">
-						<Badge>
-							{formatMode(page.primaryOperatingMode || page.selectedMode)}
-						</Badge>
-						{page.primaryOperatingMode &&
-						page.selectedMode !== page.primaryOperatingMode ? (
-							<Badge variant="outline">
-								filtered to {formatMode(page.selectedMode)}
-							</Badge>
+						{page.selectedTags.length === 0 ? (
+							<Badge variant="secondary">showing all tags</Badge>
+						) : null}
+						{page.selectedTags.map((tag) => (
+							<Badge key={tag}>{formatTag(tag)}</Badge>
+						))}
+						{page.selectedTags.length > 0 ? (
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={page.clearSelectedTags}
+							>
+								Clear tags
+							</Button>
 						) : null}
 					</div>
-					<p className="text-sm text-muted-foreground">
-						{describeMode(page.primaryOperatingMode || page.selectedMode)}
-					</p>
-					<div className="grid gap-3 md:grid-cols-[240px_1fr]">
+					<div className="grid gap-3 md:grid-cols-[minmax(260px,420px)_1fr]">
 						<div className="space-y-2">
-							<Label>Launch mode</Label>
-							<Select
-								value={page.selectedMode}
-								onValueChange={page.setSelectedMode}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{modeOptions.map((mode) => (
-										<SelectItem key={mode} value={mode}>
-											{formatMode(mode)}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Label>Topology tag</Label>
-							<Select
-								value={page.selectedTag}
-								onValueChange={page.setSelectedTag}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">all tags</SelectItem>
-									{page.availableTags.map((tag) => (
-										<SelectItem key={tag} value={tag}>
-											{tag}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<Label>Topology tags</Label>
+							<div className="flex flex-wrap gap-2">
+								{page.availableTags.map((tag) => {
+									const selected = page.selectedTags.includes(tag);
+									return (
+										<Button
+											key={tag}
+											type="button"
+											variant={selected ? "default" : "outline"}
+											size="sm"
+											onClick={() => page.toggleSelectedTag(tag)}
+										>
+											{formatTag(tag)}
+										</Button>
+									);
+								})}
+								{page.availableTags.length === 0 ? (
+									<span className="text-sm text-muted-foreground">
+										No topology tags are currently assigned.
+									</span>
+								) : null}
+							</div>
 						</div>
 						<div className="rounded-lg border border-border/60 bg-background/60 p-3 text-sm">
-							<div className="font-medium">Recommended for this mode</div>
+							<div className="font-medium">Recommended from selected tags</div>
 							<div className="mt-2 flex flex-wrap gap-2">
 								{page.recommendedTemplates.slice(0, 4).map((entry) => (
 									<Button
@@ -156,11 +126,11 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 								))}
 								{page.recommendedTemplates.length === 0 ? (
 									<span className="text-muted-foreground">
-										No templates are marked for the current operating mode.
+										No templates are marked with the selected tags.
 									</span>
 								) : null}
 							</div>
-							{page.primaryOperatingMode === "training" ? (
+							{page.selectedTags.includes("training") ? (
 								<div className="mt-3 text-xs text-muted-foreground">
 									Training users should pair these launchers with reservations
 									for scheduled sessions.
@@ -204,8 +174,8 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 				<CardHeader>
 					<CardTitle>Tag-Driven Catalog</CardTitle>
 					<CardDescription>
-						Quick Deploy is driven by topology tags and operating mode. Public
-						Gitea templates appear here automatically when compatible.
+						Quick Deploy is driven by topology tags. Public Gitea templates
+						appear here automatically when compatible.
 					</CardDescription>
 				</CardHeader>
 			</Card>
@@ -231,14 +201,9 @@ export function QuickDeployPageContent(props: { page: QuickDeployPageState }) {
 							</div>
 							<CardDescription>{entry.description}</CardDescription>
 							<div className="flex flex-wrap gap-2 pt-2">
-								{entry.operatingModes?.map((mode) => (
-									<Badge key={mode} variant="secondary">
-										{formatMode(mode)}
-									</Badge>
-								))}
 								{entry.tags?.map((tag) => (
 									<Badge key={tag} variant="outline">
-										{tag}
+										{formatTag(tag)}
 									</Badge>
 								))}
 								{entry.owner ? (

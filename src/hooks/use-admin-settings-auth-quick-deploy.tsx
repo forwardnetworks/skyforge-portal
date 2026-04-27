@@ -5,8 +5,8 @@ import {
 	type AdminQuickDeployCatalogResponse,
 	type AdminQuickDeployTemplateOptionsResponse,
 	type QuickDeployTemplate,
-	updateAdminQuickDeployRepo,
 	updateAdminQuickDeployCatalog,
+	updateAdminQuickDeployRepo,
 } from "../lib/api-client";
 
 type UseAdminSettingsAuthQuickDeployArgs = {
@@ -42,6 +42,24 @@ function quickDeployTemplateNameFromPath(path: string): string {
 	}
 	const last = normalized.slice(-2).join(" / ");
 	return last.replace(/[-_]/g, " ");
+}
+
+const curatedQuickDeployTemplates = new Set([
+	"bgp/unnumbered/topology.yml",
+	"evpn/ebgp/topology.yml",
+	"evpn/symmetric-irb/topology.yml",
+	"mpls/sr-vpnv4/topology.yml",
+	"mpls/vpn-simple/topology.yml",
+	"vrf/vrf-hub-spoke/topology.yml",
+]);
+
+function normalizeQuickDeployTemplatePath(path: string): string {
+	return path
+		.trim()
+		.toLowerCase()
+		.replace(/^\/+/, "")
+		.replace(/^netlab\//, "")
+		.replace(/^labs\//, "");
 }
 
 export function useAdminSettingsAuthQuickDeploy({
@@ -201,25 +219,17 @@ export function useAdminSettingsAuthQuickDeploy({
 	};
 
 	const inferTagsFromTemplate = (template: string): string[] => {
-		const normalized = template.trim().toLowerCase();
-		const tags = new Set<string>(["eos"]);
-		for (const tag of [
-			"bgp",
-			"evpn",
-			"mpls",
-			"ospf",
-			"routing",
-			"vlan",
-			"vrf",
-			"vxlan",
-		]) {
-			if (normalized.includes(tag)) tags.add(tag);
+		const normalizedRepo = quickDeployRepoDraft.trim().toLowerCase();
+		const normalizedTemplate = normalizeQuickDeployTemplatePath(template);
+		if (
+			normalizedRepo.includes("blueprints") &&
+			curatedQuickDeployTemplates.has(normalizedTemplate)
+		) {
+			return ["curated"];
 		}
-		if (normalized.includes("sr-") || normalized.includes("segment")) {
-			tags.add("segment-routing");
-		}
-		tags.add("forward-sync");
-		return Array.from(tags);
+		return `${normalizedRepo} ${normalizedTemplate}`.includes("training")
+			? ["training"]
+			: [];
 	};
 
 	const addQuickDeployTemplateFromOption = () => {

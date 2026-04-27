@@ -46,14 +46,13 @@ export function useQuickDeployPage(args?: { mode?: string }) {
 	const allTemplates = catalogQ.data?.templates ?? [];
 
 	const {
-		selectedMode,
-		setSelectedMode,
 		templates,
 		recommendedTemplates,
 		leaseOptions,
 		loadError,
-		selectedTag,
-		setSelectedTag,
+		selectedTags,
+		toggleSelectedTag,
+		clearSelectedTags,
 		availableTags,
 	} = useQuickDeployTemplateSelection({
 		requestedMode,
@@ -98,10 +97,9 @@ export function useQuickDeployPage(args?: { mode?: string }) {
 		templates,
 		allTemplates,
 		recommendedTemplates,
-		selectedMode,
-		setSelectedMode,
-		selectedTag,
-		setSelectedTag,
+		selectedTags,
+		toggleSelectedTag,
+		clearSelectedTags,
 		availableTags,
 		primaryOperatingMode,
 		availabilityQ,
